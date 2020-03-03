@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+
+<model name="top_camera">
+    <static>true</static>
+    <link name="camera_link">
+      <sensor type="camera" name="camera_sensor">
+        <update_rate>15.0</update_rate>
+        <camera name="camera">
+          <projection_type>orthographic</projection_type>
+          <horizontal_fov>2.0944</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.02</near>
+            <far>300</far>
+          </clip>
+        </camera>
+        <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+          <alwaysOn>true</alwaysOn>
+          <updateRate>60</updateRate>
+          <cameraName>zed</cameraName>
+          <imageTopicName>rgb/image_rect_color</imageTopicName>
+          <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+          <frameName>camera_link</frameName>
+          <hackBaseline>0</hackBaseline>
+          <distortionK1>0.0</distortionK1>
+          <distortionK2>0.0</distortionK2>
+          <distortionK3>0.0</distortionK3>
+          <distortionT1>0.0</distortionT1>
+          <distortionT2>0.0</distortionT2>
+        </plugin>
+      </sensor>
+
+    </link>
+  </model>
+</sdf>

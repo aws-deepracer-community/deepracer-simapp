@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Gazebo references -->
+<xacro:property name="car_color" value="$(arg car_color)"/>
+<xacro:property name="red" value="1.000" />
+<xacro:property name="green" value="1.000" />
+<xacro:property name="blue" value="1.000" />
+
+<!-- Black (RGB: 0x00 0x00 0x00) -->
+<!-- use 0.1 for black to get shade -->
+<xacro:if value="${car_color == 'Black'}">
+  <xacro:property name="red" value="0.1" />
+  <xacro:property name="green" value="0.1" />
+  <xacro:property name="blue" value="0.1" />
+</xacro:if>
+
+<!-- Grey (RGB: 0x87 0x95 0x96) -->
+<xacro:if value="${car_color == 'Grey'}">
+  <xacro:property name="red" value="0.529" />
+  <xacro:property name="green" value="0.584" />
+  <xacro:property name="blue" value="0.588" />
+</xacro:if>
+
+<!-- Blue (RGB: 0x2A 0xC3 0xFC) -->
+<xacro:if value="${car_color == 'Blue'}">
+  <xacro:property name="red" value="0.266" />
+  <xacro:property name="green" value="0.372" />
+  <xacro:property name="blue" value="0.898" />
+</xacro:if>
+
+<!-- Red (RGB: 0xe0 0x1a 0x25) -->
+<xacro:if value="${car_color == 'Red'}">
+  <xacro:property name="red" value="0.878" />
+  <xacro:property name="green" value="0.101" />
+  <xacro:property name="blue" value="0.145" />
+</xacro:if>
+
+<!-- Orange (RGB: 0xff 0xa0 0x0a) -->
+<xacro:if value="${car_color == 'Orange'}">
+  <xacro:property name="red" value="1.000" />
+  <xacro:property name="green" value="0.627" />
+  <xacro:property name="blue" value="0.039" />
+</xacro:if>
+
+<!-- White (RGB: 0xFF 0xFF 0xFF) -->
+<xacro:if value="${car_color == 'White'}">
+  <xacro:property name="red" value="1.000" />
+  <xacro:property name="green" value="1.000" />
+  <xacro:property name="blue" value="1.000" />
+</xacro:if>
+
+<!-- Purple (RGB: 0x9c 0x2a 0xc3) -->
+<xacro:if value="${car_color == 'Purple'}">
+  <xacro:property name="red" value="0.611" />
+  <xacro:property name="green" value="0.164" />
+  <xacro:property name="blue" value="0.764" />
+</xacro:if>
+
+<gazebo reference="top_cover_link">
+  <visual name="visual">
+    <material>
+      <ambient>${red*0.1} ${green*0.1} ${blue*0.1} 1</ambient>
+      <diffuse>${red*0.35} ${green*0.35} ${blue*0.35} 1</diffuse>
+      <specular>0 0 0 1</specular>
+      <emissive>0 0 0 1</emissive>
+    </material>
+  </visual>
+</gazebo>
+
+<gazebo reference="chassis">
+  <mu1 value="0.0"/>
+  <mu2 value="0.0"/>
+  <kp  value="1000000.0" />
+  <kd  value="1.0" />
+  <material>Gazebo/Red</material>
+</gazebo>
+
+<gazebo reference="left_rear_wheel">
+  <mu1 value="0.5"/>
+  <mu2 value="0.5"/>
+  <kp  value="1000000.0" />
+  <kd  value="1.0" />
+  <fdir1 value="1 0 0"/>
+  <material>Gazebo/Black</material>
+</gazebo>
+
+<gazebo reference="right_rear_wheel">
+  <mu1 value="0.5"/>
+  <mu2 value="0.5"/>
+  <kp  value="1000000.0" />
+  <kd  value="1.0" />
+  <fdir1 value="1 0 0"/>
+  <material>Gazebo/Black</material>
+</gazebo>
+
+<gazebo reference="left_front_wheel">
+  <mu1 value="0.5"/>
+  <mu2 value="0.5"/>
+  <kp  value="1000000.0" />
+  <kd  value="1.0" />
+  <fdir1 value="1 0 0"/>
+  <material>Gazebo/Black</material>
+</gazebo>
+
+<gazebo reference="right_front_wheel">
+  <mu1 value="0.5"/>
+  <mu2 value="0.5"/>
+  <kp  value="1000000.0" />
+  <kd  value="1.0" />
+  <fdir1 value="1 0 0"/>
+  <material>Gazebo/Black</material>
+</gazebo>
+
+<!-- Gazebo plugins -->
+
+<gazebo>
+  <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+    <robotNamespace>/$(arg racecar_name)</robotNamespace>
+    <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+    <legacyModeNS>true</legacyModeNS>
+  </plugin>
+</gazebo>
+
+
+<!-- zed camera -->
+<xacro:unless value="$(optenv DISABLE_GAZEBO_CAMERA false)">
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="zed_camera_left_sensor">
+      <update_rate>15.0</update_rate>
+      <camera name="zed_camera_left_camera">
+        <horizontal_fov>1.13</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>60</updateRate>
+        <cameraName>/camera/zed</cameraName>
+        <imageTopicName>rgb/image_rect_color</imageTopicName>
+        <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+        <hackBaseline>0</hackBaseline><!-- set this to 0.12 for the second camera -->
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+</xacro:unless>
+
+</robot>

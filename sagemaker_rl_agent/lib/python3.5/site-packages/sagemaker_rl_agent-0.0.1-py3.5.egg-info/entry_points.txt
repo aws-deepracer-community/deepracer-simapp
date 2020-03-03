@@ -1,0 +1,4 @@
+[console_scripts]
+run_local_rl_agent = envs.local_worker:main
+run_rollout_rl_agent = markov.rollout_worker:main
+

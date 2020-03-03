@@ -1,0 +1,5 @@
+---
+float32 horizontal_fov
+float32 padding_pct
+float32 image_width
+float32 image_height

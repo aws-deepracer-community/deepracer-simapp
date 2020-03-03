@@ -1,0 +1,8 @@
+prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_simulation_environment
+
+Name: deepracer_simulation_environment
+Description: Description of deepracer_simulation_environment
+Version: 1.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: message_runtime std_msgs sensor_msgs image_transport cv_bridge
