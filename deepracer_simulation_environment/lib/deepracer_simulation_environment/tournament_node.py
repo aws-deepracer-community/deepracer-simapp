@@ -138,7 +138,8 @@ def main():
 
         # create boto3 session/client and download yaml/json file
         session = boto3.session.Session()
-        s3_client = session.client('s3', region_name=s3_region, config=get_boto_config())
+        s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
+        s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
 
         yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
         local_yaml_path = os.path.abspath(os.path.join(os.getcwd(), s3_yaml_name))
