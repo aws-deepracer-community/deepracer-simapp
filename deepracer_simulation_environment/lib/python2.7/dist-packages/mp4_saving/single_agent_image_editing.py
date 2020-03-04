@@ -16,7 +16,7 @@ from mp4_saving.constants import (RaceCarColorToRGB,
                                   TrackAssetsIconographicPngs,
                                   RACE_TYPE_TO_VIDEO_TEXT_MAPPING)
 from mp4_saving.image_editing_interface import ImageEditingInterface
-from top_view_graphics import TopViewGraphics
+from mp4_saving.top_view_graphics import TopViewGraphics
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 

@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image as ROSImg
 
 from markov.utils import Logger
 from markov.rospy_wrappers import ServiceProxyWrapper
-from top_view_graphics import TopViewGraphics
+from mp4_saving.top_view_graphics import TopViewGraphics
 from deepracer_simulation_environment.srv import VideoMetricsSrvRequest, VideoMetricsSrv
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   RACE_TYPE_TO_VIDEO_TEXT_MAPPING,

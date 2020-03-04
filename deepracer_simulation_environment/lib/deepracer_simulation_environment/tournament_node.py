@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """script to download yaml param from S3 bucket to local directory and start tournament ROS launch
 
