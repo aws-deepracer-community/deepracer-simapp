@@ -53,10 +53,10 @@ ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
 
-COPY ./files/rl_coach.patch /opt/amazon/rl_coach.patch
+COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
 RUN patch -p1 -N --directory=/usr/local/lib/python3.5/dist-packages/ < /opt/amazon/rl_coach.patch
 
-COPY files/run.sh run.sh
+COPY ./docker/files/run.sh run.sh
 
 RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
 ENTRYPOINT ["/bin/bash", "-c"]
