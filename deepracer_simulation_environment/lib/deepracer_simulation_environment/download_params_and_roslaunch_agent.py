@@ -97,7 +97,8 @@ def main():
 
             racecar_name = 'racecar_'+str(agent_index) if len(yaml_values[MODEL_S3_BUCKET_YAML_KEY]) > 1 else 'racecar'
             # Make a local folder with the racecar name to download the model_metadata.json
-            os.makedirs(os.path.join(os.getcwd(), racecar_name))
+            if not os.path.exists(os.path.join(os.getcwd(), racecar_name)):
+                os.makedirs(os.path.join(os.getcwd(), racecar_name))
             local_model_metadata_path = os.path.abspath(os.path.join(os.path.join(os.getcwd(), racecar_name),
                                                                      'model_metadata.json'))
             json_key = yaml_values[MODEL_METADATA_FILE_S3_YAML_KEY][agent_index]

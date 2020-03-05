@@ -9,7 +9,7 @@
   <arg name="car_colors" />
   <arg name="simapp_versions" />
   <arg name="multicar" default="false" />
-  <arg name="publish_to_kinesis_stream" default="true" />
+  <arg name="publish_to_kinesis_stream" default="false" />
 
   <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" unless="$(arg multicar)" ns="/racecar">
     <arg name="racecar_name" value="racecar"/>
