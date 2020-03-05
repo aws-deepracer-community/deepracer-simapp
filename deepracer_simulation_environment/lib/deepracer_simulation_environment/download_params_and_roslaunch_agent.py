@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """script to download yaml param from S3 bucket to local directory and start training/eval ROS launch
 
@@ -47,7 +47,11 @@ def main():
 
         # create boto3 session/client and download yaml/json file
         session = boto3.session.Session()
-        s3_client = session.client('s3', region_name=s3_region, config=get_boto_config())
+        s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
+        if s3_endpoint_url != None:
+            rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
+
+        s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
 
         yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
         local_yaml_path = os.path.abspath(os.path.join(os.getcwd(), s3_yaml_name))
@@ -60,7 +64,6 @@ def main():
                                MODEL_METADATA_FILE_S3_YAML_KEY: None}
         yaml_dict = get_yaml_dict(local_yaml_path)
         yaml_values = get_yaml_values(yaml_dict, default_yaml_values)
-
 
         # Forcing the yaml parameter to list
         force_list_params = [MODEL_METADATA_FILE_S3_YAML_KEY, MODEL_S3_BUCKET_YAML_KEY, MODEL_S3_PREFIX_YAML_KEY,
@@ -109,7 +112,7 @@ def main():
 
         cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
                         "local_yaml_path:={} ".format(local_yaml_path),
-                        "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
+                         "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
                         "racecars_with_lidars:={} multicar:={} ".format(','.join(racecars_with_lidars), multicar),
                         "car_colors:={} simapp_versions:={}".format(','.join(yaml_values[CAR_COLOR_YAML_KEY]),
                                                                     ','.join(simapp_versions))))]

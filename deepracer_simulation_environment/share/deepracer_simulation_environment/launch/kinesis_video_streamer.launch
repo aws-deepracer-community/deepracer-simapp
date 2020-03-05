@@ -21,7 +21,7 @@
     <arg name="kinesis_video_stream_name" />
     <arg name="kinesis_video_stream_region" />
 
-    <node name="$(arg node_name)" pkg="kinesis_video_streamer" type="kinesis_video_streamer" required="true">
+    <node name="$(arg node_name)" pkg="kinesis_video_streamer" type="kinesis_video_streamer" required="false">
         <!-- If the caller specified a config file then load it here. -->
         <rosparam if="$(eval node_config_file!='')" command="load" file="$(arg node_config_file)" />
         <rosparam if="$(eval stream_config_file!='')" command="load" file="$(arg stream_config_file)" ns="kinesis_video/stream0" />

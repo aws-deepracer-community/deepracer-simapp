@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image as ROSImg
 from std_msgs.msg import String
 
 from markov.utils import Logger
-from top_view_graphics import TopViewGraphics
+from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB, SCALE_RATIO, IconographicImageSize,
                                   TrackAssetsIconographicPngs)
 from mp4_saving import utils
