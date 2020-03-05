@@ -19,6 +19,8 @@
         <arg name="racecars_with_lidars" value="$(arg racecars_with_lidars)" />
         <arg name="car_colors" value="$(arg car_colors)" />
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
+        <arg name="publish_to_kinesis_stream" value="$(env ENABLE_KINESIS)" />
+        <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
     <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" output="screen" required="true"/>
