@@ -46,7 +46,7 @@ RUN python3 -m pip install --no-cache-dir \
 
 RUN python2 -m pip install opencv-python 'numpy==1.11'
 
-COPY deepracer-simapp /opt/install
+COPY bundle /opt/install
 WORKDIR /opt/install
 RUN rosdep install --from-paths deepracer_simulation_environment --ignore-src -r -y && apt-get install -y ros-kinetic-media-export
 ENV COLCON_CURRENT_PREFIX="/opt/install"
