@@ -1,5 +1,8 @@
 # AWS DeepRacer Robomaker Image
-This repository contains the extracts from the AWS DeepRacer Robomaker simapp; including the Worlds, the Robotics code etc.
+This repository contains the extracts from the AWS DeepRacer Robomaker simapp; including
+* the environment and tracks
+* the robotics agent code ('markov')
+* Dockerfile
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`
 
