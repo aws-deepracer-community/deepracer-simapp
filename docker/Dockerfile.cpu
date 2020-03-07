@@ -1,23 +1,30 @@
 #if you're not using ubuntu:16.04 make sure to replace xenial with `lsb_release -cs`
 FROM ubuntu:16.04
 
-RUN apt-get update && apt-get install build-essential wget cmake python3-pip python-boto3 python-pip -y
+RUN apt-get update && \ 
+    apt-get install build-essential wget cmake python3-pip python-boto3 python-pip -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # install ROS Kinetic
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
-RUN apt-get update -y && apt-get install ros-kinetic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated
+RUN apt-get update -y && \
+    apt-get install ros-kinetic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN rosdep init
-RUN rosdep update 
+RUN rosdep init && rosdep update 
 
 ENV ROS_DISTRO=kinetic
 
 # install gazebo7
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
-RUN apt-get update -y 
-RUN apt-get install gazebo7 libgazebo7-dev  xvfb x11vnc net-tools x11-xserver-utils jwm rviz -y
+RUN apt-get update -y && \
+    apt-get install gazebo7 libgazebo7-dev  xvfb x11vnc net-tools x11-xserver-utils jwm rviz -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # RUN pip3 install -U pip setuptools>=41.0.0
 RUN python3 -m pip install --no-cache-dir \
@@ -44,11 +51,14 @@ RUN python3 -m pip install --no-cache-dir \
     future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
 
-RUN python2 -m pip install opencv-python 'numpy==1.11'
+RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
 
 COPY bundle /opt/install
 WORKDIR /opt/install
-RUN rosdep install --from-paths deepracer_simulation_environment --ignore-src -r -y && apt-get install -y ros-kinetic-media-export
+RUN apt-get update -y && rosdep install --from-paths deepracer_simulation_environment --ignore-src -r -y && \
+    apt-get install -y ros-kinetic-media-export && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
