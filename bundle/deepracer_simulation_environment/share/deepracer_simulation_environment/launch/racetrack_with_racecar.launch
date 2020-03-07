@@ -73,4 +73,7 @@
   <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar" output="screen" required="true" unless="$(arg multicar)"></node>
   <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar_0,racecar_1" required="true" output="screen" if="$(arg multicar)"></node>
 
+  <!-- Enable local web server for video streaming -->
+  <node name="web_video_server" pkg="web_video_server" type="web_video_server" output="screen" required="false"></node>
+
 </launch>
