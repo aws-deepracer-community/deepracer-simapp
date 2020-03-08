@@ -121,6 +121,7 @@ class S3BotoDataStore(DataStore):
                     ckpt_state = state_file.read()
                     checkpoint_file = None
                     num_files_uploaded = 0
+                    start_time = time.time()
                     for root, _, files in os.walk(checkpoint_dir):
                         for filename in files:
                             if filename == CheckpointStateFile.checkpoint_state_filename:
@@ -131,10 +132,12 @@ class S3BotoDataStore(DataStore):
                                 rel_name = os.path.relpath(abs_name, checkpoint_dir)
                                 s3_client.upload_file(Filename=abs_name,
                                                       Bucket=bucket,
-                                                      Key=self._get_s3_key(rel_name, agent_key))
+                                                      Key=self._get_s3_key(rel_name, agent_key),
+                                                      Config=boto3.s3.transfer.TransferConfig(multipart_threshold=1))
                                 check_point_key_list.append(self._get_s3_key(rel_name, agent_key))
                                 num_files_uploaded += 1
-                    LOG.info("Uploaded %s files for checkpoint %s", num_files_uploaded, ckpt_state.num)
+                    time_taken = time.time() - start_time
+                    LOG.info("Uploaded %s files for checkpoint %s in %.2f seconds", num_files_uploaded, ckpt_state.num, time_taken)
                     if check_point_key_list:
                         self.delete_queues[agent_key].put(check_point_key_list)
 
