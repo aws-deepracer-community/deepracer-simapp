@@ -11,6 +11,7 @@ import logging
 from subprocess import Popen
 import os
 import sys
+import time
 import botocore
 import boto3
 import yaml
@@ -34,6 +35,8 @@ TIME_TRIAL_RACE_TYPE = "TIME_TRIAL"
 MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
 MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
 MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
+# Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
+WAIT_FOR_ROBOMAKER_TIME = 60
 
 def main():
     """ Main function for downloading yaml params """
@@ -44,6 +47,28 @@ def main():
         s3_prefix = sys.argv[3]
         s3_yaml_name = sys.argv[4]
         launch_name = sys.argv[5]
+
+        LOG.info('S3 region {}'.format(s3_region))
+         # create boto3 session/client and download yaml/json file
+         session = boto3.session.Session()
++        ec2_client = session.client('ec2', s3_region)
++        LOG.info('Checking internet connection...')
++        response = ec2_client.describe_vpcs()
++        if not response['Vpcs']:
++            log_and_exit("No VPC attached to instance", SIMAPP_SIMULATION_WORKER_EXCEPTION,
++                         SIMAPP_EVENT_ERROR_CODE_500)
++        LOG.info('Verified internet connection')
++    except botocore.exceptions.EndpointConnectionError:
++        log_and_exit("No Internet connection or ec2 service unavailable", SIMAPP_SIMULATION_WORKER_EXCEPTION,
++                     SIMAPP_EVENT_ERROR_CODE_500)
++    except botocore.exceptions.ClientError as ex:
++        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, {}".format(s3_bucket, ex),
++                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
++    except Exception as ex:
++        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, {}".format(s3_bucket, ex),
++                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
++    try:
+ 
 
         # create boto3 session/client and download yaml/json file
         session = boto3.session.Session()
@@ -118,12 +143,15 @@ def main():
                         "car_colors:={} simapp_versions:={}".format(','.join(yaml_values[CAR_COLOR_YAML_KEY]),
                                                                     ','.join(simapp_versions))))]
         Popen(cmd, shell=True, executable="/bin/bash")
-    except botocore.exceptions.ClientError as e:
-        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(
-            s3_bucket, yaml_key, e), SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
-    except Exception as e:
-        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(
-            s3_bucket, yaml_key, e), SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
+    except botocore.exceptions.ClientError as ex:
+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(s3_bucket, yaml_key, ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
+    except botocore.exceptions.EndpointConnectionError:
+        log_and_exit("No Internet connection or s3 service unavailable", SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500)
+    except Exception as ex:
+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(s3_bucket, yaml_key, ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
 
 def validate_yaml_values(yaml_values, multicar):
     """ Validate that the parameter provided in the yaml file for configuration is correct.
@@ -176,7 +204,9 @@ def get_yaml_values(yaml_dict, default_vals=None):
                      SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
 
 
+
 if __name__ == '__main__':
+    time.sleep(WAIT_FOR_ROBOMAKER_TIME)
     rospy.init_node('download_params_and_roslaunch_agent_node', anonymous=True)
     main()
     rospy.spin()

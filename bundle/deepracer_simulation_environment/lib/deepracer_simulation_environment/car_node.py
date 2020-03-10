@@ -15,16 +15,20 @@ import os
 import time
 import rospy
 import rospkg
+import logging
 from gazebo_msgs.srv import SetModelState, GetModelState
 from gazebo_msgs.msg import ModelState
 from std_srvs.srv import Empty, EmptyRequest
 from markov.track_geom.track_data import FiniteDifference, TrackData
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import configure_camera
+from markov import utils
 
 # Amount of time (in seconds) to wait, in order to prevent model state from
 # spamming logs while the model is loading
 WAIT_TO_PREVENT_SPAM = 2
+
+logger = utils.Logger(__name__, logging.INFO).get_logger()
 
 # The fps of the camera attached to the top camera model
 
@@ -62,6 +66,7 @@ class DeepRacer(object):
             main_camera[racecar].spawn_model(car_model_states,
                                              os.path.join(deepracer_path, "models",
                                                           "camera", "model.sdf"))
+        logger.info("Spawning sub camera model")
         # Spawn the top camera model
         sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
                                                   "top_camera", "model.sdf"))
@@ -69,6 +74,7 @@ class DeepRacer(object):
         # will appear on the track
         time.sleep(1)
         pause_physics = ServiceProxyWrapper('/gazebo/pause_physics', Empty)
+        logger.info("Pausing physics")
         pause_physics(EmptyRequest())
 
     def reset_car(self, racecar_name):
@@ -94,6 +100,7 @@ class DeepRacer(object):
         # will appear on the track
         time.sleep(1)
         pause_physics = ServiceProxyWrapper('/gazebo/pause_physics', Empty)
+        logger.info("Pausing physics after reset")
         pause_physics(EmptyRequest())
         return car_model_state
 

@@ -7,7 +7,7 @@ import rospy
 
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState, SpawnModel
-from markov.agent_ctrl.constants import ConfigParams
+from markov.agent_ctrl.constants import ConfigParams, BOT_CAR_Z, OBSTACLE_Z
 from markov.track_geom.constants import SET_MODEL_STATE, SPAWN_SDF_MODEL, SPAWN_URDF_MODEL, ObstacleDimensions
 from markov.track_geom.track_data import TrackData
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
@@ -94,7 +94,10 @@ class ObstaclesCtrl(AgentCtrlInterface):
         for obstacle_dist, obstacle_lane in zip(obstacle_dists, obstacle_lanes):
             obstacle_pose = obstacle_lane.interpolate_pose(
                 obstacle_lane.project(self.track_data._center_line_.interpolate(obstacle_dist)))
-            obstacle_pose.position.z = 0.1
+            if self.use_bot_car:
+                obstacle_pose.position.z = BOT_CAR_Z
+            else:
+                obstacle_pose.position.z = OBSTACLE_Z
             obstacle_poses.append(obstacle_pose)
 
         # Return the poses

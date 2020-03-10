@@ -5,6 +5,7 @@ from collections import OrderedDict
 import math
 import rospy
 import threading
+import logging
 
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState, GetModelState
@@ -16,7 +17,8 @@ from markov.visualizations.reward_distributions import RewardDataPublisher
 import markov.agent_ctrl.constants as const
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
 from markov.agent_ctrl.utils import set_reward_and_metrics, \
-                                    send_action, load_action_space, get_speed_factor
+                                    send_action, load_action_space, get_speed_factor, \
+                                    Logger
 from markov.track_geom.constants import AgentPos, TrackNearDist, SET_MODEL_STATE, \
                                         GET_MODEL_STATE, ObstacleDimensions
 from markov.track_geom.track_data import FiniteDifference, TrackData
@@ -30,6 +32,7 @@ from markov.reset.reset_rules_manager import ResetRulesManager
 from markov.reset.utils import construct_reset_rules_manager
 from rl_coach.core_types import RunPhase
 
+logger = Logger(__name__, logging.INFO).get_logger()
 
 class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
     '''Concrete class for an agent that drives forward'''
@@ -42,7 +45,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
         self._metrics = metrics
         self._is_continuous = config_dict[const.ConfigParams.IS_CONTINUOUS.value]
         self._is_reset = False
-        self._pause_count = 0
         self._reset_rules_manager = construct_reset_rules_manager(config_dict)
         self._ctrl_status = dict()
         self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.RUN.value
@@ -52,6 +54,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
         self._collision_penalty = config_dict[const.ConfigParams.COLLISION_PENALTY.value]
         self._pause_end_time = 0.0
         self._reset_count = 0
+        self._curr_crashed_object_name = None
+        self._last_crashed_object_name = None
         # simapp_version speed scale
         self._speed_scale_factor_ = get_speed_factor(config_dict[const.ConfigParams.VERSION.value])
         # Store the name of the agent used to set agents position on the track
@@ -161,6 +165,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
         Raises:
             GenericRolloutException: Reset position is not defined
         '''
+        logger.info("Reset agent")
         send_action(self._velocity_pub_dict_, self._steering_pub_dict_, 0.0, 0.0)
         if reset_pos == const.ResetPos.LAST_POS.value:
             self._track_data_.car_ndist = self._data_dict_['current_progress']
@@ -389,10 +394,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
             reward = const.PAUSE_REWARD
             # use pause count to skip crash check for first N frames to prevent the first pause
             # frame agent position is too close to last crash position
-            self._pause_count += 1
             if episode_status == EpisodeStatus.CRASHED.value and \
-                    self._pause_count % const.NUMBER_OF_SKIP_PAUSE_FRAME == 0:
-                self._pause_count = 0
+                    self._curr_crashed_object_name != self._last_crashed_object_name:
                 self._reset_agent(const.ResetPos.LAST_POS.value)
                 self._is_reset = True
             # transition to AgentPhase.RUN.value
@@ -402,7 +405,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
                     self._reset_agent(const.ResetPos.LAST_POS.value)
                 self._is_reset = False
                 self._reset_rules_manager.reset()
-                self._pause_count = 0
+                self._last_crashed_object_name = None
                 self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.RUN.value
             if not done:
                 episode_status = EpisodeStatus.PAUSE.value
@@ -448,14 +451,19 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
             episode_status = EpisodeStatus.EPISODE_COMPLETE.value
         elif EpisodeStatus.CRASHED.value in reset_rules_status and \
                 reset_rules_status[EpisodeStatus.CRASHED.value]:
+            self._curr_crashed_object_name = agents_info_map[self._agent_name_][AgentInfo.CRASHED_OBJECT_NAME.value]
             # check crash with all other objects besides static obstacle
-            crashed_object_name = agents_info_map[self._agent_name_][AgentInfo.CRASHED_OBJECT_NAME.value]
-            if 'obstacle' not in crashed_object_name:
+            if 'obstacle' not in self._curr_crashed_object_name:
                 current_progress = agents_info_map[self._agent_name_][AgentInfo.CURRENT_PROGRESS.value]
-                crashed_object_progress = agents_info_map[crashed_object_name]\
+                crashed_object_progress = agents_info_map[self._curr_crashed_object_name]\
                                               [AgentInfo.CURRENT_PROGRESS.value]
                 if current_progress < crashed_object_progress:
-                    done, pause = self._check_for_phase_change()
+                    if self._curr_crashed_object_name != self._last_crashed_object_name:
+                        self._last_crashed_object_name = self._curr_crashed_object_name
+                        done, pause = self._check_for_phase_change()
+                else:
+                    # rewrite episode status to in progress if not this agent's fault for crash
+                    episode_status = EpisodeStatus.IN_PROGRESS.value
             else:
                 done, pause = self._check_for_phase_change()
         elif any(reset_rules_status.values()):
@@ -470,6 +478,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
         '''
         done, pause = True, False
         if self._reset_count < self._number_of_resets:
+            self._reset_count += 1
             self._reset_rules_manager.reset()
             done, pause = False, True
         return done, pause
@@ -486,7 +495,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface):
 
     def _clear_data(self):
         self._is_reset = False
-        self._pause_count = 0
+        self._last_crashed_object_name = None
         self._reset_count = 0
         self._reset_rules_manager.reset()
         self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.RUN.value
