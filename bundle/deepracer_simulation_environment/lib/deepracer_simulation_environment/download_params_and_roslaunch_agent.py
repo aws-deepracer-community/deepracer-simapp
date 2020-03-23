@@ -36,7 +36,7 @@ MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
 MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
 MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
-WAIT_FOR_ROBOMAKER_TIME = 60
+WAIT_FOR_ROBOMAKER_TIME = 10
 
 def main():
     """ Main function for downloading yaml params """
@@ -58,13 +58,13 @@ def main():
             rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
         else:
              # create boto3 session/client and download yaml/json file
-    +        ec2_client = session.client('ec2', s3_region)
-    +        LOG.info('Checking internet connection...')
-    +        response = ec2_client.describe_vpcs()
-    +        if not response['Vpcs']:
-    +            log_and_exit("No VPC attached to instance", SIMAPP_SIMULATION_WORKER_EXCEPTION,
-    +                         SIMAPP_EVENT_ERROR_CODE_500)
-    +        LOG.info('Verified internet connection')
+            ec2_client = session.client('ec2', s3_region)
+            LOG.info('Checking internet connection...')
+            response = ec2_client.describe_vpcs()
+            if not response['Vpcs']:
+                log_and_exit("No VPC attached to instance", SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                             SIMAPP_EVENT_ERROR_CODE_500)
+            LOG.info('Verified internet connection')
 
         s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
 
