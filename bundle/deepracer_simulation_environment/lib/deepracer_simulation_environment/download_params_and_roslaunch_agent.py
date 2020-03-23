@@ -48,33 +48,23 @@ def main():
         s3_yaml_name = sys.argv[4]
         launch_name = sys.argv[5]
 
-        LOG.info('S3 region {}'.format(s3_region))
-         # create boto3 session/client and download yaml/json file
-         session = boto3.session.Session()
-+        ec2_client = session.client('ec2', s3_region)
-+        LOG.info('Checking internet connection...')
-+        response = ec2_client.describe_vpcs()
-+        if not response['Vpcs']:
-+            log_and_exit("No VPC attached to instance", SIMAPP_SIMULATION_WORKER_EXCEPTION,
-+                         SIMAPP_EVENT_ERROR_CODE_500)
-+        LOG.info('Verified internet connection')
-+    except botocore.exceptions.EndpointConnectionError:
-+        log_and_exit("No Internet connection or ec2 service unavailable", SIMAPP_SIMULATION_WORKER_EXCEPTION,
-+                     SIMAPP_EVENT_ERROR_CODE_500)
-+    except botocore.exceptions.ClientError as ex:
-+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, {}".format(s3_bucket, ex),
-+                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
-+    except Exception as ex:
-+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, {}".format(s3_bucket, ex),
-+                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
-+    try:
- 
-
         # create boto3 session/client and download yaml/json file
         session = boto3.session.Session()
+
         s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
-        if s3_endpoint_url != None:
+        
+        if s3_endpoint_url is not None:
+            LOG.info('Endpoint URL {}'.format(s3_endpoint_url))
             rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
+        else:
+             # create boto3 session/client and download yaml/json file
+    +        ec2_client = session.client('ec2', s3_region)
+    +        LOG.info('Checking internet connection...')
+    +        response = ec2_client.describe_vpcs()
+    +        if not response['Vpcs']:
+    +            log_and_exit("No VPC attached to instance", SIMAPP_SIMULATION_WORKER_EXCEPTION,
+    +                         SIMAPP_EVENT_ERROR_CODE_500)
+    +        LOG.info('Verified internet connection')
 
         s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
 
@@ -143,6 +133,7 @@ def main():
                         "car_colors:={} simapp_versions:={}".format(','.join(yaml_values[CAR_COLOR_YAML_KEY]),
                                                                     ','.join(simapp_versions))))]
         Popen(cmd, shell=True, executable="/bin/bash")
+    
     except botocore.exceptions.ClientError as ex:
         log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(s3_bucket, yaml_key, ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
