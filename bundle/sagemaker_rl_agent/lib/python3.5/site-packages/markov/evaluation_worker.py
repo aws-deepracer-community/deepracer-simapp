@@ -23,7 +23,7 @@ from markov.metrics.constants import MetricsS3Keys, IterationDataLocalFileNames,
 from markov.s3_boto_data_store import S3BotoDataStore, S3BotoDataStoreParameters
 from markov.s3_client import SageS3Client
 from markov.sagemaker_graph_manager import get_graph_manager
-from markov.rollout_utils import PhaseObserver
+from markov.rollout_utils import PhaseObserver, signal_robomaker_markov_package_ready
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import configure_camera
 from markov.utils_parse_model_metadata import parse_model_metadata
@@ -84,6 +84,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, s3_write
 
     graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,
                                start_physics=unpause_physics, empty_service_call=EmptyRequest)
+    logger.info("Graph manager successfully created the graph: Unpausing physics")
     unpause_physics(EmptyRequest())
     graph_manager.reset_internal_state(True)
 
@@ -327,6 +328,9 @@ def main():
                                                run_phase_subject))
     agent_list.append(create_obstacles_agent())
     agent_list.append(create_bot_cars_agent())
+
+    # ROS service to indicate all the robomaker markov packages are ready for consumption
+    signal_robomaker_markov_package_ready()
 
     PhaseObserver('/agent/training_phase', run_phase_subject)
 

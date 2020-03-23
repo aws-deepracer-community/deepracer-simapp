@@ -47,7 +47,7 @@ RACECAR_CIRCLE_RADIUS = 30
 
 # Mapping the racetype to the text shown on the video
 RACE_TYPE_TO_VIDEO_TEXT_MAPPING = {
-    RaceType.TIME_TRIAL.value: "Time trail",
+    RaceType.TIME_TRIAL.value: "Time trial",
     RaceType.OBJECT_AVOIDANCE.value: "Object avoidance",
     RaceType.HEAD_TO_BOT.value: "Head-to-bot",
     RaceType.HEAD_TO_MODEL.value: "Head-to-head"

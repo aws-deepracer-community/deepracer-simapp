@@ -265,8 +265,8 @@ def plot_rectangular_image_on_main_image(background_image, rect_image, pixel_xy)
     Returns:
         Image: Overlayed image
     """
-    x_offset = round(pixel_xy[0])
-    y_offset = round(pixel_xy[1])
+    x_offset = int(round(pixel_xy[0]))
+    y_offset = int(round(pixel_xy[1]))
 
     # Compute the x/y corners in background image
     y_min_bg = y_offset - rect_image.shape[0]//2

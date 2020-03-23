@@ -46,23 +46,14 @@ class TopViewGraphics(object):
         self.image_height = image_height
         self.racecars_info = force_list(racecars_info)
 
-        rospy.wait_for_service('/gazebo/get_model_state')
+        #
         # We have no guarantees as to when gazebo will load the model, therefore we need
-        # to wait until the model is loaded prior to resetting it for the first time
+        # to wait until the model is loaded and markov packages has spawned all the models
+        #
+        rospy.wait_for_service('/gazebo/get_model_state')
+        rospy.wait_for_service('/robomaker_markov_package_ready')
         self.get_model_client = ServiceProxyWrapper('/gazebo/get_model_state', GetModelState)
         self.model_names, self.model_imgs = self._get_all_models_info()
-
-        wait_for_model = True
-        while wait_for_model:
-            # If the model is not loaded the get model service will log an error
-            # Therefore, we add an timer to prevent the log from getting spammed with
-            # errors
-            time.sleep(WAIT_TO_PREVENT_SPAM)
-            model_status = list()
-            for model_name in self.model_names:
-                model = self.get_model_client(model_name, '')
-                model_status.append(model.success)
-            wait_for_model = not all(model_status)
 
         # Track information is required get the track bounds (xmin, xmax, ymin, ymax)
         # Also the agent location for that instant
@@ -179,14 +170,13 @@ class TopViewGraphics(object):
         self.pixel_scale = np.array([self.image_width/((track_x_dist) + 2 * x_buf),
                                      self.image_height/((track_y_dist) + 2 * y_buf),
                                      1])
-
-        # Taking care of the negative values of the track. Making everything in one co-ordinate
-        self.x_offset, self.y_offset = 0, 0
-        if track_x_min < 0:
-            self.x_offset = abs(track_x_min)
-
-        if track_y_min < 0:
-            self.y_offset = abs(track_y_min)
+        #
+        # The logic made to work with the outter boundries minimum values of track waypoints
+        # are at the origin. This is the reason why where some track worked well not the others
+        # The track that worked whose min boundary values were both negative.
+        # Hence making all the min boundary values to 0 by adding/subtracting appropriately.
+        #
+        self.x_offset, self.y_offset = -track_x_min, -track_y_min
 
     def plot_agents_as_circles(self, image):
         """

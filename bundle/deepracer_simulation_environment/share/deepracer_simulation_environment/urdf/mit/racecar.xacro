@@ -196,6 +196,7 @@
       </geometry>
     </collision>
   </link>
+  <xacro:configure_collide_bitmask link_name="zed_camera_link" bitmask="$(arg racecar_bitmask)" />
 
   <joint name="zed_camera_joint" type="fixed">
     <origin xyz="0.20 0 0.134" rpy="0 0.261799 0"/>

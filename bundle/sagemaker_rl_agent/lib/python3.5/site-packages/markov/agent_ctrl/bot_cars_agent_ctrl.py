@@ -13,7 +13,7 @@ from gazebo_msgs.srv import SetModelState, SpawnModel
 from geometry_msgs.msg import Pose
 from rosgraph_msgs.msg import Clock
 
-from markov.agent_ctrl.constants import ConfigParams
+from markov.agent_ctrl.constants import ConfigParams, BOT_CAR_Z
 from markov.track_geom.constants import SET_MODEL_STATE, SPAWN_SDF_MODEL, ObstacleDimensions
 from markov.track_geom.track_data import TrackData, TrackLine
 from markov.track_geom.utils import euler_to_quaternion
@@ -27,7 +27,7 @@ from scipy.interpolate import splprep, spalde
 from shapely.geometry import Point
 from shapely.geometry.polygon import LineString
 
-SPLINE_DEGREE = 2
+SPLINE_DEGREE = 3
 
 class BotCarsCtrl(AgentCtrlInterface):
     def __init__(self):
@@ -339,7 +339,7 @@ class BotCarsCtrl(AgentCtrlInterface):
             bot_car_pose = Pose()
             bot_car_pose.position.x = bot_car_x
             bot_car_pose.position.y = bot_car_y
-            bot_car_pose.position.z = 0.0
+            bot_car_pose.position.z = BOT_CAR_Z
             bot_car_pose.orientation.x = bot_car_orientation[0]
             bot_car_pose.orientation.y = bot_car_orientation[1]
             bot_car_pose.orientation.z = bot_car_orientation[2]

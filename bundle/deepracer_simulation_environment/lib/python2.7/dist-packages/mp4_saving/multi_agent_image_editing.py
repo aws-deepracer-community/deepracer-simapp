@@ -93,7 +93,8 @@ class MultiAgentImageEditing(ImageEditingInterface):
             # Lap Counter
             loc_y += 30
             total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
-            lap_counter_text = "{}/{}".format(int(mp4_video_metrics_info[i].lap_counter), total_laps)
+            current_lap = int(mp4_video_metrics_info[i].lap_counter) + 1
+            lap_counter_text = "{}/{}".format(current_lap, total_laps)
             major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
                                                        loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
                                                        font_color=RaceCarColorToRGB.White.value,
@@ -107,7 +108,8 @@ class MultiAgentImageEditing(ImageEditingInterface):
                                                        font_shadow_color=RaceCarColorToRGB.Black.value)
             if self.racecar_name == racecar_info['name']:
                 agents_speed = mp4_video_metrics_info[i].throttle
-            agent_done = agent_done or mp4_video_metrics_info[i].done
+            # The race is complete when total lap is same as current lap and done flag is set
+            agent_done = agent_done or (mp4_video_metrics_info[i].done and (current_lap == int(total_laps)))
 
         # Speed
         loc_x, loc_y = 10, 420

@@ -4,6 +4,7 @@
 import logging
 import rospy
 from std_msgs.msg import String
+from std_srvs.srv import Empty, EmptyResponse
 from markov.agents.utils import RunPhaseSubject
 from markov.common import ObserverInterface
 from markov.utils import Logger
@@ -26,6 +27,30 @@ LABEL_TRANSITION = [[HEAT, TRAIN, EVAL, IDLE],
                     [UNKWN, TRAIN, EVAL, IDLE],
                     [UNKWN, TRAIN, EVAL, EVAL],
                     [HEAT, TRAIN, EVAL, IDLE]]
+
+def signal_robomaker_markov_package_ready():
+    """ Since the ROS nodes are asynchronous, there is no guarantee that the required
+    node is up and running and all the information are populated. In some cases, the node
+    launched from the simulation application would have to wait for all the markov package
+    to be ready.
+    In one of the scenario, where the mapping of agents/bots/obstacles on the track as icon
+    has to wait for all the models to spawn up. The getModelState would throw exception,
+    because gazebo service might be up but the spawn model in markov package is not populated
+    with all the obstacles, agents and bot. The current approach of trying to getModel and
+    then see if the value present would pollute the logs. To avoid this a ROS service is
+    created. This ros-service will be up only when all the Markov package is ready. This way
+    the client can wait on this service and need not have to have a seperate logic.
+    """
+    rospy.Service("/robomaker_markov_package_ready", Empty, handle_robomaker_markov_package_ready)
+
+def handle_robomaker_markov_package_ready():
+    """ This is the handler for responding to the request to check if markov robomaker package
+    is up and all the required data is available.
+
+    Returns:
+        EmptyResponse: An empty response stating its ready
+    """
+    return EmptyResponse()
 
 class PhaseObserver(ObserverInterface):
     '''Class that gets notified when the phase changes and publishes the phase to

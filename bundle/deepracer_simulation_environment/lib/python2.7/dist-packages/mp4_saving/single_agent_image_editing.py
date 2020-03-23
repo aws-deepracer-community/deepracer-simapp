@@ -81,7 +81,8 @@ class SingleAgentImageEditing(ImageEditingInterface):
         # Lap Counter
         loc_y += 30
         total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
-        lap_counter_text = "{}/{}".format(int(mp4_video_metrics_info.lap_counter), total_laps)
+        current_lap = int(mp4_video_metrics_info.lap_counter) + 1
+        lap_counter_text = "{}/{}".format(current_lap, total_laps)
         major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
                                                    font_color=RaceCarColorToRGB.White.value,
@@ -119,7 +120,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
         # Check if the done flag is set and set the banner appropriately
-        if mp4_video_metrics_info.done:
+        if mp4_video_metrics_info.done and (int(total_laps) == current_lap):
             # When the cv2 text is written, it automatically drops the alpha value of the image
             major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
             racecomplete_image = utils.get_image(TrackAssetsIconographicPngs.RACE_COMPLETE_OVERLAY_PNG.value,

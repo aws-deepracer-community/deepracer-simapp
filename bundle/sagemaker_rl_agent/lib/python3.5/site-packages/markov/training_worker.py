@@ -270,7 +270,7 @@ def main():
                                                                   base_checkpoint_dir=args.pretrained_checkpoint_dir,
                                                                   s3_folders={'agent':args.pretrained_s3_prefix},
                                                                   s3_endpoint_url=args.s3_endpoint_url)
-        data_store_pretrained = S3BotoDataStore(ds_params_instance_pretrained, graph_manager)
+        data_store_pretrained = S3BotoDataStore(ds_params_instance_pretrained, graph_manager, True)
         data_store_pretrained.load_from_store()
 
     memory_backend_params = RedisPubSubMemoryBackendParameters(redis_address="localhost",

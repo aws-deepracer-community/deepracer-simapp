@@ -16,15 +16,12 @@ PAUSE_REWARD = 0.0
 # Reward to give the car when it "crashes"
 CRASHED = 1e-8
 # The number of steps to wait before checking if the car is stuck
-# This number should corespond to the camera FPS, since it is pacing the
+# This number should correspond to the camera FPS, since it is pacing the
 # step rate.
 NUM_STEPS_TO_CHECK_STUCK = 15
 
 # Radius of the wheels of the car in meters
 WHEEL_RADIUS = 0.1
-
-# Number of frame to skip during pause
-NUMBER_OF_SKIP_PAUSE_FRAME = 5
 
 # Allowed closest object distance
 CLOSEST_OBJ_GAP = 1.00
@@ -32,8 +29,14 @@ CLOSEST_OBJ_GAP = 1.00
 # Reset behind object distance
 RESET_BEHIND_DIST = 1.00
 
+# Bot car z
+BOT_CAR_Z = 0.0
+
+# Obstacle z
+OBSTACLE_Z = 0.1
+
 class ResetPos(Enum):
-    '''This enum defines the keys for the input keys for hte rollout
+    '''This enum defines the keys for the input keys for the rollout
        reset position dict
     '''
     START_POS = 'start_pos'
