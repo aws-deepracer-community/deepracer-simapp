@@ -10,9 +10,10 @@ from PIL import ImageFont, ImageDraw, Image
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.metrics.constants import (ITERATION_DATA_LOCAL_FILE_PATH,
                                       IterationDataLocalFileNames)
-from markov.utils import (Logger, log_and_exit,
-                          SIMAPP_EVENT_ERROR_CODE_500,
-                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
+from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+                                         SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
 from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
                                   SCALE_RATIO, IconographicImageSize)
 from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDataSrv
@@ -86,8 +87,10 @@ def get_image(icon_name, img_size=None):
             image = cv2.resize(image, img_size)
         return image
     except (OSError, IOError, Exception) as err_msg:
-        log_and_exit("Iconography image does not exists or corrupt image: {}".format(
-            err_msg), SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
+        log_and_exit("Iconography image does not exists or corrupt image: {}"
+                         .format(err_msg),
+                     SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION, 
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 def draw_shadow(draw_obj, text, font, x_loc, y_loc, shadowcolor):
     """Helper method that draws a shadow around given text for a given ImageDraw
@@ -321,7 +324,7 @@ def apply_gradient(main_image, gradient_img, gradient_alpha):
                 -gradient_img.shape[0]:, -gradient_img.shape[1]:, channel])
     return main_image
 
-def overlay_track_images(major_cv_image, minor_cv_image):
+def overlay_track_images(major_cv_image, minor_cv_image, loc_offset=(0, 0)):
     """ Overlaying the main image with the track iconographic image.
     Args:
         major_cv_image (Image): The main background image
@@ -333,9 +336,15 @@ def overlay_track_images(major_cv_image, minor_cv_image):
     # Now adjust the alpha values to all channels
     minor_cv_image = resize_image(minor_cv_image, SCALE_RATIO)
     track_icongraphy_alpha = minor_cv_image[:, :, 3]/255.0
+
+    # Minor image is placed at the bottom right with some offset
+    x_min = -(loc_offset[1]+minor_cv_image.shape[0])
+    x_max = major_cv_image.shape[0] - loc_offset[1]
+    y_min = -(loc_offset[0]+minor_cv_image.shape[1])
+    y_max = major_cv_image.shape[1] - loc_offset[0]
+
     for channel in range(0, 3):
-        major_cv_image[-minor_cv_image.shape[0]:, -minor_cv_image.shape[1]:, channel] = \
+        major_cv_image[x_min:x_max, y_min:y_max, channel] =\
             (track_icongraphy_alpha * minor_cv_image[:, :, channel]) + \
-            (1 - track_icongraphy_alpha) * (major_cv_image[ \
-                -minor_cv_image.shape[0]:, -minor_cv_image.shape[1]:, channel])
+            (1 - track_icongraphy_alpha) * (major_cv_image[x_min:x_max, y_min:y_max, channel])
     return cv2.cvtColor(major_cv_image, cv2.COLOR_RGBA2RGB)

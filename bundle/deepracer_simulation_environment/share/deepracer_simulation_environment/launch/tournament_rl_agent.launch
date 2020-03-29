@@ -21,6 +21,7 @@
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
         <arg name="publish_to_kinesis_stream" value="false" />
+        <arg name="make_required" value="true"/>
     </include>
 
     <node name="agent" pkg="deepracer_simulation_environment" type="run_tournament_rl_agent.sh" output="screen" required="false"/>

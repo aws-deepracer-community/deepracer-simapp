@@ -16,8 +16,9 @@
     <arg name="output" default="log" doc="The stdout/stderr location for this node. Set to 'screen' to see this node's output in the terminal." />
     <!-- The image transport used by the video encoder. This can be 'raw' or 'compressed' -->
     <arg name="image_transport" default="compressed" doc="The image transport used by this video encoder node. This can be 'raw' or 'compressed'." />
+    <arg name="make_required" default="true" />
 
-    <node name="$(arg node_name)" pkg="h264_video_encoder" type="h264_video_encoder" output="$(arg output)" required="true">
+    <node name="$(arg node_name)" pkg="h264_video_encoder" type="h264_video_encoder" output="$(arg output)" required="$(arg make_required)">
         <!-- If the caller specified a config file then load it here. -->
         <rosparam if="$(eval config_file!='')" command="load" file="$(arg config_file)"/>
 

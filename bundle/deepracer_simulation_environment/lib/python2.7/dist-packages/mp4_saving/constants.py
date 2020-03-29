@@ -45,6 +45,9 @@ WAIT_TO_PREVENT_SPAM = 2
 # Radius of the circle plotted on the agent in pixels
 RACECAR_CIRCLE_RADIUS = 30
 
+# AWS Deepracer watermark
+AWS_DEEPRACER_WATER_MARK = "AWS DeepRacer"
+
 # Mapping the racetype to the text shown on the video
 RACE_TYPE_TO_VIDEO_TEXT_MAPPING = {
     RaceType.TIME_TRIAL.value: "Time trial",
@@ -92,3 +95,24 @@ class TrackAssetsIconographicPngs(Enum):
     OBSTACLE_OVERLAY_PNG = "DRL_video_oa_overlay"
     HEAD_TO_HEAD_OVERLAY_PNG = "DRL_video_h2h_overlay"
     RACE_COMPLETE_OVERLAY_PNG = "DRL_video_racecomplete_overlay"
+    HEAD_TO_HEAD_OVERLAY_PNG_LEAGUE_LEADERBOARD = "DRL_video_h2h_overlay_league_leaderboard"
+    OBSTACLE_OVERLAY_PNG_LEAGUE_LEADERBOARD = "DRL_video_oa_overlay_league_leaderboard"
+
+class XYPixelLoc(Enum):
+    """ The mp4 image size is (480, 640). Rendering text at different locations
+    """
+    MULTI_AGENT_DISPLAY_NAME_LOC = [(10, 10), (450, 10)]
+    MULTI_AGENT_EVAL_TIME = (240, 10)
+    SINGLE_AGENT_DISPLAY_NAME_LOC = (10, 10)
+    SPEED_LEADERBOARD_LOC = (10, 410)
+    SPEED_EVAL_LOC = (10, 420)
+    LEADERBOARD_NAME_LOC = (10, 435)
+    RACE_TYPE_EVAL_LOC = (10, 445)
+    RACE_TYPE_RACE_LOC = (10, 455)
+    AWS_DEEPRACER_WATER_MARK_LOC = (445, 450)
+    TRAINING_PHASE_LOC = (40, 400)
+    TRACK_IMG_WITH_OFFSET_LOC = (0, 20)
+    TRACK_IMG_WITHOUT_OFFSET_LOC = (0, 0)
+
+# Race completion flag y-offset
+RACE_COMPLETE_Y_OFFSET = 180

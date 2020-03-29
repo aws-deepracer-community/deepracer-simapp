@@ -7,7 +7,7 @@
   <arg name="racecar_name" default="racecar"/>
   <arg name="racecar_bitmask" default="0x01"/>
   <arg name="publish_to_kinesis_stream" default="false"/>
-  
+  <arg name="make_required" default="true" />
 
   <arg name="include_second_camera" default="false" />
   <arg name="include_lidar_sensor" default="false" />
@@ -52,11 +52,13 @@
   <!-- ros_control racecar launch file -->
   <include file="$(find deepracer_simulation_environment)/launch/racecar_control.launch">
     <arg name="racecar_name" value="$(arg racecar_name)"/>
+    <arg name="make_required" value="$(arg make_required)"/>
   </include>
 
   <include file="$(find deepracer_simulation_environment)/launch/h264_video_encoder.launch" if="$(arg publish_to_kinesis_stream)">
     <arg name="config_file" value="$(find deepracer_simulation_environment)/config/$(arg racecar_name)/deepracer_rpi_h264_encoder_config.yaml" />
     <arg name="image_transport" value="raw" />
+    <arg name="make_required" value="$(arg make_required)"/>
   </include>
 
   <include file="$(find deepracer_simulation_environment)/launch/kinesis_video_streamer.launch" if="$(arg publish_to_kinesis_stream)">
@@ -64,6 +66,7 @@
     <arg name="stream_config_file" value="$(find deepracer_simulation_environment)/config/$(arg racecar_name)/deepracer_stream_config.yaml" />
     <arg name="kinesis_video_stream_name" value="$(arg kinesis_video_stream_name)" />
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)" />
+    <arg name="make_required" value="$(arg make_required)"/>
   </include>
 
   
