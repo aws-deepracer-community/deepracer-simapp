@@ -18,12 +18,13 @@ import yaml
 import rospy
 from markov import utils_parse_model_metadata
 from markov.utils import force_list
+from markov.constants import DEFAULT_COLOR
 from markov.architecture.constants import Input
-from markov.utils import Logger, log_and_exit, get_boto_config
-from markov.utils import (DEFAULT_COLOR,
-                          SIMAPP_EVENT_ERROR_CODE_400,
-                          SIMAPP_EVENT_ERROR_CODE_500,
-                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
+from markov.utils import  get_boto_config
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400, SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
+from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -135,14 +136,19 @@ def main():
         Popen(cmd, shell=True, executable="/bin/bash")
     
     except botocore.exceptions.ClientError as ex:
-        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(s3_bucket, yaml_key, ex),
-                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_400)
+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
+                         .format(s3_bucket, yaml_key, ex), 
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_400)
     except botocore.exceptions.EndpointConnectionError:
-        log_and_exit("No Internet connection or s3 service unavailable", SIMAPP_SIMULATION_WORKER_EXCEPTION,
+        log_and_exit("No Internet connection or s3 service unavailable",
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     except Exception as ex:
-        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}".format(s3_bucket, yaml_key, ex),
-                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
+        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
+                         .format(s3_bucket, yaml_key, ex), 
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 def validate_yaml_values(yaml_values, multicar):
     """ Validate that the parameter provided in the yaml file for configuration is correct.
@@ -192,12 +198,13 @@ def get_yaml_values(yaml_dict, default_vals=None):
         return return_values
     except yaml.YAMLError as exc:
         log_and_exit("yaml read error: {}".format(exc),
-                     SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500)
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION, 
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 
 
 if __name__ == '__main__':
-    time.sleep(WAIT_FOR_ROBOMAKER_TIME)
     rospy.init_node('download_params_and_roslaunch_agent_node', anonymous=True)
+    time.sleep(WAIT_FOR_ROBOMAKER_TIME)
     main()
     rospy.spin()

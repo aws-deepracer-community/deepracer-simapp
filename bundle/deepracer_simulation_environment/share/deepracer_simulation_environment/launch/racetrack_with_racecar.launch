@@ -10,6 +10,7 @@
   <arg name="simapp_versions" />
   <arg name="multicar" default="false" />
   <arg name="publish_to_kinesis_stream" default="false" />
+  <arg name="make_required" default="true" />
 
   <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" unless="$(arg multicar)" ns="/racecar">
     <arg name="racecar_name" value="racecar"/>
@@ -23,6 +24,7 @@
     <arg name="include_lidar_sensor" value="$(eval 'racecar' in racecars_with_lidars.split(','))" />
     <arg name="car_color" value="$(eval car_colors.split(',')[0])" />
     <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
+    <arg name="make_required" value="$(arg make_required)" />
   </include>
 
   <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" if="$(arg multicar)" ns="/racecar_0">
@@ -37,6 +39,7 @@
     <arg name="include_lidar_sensor" value="$(eval 'racecar_0' in racecars_with_lidars.split(','))" />
     <arg name="car_color" value="$(eval car_colors.split(',')[0])" />
     <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
+    <arg name="make_required" value="$(arg make_required)" />
   </include>
 
   <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" if="$(arg multicar)" ns="/racecar_1">
@@ -51,27 +54,29 @@
     <arg name="include_second_camera" value="$(eval 'racecar_1' in racecars_with_stereo_cameras.split(','))" />
     <arg name="include_lidar_sensor" value="$(eval 'racecar_1' in racecars_with_lidars.split(','))" />
     <arg name="car_color" value="$(eval car_colors.split(',')[1])" />
+    <arg name="make_required" value="$(arg make_required)" />
   </include>
 
   <include file="$(find deepracer_simulation_environment)/launch/empty_world.launch">
     <arg name="world_name" value="$(find deepracer_simulation_environment)/worlds/$(arg world_name).world"/>
     <arg name="gui" value="$(arg gui)"/>
+    <arg name="make_required" value="$(arg make_required)" />
   </include>
 
-  <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="racecar" output="screen" required="true" unless="$(arg multicar)"></node>
-  <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="racecar_0,racecar_1" output="screen" required="true" if="$(arg multicar)"></node>
+  <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="racecar" output="screen" required="$(arg make_required)" unless="$(arg multicar)"></node>
+  <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="racecar_0,racecar_1" output="screen" required="$(arg make_required)" if="$(arg multicar)"></node>
 
-  <node pkg="deepracer_simulation_environment" type="kinesis_video_camera_node.py" name="kinesis_video_camera_node" args="racecar" output="screen" required="true" unless="$(arg multicar)">
+  <node pkg="deepracer_simulation_environment" type="kinesis_video_camera_node.py" name="kinesis_video_camera_node" args="racecar" output="screen" required="$(arg make_required)" unless="$(arg multicar)">
   </node>
-  <node pkg="deepracer_simulation_environment" type="kinesis_video_camera_node.py" name="kinesis_video_camera_node" args="racecar_0,racecar_1" output="screen" required="true" if="$(arg multicar)">
+  <node pkg="deepracer_simulation_environment" type="kinesis_video_camera_node.py" name="kinesis_video_camera_node" args="racecar_0,racecar_1" output="screen" required="$(arg make_required)" if="$(arg multicar)">
   </node>
 
   <node pkg="deepracer_simulation_environment" type="visualization_node.py" name="visualization_node" args="racecar" output="screen" unless="$(arg multicar)"></node>
   <node pkg="deepracer_simulation_environment" type="visualization_node.py" name="visualization_node" args="racecar_0,racecar_1" output="screen" if="$(arg multicar)"></node>
 
   <!-- Saving mp4 for each agent -->
-  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar" output="screen" required="true" unless="$(arg multicar)"></node>
-  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar_0,racecar_1" required="true" output="screen" if="$(arg multicar)"></node>
+  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar" output="screen" required="$(arg make_required)" unless="$(arg multicar)"></node>
+  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="racecar_0,racecar_1" required="$(arg make_required)" output="screen" if="$(arg multicar)"></node>
 
   <!-- Enable local web server for video streaming -->
   <node name="web_video_server" pkg="web_video_server" type="web_video_server" output="screen" required="false"></node>
