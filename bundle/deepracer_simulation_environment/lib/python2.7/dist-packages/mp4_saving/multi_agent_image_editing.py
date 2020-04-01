@@ -7,7 +7,7 @@ import cv2
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image as ROSImg
 
-+from markov.log_handler.logger import Logger
+from markov.log_handler.logger import Logger
 from markov.rospy_wrappers import ServiceProxyWrapper
 from mp4_saving.top_view_graphics import TopViewGraphics
 from deepracer_simulation_environment.srv import VideoMetricsSrvRequest, VideoMetricsSrv
