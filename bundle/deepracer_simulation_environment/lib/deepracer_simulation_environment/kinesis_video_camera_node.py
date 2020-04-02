@@ -14,11 +14,12 @@ import rospy
 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
-from markov.utils import (DoubleBuffer, force_list, Logger,
-                          log_and_exit,
-                          SIMAPP_EVENT_ERROR_CODE_500,
-                          SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
-                          DEFAULT_COLOR)
+from markov.utils import DoubleBuffer, force_list, get_video_display_name
+from markov.constants import DEFAULT_COLOR                     
+from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import RaceType
 from mp4_saving.constants import RaceCarColorToRGB
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
@@ -117,7 +118,7 @@ def get_racecars_info(racecar_names):
     racecars = racecar_names.split(',')
     racecars_info = list()
     racecars_color = force_list(rospy.get_param("CAR_COLOR", DEFAULT_COLOR))
-    racecars_display_name = force_list(rospy.get_param("DISPLAY_NAME", ""))
+    racecars_display_name = get_video_display_name()
 
     for i, racecar_name in enumerate(racecars):
         racecar_dict = dict()
@@ -138,7 +139,8 @@ def main(racecar_names):
             # Instantiate KinesisVideoCamera objects for each racecar
             KinesisVideoCamera(racecar['name'], racecars_info)
     except Exception as err_msg:
-        log_and_exit("Exception in Kinesis Video camera ros node: {}".format(err_msg),
+        log_and_exit("Exception in Kinesis Video camera ros node: {}"
+                         .format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 

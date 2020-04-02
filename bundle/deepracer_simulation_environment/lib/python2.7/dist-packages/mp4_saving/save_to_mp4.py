@@ -12,10 +12,10 @@ import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from std_srvs.srv import Empty
 from sensor_msgs.msg import Image
-from markov.utils import Logger
-from markov.utils import (log_and_exit,
-                          SIMAPP_EVENT_ERROR_CODE_500,
-                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
+from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
 from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter)
 from mp4_saving import utils
@@ -66,7 +66,8 @@ class SaveToMp4(object):
                                                                callback_args=name)
             return []
         except Exception as err_msg:
-            log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}".format(err_msg),
+            log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}"
+                             .format(err_msg),
                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
 
@@ -89,7 +90,8 @@ class SaveToMp4(object):
                     del self.cv2_video_writers[name]
             return []
         except Exception as err_msg:
-            log_and_exit("Exception in the handler function to unsubscribe from save_mp4 download: {}".format(err_msg),
+            log_and_exit("Exception in the handler function to unsubscribe from save_mp4 download: {}"
+                             .format(err_msg),
                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
 
@@ -110,7 +112,8 @@ def main(racecar_names):
             rospy.Service('/{}/save_mp4/unsubscribe_from_save_mp4'.format(racecar_name),
                           Empty, save_to_mp4_obj.unsubscribe_to_save_mp4)
     except Exception as err_msg:
-        log_and_exit("Exception in save_mp4 ros node: {}".format(err_msg),
+        log_and_exit("Exception in save_mp4 ros node: {}"
+                         .format(err_msg),
                      SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 

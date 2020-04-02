@@ -8,10 +8,10 @@ import rospkg
 from sensor_msgs.msg import Image as ROSImg
 from std_msgs.msg import String
 
-from markov.utils import Logger
+from markov.log_handler.logger import Logger
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB, SCALE_RATIO, IconographicImageSize,
-                                  TrackAssetsIconographicPngs)
+                                  TrackAssetsIconographicPngs, XYPixelLoc)
 from mp4_saving import utils
 from mp4_saving.image_editing_interface import ImageEditingInterface
 
@@ -73,7 +73,8 @@ class TrainingImageEditing(ImageEditingInterface):
         if self._current_training_phase:
             # Add the label that lets the user know the training phase
             major_cv_image = utils.write_text_on_image(image=major_cv_image, text=self._current_training_phase,
-                                                       loc=(40, 400), font=self.training_phase_font, font_color=None,
+                                                       loc=XYPixelLoc.TRAINING_PHASE_LOC.value,
+                                                       font=self.training_phase_font, font_color=None,
                                                        font_shadow_color=RaceCarColorToRGB.Black.value)
         return major_cv_image
 

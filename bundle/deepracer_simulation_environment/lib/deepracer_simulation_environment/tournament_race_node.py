@@ -6,9 +6,10 @@ import logging
 import subprocess
 import sys
 
-from markov.utils import Logger, log_and_exit
-from markov.utils import (SIMAPP_EVENT_ERROR_CODE_500,
-                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
+from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -38,7 +39,8 @@ def main():
         logger.info("cmd: {}".format(cmd))
         subprocess.Popen(cmd, shell=True, executable="/bin/bash")
     except Exception as e:
-        log_and_exit("Tournament race node failed: race_idx: {}, {}".format(race_idx, e),
+        log_and_exit("Tournament race node failed: race_idx: {}, {}"
+                         .format(race_idx, e),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 
