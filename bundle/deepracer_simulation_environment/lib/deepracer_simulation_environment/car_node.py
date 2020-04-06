@@ -52,8 +52,6 @@ class DeepRacer(object):
                 time.sleep(WAIT_TO_PREVENT_SPAM)
                 model = self.get_model_client(racecar, '')
                 wait_for_model = not model.success
-        # Grab the track data
-        self.track_data = TrackData.get_instance()
         # Gazebo service that allows us to position the car
         self.model_state_client = ServiceProxyWrapper('/gazebo/set_model_state', SetModelState)
         # Place the car at the starting point facing the forward direction
@@ -61,6 +59,8 @@ class DeepRacer(object):
         main_camera, sub_camera = configure_camera(namespaces=racecar_names)
         # Get the root directory of the ros package, this will contain the models
         deepracer_path = rospkg.RosPack().get_path("deepracer_simulation_environment")
+        # Grab the track data
+        self.track_data = TrackData.get_instance()
         for racecar in racecar_names:
             car_model_states = self.reset_car(racecar)
             main_camera[racecar].spawn_model(car_model_states,
@@ -81,8 +81,9 @@ class DeepRacer(object):
         ''' Reset's the car on the track
         '''
         # Compute the starting position and heading
-        car_model_pose = self.track_data._center_line_.interpolate_pose(
-            distance=0.0, normalized=True, reverse_dir=False,
+        car_model_pose = self.track_data.center_line.interpolate_pose(
+            distance=0.0,
+            normalized=True,
             finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
 
         # Construct the model state and send to Gazebo

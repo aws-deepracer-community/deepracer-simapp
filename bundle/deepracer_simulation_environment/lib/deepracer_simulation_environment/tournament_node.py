@@ -36,8 +36,9 @@ logger = Logger(__name__, logging.INFO).get_logger()
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
 WAIT_FOR_ROBOMAKER_TIME = 120
 
-CAR_COLOR_YAML_KEY = "CAR_COLOR"
+RACE_CAR_COLORS = ["Purple", "Orange"]
 
+CAR_COLOR_YAML_KEY = "CAR_COLOR"
 MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
 MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
 MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
@@ -112,7 +113,7 @@ def generate_race_yaml(yaml_dict, car1, car2, race_idx):
 
     race_yaml_dict = copy.deepcopy(yaml_dict)
 
-    race_yaml_dict[CAR_COLOR_YAML_KEY] = ["Orange", "Purple"]
+    race_yaml_dict[CAR_COLOR_YAML_KEY] = RACE_CAR_COLORS
     race_yaml_dict[MODEL_S3_BUCKET_YAML_KEY] = [car1_model_s3_bucket, car2_model_s3_bucket]
     race_yaml_dict[MODEL_S3_PREFIX_YAML_KEY] = [car1_s3_prefix, car2_s3_prefix]
     race_yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY] = [car1_model_metadata, car2_model_metadata]
@@ -250,7 +251,7 @@ def main():
             race_yaml_dict = generate_race_yaml(yaml_dict=yaml_dict, car1=car1, car2=car2,
                                                 race_idx=race_idx)
 
-            race_car_colors = ["Orange", "Purple"]
+            race_car_colors = RACE_CAR_COLORS
             race_model_s3_buckets = [car1_model_s3_bucket, car2_model_s3_bucket]
             race_model_metadatas = [car1_model_metadata, car2_model_metadata]
 
