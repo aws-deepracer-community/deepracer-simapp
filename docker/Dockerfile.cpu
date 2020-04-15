@@ -10,7 +10,9 @@ RUN apt-get update && \
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
-    apt-get install ros-kinetic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated && \
+    apt-get install ros-kinetic-ros-base python-rosinstall \
+	ros-kinetic-media-export ros-kinetic-web-video-server \
+	python-rosinstall-generator python-wstool python-matplotlib -y --allow-unauthenticated && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -45,30 +47,30 @@ RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cach
     PyYAML==3.13 \
     rospkg>=1.1 \
     shapely==1.6.4 \
-    tensorflow==1.11 \
+    $TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
     future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
 
 RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
+RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
 
 COPY bundle /opt/install
 WORKDIR /opt/install
 RUN apt-get update -y && rosdep install --from-paths deepracer_simulation_environment --ignore-src -r -y && \
-    apt-get install -y ros-kinetic-media-export ros-kinetic-web-video-server python-matplotlib && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
 
+ARG TENSORFLOW_VER="tensorflow==1.11.0"
+RUN python3 -m pip install --no-cache-dir $TENSORFLOW_VER
+
 COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
 RUN patch -p1 -N --directory=/usr/local/lib/python3.5/dist-packages/ < /opt/amazon/rl_coach.patch
-
 COPY ./docker/files/run.sh run.sh
-
-RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["./run.sh run distributed_training.launch"]
