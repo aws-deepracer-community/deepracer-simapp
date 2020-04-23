@@ -139,7 +139,7 @@ class TopViewGraphics(object):
         matrices
         """
         # Track co-ordinates
-        track_x_min, track_y_min, track_x_max, track_y_max = self.track_data._outer_border_.bounds
+        track_x_min, track_y_min, track_x_max, track_y_max = self.track_data.outer_border.bounds
 
         # Getting the aspect ratio
         aspect_ratio = self.image_width/self.image_height
