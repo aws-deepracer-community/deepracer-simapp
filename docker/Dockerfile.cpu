@@ -65,7 +65,7 @@ ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
 
-ARG TENSORFLOW_VER="tensorflow==1.11.0"
+ARG TENSORFLOW_VER
 RUN python3 -m pip install --no-cache-dir $TENSORFLOW_VER
 
 COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
