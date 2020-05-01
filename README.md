@@ -14,11 +14,12 @@ In most cases it will be sufficient to use one of our pre-built images which use
 
 Available tags are:
 
-| Version  | Status         | AVX      | AVX2     | AVX512   | GPU      |
+| Version  | Comment         | AVX      | AVX2     | AVX512   | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | -------- | 
-| Release  | 2.0.1          | `cpu`, `cpu-avx` | `cpu-avx2` | `cpu-avx512` | `gpu`| 
+| Release  | Version 2.0.1  | `cpu`, `cpu-avx` | `cpu-avx2` | `cpu-avx512` | `gpu`| 
 | 2.0.1    | Update 29-MAR  | `2.0.1-cpu-avx`, `2.0.1-cpu` | `2.0.1-cpu-avx2` | `2.0.1-cpu-avx512` | `2.0.1-gpu` |
 | 2.0.2    | Update 01-APR  |  `2.0.2-cpu-avx`  | `2.0.2-cpu-avx2` | `2.0.2-cpu-avx512` | 
+| 2.0.3    | Spain Track  |  `2.0.3-cpu-avx`  | `2.0.3-cpu-avx2` | `2.0.3-cpu-avx512` | `2.0.3-gpu` |
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 
