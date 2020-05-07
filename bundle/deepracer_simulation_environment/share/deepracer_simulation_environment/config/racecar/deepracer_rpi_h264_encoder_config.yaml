@@ -2,11 +2,11 @@
 
 # The name of the topic to which the H264 encoder node should subscribe to obtain the feed desired to be encoded
 # The topic must be a sensor_msgs/Image message
-subscription_topic: "/racecar/deepracer/kvs_stream"
+subscription_topic: "/$(arg racecar_name)/deepracer/kvs_stream"
 
 # The name of the topic to which H264 encoder node should publish the encoded video stream
 # The topic will be a kinesis_video_msgs/KinesisVideoFrame message
-publication_topic: "/racecar/b9/kvs/video/encoded"
+publication_topic: "/$(arg racecar_name)/b9/kvs/video/encoded"
 
 # The size of the subscribed and publishing message queues (default: 100)
 # queue_size: 100

@@ -14,7 +14,7 @@ import rospy
 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
-from markov.utils import DoubleBuffer, force_list, get_video_display_name
+from markov.utils import DoubleBuffer, force_list, get_video_display_name, get_racecar_names
 from markov.constants import DEFAULT_COLOR                     
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
@@ -64,7 +64,7 @@ class KinesisVideoCamera(object):
         is_training = rospy.get_param("JOB_TYPE") == 'TRAINING'
         if is_training:
             return TrainingImageEditing(self.racecars_info[0])
-        if race_type == RaceType.HEAD_TO_MODEL.value:
+        if race_type == RaceType.HEAD_TO_MODEL.value or race_type == RaceType.F1.value:
             return MultiAgentImageEditing(self.racecar_name, self.racecars_info,
                                           race_type)
         if race_type in [RaceType.TIME_TRIAL.value, RaceType.OBJECT_AVOIDANCE.value,
@@ -111,11 +111,11 @@ class KinesisVideoCamera(object):
 def get_racecars_info(racecar_names):
     """ This function returns the agents information like name, car color, display name
     Arguments:
-        racecar_names (str): comma seperated racecar names
+        racecar_names (list): comma seperated racecar names
     Returns:
         (list): Racecar information such as name, car color, display name
     """
-    racecars = racecar_names.split(',')
+    racecars = racecar_names
     racecars_info = list()
     racecars_color = force_list(rospy.get_param("CAR_COLOR", DEFAULT_COLOR))
     racecars_display_name = get_video_display_name()
@@ -131,7 +131,7 @@ def get_racecars_info(racecar_names):
 def main(racecar_names):
     """ Main function for kinesis_video_camera
     Arguments:
-        racecar_names (str): racecar_names as a comma seperated string
+        racecar_names (list): racecar_names as a comma seperated string
     """
     try:
         racecars_info = get_racecars_info(racecar_names)
@@ -147,5 +147,7 @@ def main(racecar_names):
 if __name__ == '__main__':
     # comma seperated racecar names passed as an argument to the node
     rospy.init_node('kinesis_video_camera_node', anonymous=True)
-    main(sys.argv[1])
+    RACER_NUM = int(sys.argv[1])
+    racecar_names = get_racecar_names(RACER_NUM)
+    main(racecar_names)
     rospy.spin()

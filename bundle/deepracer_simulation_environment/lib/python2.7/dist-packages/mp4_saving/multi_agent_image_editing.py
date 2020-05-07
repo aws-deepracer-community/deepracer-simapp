@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image as ROSImg
 
 from markov.log_handler.logger import Logger
 from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.reset.constants import RaceType
 from mp4_saving.top_view_graphics import TopViewGraphics
 from deepracer_simulation_environment.srv import VideoMetricsSrvRequest, VideoMetricsSrv
 from mp4_saving.constants import (RaceCarColorToRGB,
@@ -89,35 +90,36 @@ class MultiAgentImageEditing(ImageEditingInterface):
         # Adding display name to the image
         agents_speed = 0
         agent_done = False
-        for i, racecar_info in enumerate(self.racecars_info):
-            loc_x, loc_y = XYPixelLoc.MULTI_AGENT_DISPLAY_NAME_LOC.value[i][0], XYPixelLoc.MULTI_AGENT_DISPLAY_NAME_LOC.value[i][1]
-            # Display name (Racer name/Model name)
-            display_name = racecar_info['display_name']
-            display_name_txt = display_name if len(display_name) < 15 else "{}...".format(display_name[:15])
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=display_name_txt,
-                                                       loc=(loc_x, loc_y), font=self.amazon_ember_regular_20px,
-                                                       font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
-            # Lap Counter
-            loc_y += 30
-            total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
-            current_lap = int(mp4_video_metrics_info[i].lap_counter) + 1
-            lap_counter_text = "{}/{}".format(current_lap, total_laps)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
-                                                       loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
-                                                       font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
-            # Reset counter
-            loc_y += 45
-            reset_counter_text = "Reset | {}".format(mp4_video_metrics_info[i].reset_counter)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
-                                                       loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
-                                                       font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
-            if self.racecar_name == racecar_info['name']:
-                agents_speed = mp4_video_metrics_info[i].throttle
-            # The race is complete when total lap is same as current lap and done flag is set
-            agent_done = agent_done or (mp4_video_metrics_info[i].done and (current_lap == int(total_laps)))
+        if self.race_type != RaceType.F1.value:
+            for i, racecar_info in enumerate(self.racecars_info):
+                loc_x, loc_y = XYPixelLoc.MULTI_AGENT_DISPLAY_NAME_LOC.value[i][0], XYPixelLoc.MULTI_AGENT_DISPLAY_NAME_LOC.value[i][1]
+                # Display name (Racer name/Model name)
+                display_name = racecar_info['display_name']
+                display_name_txt = display_name if len(display_name) < 15 else "{}...".format(display_name[:15])
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=display_name_txt,
+                                                           loc=(loc_x, loc_y), font=self.amazon_ember_regular_20px,
+                                                           font_color=RaceCarColorToRGB.White.value,
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
+                # Lap Counter
+                loc_y += 30
+                total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
+                current_lap = int(mp4_video_metrics_info[i].lap_counter) + 1
+                lap_counter_text = "{}/{}".format(current_lap, total_laps)
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
+                                                           loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
+                                                           font_color=RaceCarColorToRGB.White.value,
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
+                # Reset counter
+                loc_y += 45
+                reset_counter_text = "Reset | {}".format(mp4_video_metrics_info[i].reset_counter)
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
+                                                           loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                           font_color=RaceCarColorToRGB.White.value,
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
+                if self.racecar_name == racecar_info['name']:
+                    agents_speed = mp4_video_metrics_info[i].throttle
+                # The race is complete when total lap is same as current lap and done flag is set
+                agent_done = agent_done or (mp4_video_metrics_info[i].done and (current_lap == int(total_laps)))
 
         # Speed
         loc_x, loc_y = XYPixelLoc.SPEED_EVAL_LOC.value

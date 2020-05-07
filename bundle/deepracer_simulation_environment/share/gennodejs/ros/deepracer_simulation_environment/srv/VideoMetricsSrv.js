@@ -76,7 +76,6 @@ class VideoMetricsSrvResponse {
       this.lap_counter = null;
       this.completion_percentage = null;
       this.reset_counter = null;
-      this.crash_counter = null;
       this.throttle = null;
       this.steering = null;
       this.best_lap_time = null;
@@ -101,12 +100,6 @@ class VideoMetricsSrvResponse {
       }
       else {
         this.reset_counter = 0;
-      }
-      if (initObj.hasOwnProperty('crash_counter')) {
-        this.crash_counter = initObj.crash_counter
-      }
-      else {
-        this.crash_counter = 0;
       }
       if (initObj.hasOwnProperty('throttle')) {
         this.throttle = initObj.throttle
@@ -149,8 +142,6 @@ class VideoMetricsSrvResponse {
     bufferOffset = _serializer.float32(obj.completion_percentage, buffer, bufferOffset);
     // Serialize message field [reset_counter]
     bufferOffset = _serializer.int32(obj.reset_counter, buffer, bufferOffset);
-    // Serialize message field [crash_counter]
-    bufferOffset = _serializer.int32(obj.crash_counter, buffer, bufferOffset);
     // Serialize message field [throttle]
     bufferOffset = _serializer.float32(obj.throttle, buffer, bufferOffset);
     // Serialize message field [steering]
@@ -174,8 +165,6 @@ class VideoMetricsSrvResponse {
     data.completion_percentage = _deserializer.float32(buffer, bufferOffset);
     // Deserialize message field [reset_counter]
     data.reset_counter = _deserializer.int32(buffer, bufferOffset);
-    // Deserialize message field [crash_counter]
-    data.crash_counter = _deserializer.int32(buffer, bufferOffset);
     // Deserialize message field [throttle]
     data.throttle = _deserializer.float32(buffer, bufferOffset);
     // Deserialize message field [steering]
@@ -190,7 +179,7 @@ class VideoMetricsSrvResponse {
   }
 
   static getMessageSize(object) {
-    return 33;
+    return 29;
   }
 
   static datatype() {
@@ -200,7 +189,7 @@ class VideoMetricsSrvResponse {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return 'c1b4d18f63cdf839e846ad1b11eb11d6';
+    return 'da26613e841a5a2b4eb38f31404241d7';
   }
 
   static messageDefinition() {
@@ -209,7 +198,6 @@ class VideoMetricsSrvResponse {
     float32 lap_counter
     float32 completion_percentage
     int32 reset_counter
-    int32 crash_counter
     float32 throttle
     float32 steering
     float32 best_lap_time
@@ -244,13 +232,6 @@ class VideoMetricsSrvResponse {
     }
     else {
       resolved.reset_counter = 0
-    }
-
-    if (msg.crash_counter !== undefined) {
-      resolved.crash_counter = msg.crash_counter;
-    }
-    else {
-      resolved.crash_counter = 0
     }
 
     if (msg.throttle !== undefined) {
@@ -295,6 +276,6 @@ class VideoMetricsSrvResponse {
 module.exports = {
   Request: VideoMetricsSrvRequest,
   Response: VideoMetricsSrvResponse,
-  md5sum() { return 'c1b4d18f63cdf839e846ad1b11eb11d6'; },
+  md5sum() { return 'da26613e841a5a2b4eb38f31404241d7'; },
   datatype() { return 'deepracer_simulation_environment/VideoMetricsSrv'; }
 };

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="1">
+<package format="2">
   <name>deepracer_simulation_environment</name>
   <version>1.0.0</version>
   <description>The AWS DeepRacer simulation environment package</description>
@@ -8,41 +8,37 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>rospy</run_depend>
-
-  <build_depend>gazebo</build_depend>
-  <build_depend>gazebo_ros</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>image_transport</build_depend>
   <build_depend>message_generation</build_depend>
 
-  <run_depend>aws_cpp_sdk_logs</run_depend>
-  <run_depend>aws_cpp_sdk_kinesis</run_depend>
-  <run_depend>controller_manager</run_depend>
-  <run_depend>gazebo</run_depend>
-  <run_depend>gazebo_ros</run_depend>
-  <run_depend>gazebo_ros_control</run_depend>
-  <run_depend>gazebo_plugins</run_depend>
-  <run_depend>h264_video_encoder</run_depend>
-  <run_depend>h264_encoder_core</run_depend>
-  <run_depend>kinesis_video_streamer</run_depend>
-  <run_depend>robot_state_publisher</run_depend>
-  <run_depend>ros_controllers</run_depend>
-  <run_depend>ros_control</run_depend>
+  <depend>rospy</depend>
+  <depend>gazebo</depend>
+  <depend>gazebo_ros</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
+  <depend>deepracer_msgs</depend>
 
-  <run_depend>std_msgs</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>python-shapely</run_depend>
-  <run_depend>python-scipy</run_depend>
-  <run_depend>python-numpy</run_depend>
-  <run_depend>python-boto3-pip</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>cv_bridge</run_depend>
-  <run_depend>image_transport</run_depend>
-  <run_depend>python-imaging</run_depend>
+  <exec_depend>catkin</exec_depend>
+  <exec_depend>aws_cpp_sdk_logs</exec_depend>
+  <exec_depend>aws_cpp_sdk_kinesis</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>gazebo_ros_control</exec_depend>
+  <exec_depend>gazebo_plugins</exec_depend>
+  <exec_depend>h264_video_encoder</exec_depend>
+  <exec_depend>h264_encoder_core</exec_depend>
+  <exec_depend>kinesis_video_streamer</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>ros_controllers</exec_depend>
+  <exec_depend>ros_control</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>python-shapely</exec_depend>
+  <exec_depend>python-scipy</exec_depend>
+  <exec_depend>python-numpy</exec_depend>
+  <exec_depend>python-boto3-pip</exec_depend>
+  <exec_depend>python-imaging</exec_depend>
 
+  <test_depend>python-pytest</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <gazebo_ros gazebo_model_path="${prefix}" />

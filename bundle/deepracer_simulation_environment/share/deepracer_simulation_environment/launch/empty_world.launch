@@ -39,7 +39,7 @@
     <param name="gazebo/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
   </group>
   <node name="gazebo" pkg="gazebo_ros" type="$(arg script_type)" respawn="$(arg respawn_gazebo)" output="$(arg output)"
-  args="$(arg command_arg1) $(arg command_arg2) $(arg command_arg3) -e $(arg physics) $(arg extra_gazebo_args) $(arg world_name)" required="$(arg make_required)"/>
+  args="$(arg command_arg1) $(arg command_arg2) $(arg command_arg3) -e $(arg physics) $(arg extra_gazebo_args) $(arg world_name) -s libdeepracer_gazebo_system_plugin.so" required="$(arg make_required)"/>
 
   <!-- start gazebo client -->
   <group if="$(arg gui)">

@@ -17,10 +17,11 @@
     <!-- The image transport used by the video encoder. This can be 'raw' or 'compressed' -->
     <arg name="image_transport" default="compressed" doc="The image transport used by this video encoder node. This can be 'raw' or 'compressed'." />
     <arg name="make_required" default="true" />
+    <arg name="racecar_name" default="racecar"/>
 
     <node name="$(arg node_name)" pkg="h264_video_encoder" type="h264_video_encoder" output="$(arg output)" required="$(arg make_required)">
         <!-- If the caller specified a config file then load it here. -->
-        <rosparam if="$(eval config_file!='')" command="load" file="$(arg config_file)"/>
+        <rosparam if="$(eval config_file!='')" command="load" file="$(arg config_file)" subst_value="true"/>
 
         <!-- Name of image transport to use when subscribing to a sensor message topic -->
         <param name="image_transport" value="$(arg image_transport)"/>

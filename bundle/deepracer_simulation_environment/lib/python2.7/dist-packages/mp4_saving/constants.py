@@ -53,7 +53,8 @@ RACE_TYPE_TO_VIDEO_TEXT_MAPPING = {
     RaceType.TIME_TRIAL.value: "Time trial",
     RaceType.OBJECT_AVOIDANCE.value: "Object avoidance",
     RaceType.HEAD_TO_BOT.value: "Head-to-bot",
-    RaceType.HEAD_TO_MODEL.value: "Head-to-head"
+    RaceType.HEAD_TO_MODEL.value: "Head-to-head",
+    RaceType.F1.value: "F1"
 }
 
 # Decrease the minor image by a scale of provided number

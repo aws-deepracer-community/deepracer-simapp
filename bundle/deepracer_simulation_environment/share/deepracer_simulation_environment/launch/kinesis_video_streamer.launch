@@ -21,11 +21,12 @@
     <arg name="kinesis_video_stream_name" />
     <arg name="kinesis_video_stream_region" />
     <arg name="make_required" default="false" />
+    <arg name="racecar_name" default="racecar"/>
 
     <node name="$(arg node_name)" pkg="kinesis_video_streamer" type="kinesis_video_streamer" required="$(arg make_required)">
         <!-- If the caller specified a config file then load it here. -->
         <rosparam if="$(eval node_config_file!='')" command="load" file="$(arg node_config_file)" />
-        <rosparam if="$(eval stream_config_file!='')" command="load" file="$(arg stream_config_file)" ns="kinesis_video/stream0" />
+        <rosparam if="$(eval stream_config_file!='')" command="load" file="$(arg stream_config_file)" ns="kinesis_video/stream0" subst_value="true" />
 
         <param name="kinesis_video/log4cplus_config" value="$(find kinesis_video_streamer)/kvs_log_configuration" />
         <param name="kinesis_video/stream_count" value="1" />

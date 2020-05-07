@@ -44,6 +44,13 @@
   </geometry>
 </xacro:macro>
 
+<xacro:macro name="f1_geometry"  params="body_shell_type">
+  <origin xyz="0.12 0 -0.05" rpy="0 0 0" />
+  <geometry>
+    <mesh filename="package://deepracer_simulation_environment/meshes/f1/${body_shell_type}.dae"/>
+  </geometry>
+</xacro:macro>
+
 <xacro:macro name="chassis_geometry">
   <origin xyz="0 0 0" rpy="0 0 0" />
   <geometry>

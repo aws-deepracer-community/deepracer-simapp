@@ -1,5 +1,5 @@
 # Topic name to subscribe and receive the image/video data from.
-subscription_topic: "/racecar/b9/kvs/video/encoded"
+subscription_topic: "/$(arg racecar_name)/b9/kvs/video/encoded"
 
 # Topic type
   # 1: KinesisVideoFrame transport, enabling h264 streaming

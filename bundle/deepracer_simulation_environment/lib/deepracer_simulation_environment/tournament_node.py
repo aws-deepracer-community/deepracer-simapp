@@ -22,6 +22,7 @@ import time
 import rospy
 
 from markov import utils_parse_model_metadata
+from markov.rollout_constants import BodyShellType
 from markov.utils import (force_list, restart_simulation_job,
                           cancel_simulation_job, get_boto_config, get_s3_kms_extra_args)
 from markov.architecture.constants import Input
@@ -30,7 +31,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 
-from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values
+from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values, F1_SHELL_USERS_LIST
 
 logger = Logger(__name__, logging.INFO).get_logger()
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
@@ -39,6 +40,7 @@ WAIT_FOR_ROBOMAKER_TIME = 120
 RACE_CAR_COLORS = ["Purple", "Orange"]
 
 CAR_COLOR_YAML_KEY = "CAR_COLOR"
+BODY_SHELL_TYPE_YAML_KEY = "BODY_SHELL_TYPE"
 MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
 MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
 MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
@@ -104,12 +106,14 @@ def generate_race_yaml(yaml_dict, car1, car2, race_idx):
      car1_metrics_bucket, car1_metrics_s3_prefix,
      car1_simtrace_bucket, car1_simtrace_prefix,
      car1_mp4_bucket, car1_mp4_prefix,
-     car1_display_name, car1_racer_name) = car1
+     car1_display_name, car1_racer_name,
+     car1_body_shell_type) = car1
     (car2_model_s3_bucket, car2_s3_prefix, car2_model_metadata,
      car2_metrics_bucket, car2_metrics_s3_prefix,
      car2_simtrace_bucket, car2_simtrace_prefix,
      car2_mp4_bucket, car2_mp4_prefix,
-     car2_display_name, car2_racer_name) = car2
+     car2_display_name, car2_racer_name,
+     car2_body_shell_type) = car2
 
     race_yaml_dict = copy.deepcopy(yaml_dict)
 
@@ -134,7 +138,9 @@ def generate_race_yaml(yaml_dict, car1, car2, race_idx):
     race_yaml_dict[DISPLAY_NAME_YAML_KEY] = [car1_display_name, car2_display_name]
     # TODO - Deprecate the DISPLAY_NAME once cloud team pushes the RACER_NAME yaml
     race_yaml_dict[RACER_NAME_YAML_KEY] = [car1_racer_name, car2_racer_name]
+    race_yaml_dict[BODY_SHELL_TYPE_YAML_KEY] = [car1_body_shell_type, car2_body_shell_type]
     return race_yaml_dict
+
 
 def main():
     """ Main function for tournament"""
@@ -191,7 +197,8 @@ def main():
                              METRICS_S3_BUCKET_YAML_KEY, METRICS_S3_PREFIX_YAML_KEY,
                              SIMTRACE_S3_BUCKET_YAML_KEY, SIMTRACE_S3_PREFIX_YAML_KEY,
                              MP4_S3_BUCKET_YAML_KEY, MP4_S3_PREFIX_YAML_KEY,
-                             DISPLAY_NAME_YAML_KEY, RACER_NAME_YAML_KEY]
+                             DISPLAY_NAME_YAML_KEY, RACER_NAME_YAML_KEY,
+                             BODY_SHELL_TYPE_YAML_KEY]
 
         for params in force_list_params:
             yaml_dict[params] = force_list(yaml_dict.get(params, None))
@@ -229,7 +236,8 @@ def main():
                     yaml_dict[MP4_S3_PREFIX_YAML_KEY][agent_idx],
                     yaml_dict[DISPLAY_NAME_YAML_KEY][agent_idx],
                     # TODO: Deprecate the DISPLAY_NAME and use only the RACER_NAME without if else check
-                    "" if None in yaml_dict[RACER_NAME_YAML_KEY] else yaml_dict[RACER_NAME_YAML_KEY][agent_idx]
+                    "" if None in yaml_dict[RACER_NAME_YAML_KEY] else yaml_dict[RACER_NAME_YAML_KEY][agent_idx],
+                    BodyShellType.F1_2021.value if yaml_dict[RACER_NAME_YAML_KEY][agent_idx] in F1_SHELL_USERS_LIST else BodyShellType.DEFAULT.value
                 ))
             tournament_report = {"race_results": []}
 
@@ -241,19 +249,21 @@ def main():
              car1_metrics_bucket, car1_metrics_s3_key,
              car1_simtrace_bucket, car1_simtrace_prefix,
              car1_mp4_bucket, car1_mp4_prefix,
-             car1_display_name, car1_racer_name) = car1
+             car1_display_name, car1_racer_name,
+             car1_body_shell_type) = car1
             (car2_model_s3_bucket, car2_s3_prefix, car2_model_metadata,
              car2_metrics_bucket, car2_metrics_s3_key,
              car2_simtrace_bucket, car2_simtrace_prefix,
              car2_mp4_bucket, car2_mp4_prefix,
-             car2_display_name, car2_racer_name) = car2
+             car2_display_name, car2_racer_name,
+             car2_body_shell_type) = car2
 
             race_yaml_dict = generate_race_yaml(yaml_dict=yaml_dict, car1=car1, car2=car2,
                                                 race_idx=race_idx)
 
-            race_car_colors = RACE_CAR_COLORS
             race_model_s3_buckets = [car1_model_s3_bucket, car2_model_s3_bucket]
             race_model_metadatas = [car1_model_metadata, car2_model_metadata]
+            body_shell_types = [car1_body_shell_type, car2_body_shell_type]
 
             # List of directories created
             dirs_to_delete = list()
@@ -285,8 +295,8 @@ def main():
                                             Key=json_key,
                                             Filename=local_model_metadata_path)
                 except Exception as e:
-                    log_and_exit("Failed to download model_metadata file: s3_bucket: {}, yaml_key: {}, {}"
-                                     .format(model_s3_bucket,json_key, e),
+                    log_and_exit("Failed to download model_metadata file: s3_bucket: {}, s3_key: {}, {}"
+                                     .format(model_s3_bucket, json_key, e),
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
                 sensors, _, simapp_version = utils_parse_model_metadata.parse_model_metadata(local_model_metadata_path)
@@ -301,8 +311,8 @@ def main():
                    race_yaml_path,
                    ','.join(racecars_with_stereo_cameras),
                    ','.join(racecars_with_lidars),
-                   ','.join(race_car_colors),
-                   ','.join(simapp_versions)
+                   ','.join(simapp_versions),
+                   ','.join(body_shell_types)
                    ]
             try:
                 return_code, _, stderr = run_cmd(cmd_args=cmd,
@@ -358,10 +368,10 @@ def main():
                 cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
                                       s3_region)
     except Exception as e:
-        log_and_exit("Tournament node failed: {}"
-                         .format(e),
+        log_and_exit("Tournament node failed: {}".format(e),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
+
 
 def is_power_of_two(n):
     """Return True if n is a power of two."""

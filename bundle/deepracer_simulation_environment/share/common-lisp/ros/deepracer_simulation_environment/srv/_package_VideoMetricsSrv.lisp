@@ -5,8 +5,6 @@
           COMPLETION_PERCENTAGE
           RESET_COUNTER-VAL
           RESET_COUNTER
-          CRASH_COUNTER-VAL
-          CRASH_COUNTER
           THROTTLE-VAL
           THROTTLE
           STEERING-VAL

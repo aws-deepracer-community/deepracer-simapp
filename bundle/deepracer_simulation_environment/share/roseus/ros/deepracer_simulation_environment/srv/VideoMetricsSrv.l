@@ -47,7 +47,7 @@
 
 (defclass deepracer_simulation_environment::VideoMetricsSrvResponse
   :super ros::object
-  :slots (_lap_counter _completion_percentage _reset_counter _crash_counter _throttle _steering _best_lap_time _total_evaluation_time _done ))
+  :slots (_lap_counter _completion_percentage _reset_counter _throttle _steering _best_lap_time _total_evaluation_time _done ))
 
 (defmethod deepracer_simulation_environment::VideoMetricsSrvResponse
   (:init
@@ -55,7 +55,6 @@
     ((:lap_counter __lap_counter) 0.0)
     ((:completion_percentage __completion_percentage) 0.0)
     ((:reset_counter __reset_counter) 0)
-    ((:crash_counter __crash_counter) 0)
     ((:throttle __throttle) 0.0)
     ((:steering __steering) 0.0)
     ((:best_lap_time __best_lap_time) 0.0)
@@ -66,7 +65,6 @@
    (setq _lap_counter (float __lap_counter))
    (setq _completion_percentage (float __completion_percentage))
    (setq _reset_counter (round __reset_counter))
-   (setq _crash_counter (round __crash_counter))
    (setq _throttle (float __throttle))
    (setq _steering (float __steering))
    (setq _best_lap_time (float __best_lap_time))
@@ -82,9 +80,6 @@
   (:reset_counter
    (&optional __reset_counter)
    (if __reset_counter (setq _reset_counter __reset_counter)) _reset_counter)
-  (:crash_counter
-   (&optional __crash_counter)
-   (if __crash_counter (setq _crash_counter __crash_counter)) _crash_counter)
   (:throttle
    (&optional __throttle)
    (if __throttle (setq _throttle __throttle)) _throttle)
@@ -109,8 +104,6 @@
     4
     ;; int32 _reset_counter
     4
-    ;; int32 _crash_counter
-    4
     ;; float32 _throttle
     4
     ;; float32 _steering
@@ -132,8 +125,6 @@
        (sys::poke _completion_percentage (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
      ;; int32 _reset_counter
        (write-long _reset_counter s)
-     ;; int32 _crash_counter
-       (write-long _crash_counter s)
      ;; float32 _throttle
        (sys::poke _throttle (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
      ;; float32 _steering
@@ -154,8 +145,6 @@
      (setq _completion_percentage (sys::peek buf ptr- :float)) (incf ptr- 4)
    ;; int32 _reset_counter
      (setq _reset_counter (sys::peek buf ptr- :integer)) (incf ptr- 4)
-   ;; int32 _crash_counter
-     (setq _crash_counter (sys::peek buf ptr- :integer)) (incf ptr- 4)
    ;; float32 _throttle
      (setq _throttle (sys::peek buf ptr- :float)) (incf ptr- 4)
    ;; float32 _steering
@@ -174,7 +163,7 @@
   :super ros::object
   :slots ())
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "c1b4d18f63cdf839e846ad1b11eb11d6")
+(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :datatype-) "deepracer_simulation_environment/VideoMetricsSrv")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :request) deepracer_simulation_environment::VideoMetricsSrvRequest)
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :response) deepracer_simulation_environment::VideoMetricsSrvResponse)
@@ -182,14 +171,13 @@
 (defmethod deepracer_simulation_environment::VideoMetricsSrvRequest
   (:response () (instance deepracer_simulation_environment::VideoMetricsSrvResponse :init)))
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "c1b4d18f63cdf839e846ad1b11eb11d6")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :datatype-) "deepracer_simulation_environment/VideoMetricsSrvRequest")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :definition-)
       "---
 float32 lap_counter
 float32 completion_percentage
 int32 reset_counter
-int32 crash_counter
 float32 throttle
 float32 steering
 float32 best_lap_time
@@ -197,14 +185,13 @@ float32 total_evaluation_time
 bool done
 ")
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "c1b4d18f63cdf839e846ad1b11eb11d6")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :datatype-) "deepracer_simulation_environment/VideoMetricsSrvResponse")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :definition-)
       "---
 float32 lap_counter
 float32 completion_percentage
 int32 reset_counter
-int32 crash_counter
 float32 throttle
 float32 steering
 float32 best_lap_time
@@ -214,6 +201,6 @@ bool done
 
 
 
-(provide :deepracer_simulation_environment/VideoMetricsSrv "c1b4d18f63cdf839e846ad1b11eb11d6")
+(provide :deepracer_simulation_environment/VideoMetricsSrv "da26613e841a5a2b4eb38f31404241d7")
 
 

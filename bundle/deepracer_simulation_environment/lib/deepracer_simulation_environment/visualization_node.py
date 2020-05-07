@@ -20,6 +20,7 @@ from sensor_msgs.msg import Image as sensor_image
 from deepracer_simulation_environment.msg import AgentRewardData 
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
+from markov import utils
 
 class RewardDistributionBarGraph(object):
     def __init__(self,racecar_name, title="Reward Distribution Bar Graph"):
@@ -110,9 +111,10 @@ class RewardDistributionBarGraph(object):
 
 if __name__ == '__main__':
     # comma seperated racecar names passed as an argument to the node 
-    racecar_names = sys.argv[1]
+    RACER_NUM = int(sys.argv[1])
+    racecar_names = utils.get_racecar_names(RACER_NUM)
     rospy.init_node('visualization_node', anonymous=True)
-    for racecar_name in racecar_names.split(','):
+    for racecar_name in racecar_names:
         RewardDistributionBarGraph(racecar_name)
     rospy.spin()
     

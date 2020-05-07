@@ -11,6 +11,7 @@ import rospy
 from gazebo_msgs.srv import GetModelState
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.track_geom.track_data import TrackData
+from markov.track_geom.constants import GET_MODEL_STATE
 from markov.utils import force_list
 import cv2
 from mp4_saving.constants import (WAIT_TO_PREVENT_SPAM, TrackAssetsIconographicPngs,
@@ -50,9 +51,9 @@ class TopViewGraphics(object):
         # We have no guarantees as to when gazebo will load the model, therefore we need
         # to wait until the model is loaded and markov packages has spawned all the models
         #
-        rospy.wait_for_service('/gazebo/get_model_state')
+        rospy.wait_for_service(GET_MODEL_STATE)
         rospy.wait_for_service('/robomaker_markov_package_ready')
-        self.get_model_client = ServiceProxyWrapper('/gazebo/get_model_state', GetModelState)
+        self.get_model_client = ServiceProxyWrapper(GET_MODEL_STATE, GetModelState)
         self.model_names, self.model_imgs = self._get_all_models_info()
 
         # Track information is required get the track bounds (xmin, xmax, ymin, ymax)
@@ -74,7 +75,7 @@ class TopViewGraphics(object):
         # Adding all agents to the list
         for i, racecar_info in enumerate(self.racecars_info):
             model_names.append(racecar_info['name'])
-            model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i],
+            model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
                                               IconographicImageSize.AGENTS_IMAGE_SIZE.value))
 
         # Adding obstacles to the list

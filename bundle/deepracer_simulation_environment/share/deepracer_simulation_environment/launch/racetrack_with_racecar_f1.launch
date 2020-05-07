@@ -1,0 +1,256 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" />
+  <arg name="gui" default="false" />
+  <arg name="kinesis_video_stream_names" />
+  <arg name="kinesis_video_stream_region" default="us-east-1" />
+  <arg name="racecars_with_stereo_cameras" default="racecar" />
+  <arg name="racecars_with_lidars" default="racecar" />
+  <arg name="body_shell_types" />
+  <arg name="simapp_versions" />
+  <arg name="multicar" default="true" />
+  <arg name="publish_to_kinesis_stream" default="false" />
+  <arg name="make_required" default="true" />
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_0">
+    <arg name="racecar_name" value="racecar_0"/>
+    <arg name="racecar_bitmask" value="0x01"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[0] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[0] == '2.0')"/>
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[0])"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_0' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_0' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[0])" />
+    <arg name="publish_to_kinesis_stream" value="$(eval publish_to_kinesis_stream and len(kinesis_video_stream_names) > 0)" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_1" if="$(eval len(str(simapp_versions).split(',')) > 1)">
+    <arg name="racecar_name" value="racecar_1"/>
+    <arg name="racecar_bitmask" value="0x02"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[1] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[1] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 1)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[1] if len(kinesis_video_stream_names.split(',')) > 1 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_1' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_1' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[1])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_2" if="$(eval len(str(simapp_versions).split(',')) > 2)">
+    <arg name="racecar_name" value="racecar_2"/>
+    <arg name="racecar_bitmask" value="0x04"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[2] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[2] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 2)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[2] if len(kinesis_video_stream_names.split(',')) > 2 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_2' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_2' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[2])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_3" if="$(eval len(str(simapp_versions).split(',')) > 3)">
+    <arg name="racecar_name" value="racecar_3"/>
+    <arg name="racecar_bitmask" value="0x08"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[3] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[3] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 3)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[3] if len(kinesis_video_stream_names.split(',')) > 3 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_3' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_3' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[3])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_4" if="$(eval len(str(simapp_versions).split(',')) > 4)">
+    <arg name="racecar_name" value="racecar_4"/>
+    <arg name="racecar_bitmask" value="0x10"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[4] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[4] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 4)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[4] if len(kinesis_video_stream_names.split(',')) > 4 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_4' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_4' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[4])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_5" if="$(eval len(str(simapp_versions).split(',')) > 5)">
+    <arg name="racecar_name" value="racecar_5"/>
+    <arg name="racecar_bitmask" value="0x20"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[5] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[5] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 5)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[5] if len(kinesis_video_stream_names.split(',')) > 5 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_5' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_5' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[5])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_6" if="$(eval len(str(simapp_versions).split(',')) > 6)">
+    <arg name="racecar_name" value="racecar_6"/>
+    <arg name="racecar_bitmask" value="0x40"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[6] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[6] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 6)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[6] if len(kinesis_video_stream_names.split(',')) > 6 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_6' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_6' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[6])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_7" if="$(eval len(str(simapp_versions).split(',')) > 7)">
+    <arg name="racecar_name" value="racecar_7"/>
+    <arg name="racecar_bitmask" value="0x80"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[7] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[7] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 7)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[7] if len(kinesis_video_stream_names.split(',')) > 7 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_7' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_7' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[7])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_8" if="$(eval len(str(simapp_versions).split(',')) > 8)">
+    <arg name="racecar_name" value="racecar_8"/>
+    <arg name="racecar_bitmask" value="0x100"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[8] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[8] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 8)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[8] if len(kinesis_video_stream_names.split(',')) > 8 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_8' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_8' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[8])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_9" if="$(eval len(str(simapp_versions).split(',')) > 9)">
+    <arg name="racecar_name" value="racecar_9"/>
+    <arg name="racecar_bitmask" value="0x200"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[9] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[9] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 9)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[9] if len(kinesis_video_stream_names.split(',')) > 9 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_9' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_9' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[9])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_10" if="$(eval len(str(simapp_versions).split(',')) > 10)">
+    <arg name="racecar_name" value="racecar_10"/>
+    <arg name="racecar_bitmask" value="0x400"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[10] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[10] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 10)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[10] if len(kinesis_video_stream_names.split(',')) > 10 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_10' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_10' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[10])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_11" if="$(eval len(str(simapp_versions).split(',')) > 11)">
+    <arg name="racecar_name" value="racecar_11"/>
+    <arg name="racecar_bitmask" value="0x800"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[11] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[11] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 11)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[11] if len(kinesis_video_stream_names.split(',')) > 11 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_11' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_11' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[11])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_12" if="$(eval len(str(simapp_versions).split(',')) > 12)">
+    <arg name="racecar_name" value="racecar_12"/>
+    <arg name="racecar_bitmask" value="0x1000"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[12] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[12] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 12)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[12] if len(kinesis_video_stream_names.split(',')) > 12 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_12' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_12' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[12])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_13" if="$(eval len(str(simapp_versions).split(',')) > 13)">
+    <arg name="racecar_name" value="racecar_13"/>
+    <arg name="racecar_bitmask" value="0x2000"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[13] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[13] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 13)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[13] if len(kinesis_video_stream_names.split(',')) > 13 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_13' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_13' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[13])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" ns="/racecar_14" if="$(eval len(str(simapp_versions).split(',')) > 14)">
+    <arg name="racecar_name" value="racecar_14"/>
+    <arg name="racecar_bitmask" value="0x4000"/>
+    <!-- Check the simapp version and assign appropriate xacro file -->
+    <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[14] == '1.0')"/>
+    <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[14] == '2.0')"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 14)" />
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[14] if len(kinesis_video_stream_names.split(',')) > 14 else '')"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="include_second_camera" value="$(eval 'racecar_14' in racecars_with_stereo_cameras.split(','))" />
+    <arg name="include_lidar_sensor" value="$(eval 'racecar_14' in racecars_with_lidars.split(','))" />
+    <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[14])" />
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+  <!--If more than 15 car is needed then we need to modify collide_bitmask of bot_car, box_obstacle, and all tracks -->
+  <!--Default collide_bitmask is 0x0000ffff -->
+
+  <include file="$(find deepracer_simulation_environment)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find deepracer_simulation_environment)/worlds/$(arg world_name).world"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="make_required" value="$(arg make_required)" />
+  </include>
+
+  <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="$(eval len(str(simapp_versions).split(',')))" output="screen" required="$(arg make_required)"></node>
+  <node pkg="deepracer_simulation_environment" type="kinesis_video_camera_node.py" name="kinesis_video_camera_node" args="$(eval len(str(simapp_versions).split(',')))" output="screen" required="$(arg make_required)">
+  </node>
+
+  <node pkg="deepracer_simulation_environment" type="visualization_node.py" name="visualization_node" args="$(eval len(str(simapp_versions).split(',')))" output="screen"></node>
+
+  <!-- Saving mp4 for each agent -->
+  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="$(eval len(str(simapp_versions).split(',')))" required="$(arg make_required)" output="screen"></node>
+</launch>
