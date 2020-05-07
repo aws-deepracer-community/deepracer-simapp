@@ -1,0 +1,6 @@
+gazebo_msgs/LinkState[] link_states
+---
+bool success                # return true if set wrench successful
+string status_message       # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
+string[] messages

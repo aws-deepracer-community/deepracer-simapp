@@ -1,0 +1,6 @@
+string[] link_names
+---
+string[] visual_names
+string[] link_names
+bool success
+string status_message

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>deepracer_msgs</name>
+  <version>1.0.0</version>
+  <description>The AWS DeepRacer Gazebo messages.</description>
+  <maintainer email="aws-deepracer@amazon.com">AWS DeepRacer</maintainer>
+  <license>Apache2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gazebo_ros</depend>
+  <depend>gazebo</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
+</package>
