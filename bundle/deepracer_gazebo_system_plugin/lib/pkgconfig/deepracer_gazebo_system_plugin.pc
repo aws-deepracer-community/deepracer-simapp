@@ -1,0 +1,8 @@
+prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_gazebo_system_plugin
+
+Name: deepracer_gazebo_system_plugin
+Description: Description of deepracer_gazebo_system_plugin
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib -ldeepracer_gazebo_system_plugin
+Requires: roslib roscpp gazebo_ros geometry_msgs std_srvs std_msgs gazebo_msgs deepracer_msgs

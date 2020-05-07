@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>deepracer_gazebo_system_plugin</name>
+  <version>1.0.0</version>
+  <description>The AWS DeepRacer Gazebo System package</description>
+  <maintainer email="aws-deepracer@amazon.com">AWS DeepRacer</maintainer>
+  <license>Apache2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>gazebo_ros</depend>
+  <depend>gazebo</depend>
+  <depend>geometry_msgs</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>deepracer_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>roslib</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <gazebo_ros plugin_path="${prefix}/lib" />
+    <gazebo_ros gazebo_media_path="${prefix}" />
+  </export>
+</package>
