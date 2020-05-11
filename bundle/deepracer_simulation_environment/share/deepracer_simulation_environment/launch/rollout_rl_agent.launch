@@ -22,5 +22,5 @@
         <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
-    <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" output="screen" required="true"/>
+    <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" args="$(optenv ROLLOUT_IDX 0)" output="screen" required="true"/>
 </launch>
