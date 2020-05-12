@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="2.0.3"
+VERSION="2.0.5"
 SOURCE_TAG=$(docker images | grep $VERSION | awk '/deepracer-robomaker/ {print $2}')
 PREFIX="awsdeepracercommunity/deepracer-robomaker:"
 for TAG in $SOURCE_TAG; do
