@@ -24,7 +24,8 @@
   <!-- Racecar body -->
   <xacro:arg name="disable_gazebo_sensors" default="false" />
   <xacro:arg name="single_camera_racecar_body" default="true" />
-  <xacro:arg name="car_color" default="Black" />
+  <xacro:arg name="body_shell_type" default="deepracer" />
+  <xacro:property name="body_shell_type_val" value="$(arg body_shell_type)" />
 
   <!-- Add chassis and it's inertia link -->
 
@@ -222,10 +223,15 @@
    <!-- The bot cars will have older confetti models. Since we dont have the .dae files -->
   <xacro:unless value="$(arg single_camera_racecar_body)">
   <link
-    name="top_cover_lidar_two_cameras_link">
+    name="car_body_link_v2">
     <xacro:if value="$(arg include_lidar_sensor)">
       <visual>
-        <xacro:top_cover_lidar_two_cameras_geometry />
+        <xacro:unless value="${'f1' in body_shell_type_val}">
+          <xacro:top_cover_lidar_two_cameras_geometry />
+        </xacro:unless>
+        <xacro:if value="${'f1' in body_shell_type_val}">
+          <xacro:f1_geometry body_shell_type="$(arg body_shell_type)"/>
+        </xacro:if>
       </visual>
       <collision>
         <xacro:top_cover_lidar_two_cameras_geometry />
@@ -233,19 +239,24 @@
     </xacro:if>
     <xacro:unless value="$(arg include_lidar_sensor)">
       <visual>
-        <xacro:top_cover_two_cameras_geometry />
+        <xacro:unless value="${'f1' in body_shell_type_val}">
+          <xacro:top_cover_two_cameras_geometry />
+        </xacro:unless>
+        <xacro:if value="${'f1' in body_shell_type_val}">
+          <xacro:f1_geometry body_shell_type="$(arg body_shell_type)"/>
+        </xacro:if>
       </visual>
       <collision>
         <xacro:top_cover_two_cameras_geometry />
       </collision>
     </xacro:unless>
   </link>
-  <xacro:configure_collide_bitmask link_name="top_cover_lidar_two_cameras_link" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="car_body_link_v2" bitmask="$(arg racecar_bitmask)" />
 
-  <joint name="top_cover_lidar_two_cameras_link_joint" type="fixed">
+  <joint name="car_body_link_joint" type="fixed">
     <origin xyz="-0.02 0 0.02" rpy="0 0 0"/>
     <parent link="chassis"/>
-    <child link="top_cover_lidar_two_cameras_link"/>
+    <child link="car_body_link_v2"/>
     <axis xyz="0 0 1" />
   </joint>
   </xacro:unless>
@@ -254,13 +265,18 @@
     <link name="car_body_link">
       <visual>
         <!-- Lowering the car body for the bot car-->
-        <xacro:unless value="$(arg disable_gazebo_sensors)">
-          <origin xyz="0.1 0 0" rpy="0 0 3.1415926535898" />
+        <xacro:unless value="${'f1' in body_shell_type_val}">
+          <xacro:unless value="$(arg disable_gazebo_sensors)">
+            <origin xyz="0.1 0 0" rpy="0 0 3.1415926535898" />
+          </xacro:unless>
+          <xacro:if value="$(arg disable_gazebo_sensors)">
+            <origin xyz="0.09 0 -0.02" rpy="0 0 3.1415926535898" />
+          </xacro:if>
+          <xacro:body_visual_geometry />
         </xacro:unless>
-        <xacro:if value="$(arg disable_gazebo_sensors)">
-          <origin xyz="0.09 0 -0.02" rpy="0 0 3.1415926535898" />
+        <xacro:if value="${'f1' in body_shell_type_val}">
+          <xacro:f1_geometry body_shell_type="$(arg body_shell_type)"/>
         </xacro:if>
-        <xacro:body_visual_geometry />
       </visual>
       <collision>
         <xacro:unless value="$(arg disable_gazebo_sensors)">

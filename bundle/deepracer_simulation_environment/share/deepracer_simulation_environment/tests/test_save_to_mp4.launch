@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="deepracer_simulation_environment" type="camera_topic_node.py" name="test_camera_topic_node" args="1"></node>
+  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="test_save_to_mp4_node" args="1"></node>
+  <param name="test_module" value="save_to_mp4"/>
+  <test test-name="test_save_to_mp4" pkg="deepracer_simulation_environment" type="pytest_runner.py" />
+</launch>

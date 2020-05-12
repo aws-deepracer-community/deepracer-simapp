@@ -32,10 +32,10 @@
   "deepracer_simulation_environment/VideoMetricsSrvRequest")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<VideoMetricsSrv-request>)))
   "Returns md5sum for a message object of type '<VideoMetricsSrv-request>"
-  "c1b4d18f63cdf839e846ad1b11eb11d6")
+  "da26613e841a5a2b4eb38f31404241d7")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'VideoMetricsSrv-request)))
   "Returns md5sum for a message object of type 'VideoMetricsSrv-request"
-  "c1b4d18f63cdf839e846ad1b11eb11d6")
+  "da26613e841a5a2b4eb38f31404241d7")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<VideoMetricsSrv-request>)))
   "Returns full string definition for message of type '<VideoMetricsSrv-request>"
   (cl:format cl:nil "~%~%"))
@@ -65,11 +65,6 @@
    (reset_counter
     :reader reset_counter
     :initarg :reset_counter
-    :type cl:integer
-    :initform 0)
-   (crash_counter
-    :reader crash_counter
-    :initarg :crash_counter
     :type cl:integer
     :initform 0)
    (throttle
@@ -122,11 +117,6 @@
   (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:reset_counter-val is deprecated.  Use deepracer_simulation_environment-srv:reset_counter instead.")
   (reset_counter m))
 
-(cl:ensure-generic-function 'crash_counter-val :lambda-list '(m))
-(cl:defmethod crash_counter-val ((m <VideoMetricsSrv-response>))
-  (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:crash_counter-val is deprecated.  Use deepracer_simulation_environment-srv:crash_counter instead.")
-  (crash_counter m))
-
 (cl:ensure-generic-function 'throttle-val :lambda-list '(m))
 (cl:defmethod throttle-val ((m <VideoMetricsSrv-response>))
   (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:throttle-val is deprecated.  Use deepracer_simulation_environment-srv:throttle instead.")
@@ -164,12 +154,6 @@
     (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
   (cl:let* ((signed (cl:slot-value msg 'reset_counter)) (unsigned (cl:if (cl:< signed 0) (cl:+ signed 4294967296) signed)))
-    (cl:write-byte (cl:ldb (cl:byte 8 0) unsigned) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 8) unsigned) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 16) unsigned) ostream)
-    (cl:write-byte (cl:ldb (cl:byte 8 24) unsigned) ostream)
-    )
-  (cl:let* ((signed (cl:slot-value msg 'crash_counter)) (unsigned (cl:if (cl:< signed 0) (cl:+ signed 4294967296) signed)))
     (cl:write-byte (cl:ldb (cl:byte 8 0) unsigned) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 8) unsigned) ostream)
     (cl:write-byte (cl:ldb (cl:byte 8 16) unsigned) ostream)
@@ -217,12 +201,6 @@
       (cl:setf (cl:ldb (cl:byte 8 16) unsigned) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 24) unsigned) (cl:read-byte istream))
       (cl:setf (cl:slot-value msg 'reset_counter) (cl:if (cl:< unsigned 2147483648) unsigned (cl:- unsigned 4294967296))))
-    (cl:let ((unsigned 0))
-      (cl:setf (cl:ldb (cl:byte 8 0) unsigned) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 8) unsigned) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 16) unsigned) (cl:read-byte istream))
-      (cl:setf (cl:ldb (cl:byte 8 24) unsigned) (cl:read-byte istream))
-      (cl:setf (cl:slot-value msg 'crash_counter) (cl:if (cl:< unsigned 2147483648) unsigned (cl:- unsigned 4294967296))))
     (cl:let ((bits 0))
       (cl:setf (cl:ldb (cl:byte 8 0) bits) (cl:read-byte istream))
       (cl:setf (cl:ldb (cl:byte 8 8) bits) (cl:read-byte istream))
@@ -258,19 +236,18 @@
   "deepracer_simulation_environment/VideoMetricsSrvResponse")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<VideoMetricsSrv-response>)))
   "Returns md5sum for a message object of type '<VideoMetricsSrv-response>"
-  "c1b4d18f63cdf839e846ad1b11eb11d6")
+  "da26613e841a5a2b4eb38f31404241d7")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'VideoMetricsSrv-response)))
   "Returns md5sum for a message object of type 'VideoMetricsSrv-response"
-  "c1b4d18f63cdf839e846ad1b11eb11d6")
+  "da26613e841a5a2b4eb38f31404241d7")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<VideoMetricsSrv-response>)))
   "Returns full string definition for message of type '<VideoMetricsSrv-response>"
-  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%int32 crash_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%~%~%"))
+  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'VideoMetricsSrv-response)))
   "Returns full string definition for message of type 'VideoMetricsSrv-response"
-  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%int32 crash_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%~%~%"))
+  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <VideoMetricsSrv-response>))
   (cl:+ 0
-     4
      4
      4
      4
@@ -286,7 +263,6 @@
     (cl:cons ':lap_counter (lap_counter msg))
     (cl:cons ':completion_percentage (completion_percentage msg))
     (cl:cons ':reset_counter (reset_counter msg))
-    (cl:cons ':crash_counter (crash_counter msg))
     (cl:cons ':throttle (throttle msg))
     (cl:cons ':steering (steering msg))
     (cl:cons ':best_lap_time (best_lap_time msg))

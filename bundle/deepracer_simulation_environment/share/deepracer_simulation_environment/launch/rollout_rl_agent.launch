@@ -3,11 +3,10 @@
     <arg name="local_yaml_path" /> 
     <arg name="racecars_with_stereo_cameras" default="" />
     <arg name="racecars_with_lidars" default="" />
-    <!-- Pass a list of car colors for yaml variable CAR_COLOR for multicar-->
-    <arg name="car_colors" />
+    <arg name="body_shell_types" />
     <arg name="simapp_versions"/>
     <!-- Pass a comma seperated value for env variable KINESIS_VIDEO_STREAM_NAME for multicar-->
-    <arg name="kinesis_video_stream_names" default="$(env KINESIS_VIDEO_STREAM_NAME)" />
+    <arg name="kinesis_video_stream_names" default="$(optenv KINESIS_VIDEO_STREAM_NAME)" />
 
     <rosparam file="$(arg local_yaml_path)" command="load"/>
 
@@ -17,11 +16,11 @@
         <arg name="kinesis_video_stream_region" value="$(env APP_REGION)" />
         <arg name="racecars_with_stereo_cameras" value="$(arg racecars_with_stereo_cameras)" />
         <arg name="racecars_with_lidars" value="$(arg racecars_with_lidars)" />
-        <arg name="car_colors" value="$(arg car_colors)" />
+        <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="publish_to_kinesis_stream" value="$(env ENABLE_KINESIS)" />
         <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
-    <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" output="screen" required="true"/>
+    <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" args="$(optenv ROLLOUT_IDX 0)" output="screen" required="true"/>
 </launch>

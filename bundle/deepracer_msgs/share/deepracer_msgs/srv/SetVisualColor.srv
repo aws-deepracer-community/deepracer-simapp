@@ -1,0 +1,10 @@
+string link_name
+string visual_name
+std_msgs/ColorRGBA ambient
+std_msgs/ColorRGBA diffuse
+std_msgs/ColorRGBA specular
+std_msgs/ColorRGBA emissive
+bool block
+---
+bool success
+string status_message

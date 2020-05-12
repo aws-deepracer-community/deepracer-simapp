@@ -27,7 +27,6 @@ struct VideoMetricsSrvResponse_
     : lap_counter(0.0)
     , completion_percentage(0.0)
     , reset_counter(0)
-    , crash_counter(0)
     , throttle(0.0)
     , steering(0.0)
     , best_lap_time(0.0)
@@ -38,7 +37,6 @@ struct VideoMetricsSrvResponse_
     : lap_counter(0.0)
     , completion_percentage(0.0)
     , reset_counter(0)
-    , crash_counter(0)
     , throttle(0.0)
     , steering(0.0)
     , best_lap_time(0.0)
@@ -57,9 +55,6 @@ struct VideoMetricsSrvResponse_
 
    typedef int32_t _reset_counter_type;
   _reset_counter_type reset_counter;
-
-   typedef int32_t _crash_counter_type;
-  _crash_counter_type crash_counter;
 
    typedef float _throttle_type;
   _throttle_type throttle;
@@ -154,12 +149,12 @@ struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Cont
 {
   static const char* value()
   {
-    return "c1b4d18f63cdf839e846ad1b11eb11d6";
+    return "da26613e841a5a2b4eb38f31404241d7";
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0xc1b4d18f63cdf839ULL;
-  static const uint64_t static_value2 = 0xe846ad1b11eb11d6ULL;
+  static const uint64_t static_value1 = 0xda26613e841a5a2bULL;
+  static const uint64_t static_value2 = 0x4eb38f31404241d7ULL;
 };
 
 template<class ContainerAllocator>
@@ -181,7 +176,6 @@ struct Definition< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<
     return "float32 lap_counter\n\
 float32 completion_percentage\n\
 int32 reset_counter\n\
-int32 crash_counter\n\
 float32 throttle\n\
 float32 steering\n\
 float32 best_lap_time\n\
@@ -208,7 +202,6 @@ namespace serialization
       stream.next(m.lap_counter);
       stream.next(m.completion_percentage);
       stream.next(m.reset_counter);
-      stream.next(m.crash_counter);
       stream.next(m.throttle);
       stream.next(m.steering);
       stream.next(m.best_lap_time);
@@ -238,8 +231,6 @@ struct Printer< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Con
     Printer<float>::stream(s, indent + "  ", v.completion_percentage);
     s << indent << "reset_counter: ";
     Printer<int32_t>::stream(s, indent + "  ", v.reset_counter);
-    s << indent << "crash_counter: ";
-    Printer<int32_t>::stream(s, indent + "  ", v.crash_counter);
     s << indent << "throttle: ";
     Printer<float>::stream(s, indent + "  ", v.throttle);
     s << indent << "steering: ";

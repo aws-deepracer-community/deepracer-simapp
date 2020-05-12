@@ -1,0 +1,15 @@
+string link_name
+string visual_name
+---
+std_msgs/ColorRGBA ambient
+std_msgs/ColorRGBA diffuse
+std_msgs/ColorRGBA specular
+std_msgs/ColorRGBA emissive
+float64 transparency
+bool visible
+uint16 geometry_type
+string mesh_geom_filename
+geometry_msgs/Vector3 mesh_geom_scale
+geometry_msgs/Pose pose
+bool success
+string status_message

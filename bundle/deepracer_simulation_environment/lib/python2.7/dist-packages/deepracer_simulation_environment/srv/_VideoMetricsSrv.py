@@ -95,21 +95,20 @@ import struct
 
 
 class VideoMetricsSrvResponse(genpy.Message):
-  _md5sum = "c1b4d18f63cdf839e846ad1b11eb11d6"
+  _md5sum = "da26613e841a5a2b4eb38f31404241d7"
   _type = "deepracer_simulation_environment/VideoMetricsSrvResponse"
   _has_header = False #flag to mark the presence of a Header object
   _full_text = """float32 lap_counter
 float32 completion_percentage
 int32 reset_counter
-int32 crash_counter
 float32 throttle
 float32 steering
 float32 best_lap_time
 float32 total_evaluation_time
 bool done
 """
-  __slots__ = ['lap_counter','completion_percentage','reset_counter','crash_counter','throttle','steering','best_lap_time','total_evaluation_time','done']
-  _slot_types = ['float32','float32','int32','int32','float32','float32','float32','float32','bool']
+  __slots__ = ['lap_counter','completion_percentage','reset_counter','throttle','steering','best_lap_time','total_evaluation_time','done']
+  _slot_types = ['float32','float32','int32','float32','float32','float32','float32','bool']
 
   def __init__(self, *args, **kwds):
     """
@@ -119,7 +118,7 @@ bool done
     changes.  You cannot mix in-order arguments and keyword arguments.
 
     The available fields are:
-       lap_counter,completion_percentage,reset_counter,crash_counter,throttle,steering,best_lap_time,total_evaluation_time,done
+       lap_counter,completion_percentage,reset_counter,throttle,steering,best_lap_time,total_evaluation_time,done
 
     :param args: complete set of field values, in .msg order
     :param kwds: use keyword arguments corresponding to message field names
@@ -134,8 +133,6 @@ bool done
         self.completion_percentage = 0.
       if self.reset_counter is None:
         self.reset_counter = 0
-      if self.crash_counter is None:
-        self.crash_counter = 0
       if self.throttle is None:
         self.throttle = 0.
       if self.steering is None:
@@ -150,7 +147,6 @@ bool done
       self.lap_counter = 0.
       self.completion_percentage = 0.
       self.reset_counter = 0
-      self.crash_counter = 0
       self.throttle = 0.
       self.steering = 0.
       self.best_lap_time = 0.
@@ -170,7 +166,7 @@ bool done
     """
     try:
       _x = self
-      buff.write(_get_struct_2f2i4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.crash_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
+      buff.write(_get_struct_2fi4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -183,8 +179,8 @@ bool done
       end = 0
       _x = self
       start = end
-      end += 33
-      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.crash_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2f2i4fB().unpack(str[start:end])
+      end += 29
+      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2fi4fB().unpack(str[start:end])
       self.done = bool(self.done)
       return self
     except struct.error as e:
@@ -199,7 +195,7 @@ bool done
     """
     try:
       _x = self
-      buff.write(_get_struct_2f2i4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.crash_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
+      buff.write(_get_struct_2fi4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -213,8 +209,8 @@ bool done
       end = 0
       _x = self
       start = end
-      end += 33
-      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.crash_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2f2i4fB().unpack(str[start:end])
+      end += 29
+      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2fi4fB().unpack(str[start:end])
       self.done = bool(self.done)
       return self
     except struct.error as e:
@@ -224,14 +220,14 @@ _struct_I = genpy.struct_I
 def _get_struct_I():
     global _struct_I
     return _struct_I
-_struct_2f2i4fB = None
-def _get_struct_2f2i4fB():
-    global _struct_2f2i4fB
-    if _struct_2f2i4fB is None:
-        _struct_2f2i4fB = struct.Struct("<2f2i4fB")
-    return _struct_2f2i4fB
+_struct_2fi4fB = None
+def _get_struct_2fi4fB():
+    global _struct_2fi4fB
+    if _struct_2fi4fB is None:
+        _struct_2fi4fB = struct.Struct("<2fi4fB")
+    return _struct_2fi4fB
 class VideoMetricsSrv(object):
   _type          = 'deepracer_simulation_environment/VideoMetricsSrv'
-  _md5sum = 'c1b4d18f63cdf839e846ad1b11eb11d6'
+  _md5sum = 'da26613e841a5a2b4eb38f31404241d7'
   _request_class  = VideoMetricsSrvRequest
   _response_class = VideoMetricsSrvResponse

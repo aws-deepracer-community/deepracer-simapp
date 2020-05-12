@@ -1,0 +1,2 @@
+set(deepracer_msgs_MESSAGE_FILES "")
+set(deepracer_msgs_SERVICE_FILES "srv/GetLightNames.srv;srv/GetVisualNames.srv;srv/GetVisual.srv;srv/GetVisuals.srv;srv/GetLinkStates.srv;srv/GetModelStates.srv;srv/SetVisualColor.srv;srv/SetVisualColors.srv;srv/SetVisualTransparency.srv;srv/SetVisualTransparencies.srv;srv/SetVisualVisible.srv;srv/SetVisualVisibles.srv;srv/SetVisualPose.srv;srv/SetVisualPoses.srv;srv/SetVisualMesh.srv;srv/SetVisualMeshes.srv;srv/SetLinkStates.srv;srv/SetModelStates.srv")

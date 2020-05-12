@@ -1,0 +1,7 @@
+string link_name
+string visual_name
+float64 transparency
+bool block
+---
+bool success
+string status_message

@@ -20,6 +20,8 @@ Available tags are:
 | 2.0.1    | Update 29-MAR  | `2.0.1-cpu-avx`, `2.0.1-cpu` | `2.0.1-cpu-avx2` | `2.0.1-cpu-avx512` | `2.0.1-gpu` |
 | 2.0.2    | Update 01-APR  |  `2.0.2-cpu-avx`  | `2.0.2-cpu-avx2` | `2.0.2-cpu-avx512` | 
 | 2.0.3    | Spain Track  |  `2.0.3-cpu-avx`  | `2.0.3-cpu-avx2` | `2.0.3-cpu-avx512` | `2.0.3-gpu` |
+| 2.0.4    | Spain Track Hotfix  |    | `2.0.4-cpu-avx2` |  |  |
+| 2.0.5    | Update 07-MAY  |   | `2.0.5-cpu-avx2` | |  |
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 

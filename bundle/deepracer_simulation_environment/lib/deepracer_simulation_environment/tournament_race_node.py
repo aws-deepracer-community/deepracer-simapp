@@ -21,8 +21,8 @@ def main():
         race_yaml_path = sys.argv[2]
         racecars_with_stereo_cameras = sys.argv[3]
         racecars_with_lidars = sys.argv[4]
-        race_car_colors = sys.argv[5]
-        simapp_versions = sys.argv[6]
+        simapp_versions = sys.argv[5]
+        body_shell_types = sys.argv[6]
 
         launch_name = 'tournament_rl_agent.launch'
 
@@ -33,7 +33,7 @@ def main():
                         "racecars_with_stereo_cameras:={}".format(racecars_with_stereo_cameras),
                         "racecars_with_lidars:={}".format(racecars_with_lidars),
                         "multicar:={}".format(True),
-                        "car_colors:={}".format(race_car_colors),
+                        "body_shell_types:={}".format(body_shell_types),
                         "simapp_versions:={}".format(simapp_versions)
                         ])
         logger.info("cmd: {}".format(cmd))

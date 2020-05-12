@@ -4,20 +4,32 @@
     <arg name="multicar" default="false" />
     <arg name="racecars_with_stereo_cameras" default="" />
     <arg name="racecars_with_lidars" default="" />
-    <!-- Pass a list of car colors for yaml variable CAR_COLOR for multicar-->
-    <arg name="car_colors" />
+    <arg name="body_shell_types" />
     <arg name="simapp_versions"/>
     <!-- Pass a comma seperated value for env variable KINESIS_VIDEO_STREAM_NAME for multicar-->
-    <arg name="kinesis_video_stream_names" default="$(env KINESIS_VIDEO_STREAM_NAME)" />
+    <arg name="kinesis_video_stream_names" default="$(optenv KINESIS_VIDEO_STREAM_NAME)" />
+    <arg name="f1" default="false" />
 
     <rosparam file="$(arg local_yaml_path)" command="load"/>
 
-    <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar.launch">
+    <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar.launch" unless="$(arg f1)">
         <arg name="world_name" value="$(env WORLD_NAME)" />
         <arg name="kinesis_video_stream_names" value="$(arg kinesis_video_stream_names)" />
+        <arg name="kinesis_video_stream_region" value="$(env APP_REGION)" />
         <arg name="racecars_with_stereo_cameras" value="$(arg racecars_with_stereo_cameras)" />
         <arg name="racecars_with_lidars" value="$(arg racecars_with_lidars)" />
-        <arg name="car_colors" value="$(arg car_colors)" />
+        <arg name="body_shell_types" value="$(arg body_shell_types)"/>
+        <arg name="simapp_versions" value="$(arg simapp_versions)" />
+        <arg name="multicar" value="$(arg multicar)" />
+    </include>
+
+    <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar_f1.launch" if="$(arg f1)">
+        <arg name="world_name" value="$(env WORLD_NAME)" />
+        <arg name="kinesis_video_stream_names" value="$(arg kinesis_video_stream_names)" />
+        <arg name="kinesis_video_stream_region" value="$(env APP_REGION)" />
+        <arg name="racecars_with_stereo_cameras" value="$(arg racecars_with_stereo_cameras)" />
+        <arg name="racecars_with_lidars" value="$(arg racecars_with_lidars)" />
+        <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
     </include>

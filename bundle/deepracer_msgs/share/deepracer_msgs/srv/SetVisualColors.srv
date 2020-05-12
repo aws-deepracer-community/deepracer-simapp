@@ -1,0 +1,12 @@
+string[] link_names
+string[] visual_names
+std_msgs/ColorRGBA[] ambients
+std_msgs/ColorRGBA[] diffuses
+std_msgs/ColorRGBA[] speculars
+std_msgs/ColorRGBA[] emissives
+bool block
+---
+bool success
+string status_message
+int8[] status                        # status of each request: true if succeeded otherwise false
+string[] messages

@@ -7,7 +7,8 @@
   <xacro:arg name="racecar_bitmask" default="0x01" />
   <xacro:arg name="include_second_camera" default="false" />
   <xacro:arg name="include_lidar_sensor" default="false" />
-  <xacro:arg name="car_color" default="Black" />
+  <xacro:arg name="body_shell_type" default="deepracer" />
+  <xacro:property name="body_shell_type_val" value="$(arg body_shell_type)" />
 
   <!-- Add chassis and it's inertia link -->
 
@@ -210,7 +211,12 @@
    <!-- The bot cars will have older confetti models. Since we dont have the .dae files -->
   <link name="top_cover_link">
     <visual>
-      <xacro:top_cover_geometry />
+      <xacro:unless value="${'f1' in body_shell_type_val}">
+        <xacro:top_cover_geometry />
+      </xacro:unless>
+      <xacro:if value="${'f1' in body_shell_type_val}">
+        <xacro:f1_geometry body_shell_type="$(arg body_shell_type)"/>
+      </xacro:if>
     </visual>
     <collision>
       <xacro:top_cover_geometry />

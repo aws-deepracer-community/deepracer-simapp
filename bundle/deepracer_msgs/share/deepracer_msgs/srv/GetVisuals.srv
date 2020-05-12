@@ -1,0 +1,19 @@
+string[] link_names
+string[] visual_names
+---
+string[] link_names
+string[] visual_names
+std_msgs/ColorRGBA[] ambients
+std_msgs/ColorRGBA[] diffuses
+std_msgs/ColorRGBA[] speculars
+std_msgs/ColorRGBA[] emissives
+float64[] transparencies
+int8[] visibles
+uint16[] geometry_types
+string[] mesh_geom_filenames
+geometry_msgs/Vector3[] mesh_geom_scales
+geometry_msgs/Pose[] poses
+bool success
+string status_message
+int8[] status                        # status of each request: true if succeeded otherwise false
+string[] messages

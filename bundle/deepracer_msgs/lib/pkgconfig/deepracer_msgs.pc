@@ -1,0 +1,8 @@
+prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_msgs
+
+Name: deepracer_msgs
+Description: Description of deepracer_msgs
+Version: 1.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: std_msgs geometry_msgs gazebo_msgs std_srvs
