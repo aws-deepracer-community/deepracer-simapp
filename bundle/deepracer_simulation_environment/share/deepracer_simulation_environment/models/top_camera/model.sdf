@@ -6,8 +6,8 @@
     <link name="camera_link">
       <sensor type="camera" name="camera_sensor">
         <update_rate>15.0</update_rate>
-        <camera name="camera">
-          <projection_type>orthographic</projection_type>
+        <camera name="top_camera">
+          <pose frame="base_link">0 0 0 0 0 0</pose>
           <horizontal_fov>2.0944</horizontal_fov>
           <image>
             <width>640</width>

@@ -1,6 +1,7 @@
 '''This module houses the constants for scripts package in simulation application'''
 from enum import Enum
 from markov.reset.constants import RaceType
+import cv2
 
 class CameraTypeParams(Enum):
     """ This Enum contains the all the params for each camera topics
@@ -21,7 +22,7 @@ class Mp4Parameter(Enum):
     Extends:
         Enum
     """
-    FOURCC = 0x00000021
+    FOURCC = cv2.VideoWriter_fourcc(*'mp4v')
     FPS = 15
     FRAME_SIZE = (640, 480)
 
