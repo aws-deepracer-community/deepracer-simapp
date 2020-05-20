@@ -268,43 +268,50 @@ def plot_rectangular_image_on_main_image(background_image, rect_image, pixel_xy)
     Returns:
         Image: Overlayed image
     """
-    x_offset = int(round(pixel_xy[0]))
-    y_offset = int(round(pixel_xy[1]))
-
-    # Compute the x/y corners in background image
-    y_min_bg = y_offset - rect_image.shape[0]//2
-    y_max_bg = y_min_bg + rect_image.shape[0]
-    x_min_bg = x_offset - rect_image.shape[1]//2
-    x_max_bg = x_min_bg + rect_image.shape[1]
-
-    # Compute the x/y corners in rect image
-    y_min_rect = 0
-    y_max_rect = rect_image.shape[0]
-    x_min_rect = 0
-    x_max_rect = rect_image.shape[1]
-
-    # Handle clipping around the edges
-    y_clip_min = max(0, -y_min_bg)
-    x_clip_min = max(0, -x_min_bg)
-    y_clip_max = max(0, y_max_bg - background_image.shape[0])
-    x_clip_max = max(0, x_max_bg - background_image.shape[1])
-
-    y_min_bg += y_clip_min
-    x_min_bg += x_clip_min
-    y_min_rect += y_clip_min
-    x_min_rect += x_clip_min
-    y_max_bg -= y_clip_max
-    x_max_bg -= x_clip_max
-    y_max_rect -= y_clip_max
-    x_max_rect -= x_clip_max
-
     try:
+        x_offset = int(round(pixel_xy[0]))
+        y_offset = int(round(pixel_xy[1]))
+
+        # Compute the x/y corners in background image
+        y_min_bg = y_offset - rect_image.shape[0]//2
+        y_max_bg = y_min_bg + rect_image.shape[0]
+        x_min_bg = x_offset - rect_image.shape[1]//2
+        x_max_bg = x_min_bg + rect_image.shape[1]
+
+        # Compute the x/y corners in rect image
+        y_min_rect = 0
+        y_max_rect = rect_image.shape[0]
+        x_min_rect = 0
+        x_max_rect = rect_image.shape[1]
+
+        # Handle clipping around the edges
+        y_clip_min = max(0, -y_min_bg)
+        x_clip_min = max(0, -x_min_bg)
+        y_clip_max = max(0, y_max_bg - background_image.shape[0])
+        x_clip_max = max(0, x_max_bg - background_image.shape[1])
+
+        y_min_bg += y_clip_min
+        x_min_bg += x_clip_min
+        y_min_rect += y_clip_min
+        x_min_rect += x_clip_min
+        y_max_bg -= y_clip_max
+        x_max_bg -= x_clip_max
+        y_max_rect -= y_clip_max
+        x_max_rect -= x_clip_max
+
         alpha_foreground = rect_image[y_min_rect:y_max_rect, x_min_rect:x_max_rect, 3:4] / 255.0
         background_image[y_min_bg:y_max_bg, x_min_bg:x_max_bg, :4] = \
             (1 - alpha_foreground) * (background_image[y_min_bg:y_max_bg, x_min_bg:x_max_bg, :4]) \
             + alpha_foreground * rect_image[y_min_rect:y_max_rect, x_min_rect:x_max_rect, :4]
-    except Exception as err_msg:
-        LOG.info("Failed to render for this pixel {}; Error msg: {}".format(pixel_xy, err_msg))
+    except:
+        #
+        # This could fail when agents x, y location is NaN. This could when the markov node died.
+        # This will also fail when the kinesis video node shuts down and the
+        # main camera image is not received. Logging this pollutes the sim and one cannot look
+        # at the actual errors. Hence removing the logger. Catching this exception so that it doesnot
+        # bring down the Robomaker job.
+        #
+        pass
     return background_image
 
 def apply_gradient(main_image, gradient_img, gradient_alpha):

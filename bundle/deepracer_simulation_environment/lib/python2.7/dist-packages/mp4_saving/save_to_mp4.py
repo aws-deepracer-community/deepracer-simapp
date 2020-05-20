@@ -10,6 +10,7 @@ import time
 import sys
 import cv2
 import rospy
+import threading
 from cv_bridge import CvBridge, CvBridgeError
 from std_srvs.srv import Empty
 from sensor_msgs.msg import Image
@@ -42,7 +43,7 @@ class SaveToMp4(object):
         # Then when unsubscribe service request is made fails with below error.
         #       Unknown error initiating TCP/IP socket to 169.254.1.3:38623
         # To fix this having a dummy subscriber to all the image topics. So reference count doesnt go to zero
-        self.dummy_kvs_topic = list()
+        self.mp4_subscription_lock_map = dict()
 
     def _subscribe_to_image_topic(self, data, camera_type):
         """ This subscribes to the topic and uses the cv_writer to write to the local disk as mp4
@@ -51,7 +52,7 @@ class SaveToMp4(object):
             camera_type (str): Enum.name of the CameraTypeParams
         """
         try:
-            if camera_type in self.cv2_video_writers:
+            if camera_type in self.cv2_video_writers and self.mp4_subscription_lock_map[camera_type].acquire(False):
                 bridge = CvBridge()
                 cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
                 self.cv2_video_writers[camera_type].write(cv_image)
@@ -59,6 +60,9 @@ class SaveToMp4(object):
             LOG.info("ROS image message to cv2 error: {}".format(ex))
         except Exception as ex:
             LOG.info("Failed to save the image frame to local file: {}".format(ex))
+        finally:
+            if camera_type in self.mp4_subscription_lock_map:
+                self.mp4_subscription_lock_map[camera_type].release()
 
     def subscribe_to_save_mp4(self, req):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -68,7 +72,6 @@ class SaveToMp4(object):
             [] - Empty list else ros service throws exception
         """
         try:
-            LOG.info("Subscribing to saving mp4")
             for camera_enum in self.camera_infos:
                 name = camera_enum['name']
                 local_path, topic_name = camera_enum['local_path'], camera_enum['topic_name']
@@ -77,11 +80,7 @@ class SaveToMp4(object):
                 self.mp4_subscription[name] = rospy.Subscriber(topic_name, Image,
                                                                callback=self._subscribe_to_image_topic,
                                                                callback_args=name)
-                LOG.info("Started subscribing to topic for : {}".format(name))
-                if name == CameraTypeParams.CAMERA_PIP_PARAMS:
-                    self.dummy_kvs_topic.append(rospy.Subscriber(topic_name, Image,
-                                                                 callback=self._subscribe_to_image_topic,
-                                                                 callback_args="dummy"))
+                self.mp4_subscription_lock_map[name] = threading.Lock()
             return []
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}".format(err_msg),
@@ -97,21 +96,13 @@ class SaveToMp4(object):
             [] - Empty list else ros service throws exception
         """
         try:
-            LOG.info("Unsubscribing from saving mp4")
             for camera_enum in self.camera_infos:
                 name = camera_enum['name']
-                LOG.info("Started unsubscribing from topic for : {}".format(name))
                 if name in self.mp4_subscription:
                     self.mp4_subscription[name].unregister()
-                    # Sleeping here so that the publisher (kinesis_video_camera_node) can get enough time
-                    # for the acknowledge and also deleting the "del self.mp4_subscription[name]" for the same purpose.
-                    #   Inbound TCP/IP connection failed: connection from sender terminated before handshake header
-                    #   received. 0 bytes were received. Please check sender for additional details
-                    time.sleep(2)
-                LOG.info("Done unsubscribing from topic for: {}".format(name))
+                    self.mp4_subscription_lock_map[name].acquire()
                 if name in self.cv2_video_writers:
                     self.cv2_video_writers[name].release()
-                LOG.info("Done releasing the cv2 video writer for: {}".format(name))
             return []
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to unsubscribe from save_mp4 download: {}".format(err_msg),
