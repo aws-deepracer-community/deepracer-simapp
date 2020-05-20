@@ -51,19 +51,17 @@ class SaveToMp4(object):
             data (Image): Image topic where the frames as published
             camera_type (str): Enum.name of the CameraTypeParams
         """
-        lock_acquired = self.mp4_subscription_lock_map[camera_type].acquire(False) \
-            if camera_type in self.mp4_subscription_lock_map else False
-
-        if lock_acquired and camera_type in self.cv2_video_writers:
-            try:
+        try:
+            if camera_type in self.cv2_video_writers and self.mp4_subscription_lock_map[camera_type].acquire(False):
                 bridge = CvBridge()
                 cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
                 self.cv2_video_writers[camera_type].write(cv_image)
-            except CvBridgeError as ex:
-                LOG.info("ROS image message to cv2 error: {}".format(ex))
-            except Exception as ex:
-                LOG.info("Failed to save the image frame to local file: {}".format(ex))
-            finally:
+        except CvBridgeError as ex:
+            LOG.info("ROS image message to cv2 error: {}".format(ex))
+        except Exception as ex:
+            LOG.info("Failed to save the image frame to local file: {}".format(ex))
+        finally:
+            if camera_type in self.mp4_subscription_lock_map:
                 self.mp4_subscription_lock_map[camera_type].release()
 
     def subscribe_to_save_mp4(self, req):
@@ -82,10 +80,7 @@ class SaveToMp4(object):
                 self.mp4_subscription[name] = rospy.Subscriber(topic_name, Image,
                                                                callback=self._subscribe_to_image_topic,
                                                                callback_args=name)
-                if name not in self.mp4_subscription_lock_map:
-                    self.mp4_subscription_lock_map[name] = threading.Lock()
-                else:
-                    self.mp4_subscription_lock_map[name].release()
+                self.mp4_subscription_lock_map[name] = threading.Lock()
             return []
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}".format(err_msg),
@@ -103,11 +98,11 @@ class SaveToMp4(object):
         try:
             for camera_enum in self.camera_infos:
                 name = camera_enum['name']
-                if name in self.mp4_subscription_lock_map:
+                if name in self.mp4_subscription:
+                    self.mp4_subscription[name].unregister()
                     self.mp4_subscription_lock_map[name].acquire()
                 if name in self.cv2_video_writers:
                     self.cv2_video_writers[name].release()
-                    del self.cv2_video_writers[name]
             return []
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to unsubscribe from save_mp4 download: {}".format(err_msg),
