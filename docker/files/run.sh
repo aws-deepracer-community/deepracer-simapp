@@ -7,6 +7,14 @@ if [ "$1" == "build" ]; then
 	colcon build
 fi
 
+if [ "$1" == "multi" ]; then
+	COMMS_FILE=/mnt/comms/workders
+	echo $HOSTNAME >> $COMMS_FILE
+	WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
+	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
+	echo "Starting as worker $ROLLOUT_IDX"
+fi
+
 if [ -z ${2+x} ]; then
 	$2 = "distributed_training.launch"
 	exit
