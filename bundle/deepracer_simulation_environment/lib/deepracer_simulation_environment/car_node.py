@@ -16,14 +16,14 @@ import time
 import rospy
 import rospkg
 import logging
-from gazebo_msgs.srv import SetModelState, GetModelState
+from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import ModelState
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyRequest
 from markov.track_geom.track_data import FiniteDifference, TrackData
 from markov.track_geom.constants import START_POS_OFFSET
 from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.camera_utils import configure_camera
+from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
 import markov.rollout_constants as const
 from markov import utils
 from markov.utils import force_list
@@ -32,7 +32,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
 
 from markov.domain_randomizations.constants import GazeboServiceName
-from markov.track_geom.constants import GET_MODEL_STATE, SET_MODEL_STATE
+from markov.track_geom.constants import SET_MODEL_STATE
 from gazebo_msgs.srv import GetModelProperties, GetModelPropertiesRequest
 from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
                                 GetVisuals, GetVisualsRequest, GetVisualsResponse,
@@ -40,9 +40,6 @@ from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
                                 SetVisualTransparencies, SetVisualTransparenciesRequest, SetVisualTransparenciesResponse,
                                 SetVisualVisibles, SetVisualVisiblesRequest, SetVisualVisiblesResponse)
 
-# Amount of time (in seconds) to wait, in order to prevent model state from
-# spamming logs while the model is loading
-WAIT_TO_PREVENT_SPAM = 2
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -54,7 +51,6 @@ class DeepRacer(object):
         '''
         # Wait for required services to be available
         rospy.wait_for_service(SET_MODEL_STATE)
-        rospy.wait_for_service(GET_MODEL_STATE)
         rospy.wait_for_service('/gazebo/pause_physics')
         rospy.wait_for_service(GazeboServiceName.GET_MODEL_PROPERTIES.value)
         rospy.wait_for_service(GazeboServiceName.GET_VISUAL_NAMES.value)
@@ -63,19 +59,9 @@ class DeepRacer(object):
         rospy.wait_for_service(GazeboServiceName.SET_VISUAL_TRANSPARENCIES.value)
         rospy.wait_for_service(GazeboServiceName.SET_VISUAL_VISIBLES.value)
 
-        # We have no guarantees as to when gazebo will load the model, therefore we need
-        # to wait until the model is loaded prior to resetting it for the first time
-        self.get_model_client = ServiceProxyWrapper(GET_MODEL_STATE, GetModelState)
         self.racer_num = len(racecar_names)
         for racecar_name in racecar_names:
-            wait_for_model = True
-            while wait_for_model:
-                # If the model is not loaded the get model service will log an error
-                # Therefore, we add an timer to prevent the log from getting spammed with
-                # errors
-                time.sleep(WAIT_TO_PREVENT_SPAM)
-                model = self.get_model_client(racecar_name, '')
-                wait_for_model = not model.success
+            wait_for_model(model_name=racecar_name, relative_entity_name='')
         self.car_colors = force_list(rospy.get_param(const.YamlKey.CAR_COLOR.value,
                                                      [const.CarColorType.BLACK.value] * len(racecar_names)))
         self.shell_types = force_list(rospy.get_param(const.YamlKey.BODY_SHELL_TYPE.value,
