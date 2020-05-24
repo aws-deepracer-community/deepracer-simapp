@@ -9,19 +9,21 @@ This repository contains the extracts from the AWS DeepRacer Robomaker simapp; i
 In most cases it will be sufficient to use one of our pre-built images which use optimized Tensorflow binaries. Depending on how modern processor you have available you can pick which instruction sets to use.
 * AVX is available on most Intel Core processors from the second generation on - running DeepRacer on an older processor really does not make sense; hence we do not have pre-built images without this instruction set.
 * AVX2 is available on more modern Intel Core processors; starting from the Haswell architecture (4th generation), and is probably the image most will use.
-* AVX-512 is available on newer Xeon and Core i7-X processors. If you run DeepRacer on e.g. AWS EC2 this would be a natural choice.
+* AVX-512 was available on newer Xeon and Core i7-X processors. Due to convergence issues it has been removed.
 * GPU uses Tensorflow-GPU instead of CPU. It is not compiled with special instruction sets for the CPU.
 
 Available tags are:
 
-| Version  | Comment         | AVX      | AVX2     | AVX512   | GPU      |
-| -------- | -------------- | -------- | -------- | -------- | -------- | 
-| Release  | Version 2.0.5  | `cpu`, `cpu-avx` | `cpu-avx2` | `cpu-avx512` | `gpu`| 
-| 2.0.1    | Update 29-MAR  | `2.0.1-cpu-avx`, `2.0.1-cpu` | `2.0.1-cpu-avx2` | `2.0.1-cpu-avx512` | `2.0.1-gpu` |
-| 2.0.2    | Update 01-APR  |  `2.0.2-cpu-avx`  | `2.0.2-cpu-avx2` | `2.0.2-cpu-avx512` | 
-| 2.0.3    | Spain Track  |  `2.0.3-cpu-avx`  | `2.0.3-cpu-avx2` | `2.0.3-cpu-avx512` | `2.0.3-gpu` |
+| Version  | Comment         | AVX      | AVX2     | GPU      |
+| -------- | -------------- | -------- | -------- | -------- | 
+| Release  | Version 2.0.6  | `cpu`, `cpu-avx` | `cpu-avx2`  | `gpu`| 
+| 2.0.1    | Update 29-MAR  | `2.0.1-cpu-avx`, `2.0.1-cpu` | `2.0.1-cpu-avx2`  | `2.0.1-gpu` |
+| 2.0.2    | Update 01-APR  |  `2.0.2-cpu-avx`  | `2.0.2-cpu-avx2`  
+| 2.0.3    | Spain Track  |  `2.0.3-cpu-avx`  | `2.0.3-cpu-avx2` |  `2.0.3-gpu` |
 | 2.0.4    | Spain Track Hotfix  |    | `2.0.4-cpu-avx2` |  |  |
-| 2.0.5    | Update 07-MAY  |  `2.0.5-cpu-avx`  | `2.0.5-cpu-avx2` | `2.0.5-cpu-avx512` | `2.0.5-gpu` |
+| 2.0.5    | Update 07-MAY  |  `2.0.5-cpu-avx`  | `2.0.5-cpu-avx2` |  `2.0.5-gpu` |
+| 2.0.6    | Update 20-MAY and 22-May  |  `2.0.6-cpu-avx`  | `2.0.6-cpu-avx2` | `2.0.6-gpu` |
+
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 
