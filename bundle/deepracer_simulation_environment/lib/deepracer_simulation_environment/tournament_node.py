@@ -35,7 +35,7 @@ from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values, 
 
 logger = Logger(__name__, logging.INFO).get_logger()
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
-WAIT_FOR_ROBOMAKER_TIME = 120
+WAIT_FOR_ROBOMAKER_TIME = 10
 
 RACE_CAR_COLORS = ["Purple", "Orange"]
 
@@ -401,6 +401,9 @@ def validate_yaml_values(yaml_values):
         same_len_values.append(RACER_NAME_YAML_KEY)
     logger.info(yaml_values)
     if not all(map(lambda param: len(yaml_values[param]) == len(yaml_values[same_len_values[0]]), same_len_values)):
+        logger.info("YAML parameter dimensions are not matching:")
+        for val in same_len_values:
+            logger.info("{}: {}".format(val,len(yaml_values[val])))
         raise Exception('Incorrect number of values for these yaml parameters {}'.format(same_len_values))
 
     # Verify if all yaml keys have power of 2 number of values.
