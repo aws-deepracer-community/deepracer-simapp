@@ -1,9 +1,6 @@
 export XAUTHORITY=/root/.Xauthority
 source /opt/ros/${ROS_DISTRO}/setup.bash
 
-apt-get update -y
-apt-get install libignition-math2 -y
-
 if [ -z "$ROLLOUT_IDX" ]; then
 	export ROLLOUT_IDX=0
 fi
