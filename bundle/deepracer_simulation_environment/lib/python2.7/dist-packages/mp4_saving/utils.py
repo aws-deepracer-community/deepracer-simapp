@@ -20,6 +20,8 @@ from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDat
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
+IMAGE_CACHE = dict()
+
 def plot_circle(image, x_pixel, y_pixel, color_rgb):
     """Function used to draw a circle around the racecar given the pixel (x, y) value
     and the color of the circle
@@ -78,6 +80,9 @@ def get_image(icon_name, img_size=None):
     Returns:
         Image: The cv2 image read from the .png file
     """
+    global IMAGE_CACHE
+    if icon_name in IMAGE_CACHE:
+        return IMAGE_CACHE[icon_name]
     try:
         track_iconography_dir = os.path.join(
             rospkg.RosPack().get_path('deepracer_simulation_environment'), 'track_iconography')
@@ -85,11 +90,11 @@ def get_image(icon_name, img_size=None):
         image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         if img_size:
             image = cv2.resize(image, img_size)
+        IMAGE_CACHE[icon_name] = image
         return image
     except (OSError, IOError, Exception) as err_msg:
-        log_and_exit("Iconography image does not exists or corrupt image: {}"
-                         .format(err_msg),
-                     SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION, 
+        log_and_exit("Iconography image does not exists or corrupt image: {}".format(err_msg),
+                     SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 
 def draw_shadow(draw_obj, text, font, x_loc, y_loc, shadowcolor):
