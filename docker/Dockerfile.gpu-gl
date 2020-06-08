@@ -23,20 +23,16 @@ ARG LIBARMADILLO_VERSION=6
 # Install Linux stuff
 #---------------------------------------------------------------------
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl less lsof git net-tools psmisc xz-utils net-tools \
+    ca-certificates curl less lsof git net-tools psmisc xz-utils \
     lubuntu-core xterm terminator zenity cmake \
-    x11-xkb-utils xauth xfonts-base xkb-data \
+    x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
     build-essential wget cmake python3-pip python-boto3 python-pip \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
-    python python-numpy libpython3-dev libpython-dev libsuitesparse-dev libgtest-dev \
-    libeigen3-dev libsdl1.2-dev libignition-math2-dev libarmadillo-dev libarmadillo${LIBARMADILLO_VERSION} libsdl-image1.2-dev libsdl-dev \
+    python python-numpy libpython3-dev libpython-dev libsuitesparse-dev \
+    libeigen3-dev libsdl1.2-dev libignition-math2 libignition-math2-dev libarmadillo-dev libarmadillo${LIBARMADILLO_VERSION} libsdl-image1.2-dev libsdl-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-#---------------------------------------------------------------------
-# Install gtest
-#---------------------------------------------------------------------
-RUN /bin/bash -c "cd /usr/src/gtest && cmake CMakeLists.txt && make && cp *.a /usr/lib"
 
 #---------------------------------------------------------------------
 # Install VirtualGL and TurboVNC
@@ -95,7 +91,7 @@ ENV ROS_DISTRO=kinetic
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 RUN apt-get update -y && \
-    apt-get install gazebo7 libgazebo7-dev libignition-math2 net-tools x11-xserver-utils jwm rviz x264 libx264-dev -y && \
+    apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

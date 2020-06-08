@@ -33,10 +33,7 @@ if which xterm &>/dev/null; then
 	rqt &
 	rviz &
 fi
-#! pgrep -a Xvfb && Xvfb $DISPLAY -screen 0 1024x768x16 &
+
 sleep 1
-#if which fluxbox &>/dev/null; then
-#  ! pgrep -a fluxbox && fluxbox &
-#fi
 echo "IP: $(hostname -I) ($(hostname))"
 wait
