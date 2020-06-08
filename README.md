@@ -16,7 +16,7 @@ Available tags are:
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| Release  | Version 2.0.6  | `cpu`, `cpu-avx` | `cpu-avx2`  | `gpu`| 
+| Release  | Version 2.0.7  | `cpu`, `cpu-avx` | `cpu-avx2`  | `gpu`| 
 | 2.0.1    | Update 29-MAR  | `2.0.1-cpu-avx`, `2.0.1-cpu` | `2.0.1-cpu-avx2`  | `2.0.1-gpu` |
 | 2.0.2    | Update 01-APR  |  `2.0.2-cpu-avx`  | `2.0.2-cpu-avx2`  
 | 2.0.3    | Spain Track  |  `2.0.3-cpu-avx`  | `2.0.3-cpu-avx2` |  `2.0.3-gpu` |
