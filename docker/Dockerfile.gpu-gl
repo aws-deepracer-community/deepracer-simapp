@@ -23,9 +23,10 @@ ARG LIBARMADILLO_VERSION=6
 # Install Linux stuff
 #---------------------------------------------------------------------
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl wget less sudo lsof git net-tools nano psmisc xz-utils nemo vim net-tools iputils-ping traceroute htop \
-    lubuntu-core chromium-browser xterm terminator zenity make cmake gcc libc6-dev \
+    ca-certificates curl less lsof git net-tools psmisc xz-utils net-tools \
+    lubuntu-core xterm terminator zenity cmake \
     x11-xkb-utils xauth xfonts-base xkb-data \
+    build-essential wget cmake python3-pip python-boto3 python-pip \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
     python python-numpy libpython-dev libsuitesparse-dev libgtest-dev \
@@ -77,11 +78,6 @@ COPY ./docker/files/start_desktop.sh /usr/local/bin/start_desktop.sh
 
 #if you're not using ubuntu:16.04 make sure to replace xenial with `lsb_release -cs`
 FROM base_img
-
-RUN apt-get update && apt-get upgrade -y && \ 
-    apt-get install build-essential wget cmake python3-pip python-boto3 python-pip -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
 # install ROS Kinetic
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
