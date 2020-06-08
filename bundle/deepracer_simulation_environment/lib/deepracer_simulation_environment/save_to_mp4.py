@@ -54,11 +54,12 @@ class SaveToMp4(object):
         lock_acquired = self.mp4_subscription_lock_map[camera_type].acquire(False) \
             if camera_type in self.mp4_subscription_lock_map else False
 
-        if lock_acquired and camera_type in self.cv2_video_writers:
+        if lock_acquired:
             try:
-                bridge = CvBridge()
-                cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
-                self.cv2_video_writers[camera_type].write(cv_image)
+                if camera_type in self.cv2_video_writers:
+                    bridge = CvBridge()
+                    cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+                    self.cv2_video_writers[camera_type].write(cv_image)
             except CvBridgeError as ex:
                 LOG.info("ROS image message to cv2 error: {}".format(ex))
             except Exception as ex:

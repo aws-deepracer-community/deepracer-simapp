@@ -21,7 +21,7 @@ from gazebo_msgs.msg import ModelState
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyRequest
 from markov.track_geom.track_data import FiniteDifference, TrackData
-from markov.track_geom.constants import START_POS_OFFSET
+from markov.track_geom.utils import get_start_positions
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
 import markov.rollout_constants as const
@@ -51,7 +51,7 @@ class DeepRacer(object):
         '''
         # Wait for required services to be available
         rospy.wait_for_service(SET_MODEL_STATE)
-        rospy.wait_for_service('/gazebo/pause_physics')
+        rospy.wait_for_service(GazeboServiceName.PAUSE_PHYSICS.value)
         rospy.wait_for_service(GazeboServiceName.GET_MODEL_PROPERTIES.value)
         rospy.wait_for_service(GazeboServiceName.GET_VISUAL_NAMES.value)
         rospy.wait_for_service(GazeboServiceName.GET_VISUALS.value)
@@ -91,7 +91,7 @@ class DeepRacer(object):
         # Grab the track data
         self.track_data = TrackData.get_instance()
         # Set all racers start position in track data
-        self.start_positions = [START_POS_OFFSET * idx for idx in reversed(range(self.racer_num))]
+        self.start_positions = get_start_positions(self.racer_num)
         car_poses = []
         for racecar_idx, racecar_name in enumerate(racecar_names):
             car_model_state = self.get_initial_position(racecar_name,
@@ -105,24 +105,18 @@ class DeepRacer(object):
         # will appear on the track
         time.sleep(1)
         pause_physics = ServiceProxyWrapper('/gazebo/pause_physics', Empty)
-        logger.info("Pausing physics after reset")
+        logger.info("Pausing physics after initializing the cars")
         pause_physics(EmptyRequest())
 
         for racecar_name, car_pose in zip(racecar_names, car_poses):
             main_cameras[racecar_name].spawn_model(car_pose,
-                                                  os.path.join(deepracer_path, "models",
-                                                               "camera", "model.sdf"))
+                                                   os.path.join(deepracer_path, "models",
+                                                                "camera", "model.sdf"))
 
         logger.info("Spawning sub camera model")
         # Spawn the top camera model
         sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
                                                   "top_camera", "model.sdf"))
-        # Let KVS collect a few frames before pausing the physics, so the car
-        # will appear on the track
-        time.sleep(1)
-        pause_physics = ServiceProxyWrapper('/gazebo/pause_physics', Empty)
-        logger.info("Pausing physics")
-        pause_physics(EmptyRequest())
 
     def _update_color(self, visuals, car_color):
         link_names = []
