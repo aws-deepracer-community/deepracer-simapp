@@ -1,4 +1,4 @@
-FROM nvidia/cudagl:9.0-devel-ubuntu16.04 
+FROM nvidia/cudagl:9.0-runtime-ubuntu16.04 
 
 # Install CUDNN
 RUN echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
@@ -12,9 +12,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 
 # Install Linux stuff
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl lsof net-tools \
+    ca-certificates curl net-tools build-essential wget cmake \
     xterm x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
-    build-essential wget cmake \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
     python python3-pip python-boto3 python-pip libpython3-dev libpython-dev \
