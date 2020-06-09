@@ -1,8 +1,6 @@
-FROM nvidia/cudagl:9.0-devel-ubuntu16.04 AS base_img
-#---------------------------------------------------------------------
-# Install CUDNN
-#---------------------------------------------------------------------
+FROM nvidia/cudagl:9.0-devel-ubuntu16.04 
 
+# Install CUDNN
 RUN echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
 
 LABEL com.nvidia.cudnn.version="7.3.1.20"
@@ -12,68 +10,15 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libcudnn7-dev=7.3.1.20-1+cuda9.0 \
     && rm -rf /var/lib/apt/lists/*
 
-ARG SOURCEFORGE=https://sourceforge.net/projects
-ARG TURBOVNC_VERSION=2.1.2
-ARG VIRTUALGL_VERSION=2.5.2
-ARG LIBJPEG_VERSION=1.5.2
-ARG WEBSOCKIFY_VERSION=0.8.0
-ARG LIBARMADILLO_VERSION=6
-
-#---------------------------------------------------------------------
 # Install Linux stuff
-#---------------------------------------------------------------------
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl less lsof git net-tools psmisc xz-utils \
-    lubuntu-core xterm terminator zenity cmake \
-    x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
-    build-essential wget cmake python3-pip python-boto3 python-pip \
+    ca-certificates curl lsof net-tools \
+    xterm x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
+    build-essential wget cmake \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
-    python python-numpy libpython3-dev libpython-dev libsuitesparse-dev \
-    libeigen3-dev libsdl1.2-dev libignition-math2 libignition-math2-dev libarmadillo-dev libarmadillo${LIBARMADILLO_VERSION} libsdl-image1.2-dev libsdl-dev \
+    python python3-pip python-boto3 python-pip libpython3-dev libpython-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-
-#---------------------------------------------------------------------
-# Install VirtualGL and TurboVNC
-#---------------------------------------------------------------------
-RUN cd /tmp && \
-    curl -fsSL -O ${SOURCEFORGE}/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb \
-    -O ${SOURCEFORGE}/libjpeg-turbo/files/${LIBJPEG_VERSION}/libjpeg-turbo-official_${LIBJPEG_VERSION}_amd64.deb \
-    -O ${SOURCEFORGE}/virtualgl/files/${VIRTUALGL_VERSION}/virtualgl_${VIRTUALGL_VERSION}_amd64.deb \
-    -O ${SOURCEFORGE}/virtualgl/files/${VIRTUALGL_VERSION}/virtualgl32_${VIRTUALGL_VERSION}_amd64.deb && \
-    dpkg -i *.deb && \
-    rm -f /tmp/*.deb && \
-    sed -i 's/$host:/unix:/g' /opt/TurboVNC/bin/vncserver
-ENV PATH ${PATH}:/opt/VirtualGL/bin:/opt/TurboVNC/bin
-
-COPY ./docker/files/xorg.conf /etc/X11/xorg.conf
-
-ENV DISPLAY :1
-
-#---------------------------------------------------------------------
-# Install desktop files for this user
-#---------------------------------------------------------------------
-RUN mkdir -p /root/Desktop
-COPY ./docker/files/terminator.desktop /root/Desktop
-RUN mkdir -p /root/.config/terminator
-COPY ./docker/files/terminator_config /root/.config/terminator/config
-
-# Precede bash on all new terminator shells with vglrun so that 3d graphics apps will use the GPU
-RUN perl -pi -e 's/^Exec=terminator$/Exec=terminator -e "vglrun bash"/g' /usr/share/applications/terminator.desktop
-
-# Start setups for TurboVNC
-RUN mkdir -p /root/.vnc
-COPY ./docker/files/xstartup.turbovnc /root/.vnc/xstartup.turbovnc
-RUN chmod a+x /root/.vnc/xstartup.turbovnc
-
-#---------------------------------------------------------------------
-# Startup
-#---------------------------------------------------------------------
-COPY ./docker/files/start_desktop.sh /usr/local/bin/start_desktop.sh
-
-#if you're not using ubuntu:16.04 make sure to replace xenial with `lsb_release -cs`
-FROM base_img
 
 # install ROS Kinetic
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
@@ -91,7 +36,7 @@ ENV ROS_DISTRO=kinetic
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 RUN apt-get update -y && \
-    apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev -y && \
+    apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev libignition-math2 libignition-math2-dev -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

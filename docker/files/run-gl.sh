@@ -27,8 +27,6 @@ fi
 # source install/setup.sh
 source setup.bash
 if which xterm &>/dev/null; then
-	export DISPLAY=:0 # Select screen 0 by default.
-	/usr/local/bin/start_desktop.sh &
 	roslaunch deepracer_simulation_environment $2 &
 	rqt &
 	rviz &
