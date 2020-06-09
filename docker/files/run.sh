@@ -26,7 +26,7 @@ source /opt/ros/${ROS_DISTRO}/setup.bash
 source setup.bash
 
 # Start an X server if we do not have one
-if [ -z "$USE_EXTERNAL_X"];
+if [[ "${USE_EXTERNAL_X,,}" != "true" ]; then
 	export DISPLAY=:0 # Select screen 0 by default.
 	xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
 	x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
@@ -34,8 +34,13 @@ fi
 
 # Start the training
 roslaunch deepracer_simulation_environment $2 &
-rqt &
-rviz &
+
+# If GUI is desired then also start RQT and RVIZ
+if [[ "${ENABLE_GUI,,}" == "true" ]];
+then
+	rqt &
+	rviz &
+fi
 
 sleep 1
 
