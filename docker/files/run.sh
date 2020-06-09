@@ -1,16 +1,11 @@
 export XAUTHORITY=/root/.Xauthority
-source /opt/ros/${ROS_DISTRO}/setup.bash
 
+# Ensure we have a roll-out index; also when we have only one worker
 if [ -z "$ROLLOUT_IDX" ]; then
 	export ROLLOUT_IDX=0
 fi
 
-if [ "$1" == "build" ]; then
-	rm -rf build
-	rm -rf install
-	colcon build
-fi
-
+# If we have multiple workers we need to do an 'election'
 if [ "$1" == "multi" ]; then
 	COMMS_FILE=/mnt/comms/workers
 	echo $HOSTNAME >> $COMMS_FILE
@@ -19,25 +14,30 @@ if [ "$1" == "multi" ]; then
 	echo "Starting as worker $ROLLOUT_IDX"
 fi
 
+# If no run-option given then use the distributed training
 if [ -z ${2+x} ]; then
 	$2 = "distributed_training.launch"
 	exit
 
 fi
-# source install/setup.sh
+
+# Initialize ROS & the Bundle
+source /opt/ros/${ROS_DISTRO}/setup.bash
 source setup.bash
-if which x11vnc &>/dev/null; then
+
+# Start an X server if we do not have one
+if [ -z "$USE_EXTERNAL_X"];
 	export DISPLAY=:0 # Select screen 0 by default.
 	xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
 	x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
-	roslaunch deepracer_simulation_environment $2 &
-	rqt &
-	rviz &
 fi
-#! pgrep -a Xvfb && Xvfb $DISPLAY -screen 0 1024x768x16 &
+
+# Start the training
+roslaunch deepracer_simulation_environment $2 &
+rqt &
+rviz &
+
 sleep 1
-#if which fluxbox &>/dev/null; then
-#  ! pgrep -a fluxbox && fluxbox &
-#fi
+
 echo "IP: $(hostname -I) ($(hostname))"
 wait
