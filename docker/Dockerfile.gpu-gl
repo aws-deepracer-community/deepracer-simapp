@@ -1,0 +1,87 @@
+FROM nvidia/cudagl:9.0-runtime-ubuntu16.04 
+
+# Install CUDNN
+RUN echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1604/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+
+LABEL com.nvidia.cudnn.version="7.3.1.20"
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libcudnn7=7.3.1.20-1+cuda9.0 \
+    libcudnn7-dev=7.3.1.20-1+cuda9.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Linux stuff
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl net-tools build-essential wget cmake \
+    xterm x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
+    mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
+    libglu1 libglu1:i386 libxv1 libxv1:i386 \
+    python python3-pip python-boto3 python-pip libpython3-dev libpython-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# install ROS Kinetic
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN apt-get update -y && \
+    apt-get install ros-kinetic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN rosdep init && rosdep update 
+
+ENV ROS_DISTRO=kinetic
+
+# install gazebo7
+RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
+RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
+RUN apt-get update -y && \
+    apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev libignition-math2 libignition-math2-dev -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# RUN pip3 install -U pip setuptools>=41.0.0
+RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cache-dir \
+    annoy==1.8.3 \
+    Pillow==4.3.0 \
+    matplotlib==2.0.2 \
+    numpy==1.14.5 \
+    pandas==0.22.0 \
+    pygame==1.9.3 \
+    PyOpenGL==3.1.0 \
+    scipy==1.2.1 \
+    scikit-image==0.15.0 \
+    futures==3.1.1 \
+    boto3==1.9.23 \ 
+    minio==4.0.5 \
+    # kubernetes==7.0.0 \
+    rl-coach-slim==1.0.0 \
+    PyYAML==3.13 \
+    rospkg>=1.1 \
+    shapely==1.6.4 \
+    tensorflow-gpu==1.11 \
+    redis==3.2.1 \
+    opencv-python==4.1.1.26 \
+    future-fstrings==1.2.0 \
+    'tokenize-rt>=3,<4' 
+
+RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
+
+COPY bundle /opt/install
+WORKDIR /opt/install
+RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
+    apt-get install -y ros-kinetic-media-export ros-kinetic-web-video-server python-matplotlib && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+ENV COLCON_CURRENT_PREFIX="/opt/install"
+ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
+ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
+
+COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
+RUN patch -p1 -N --directory=/usr/local/lib/python3.5/dist-packages/ < /opt/amazon/rl_coach.patch
+
+COPY ./docker/files/run.sh run.sh
+
+RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
+
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["./run.sh run distributed_training.launch"]
