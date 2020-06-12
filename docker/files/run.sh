@@ -5,11 +5,17 @@ if [ -z "$ROLLOUT_IDX" ]; then
 	export ROLLOUT_IDX=0
 fi
 
-# If we have multiple workers we need to do an 'election'
+# If we have multiple workers we need to do assignment of worker number
 if [ "$1" == "multi" ]; then
-	COMMS_FILE=/mnt/comms/workers
-	echo $HOSTNAME >> $COMMS_FILE
-	WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
+	# Use Docker Swarm Replica .Task.Slot
+	if [ -n "$DOCKER_REPLICA_SLOT" ]; then
+		WORKER_NUM=$DOCKER_REPLICA_SLOT
+	# Create an 'election file' in local file system
+	else
+		COMMS_FILE=/mnt/comms/workers
+		echo $HOSTNAME >> $COMMS_FILE
+		WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
+	fi
 	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
 	echo "Starting as worker $ROLLOUT_IDX"
 fi
