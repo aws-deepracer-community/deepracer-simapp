@@ -7,9 +7,13 @@ fi
 
 # If we have multiple workers we need to do an 'election'
 if [ "$1" == "multi" ]; then
-	COMMS_FILE=/mnt/comms/workers
-	echo $HOSTNAME >> $COMMS_FILE
-	WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
+	if [ -n "$DOCKER_REPLICA_SLOT" ]; then
+		WORKER_NUM=$DOCKER_REPLICA_SLOT
+	else
+		COMMS_FILE=/mnt/comms/workers
+		echo $HOSTNAME >> $COMMS_FILE
+		WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
+	fi
 	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
 	echo "Starting as worker $ROLLOUT_IDX"
 fi
