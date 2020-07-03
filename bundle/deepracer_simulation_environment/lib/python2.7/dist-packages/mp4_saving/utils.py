@@ -13,9 +13,9 @@ from markov.metrics.constants import (ITERATION_DATA_LOCAL_FILE_PATH,
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                         SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
+                                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
 from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
-                                  SCALE_RATIO, IconographicImageSize)
+                                  IconographicImageSize)
 from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDataSrv
 
 LOG = Logger(__name__, logging.INFO).get_logger()
@@ -69,9 +69,10 @@ def get_track_iconography_image():
         Image: Reading the .png file as cv2 image
     """
     track_name = rospy.get_param("WORLD_NAME")
-    return get_image(track_name, IconographicImageSize.FULL_IMAGE_SIZE.value)
+    track_img = get_image(track_name, IconographicImageSize.FULL_IMAGE_SIZE.value)
+    return cv2.cvtColor(track_img, cv2.COLOR_RGBA2BGRA)
 
-def get_image(icon_name, img_size=None):
+def get_image(icon_name, img_size=None, is_rgb=False):
     """ Given the icon_name in the track_iconography folder without png, gives back cv2 image
     with all 4 channels
     Args:
@@ -88,6 +89,7 @@ def get_image(icon_name, img_size=None):
             rospkg.RosPack().get_path('deepracer_simulation_environment'), 'track_iconography')
         image_path = os.path.join(track_iconography_dir, icon_name + '.png')
         image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+        image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
         if img_size:
             image = cv2.resize(image, img_size)
         IMAGE_CACHE[icon_name] = image
@@ -127,12 +129,11 @@ def write_text_on_image(image, text, loc, font, font_color, font_shadow_color):
     Returns:
         Image: Edited image
     """
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_im = Image.fromarray(image)
     draw = ImageDraw.Draw(pil_im)
     draw_shadow(draw, text, font, loc[0], loc[1], font_shadow_color)
     draw.text(loc, text, font=font, fill=font_color)
-    return cv2.cvtColor(np.array(pil_im), cv2.COLOR_RGB2BGR)
+    return np.array(pil_im)
 
 def create_folder_path(camera_dir_list):
     """ Create directory if the folder path does not exist
@@ -192,7 +193,7 @@ def get_cameratype_params(racecar_name, agent_name):
 
     camera_info[CameraTypeParams.CAMERA_PIP_PARAMS] = {
         'name': CameraTypeParams.CAMERA_PIP_PARAMS.value,
-        'topic_name': "/{}/deepracer/kvs_stream".format(racecar_name),
+        'topic_name': "/{}/deepracer/main_camera_stream".format(racecar_name),
         'local_path': camera_pip_path
     }
     camera_info[CameraTypeParams.CAMERA_45DEGREE_PARAMS] = {
@@ -228,20 +229,6 @@ def get_resized_alpha(image, scale_ratio):
     resized_img = resize_image(image, scale_ratio)
     # The 4th channel is the alpha channel. Normalize alpha channels from 0-255 to 0-1
     return resized_img[:, :, 3] / 255.0
-
-def overlay_minor_img_to_bottom_right(major_cv_image, minor_cv_image):
-    """ Given two images overlay minor image on the bottom right corner of the major image
-    Args:
-        major_cv_image (Image): Major image, usually the image that takes the complete screen
-        minor_cv_image (Image): This will the image that will be scaled down and put at bottom right
-    Returns:
-        Image: The overlayed image is returned
-    """
-    # overlay minor on the bottom right of major
-    minor_cv_image = resize_image(minor_cv_image, SCALE_RATIO)
-    major_cv_image[-minor_cv_image.shape[0]:,
-                   -minor_cv_image.shape[1]:] = minor_cv_image
-    return major_cv_image
 
 def get_top_camera_info():
     """ Camera information is required to map the (x, y) value of the agent on the camera image.
@@ -308,7 +295,7 @@ def plot_rectangular_image_on_main_image(background_image, rect_image, pixel_xy)
         background_image[y_min_bg:y_max_bg, x_min_bg:x_max_bg, :4] = \
             (1 - alpha_foreground) * (background_image[y_min_bg:y_max_bg, x_min_bg:x_max_bg, :4]) \
             + alpha_foreground * rect_image[y_min_rect:y_max_rect, x_min_rect:x_max_rect, :4]
-    except:
+    except (Exception) as err_msg:
         #
         # This could fail when agents x, y location is NaN. This could when the markov node died.
         # This will also fail when the kinesis video node shuts down and the
@@ -319,44 +306,53 @@ def plot_rectangular_image_on_main_image(background_image, rect_image, pixel_xy)
         pass
     return background_image
 
-def apply_gradient(main_image, gradient_img, gradient_alpha):
+def get_gradient_values(gradient_img):
+    """ Given the image gradient returns gradient_alpha_rgb_mul and one_minus_gradient_alpha.
+    These pre-calculated numbers are used to apply the gradient on the camera image
+
+    Arguments:
+        gradient_img (Image): Gradient image that has to applied on the camera image
+
+    Returns:
+        (tuple): gradient_alpha_rgb_mul (Numpy.Array) gradient_img * gradient_alpha value
+                 one_minus_gradient_alpha (Numpy.Array) (1 - gradient_alpha)
+    """
+    (height, width, _) = gradient_img.shape
+    gradient_alpha = (gradient_img[:, :, 3] / 255.0).reshape(height, width, 1)
+
+    gradient_alpha_rgb_mul = gradient_img * gradient_alpha
+    one_minus_gradient_alpha = (1 - gradient_alpha).reshape(height, width)
+    return gradient_alpha_rgb_mul, one_minus_gradient_alpha
+
+def apply_gradient(main_image, gradient_alpha_rgb_mul, one_minus_gradient_alpha):
     """ The gradient on the image is overlayed so that text looks visible and clear.
     This leaves a good effect on the image.
+    The older code took 6.348s for 1000 runs
+
+    Numpy broadcasting is slower than normal python
+    major_cv_image_1[:, :, :4] = (gradient_alpha_rgb_mul + (major_cv_image_1 * one_minus_gradient_alpha))[:, :, :4]
+    Timeit 1000 runs - 6.523s
+
+    The current code takes - 5.131s for 1000 runs
+
     Args:
         main_image (Image): The main image where gradient has to be applied
-        gradient_img (Image): The gradient image
-        gradient_alpha (Numpy.Array): The 4th channel, the alpha channel of the gradient
+        gradient_alpha_rgb_mul (Numpy.Array): gradient_img * gradient_alpha value
+        one_minus_gradient_alpha (Numpy.Array): (1 - gradient_alpha)
     Returns:
         Image: Gradient applied image
     """
     for channel in range(0, 4):
-        main_image[-gradient_img.shape[0]:, -gradient_img.shape[1]:, channel] = \
-            (gradient_alpha * gradient_img[:, :, channel]) + \
-            (1 - gradient_alpha) * (main_image[\
-                -gradient_img.shape[0]:, -gradient_img.shape[1]:, channel])
+        main_image[:, :, channel] = gradient_alpha_rgb_mul[:, :, channel] + \
+            (main_image[:, :, channel] * one_minus_gradient_alpha)
     return main_image
 
-def overlay_track_images(major_cv_image, minor_cv_image, loc_offset=(0, 0)):
-    """ Overlaying the main image with the track iconographic image.
-    Args:
-        major_cv_image (Image): The main background image
-        minor_cv_image (Image): Edited track iconographic image
-        track_icongraphy_alpha (Numpy.Array): The 4th channel, the alpha channel of the iconographic image
-    Returns:
-        Image: One image with track overlayed on the main image
+def racecar_name_to_agent_name(racecars_info, racecar_name):
+    """ Given the racecars_info as list and the racecar_name and racecar_name
+    get the agent name
+
+    Arguments:
+        racecars_info (list): List of racecars_info
+        racecar_name (str): Racecar name
     """
-    # Now adjust the alpha values to all channels
-    minor_cv_image = resize_image(minor_cv_image, SCALE_RATIO)
-    track_icongraphy_alpha = minor_cv_image[:, :, 3]/255.0
-
-    # Minor image is placed at the bottom right with some offset
-    x_min = -(loc_offset[1]+minor_cv_image.shape[0])
-    x_max = major_cv_image.shape[0] - loc_offset[1]
-    y_min = -(loc_offset[0]+minor_cv_image.shape[1])
-    y_max = major_cv_image.shape[1] - loc_offset[0]
-
-    for channel in range(0, 3):
-        major_cv_image[x_min:x_max, y_min:y_max, channel] =\
-            (track_icongraphy_alpha * minor_cv_image[:, :, channel]) + \
-            (1 - track_icongraphy_alpha) * (major_cv_image[x_min:x_max, y_min:y_max, channel])
-    return cv2.cvtColor(major_cv_image, cv2.COLOR_RGBA2RGB)
+    return 'agent' if len(racecars_info) == 1 else "agent_{}".format(racecar_name.split("_")[1])

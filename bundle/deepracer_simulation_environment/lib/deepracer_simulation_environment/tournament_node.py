@@ -28,7 +28,8 @@ from markov.utils import (force_list, restart_simulation_job,
 from markov.architecture.constants import Input
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
-from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400,
+                                          SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 
 from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values, F1_SHELL_USERS_LIST
@@ -367,6 +368,10 @@ def main():
 
                 cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
                                       s3_region)
+    except ValueError as ex:
+        log_and_exit("User modified model_metadata.json: {}".format(ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_400)
     except Exception as e:
         log_and_exit("Tournament node failed: {}".format(e),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,

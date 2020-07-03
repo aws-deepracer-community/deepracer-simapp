@@ -141,7 +141,7 @@ def main():
             json_key = json_key.replace('s3://{}/'.format(model_s3_bucket), '')
             s3_client.download_file(Bucket=model_s3_bucket, Key=json_key, Filename=local_model_metadata_path)
             sensors, _, simapp_version = utils_parse_model_metadata.parse_model_metadata(local_model_metadata_path)
-            simapp_versions.append(simapp_version)
+            simapp_versions.append(str(simapp_version))
             if Input.STEREO.value in sensors:
                 racecars_with_stereo_cameras.append(racecar_name)
             if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
@@ -166,6 +166,10 @@ def main():
         log_and_exit("No Internet connection or s3 service unavailable",
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
+    except ValueError as ex:
+        log_and_exit("User modified model_metadata.json: {}".format(ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_400)
     except Exception as ex:
         log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
                          .format(s3_bucket, yaml_key, ex), 

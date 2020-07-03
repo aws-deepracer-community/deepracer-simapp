@@ -52,7 +52,7 @@ struct AgentRewardData_
    typedef int8_t _action_type;
   _action_type action;
 
-   typedef float _reward_type;
+   typedef double _reward_type;
   _reward_type reward;
 
    typedef int8_t _action_space_len_type;
@@ -145,12 +145,12 @@ struct MD5Sum< ::deepracer_simulation_environment::AgentRewardData_<ContainerAll
 {
   static const char* value()
   {
-    return "2d88124db35ddfde5616a1bb8792838a";
+    return "af5e8658bf60dab3f19408bd4ad157dd";
   }
 
   static const char* value(const ::deepracer_simulation_environment::AgentRewardData_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0x2d88124db35ddfdeULL;
-  static const uint64_t static_value2 = 0x5616a1bb8792838aULL;
+  static const uint64_t static_value1 = 0xaf5e8658bf60dab3ULL;
+  static const uint64_t static_value2 = 0xf19408bd4ad157ddULL;
 };
 
 template<class ContainerAllocator>
@@ -171,7 +171,7 @@ struct Definition< ::deepracer_simulation_environment::AgentRewardData_<Containe
   {
     return "string agent_name\n\
 int8 action\n\
-float32 reward\n\
+float64 reward\n\
 int8 action_space_len\n\
 string[] speed_list\n\
 string[] steering_angle_list\n\
@@ -272,7 +272,7 @@ struct Printer< ::deepracer_simulation_environment::AgentRewardData_<ContainerAl
     s << indent << "action: ";
     Printer<int8_t>::stream(s, indent + "  ", v.action);
     s << indent << "reward: ";
-    Printer<float>::stream(s, indent + "  ", v.reward);
+    Printer<double>::stream(s, indent + "  ", v.reward);
     s << indent << "action_space_len: ";
     Printer<int8_t>::stream(s, indent + "  ", v.action_space_len);
     s << indent << "speed_list[]" << std::endl;

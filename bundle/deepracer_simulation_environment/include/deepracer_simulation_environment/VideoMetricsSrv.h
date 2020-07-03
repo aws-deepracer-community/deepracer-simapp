@@ -40,7 +40,7 @@ template<>
 struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrv > {
   static const char* value()
   {
-    return "da26613e841a5a2b4eb38f31404241d7";
+    return "ccf1b22780e2ca6fb64b60963df11d26";
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrv&) { return value(); }

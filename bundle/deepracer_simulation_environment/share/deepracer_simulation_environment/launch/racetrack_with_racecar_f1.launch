@@ -18,6 +18,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[0] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[0] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[0] == '3.0')"/>
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[0])"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
     <arg name="include_second_camera" value="$(eval 'racecar_0' in racecars_with_stereo_cameras.split(','))" />
@@ -33,6 +34,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[1] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[1] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[1] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 1)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[1] if len(kinesis_video_stream_names.split(',')) > 1 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -48,6 +50,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[2] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[2] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[2] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 2)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[2] if len(kinesis_video_stream_names.split(',')) > 2 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -63,6 +66,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[3] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[3] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[3] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 3)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[3] if len(kinesis_video_stream_names.split(',')) > 3 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -78,6 +82,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[4] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[4] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[4] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 4)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[4] if len(kinesis_video_stream_names.split(',')) > 4 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -93,6 +98,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[5] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[5] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[5] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 5)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[5] if len(kinesis_video_stream_names.split(',')) > 5 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -108,6 +114,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[6] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[6] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[6] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 6)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[6] if len(kinesis_video_stream_names.split(',')) > 6 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -123,6 +130,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[7] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[7] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[7] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 7)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[7] if len(kinesis_video_stream_names.split(',')) > 7 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -138,6 +146,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[8] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[8] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[8] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 8)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[8] if len(kinesis_video_stream_names.split(',')) > 8 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -153,6 +162,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[9] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[9] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[9] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 9)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[9] if len(kinesis_video_stream_names.split(',')) > 9 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -168,6 +178,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[10] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[10] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[10] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 10)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[10] if len(kinesis_video_stream_names.split(',')) > 10 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -183,6 +194,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[11] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[11] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[11] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 11)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[11] if len(kinesis_video_stream_names.split(',')) > 11 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -198,6 +210,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[12] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[12] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[12] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 12)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[12] if len(kinesis_video_stream_names.split(',')) > 12 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -213,6 +226,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[13] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[13] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[13] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 13)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[13] if len(kinesis_video_stream_names.split(',')) > 13 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -228,6 +242,7 @@
     <!-- Check the simapp version and assign appropriate xacro file -->
     <arg name="racecar_xacro_file" default="mit" if="$(eval str(simapp_versions).split(',')[14] == '1.0')"/>
     <arg name="racecar_xacro_file" default="confetti" if="$(eval str(simapp_versions).split(',')[14] == '2.0')"/>
+    <arg name="racecar_xacro_file" default="deepracer" if="$(eval str(simapp_versions).split(',')[14] == '3.0')"/>
     <arg name="publish_to_kinesis_stream" value="$(eval arg('publish_to_kinesis_stream') and len(kinesis_video_stream_names.split(',')) > 14)" />
     <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[14] if len(kinesis_video_stream_names.split(',')) > 14 else '')"/>
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>

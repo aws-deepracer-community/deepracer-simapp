@@ -16,6 +16,8 @@
 
 
 
+(if (not (find-package "GEOMETRY_MSGS"))
+  (ros::roseus-add-msgs "geometry_msgs"))
 
 
 (defclass deepracer_simulation_environment::VideoMetricsSrvRequest
@@ -47,7 +49,7 @@
 
 (defclass deepracer_simulation_environment::VideoMetricsSrvResponse
   :super ros::object
-  :slots (_lap_counter _completion_percentage _reset_counter _throttle _steering _best_lap_time _total_evaluation_time _done ))
+  :slots (_lap_counter _completion_percentage _reset_counter _throttle _steering _best_lap_time _total_evaluation_time _done _x _y _object_locations ))
 
 (defmethod deepracer_simulation_environment::VideoMetricsSrvResponse
   (:init
@@ -60,6 +62,9 @@
     ((:best_lap_time __best_lap_time) 0.0)
     ((:total_evaluation_time __total_evaluation_time) 0.0)
     ((:done __done) nil)
+    ((:x __x) 0.0)
+    ((:y __y) 0.0)
+    ((:object_locations __object_locations) (let (r) (dotimes (i 0) (push (instance geometry_msgs::Point32 :init) r)) r))
     )
    (send-super :init)
    (setq _lap_counter (float __lap_counter))
@@ -70,6 +75,9 @@
    (setq _best_lap_time (float __best_lap_time))
    (setq _total_evaluation_time (float __total_evaluation_time))
    (setq _done __done)
+   (setq _x (float __x))
+   (setq _y (float __y))
+   (setq _object_locations __object_locations)
    self)
   (:lap_counter
    (&optional __lap_counter)
@@ -95,6 +103,19 @@
   (:done
    (&optional __done)
    (if __done (setq _done __done)) _done)
+  (:x
+   (&optional __x)
+   (if __x (setq _x __x)) _x)
+  (:y
+   (&optional __y)
+   (if __y (setq _y __y)) _y)
+  (:object_locations
+   (&rest __object_locations)
+   (if (keywordp (car __object_locations))
+       (send* _object_locations __object_locations)
+     (progn
+       (if __object_locations (setq _object_locations (car __object_locations)))
+       _object_locations)))
   (:serialization-length
    ()
    (+
@@ -114,6 +135,12 @@
     4
     ;; bool _done
     1
+    ;; float32 _x
+    4
+    ;; float32 _y
+    4
+    ;; geometry_msgs/Point32[] _object_locations
+    (apply #'+ (send-all _object_locations :serialization-length)) 4
     ))
   (:serialize
    (&optional strm)
@@ -135,6 +162,15 @@
        (sys::poke _total_evaluation_time (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
      ;; bool _done
        (if _done (write-byte -1 s) (write-byte 0 s))
+     ;; float32 _x
+       (sys::poke _x (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
+     ;; float32 _y
+       (sys::poke _y (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
+     ;; geometry_msgs/Point32[] _object_locations
+     (write-long (length _object_locations) s)
+     (dolist (elem _object_locations)
+       (send elem :serialize s)
+       )
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
@@ -155,6 +191,17 @@
      (setq _total_evaluation_time (sys::peek buf ptr- :float)) (incf ptr- 4)
    ;; bool _done
      (setq _done (not (= 0 (sys::peek buf ptr- :char)))) (incf ptr- 1)
+   ;; float32 _x
+     (setq _x (sys::peek buf ptr- :float)) (incf ptr- 4)
+   ;; float32 _y
+     (setq _y (sys::peek buf ptr- :float)) (incf ptr- 4)
+   ;; geometry_msgs/Point32[] _object_locations
+   (let (n)
+     (setq n (sys::peek buf ptr- :integer)) (incf ptr- 4)
+     (setq _object_locations (let (r) (dotimes (i n) (push (instance geometry_msgs::Point32 :init) r)) r))
+     (dolist (elem- _object_locations)
+     (send elem- :deserialize buf ptr-) (incf ptr- (send elem- :serialization-length))
+     ))
    ;;
    self)
   )
@@ -163,7 +210,7 @@
   :super ros::object
   :slots ())
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
+(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :datatype-) "deepracer_simulation_environment/VideoMetricsSrv")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :request) deepracer_simulation_environment::VideoMetricsSrvRequest)
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :response) deepracer_simulation_environment::VideoMetricsSrvResponse)
@@ -171,7 +218,7 @@
 (defmethod deepracer_simulation_environment::VideoMetricsSrvRequest
   (:response () (instance deepracer_simulation_environment::VideoMetricsSrvResponse :init)))
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :datatype-) "deepracer_simulation_environment/VideoMetricsSrvRequest")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :definition-)
       "---
@@ -183,9 +230,25 @@ float32 steering
 float32 best_lap_time
 float32 total_evaluation_time
 bool done
+float32 x
+float32 y
+geometry_msgs/Point32[] object_locations
+
+================================================================================
+MSG: geometry_msgs/Point32
+# This contains the position of a point in free space(with 32 bits of precision).
+# It is recommeded to use Point wherever possible instead of Point32.  
+# 
+# This recommendation is to promote interoperability.  
+#
+# This message is designed to take up less space when sending
+# lots of points at once, as in the case of a PointCloud.  
+
+float32 x
+float32 y
 ")
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "da26613e841a5a2b4eb38f31404241d7")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :datatype-) "deepracer_simulation_environment/VideoMetricsSrvResponse")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :definition-)
       "---
@@ -197,10 +260,26 @@ float32 steering
 float32 best_lap_time
 float32 total_evaluation_time
 bool done
+float32 x
+float32 y
+geometry_msgs/Point32[] object_locations
+
+================================================================================
+MSG: geometry_msgs/Point32
+# This contains the position of a point in free space(with 32 bits of precision).
+# It is recommeded to use Point wherever possible instead of Point32.  
+# 
+# This recommendation is to promote interoperability.  
+#
+# This message is designed to take up less space when sending
+# lots of points at once, as in the case of a PointCloud.  
+
+float32 x
+float32 y
 ")
 
 
 
-(provide :deepracer_simulation_environment/VideoMetricsSrv "da26613e841a5a2b4eb38f31404241d7")
+(provide :deepracer_simulation_environment/VideoMetricsSrv "ccf1b22780e2ca6fb64b60963df11d26")
 
 

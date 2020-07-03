@@ -14,6 +14,7 @@ const _getByteLength = _ros_msg_utils.getByteLength;
 
 //-----------------------------------------------------------
 
+let geometry_msgs = _finder('geometry_msgs');
 
 //-----------------------------------------------------------
 
@@ -81,6 +82,9 @@ class VideoMetricsSrvResponse {
       this.best_lap_time = null;
       this.total_evaluation_time = null;
       this.done = null;
+      this.x = null;
+      this.y = null;
+      this.object_locations = null;
     }
     else {
       if (initObj.hasOwnProperty('lap_counter')) {
@@ -131,6 +135,24 @@ class VideoMetricsSrvResponse {
       else {
         this.done = false;
       }
+      if (initObj.hasOwnProperty('x')) {
+        this.x = initObj.x
+      }
+      else {
+        this.x = 0.0;
+      }
+      if (initObj.hasOwnProperty('y')) {
+        this.y = initObj.y
+      }
+      else {
+        this.y = 0.0;
+      }
+      if (initObj.hasOwnProperty('object_locations')) {
+        this.object_locations = initObj.object_locations
+      }
+      else {
+        this.object_locations = [];
+      }
     }
   }
 
@@ -152,6 +174,16 @@ class VideoMetricsSrvResponse {
     bufferOffset = _serializer.float32(obj.total_evaluation_time, buffer, bufferOffset);
     // Serialize message field [done]
     bufferOffset = _serializer.bool(obj.done, buffer, bufferOffset);
+    // Serialize message field [x]
+    bufferOffset = _serializer.float32(obj.x, buffer, bufferOffset);
+    // Serialize message field [y]
+    bufferOffset = _serializer.float32(obj.y, buffer, bufferOffset);
+    // Serialize message field [object_locations]
+    // Serialize the length for message field [object_locations]
+    bufferOffset = _serializer.uint32(obj.object_locations.length, buffer, bufferOffset);
+    obj.object_locations.forEach((val) => {
+      bufferOffset = geometry_msgs.msg.Point32.serialize(val, buffer, bufferOffset);
+    });
     return bufferOffset;
   }
 
@@ -175,11 +207,24 @@ class VideoMetricsSrvResponse {
     data.total_evaluation_time = _deserializer.float32(buffer, bufferOffset);
     // Deserialize message field [done]
     data.done = _deserializer.bool(buffer, bufferOffset);
+    // Deserialize message field [x]
+    data.x = _deserializer.float32(buffer, bufferOffset);
+    // Deserialize message field [y]
+    data.y = _deserializer.float32(buffer, bufferOffset);
+    // Deserialize message field [object_locations]
+    // Deserialize array length for message field [object_locations]
+    len = _deserializer.uint32(buffer, bufferOffset);
+    data.object_locations = new Array(len);
+    for (let i = 0; i < len; ++i) {
+      data.object_locations[i] = geometry_msgs.msg.Point32.deserialize(buffer, bufferOffset)
+    }
     return data;
   }
 
   static getMessageSize(object) {
-    return 29;
+    let length = 0;
+    length += 12 * object.object_locations.length;
+    return length + 41;
   }
 
   static datatype() {
@@ -189,7 +234,7 @@ class VideoMetricsSrvResponse {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return 'da26613e841a5a2b4eb38f31404241d7';
+    return 'ccf1b22780e2ca6fb64b60963df11d26';
   }
 
   static messageDefinition() {
@@ -203,7 +248,23 @@ class VideoMetricsSrvResponse {
     float32 best_lap_time
     float32 total_evaluation_time
     bool done
+    float32 x
+    float32 y
+    geometry_msgs/Point32[] object_locations
     
+    ================================================================================
+    MSG: geometry_msgs/Point32
+    # This contains the position of a point in free space(with 32 bits of precision).
+    # It is recommeded to use Point wherever possible instead of Point32.  
+    # 
+    # This recommendation is to promote interoperability.  
+    #
+    # This message is designed to take up less space when sending
+    # lots of points at once, as in the case of a PointCloud.  
+    
+    float32 x
+    float32 y
+    float32 z
     `;
   }
 
@@ -269,6 +330,30 @@ class VideoMetricsSrvResponse {
       resolved.done = false
     }
 
+    if (msg.x !== undefined) {
+      resolved.x = msg.x;
+    }
+    else {
+      resolved.x = 0.0
+    }
+
+    if (msg.y !== undefined) {
+      resolved.y = msg.y;
+    }
+    else {
+      resolved.y = 0.0
+    }
+
+    if (msg.object_locations !== undefined) {
+      resolved.object_locations = new Array(msg.object_locations.length);
+      for (let i = 0; i < resolved.object_locations.length; ++i) {
+        resolved.object_locations[i] = geometry_msgs.msg.Point32.Resolve(msg.object_locations[i]);
+      }
+    }
+    else {
+      resolved.object_locations = []
+    }
+
     return resolved;
     }
 };
@@ -276,6 +361,6 @@ class VideoMetricsSrvResponse {
 module.exports = {
   Request: VideoMetricsSrvRequest,
   Response: VideoMetricsSrvResponse,
-  md5sum() { return 'da26613e841a5a2b4eb38f31404241d7'; },
+  md5sum() { return 'ccf1b22780e2ca6fb64b60963df11d26'; },
   datatype() { return 'deepracer_simulation_environment/VideoMetricsSrv'; }
 };
