@@ -21,13 +21,15 @@ if [ "$1" == "multi" ]; then
 	fi
 
 	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
-	echo "Starting as worker $ROLLOUT_IDX"
 
 	# Check if multi-config has been enabled
 	if [ -n "$MULTI_CONFIG" ]; then
 		export S3_YAML_FILE=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].config_file')
 		export WORLD_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].world_name')
 	fi
+
+	echo "Starting as worker $ROLLOUT_IDX, using world $WORLD_NAME and configuration $S3_YAML_FILE."
+
 fi
 
 # If no run-option given then use the distributed training
