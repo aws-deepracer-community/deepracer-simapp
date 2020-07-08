@@ -36,6 +36,7 @@ MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
 MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
 MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
 RACER_NAME_YAML_KEY = "RACER_NAME"
+DISPLAY_NAME_YAML_KEY = "DISPLAY_NAME"
 
 TIME_TRIAL_RACE_TYPE = "TIME_TRIAL"
 F1_RACE_TYPE = "F1"
@@ -78,13 +79,14 @@ def main():
                                CAR_COLOR_YAML_KEY: DEFAULT_COLOR,
                                BODY_SHELL_TYPE_YAML_KEY: None,
                                MODEL_METADATA_FILE_S3_YAML_KEY: None,
-                               RACER_NAME_YAML_KEY: None}
+                               RACER_NAME_YAML_KEY: None,
+                               DISPLAY_NAME_YAML_KEY: None}
         yaml_dict = get_yaml_dict(local_yaml_path)
         yaml_values = get_yaml_values(yaml_dict, default_yaml_values)
 
         # Forcing the yaml parameter to list
         force_list_params = [MODEL_METADATA_FILE_S3_YAML_KEY, MODEL_S3_BUCKET_YAML_KEY, MODEL_S3_PREFIX_YAML_KEY,
-                             CAR_COLOR_YAML_KEY, BODY_SHELL_TYPE_YAML_KEY, RACER_NAME_YAML_KEY]
+                             CAR_COLOR_YAML_KEY, BODY_SHELL_TYPE_YAML_KEY, RACER_NAME_YAML_KEY, DISPLAY_NAME_YAML_KEY]
 
         for params in force_list_params:
             yaml_values[params] = force_list(yaml_values[params])
@@ -116,15 +118,27 @@ def main():
         # List of body shell types
         body_shell_types = yaml_values[BODY_SHELL_TYPE_YAML_KEY]
         racer_names = yaml_values[RACER_NAME_YAML_KEY]
+        display_names = yaml_values[DISPLAY_NAME_YAML_KEY]
+        # If body_shell_types contains only None, figure out shell based on names
+        # otherwise use body_shell_type defined in body_shell_types
         if None in body_shell_types:
-            # use default shells
-            if None in racer_names:
+            # use default shells only if both RACER_NAME and DISPLAY_NAME are empty
+            if None in racer_names and None in display_names:
                 body_shell_types = [BodyShellType.DEFAULT.value] * len(yaml_values[MODEL_S3_BUCKET_YAML_KEY])
-            # use default shells for regular user and f1 shell for users in F1_SHELL_USERS_LIST
             else:
-                body_shell_types = [BodyShellType.F1_2021.value if racer_alias in F1_SHELL_USERS_LIST
-                                    else BodyShellType.DEFAULT.value
-                                    for racer_alias in yaml_values[RACER_NAME_YAML_KEY]]
+                # If RACER_NAME is empty, use DISPLAY_NAME to get racer_alias,
+                # and check racer_alias in F1_SHELL_USERS_LIST whether to use F1 shell or not,
+                # otherwise use RACER_NAME as racer_alias to figure out whether to use the f1 body shell.
+                if None in racer_names:
+                    body_shell_types = [BodyShellType.F1_2021.value if racer_alias in F1_SHELL_USERS_LIST
+                                        else BodyShellType.DEFAULT.value
+                                        for racer_alias in display_names]
+                else:
+                    body_shell_types = [BodyShellType.F1_2021.value if racer_alias in F1_SHELL_USERS_LIST
+                                        else BodyShellType.DEFAULT.value
+                                        for racer_alias in racer_names]
+
+
                 yaml_dict[BODY_SHELL_TYPE_YAML_KEY] = body_shell_types
                 # override local yaml file with updated BODY_SHELL_TYPE
                 with open(local_yaml_path, 'w') as yaml_file:

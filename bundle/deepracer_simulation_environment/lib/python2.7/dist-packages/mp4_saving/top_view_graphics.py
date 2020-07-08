@@ -73,7 +73,7 @@ class TopViewGraphics(object):
         if num_obstacles:
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.
-            for i in range(num_obstacles + len(self.racecars_info) - 1):
+            for i in range(num_obstacles):
                 model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.OBSTACLES_PNG.value,
                                                   IconographicImageSize.OBSTACLE_IMAGE_SIZE.value))
 
@@ -82,7 +82,7 @@ class TopViewGraphics(object):
         if num_bots:
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.
-            for i in range(num_bots + len(self.racecars_info) - 1):
+            for i in range(num_bots):
                 model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.BOTS_PNG.value,
                                                   IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
 

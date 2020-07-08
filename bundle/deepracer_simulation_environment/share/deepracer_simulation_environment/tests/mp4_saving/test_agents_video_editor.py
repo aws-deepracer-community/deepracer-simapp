@@ -15,11 +15,38 @@ from std_srvs.srv import Empty, EmptyRequest
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.metrics.constants import (ITERATION_DATA_LOCAL_FILE_PATH,
                                       IterationDataLocalFileNames)
+from std_srvs.srv import Empty, EmptyResponse
+from deepracer_simulation_environment.srv import TopCamDataSrvResponse, TopCamDataSrv
+from deepracer_simulation_environment.srv import VideoMetricsSrvResponse, VideoMetricsSrv
+from mp4_saving import utils
 
-NODE_NAME = 'pytest_save_to_mp4_node'
+NODE_NAME = 'pytest_agents_video_editor_node'
 
 AGENT_NAMES = ["agent"]
 BASE_ROS_PATH = "/root/.ros"
+
+def signal_robomaker_markov_package_ready():
+    rospy.Service("/robomaker_markov_package_ready", Empty, handle_robomaker_markov_package_ready)
+
+def handle_robomaker_markov_package_ready():
+    return EmptyResponse()
+
+def get_top_cam_data():
+    rospy.Service('get_top_cam_data', TopCamDataSrv, handle_get_top_cam_data)
+
+def handle_get_top_cam_data(req):
+    '''Response handler for clients requesting the camera settings data
+       req - Client request, which should be an empty request
+    '''
+    return TopCamDataSrvResponse(1.13, 0.25, 640, 480)
+
+def get_video_metrics():
+    for agent_name in AGENT_NAMES:
+        rospy.Service("/{}/{}".format(agent_name, "mp4_video_metrics"), VideoMetricsSrv,
+                      handle_get_video_metrics)
+
+def handle_get_video_metrics(req):
+    return VideoMetricsSrvResponse(0, 0.10, 1, 1.5, -30.0, 0, 0, False, 1, 1, [])
 
 @pytest.fixture(scope="module")
 def node():
@@ -29,6 +56,9 @@ def node():
         pytest.fixture
     """
     rospy.init_node(NODE_NAME, anonymous=True)
+    signal_robomaker_markov_package_ready()
+    get_top_cam_data()
+    get_video_metrics()
 
 @pytest.fixture
 def subscribe_to_save_mp4(node):
@@ -77,13 +107,6 @@ def mp4_saved_paths():
         file_paths.extend([camera_pip_path, camera_45degree_path, camera_topview_path])
     return file_paths
 
-def test_subscribe_to_save_mp4():
-    """ Test the subscribe_to_save_mp4 function.
-    """
-    # The test_unsubscribe_to_save_mp4 test case will cover all this.
-    # Having this so just to increase the coverage
-    pass
-
 def test_unsubscribe_to_save_mp4(subscribe_to_save_mp4, unsubscribe_from_save_mp4, mp4_saved_paths):
     """ Test for unsubscribe_to_save_mp4. First I request for subscribe to the mp4 topic. This will start
     recording the camera frames. I sleep for 1 second so that I grabs enough frames. The tests I run are
@@ -105,3 +128,6 @@ def test_unsubscribe_to_save_mp4(subscribe_to_save_mp4, unsubscribe_from_save_mp
     for file_path in mp4_saved_paths:
         assert os.path.exists(file_path)
         assert os.path.getsize(file_path) > 262, "If the file size is less than 262 bytes, then the file is corrupt"
+
+def test_get_speed_formatted_str(node):
+    assert utils.get_speed_formatted_str(1.23) == '01.23'

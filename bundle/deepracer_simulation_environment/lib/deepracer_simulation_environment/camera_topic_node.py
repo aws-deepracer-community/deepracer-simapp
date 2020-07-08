@@ -32,7 +32,6 @@ def get_racecar_camera_topics(racecar_name):
         racecar_name (str): The name of the racecar
     """
     return [
-        "/{}/deepracer/kvs_stream".format(racecar_name),
         "/{}/main_camera/zed/rgb/image_rect_color".format(racecar_name),
         "/sub_camera/zed/rgb/image_rect_color"
     ]
