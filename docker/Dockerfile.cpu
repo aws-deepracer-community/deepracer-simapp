@@ -2,7 +2,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get update && \ 
-    apt-get install build-essential wget cmake python3-pip python-boto3 python-pip -y && \
+    apt-get install build-essential wget cmake python3-pip python-boto3 python-pip jq -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
