@@ -22,7 +22,7 @@ if [ "$1" == "multi" ]; then
 
 	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
 
-	# Check if multi-config has been enabled
+	# Check if multi-config has been enabled, then override S3_YAML_NAME and WORLD_NAME
 	if [ -n "$MULTI_CONFIG" ]; then
 		echo $MULTI_CONFIG
 		export S3_YAML_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].config_file')
