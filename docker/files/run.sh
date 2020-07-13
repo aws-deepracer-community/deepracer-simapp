@@ -24,7 +24,8 @@ if [ "$1" == "multi" ]; then
 
 	# Check if multi-config has been enabled
 	if [ -n "$MULTI_CONFIG" ]; then
-		export S3_YAML_FILE=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].config_file')
+		echo $MULTI_CONFIG
+		export S3_YAML_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].config_file')
 		export WORLD_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].world_name')
 	fi
 
