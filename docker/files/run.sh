@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 export XAUTHORITY=/root/.Xauthority
 
 # Ensure we have a roll-out index; also when we have only one worker
@@ -29,7 +30,7 @@ if [ "$1" == "multi" ]; then
 		export WORLD_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].world_name')
 	fi
 
-	echo "Starting as worker $ROLLOUT_IDX, using world $WORLD_NAME and configuration $S3_YAML_FILE."
+	echo "Starting as worker $ROLLOUT_IDX, using world $WORLD_NAME and configuration $S3_YAML_NAME."
 
 fi
 
