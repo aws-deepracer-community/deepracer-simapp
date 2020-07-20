@@ -7,3 +7,6 @@ float32 steering
 float32 best_lap_time
 float32 total_evaluation_time
 bool done
+float32 x
+float32 y
+geometry_msgs/Point32[] object_locations

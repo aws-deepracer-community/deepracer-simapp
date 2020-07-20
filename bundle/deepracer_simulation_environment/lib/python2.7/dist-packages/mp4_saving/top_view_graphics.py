@@ -8,15 +8,18 @@ import math
 import time
 import numpy as np
 import rospy
-from gazebo_msgs.srv import GetModelState
-from markov.rospy_wrappers import ServiceProxyWrapper
+
 from markov.track_geom.track_data import TrackData
-from markov.track_geom.constants import GET_MODEL_STATE
 from markov.utils import force_list
 import cv2
-from mp4_saving.constants import (WAIT_TO_PREVENT_SPAM, TrackAssetsIconographicPngs,
-                                  IconographicImageSize)
+from mp4_saving.constants import (TrackAssetsIconographicPngs,
+                                  IconographicImageSize, SCALE_RATIO)
 from mp4_saving import utils
+
+
+import logging
+from markov.log_handler.logger import Logger
+LOG = Logger(__name__, logging.INFO).get_logger()
 
 class TopViewGraphics(object):
     """ For the Head to head racing to identify which car is leading  and to provide enough
@@ -47,14 +50,7 @@ class TopViewGraphics(object):
         self.image_height = image_height
         self.racecars_info = force_list(racecars_info)
 
-        #
-        # We have no guarantees as to when gazebo will load the model, therefore we need
-        # to wait until the model is loaded and markov packages has spawned all the models
-        #
-        rospy.wait_for_service(GET_MODEL_STATE)
-        rospy.wait_for_service('/robomaker_markov_package_ready')
-        self.get_model_client = ServiceProxyWrapper(GET_MODEL_STATE, GetModelState)
-        self.model_names, self.model_imgs = self._get_all_models_info()
+        self.model_imgs = self._get_all_models_info()
 
         # Track information is required get the track bounds (xmin, xmax, ymin, ymax)
         # Also the agent location for that instant
@@ -71,29 +67,30 @@ class TopViewGraphics(object):
             (list, list): model_names (Names of agent, bots, obstacles)
                           model_imgs (The appropriate image icons for these)
         """
-        model_names, model_imgs = list(), list()
-        # Adding all agents to the list
-        for i, racecar_info in enumerate(self.racecars_info):
-            model_names.append(racecar_info['name'])
-            model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
-                                              IconographicImageSize.AGENTS_IMAGE_SIZE.value))
-
+        model_imgs = list()
         # Adding obstacles to the list
         num_obstacles = int(rospy.get_param("NUMBER_OF_OBSTACLES", 0))
         if num_obstacles:
+            # Other agents also come as object_locations so first plot all the obstacles and
+            # Then overlay agents on top.
             for i in range(num_obstacles):
-                model_names.append("obstacle_{}".format(i))
                 model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.OBSTACLES_PNG.value,
                                                   IconographicImageSize.OBSTACLE_IMAGE_SIZE.value))
 
         # Adding bot cars to the list
         num_bots = int(rospy.get_param("NUMBER_OF_BOT_CARS", 0))
         if num_bots:
+            # Other agents also come as object_locations so first plot all the obstacles and
+            # Then overlay agents on top.
             for i in range(num_bots):
-                model_names.append("bot_car_{}".format(i))
                 model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.BOTS_PNG.value,
                                                   IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
-        return model_names, model_imgs
+
+        # Adding all agents to the list
+        for i, _ in enumerate(self.racecars_info):
+            model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
+                                              IconographicImageSize.AGENTS_IMAGE_SIZE.value))
+        return model_imgs
 
     def initialize_parameters(self):
         """ This maps the (x, y) of an agent in track frame to the top camera image frame
@@ -179,22 +176,27 @@ class TopViewGraphics(object):
         #
         self.x_offset, self.y_offset = -track_x_min, -track_y_min
 
-    def plot_agents_as_circles(self, image):
+    def plot_agents_as_circles(self, image, agents_loc, objects_loc, track_start_loc):
         """
         For the given image plot a circle on top of the racecar. To plot the circle,
         fetch the current (x, y) value of the agents using the track ROS service
         Arguments:
             image (Image): Top camera image
-
+            agents_loc (List): List of agents location (x, y)
+            track_start_loc (tuple): Start (x, y) location track drawn on the main camera image
         Returns:
             Image: Edited image with the circle
         """
-        for model_name, model_img in zip(self.model_names, self.model_imgs):
-            model = self.get_model_client(model_name, '')
-            agent_xy = np.array([model.pose.position.x + self.x_offset,
-                                 model.pose.position.y + self.y_offset,
-                                 1]).reshape(3, 1)
-            gui_xy = np.dot(self.gui_affine_transform, agent_xy)
+        # Add the agents location to objects location.
+        objects_loc.extend(agents_loc)
+
+        for model_img, object_loc in zip(self.model_imgs, objects_loc):
+            object_xy = np.array([object_loc[0] + self.x_offset,
+                                  object_loc[1] + self.y_offset,
+                                  1]).reshape(3, 1)
+            gui_xy = np.dot(self.gui_affine_transform, object_xy)
             pixel_xy = gui_xy * self.pixel_scale
-            image = utils.plot_rectangular_image_on_main_image(image, model_img, (pixel_xy[0][0], pixel_xy[1][0]))
+            loc_x, loc_y = (pixel_xy[0][0]//SCALE_RATIO + track_start_loc[0],
+                            pixel_xy[1][0]//SCALE_RATIO + track_start_loc[1])
+            image = utils.plot_rectangular_image_on_main_image(image, model_img, (loc_x, loc_y))
         return image

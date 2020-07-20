@@ -207,9 +207,15 @@
     <!-- <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0" /> -->
   </joint>
 
+  <!-- config f1 shell -->
+  <xacro:if value="${'f1' in body_shell_type_val}">
+    <xacro:property name="body_link_name" value="f1_body_link" />
+  </xacro:if>
+  <xacro:unless value="${'f1' in body_shell_type_val}">
+    <xacro:property name="body_link_name" value="car_body_link_v1" />
+  </xacro:unless>
 
-   <!-- The bot cars will have older confetti models. Since we dont have the .dae files -->
-  <link name="top_cover_link">
+  <link name="${body_link_name}">
     <visual>
       <xacro:unless value="${'f1' in body_shell_type_val}">
         <xacro:top_cover_geometry />
@@ -222,12 +228,12 @@
       <xacro:top_cover_geometry />
     </collision>
   </link>
-  <xacro:configure_collide_bitmask link_name="top_cover_link" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="${body_link_name}" bitmask="$(arg racecar_bitmask)" />
 
-  <joint name="top_cover_link_joint" type="fixed">
+  <joint name="car_body_link_joint" type="fixed">
     <origin xyz="-0.02 0 0.02" rpy="0 0 0"/>
     <parent link="chassis"/>
-    <child link="top_cover_link"/>
+    <child link="${body_link_name}"/>
     <axis xyz="0 0 1" />
   </joint>
 

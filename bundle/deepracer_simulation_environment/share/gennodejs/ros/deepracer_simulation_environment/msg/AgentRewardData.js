@@ -80,7 +80,7 @@ class AgentRewardData {
     // Serialize message field [action]
     bufferOffset = _serializer.int8(obj.action, buffer, bufferOffset);
     // Serialize message field [reward]
-    bufferOffset = _serializer.float32(obj.reward, buffer, bufferOffset);
+    bufferOffset = _serializer.float64(obj.reward, buffer, bufferOffset);
     // Serialize message field [action_space_len]
     bufferOffset = _serializer.int8(obj.action_space_len, buffer, bufferOffset);
     // Serialize message field [speed_list]
@@ -101,7 +101,7 @@ class AgentRewardData {
     // Deserialize message field [action]
     data.action = _deserializer.int8(buffer, bufferOffset);
     // Deserialize message field [reward]
-    data.reward = _deserializer.float32(buffer, bufferOffset);
+    data.reward = _deserializer.float64(buffer, bufferOffset);
     // Deserialize message field [action_space_len]
     data.action_space_len = _deserializer.int8(buffer, bufferOffset);
     // Deserialize message field [speed_list]
@@ -123,7 +123,7 @@ class AgentRewardData {
       length += 4 + val.length;
     });
     length += sensor_msgs.msg.Image.getMessageSize(object.image);
-    return length + 18;
+    return length + 22;
   }
 
   static datatype() {
@@ -133,7 +133,7 @@ class AgentRewardData {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return '2d88124db35ddfde5616a1bb8792838a';
+    return 'af5e8658bf60dab3f19408bd4ad157dd';
   }
 
   static messageDefinition() {
@@ -141,7 +141,7 @@ class AgentRewardData {
     return `
     string agent_name
     int8 action
-    float32 reward
+    float64 reward
     int8 action_space_len
     string[] speed_list
     string[] steering_angle_list

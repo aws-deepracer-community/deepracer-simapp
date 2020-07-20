@@ -28,7 +28,8 @@ from markov.utils import (force_list, restart_simulation_job,
 from markov.architecture.constants import Input
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
-from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400,
+                                          SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 
 from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values, F1_SHELL_USERS_LIST
@@ -224,6 +225,27 @@ def main():
             logger.info('tournament_candidate_queue initialized')
             tournament_candidate_queue = deque()
             for agent_idx, _ in enumerate(yaml_dict[MODEL_S3_BUCKET_YAML_KEY]):
+                # If body_shell_types contains only None, figure out shell based on names
+                # otherwise use body_shell_type defined in body_shell_types
+                if None in yaml_dict[BODY_SHELL_TYPE_YAML_KEY]:
+                    # use default shells only if both RACER_NAME and DISPLAY_NAME are empty
+                    if None in yaml_dict[RACER_NAME_YAML_KEY] and None in yaml_dict[DISPLAY_NAME_YAML_KEY]:
+                        body_shell_type = BodyShellType.DEFAULT.value
+                    else:
+                        # If RACER_NAME is empty, use DISPLAY_NAME to get racer_alias,
+                        # and check racer_alias in F1_SHELL_USERS_LIST whether to use F1 shell or not,
+                        # otherwise use RACER_NAME as racer_alias to figure out whether to use the f1 body shell.
+                        if None in yaml_dict[RACER_NAME_YAML_KEY]:
+                            racer_alias = yaml_dict[DISPLAY_NAME_YAML_KEY][agent_idx]
+                            body_shell_type = BodyShellType.F1_2021.value if racer_alias in F1_SHELL_USERS_LIST \
+                                else BodyShellType.DEFAULT.value
+                        else:
+                            racer_alias = yaml_dict[RACER_NAME_YAML_KEY][agent_idx]
+                            body_shell_type = BodyShellType.F1_2021.value if racer_alias in F1_SHELL_USERS_LIST \
+                                else BodyShellType.DEFAULT.value
+                else:
+                    body_shell_type = yaml_dict[BODY_SHELL_TYPE_YAML_KEY][agent_idx]
+
                 tournament_candidate_queue.append((
                     yaml_dict[MODEL_S3_BUCKET_YAML_KEY][agent_idx],
                     yaml_dict[MODEL_S3_PREFIX_YAML_KEY][agent_idx],
@@ -237,7 +259,7 @@ def main():
                     yaml_dict[DISPLAY_NAME_YAML_KEY][agent_idx],
                     # TODO: Deprecate the DISPLAY_NAME and use only the RACER_NAME without if else check
                     "" if None in yaml_dict[RACER_NAME_YAML_KEY] else yaml_dict[RACER_NAME_YAML_KEY][agent_idx],
-                    BodyShellType.F1_2021.value if yaml_dict[RACER_NAME_YAML_KEY][agent_idx] in F1_SHELL_USERS_LIST else BodyShellType.DEFAULT.value
+                    body_shell_type
                 ))
             tournament_report = {"race_results": []}
 
@@ -296,11 +318,11 @@ def main():
                                             Filename=local_model_metadata_path)
                 except Exception as e:
                     log_and_exit("Failed to download model_metadata file: s3_bucket: {}, s3_key: {}, {}"
-                                     .format(model_s3_bucket, json_key, e),
+                                 .format(model_s3_bucket, json_key, e),
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
                 sensors, _, simapp_version = utils_parse_model_metadata.parse_model_metadata(local_model_metadata_path)
-                simapp_versions.append(simapp_version)
+                simapp_versions.append(str(simapp_version))
                 if Input.STEREO.value in sensors:
                     racecars_with_stereo_cameras.append(racecar_name)
                 if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
@@ -367,6 +389,10 @@ def main():
 
                 cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
                                       s3_region)
+    except ValueError as ex:
+        log_and_exit("User modified model_metadata.json: {}".format(ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_400)
     except Exception as e:
         log_and_exit("Tournament node failed: {}".format(e),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,

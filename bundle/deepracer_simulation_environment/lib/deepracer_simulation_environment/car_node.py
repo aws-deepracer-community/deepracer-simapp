@@ -124,7 +124,7 @@ class DeepRacer(object):
         ambients, diffuses, speculars, emissives = [], [], [], []
 
         for visual_name, link_name in zip(visuals.visual_names, visuals.link_names):
-            if "car_body_link_v2" in visual_name or "top_cover_link" in visual_name:
+            if "car_body_link" in visual_name:
                 visual_names.append(visual_name)
                 link_names.append(link_name)
                 ambient = ColorRGBA(const.COLOR_MAP[car_color].r * 0.1,
@@ -156,9 +156,7 @@ class DeepRacer(object):
 
         for visual_name, link_name in zip(visuals.visual_names, visuals.link_names):
             if "wheel" not in visual_name \
-                    and "car_body_link_v2" not in visual_name \
-                    and "top_cover_link" not in visual_name \
-                    and "car_body_link" not in visual_name:
+                    and "f1_body_link" not in visual_name:
                 visual_names.append(visual_name)
                 link_names.append(link_name)
 
