@@ -2,7 +2,7 @@ FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu16.04
 
 # Install Linux stuff
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl net-tools build-essential wget cmake \
+    ca-certificates curl net-tools build-essential wget cmake jq \
     xterm x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
