@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 export XAUTHORITY=/root/.Xauthority
 
 # Ensure we have a roll-out index; also when we have only one worker
@@ -6,7 +7,10 @@ if [ -z "$ROLLOUT_IDX" ]; then
 fi
 
 # If we have multiple workers we need to do assignment of worker number
+# Additionally if multi-config is enabled then the specifc WORLD and 
+# YAML files must be assigned.
 if [ "$1" == "multi" ]; then
+
 	# Use Docker Swarm Replica .Task.Slot
 	if [ -n "$DOCKER_REPLICA_SLOT" ]; then
 		WORKER_NUM=$DOCKER_REPLICA_SLOT
@@ -16,8 +20,18 @@ if [ "$1" == "multi" ]; then
 		echo $HOSTNAME >> $COMMS_FILE
 		WORKER_NUM=$(cat -n $COMMS_FILE | grep $HOSTNAME | cut -f1)
 	fi
+
 	export ROLLOUT_IDX=$(expr $WORKER_NUM - 1 )
-	echo "Starting as worker $ROLLOUT_IDX"
+
+	# Check if multi-config has been enabled, then override S3_YAML_NAME and WORLD_NAME
+	if [ -n "$MULTI_CONFIG" ]; then
+		echo $MULTI_CONFIG
+		export S3_YAML_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].config_file')
+		export WORLD_NAME=$(echo $MULTI_CONFIG | jq --arg worker $ROLLOUT_IDX -r '.multi_config[$worker | tonumber ].world_name')
+	fi
+
+	echo "Starting as worker $ROLLOUT_IDX, using world $WORLD_NAME and configuration $S3_YAML_NAME."
+
 fi
 
 # If no run-option given then use the distributed training

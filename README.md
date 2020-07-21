@@ -26,6 +26,7 @@ Available tags are:
 | 2.0.7    | June track + fixes  |  `2.0.7-cpu-avx`  | `2.0.7-cpu-avx2` | `2.0.7-gpu` |
 | 2.0.8    | Update 8-JUN + fixes  |  `2.0.8-cpu-avx` `2.0.8-cpu-gl-avx`  | `2.0.8-cpu-avx2` `2.0.8-cpu-gl-avx` | `2.0.8-gpu` `2.0.8-gpu-gl` |
 | 2.0.9    | July Track  |  `2.0.9-cpu-avx` `2.0.9-cpu-gl-avx`  | `2.0.9-cpu-avx2` `2.0.9-cpu-gl-avx` | `2.0.9-gpu` `2.0.9-gpu-gl` |
+| 2.0.10   | Training improvements  |  `2.0.10-cpu-avx` `2.0.10-cpu-gl-avx`  | `2.0.10-cpu-avx2` `2.0.10-cpu-gl-avx` | `2.0.10-gpu` `2.0.10-gpu-gl` |
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 
