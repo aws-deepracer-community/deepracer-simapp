@@ -6,7 +6,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/AmericasGeneratedInclStart/AmericasGeneratedInclStart.dae</uri>
+<uri>model://meshes/AmericasGeneratedInclStart/AmericasGeneratedInclStart_collisions.dae</uri>
 </mesh>
 </geometry>
 </collision>

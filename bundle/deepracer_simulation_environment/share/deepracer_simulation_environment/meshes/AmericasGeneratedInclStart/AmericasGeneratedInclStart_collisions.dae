@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.79.0 commit date:2018-03-22, commit time:14:10, hash:f4dc9f9d68b</authoring_tool>
+    </contributor>
+    <created>2020-03-20T17:52:53</created>
+    <modified>2020-03-20T17:52:53</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_images>
+    <image id="field_png" name="field_png">
+      <init_from>textures/field.png</init_from>
+    </image>
+    <image id="wall_png" name="wall_png">
+      <init_from>textures/wall.png</init_from>
+    </image>
+  </library_images>
+  <library_effects>
+    <effect id="field_materialref-effect">
+      <profile_COMMON>
+        <newparam sid="field_png-surface">
+          <surface type="2D">
+            <init_from>field_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="field_png-sampler">
+          <sampler2D>
+            <source>field_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="field_png-sampler"/>
+            </diffuse>
+            <transparent opaque="A_ONE">
+              <texture texture="field_png-sampler"/>
+            </transparent>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="wall_materialref-effect">
+      <profile_COMMON>
+        <newparam sid="wall_png-surface">
+          <surface type="2D">
+            <init_from>wall_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_png-sampler">
+          <sampler2D>
+            <source>wall_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="wall_png-sampler"/>
+            </diffuse>
+            <transparent opaque="A_ONE">
+              <texture texture="wall_png-sampler"/>
+            </transparent>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="field_materialref-material" name="field_materialref">
+      <instance_effect url="#field_materialref-effect"/>
+    </material>
+    <material id="wall_materialref-material" name="wall_materialref">
+      <instance_effect url="#wall_materialref-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="fieldShape-mesh-mesh" name="fieldShape-mesh">
+      <mesh>
+        <source id="fieldShape-mesh-mesh-positions">
+          <float_array id="fieldShape-mesh-mesh-positions-array" count="12">-16.89979 -11.72576 0 16.8693 -11.72576 0 -16.89979 16.56426 0 16.8693 16.56426 0</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fieldShape-mesh-mesh-normals">
+          <float_array id="fieldShape-mesh-mesh-normals-array" count="3">0 0 1</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-normals-array" count="1" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fieldShape-mesh-mesh-map-0">
+          <float_array id="fieldShape-mesh-mesh-map-0-array" count="12">-16.89979 -11.72576 16.8693 -11.72576 -16.89979 16.56426 -16.89979 16.56426 16.8693 -11.72576 16.8693 16.56426</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-map-0-array" count="6" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="fieldShape-mesh-mesh-vertices">
+          <input semantic="POSITION" source="#fieldShape-mesh-mesh-positions"/>
+        </vertices>
+        <triangles material="field_materialref-material" count="2">
+          <input semantic="VERTEX" source="#fieldShape-mesh-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#fieldShape-mesh-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#fieldShape-mesh-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 1 0 1 2 0 2 2 0 3 1 0 4 3 0 5</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="wallShape-mesh-mesh" name="wallShape-mesh">
+      <mesh>
+        <source id="wallShape-mesh-mesh-positions">
+          <float_array id="wallShape-mesh-mesh-positions-array" count="24">-16.89979 -11.72576 0 16.8693 -11.72576 0 16.8693 16.56426 0 -16.89979 16.56426 0 -16.89979 -11.72576 1 16.8693 -11.72576 1 16.8693 16.56426 1 -16.89979 16.56426 1</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wallShape-mesh-mesh-normals">
+          <float_array id="wallShape-mesh-mesh-normals-array" count="12">0 1 0 -1 0 0 0 -1 0 1 0 0</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-normals-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wallShape-mesh-mesh-map-0">
+          <float_array id="wallShape-mesh-mesh-map-0-array" count="48">0 0 0 0 1 0 1 0 0 0 1 0 1 0 1 0 0 1 0 1 1 0 0 1 0 1 0 1 1 1 1 1 0 1 1 1 0 0 0 0 1 1 1 1 0 0 1 1</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-map-0-array" count="24" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="wallShape-mesh-mesh-vertices">
+          <input semantic="POSITION" source="#wallShape-mesh-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_materialref-material" count="8">
+          <input semantic="VERTEX" source="#wallShape-mesh-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wallShape-mesh-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wallShape-mesh-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 4 0 1 1 0 2 1 0 3 4 0 4 5 0 5 1 1 6 5 1 7 2 1 8 2 1 9 5 1 10 6 1 11 2 2 12 6 2 13 3 2 14 3 2 15 6 2 16 7 2 17 4 3 18 0 3 19 7 3 20 7 3 21 0 3 22 3 3 23</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_controllers/>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="field" name="field" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#fieldShape-mesh-mesh" name="field">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="field_materialref-material" target="#field_materialref-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="wall" name="wall" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#wallShape-mesh-mesh" name="wall">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_materialref-material" target="#wall_materialref-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>
