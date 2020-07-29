@@ -297,7 +297,8 @@ def get_racecars_info(racecar_names):
     """
     racecars = racecar_names
     racecars_info = list()
-    racecars_color = force_list(rospy.get_param("CAR_COLOR", DEFAULT_COLOR))
+    racecars_color = force_list(rospy.get_param("CAR_COLOR",
+                                                [DEFAULT_COLOR] * len(racecar_names)))
     racecars_display_name = get_video_display_name()
 
     for i, racecar_name in enumerate(racecars):
