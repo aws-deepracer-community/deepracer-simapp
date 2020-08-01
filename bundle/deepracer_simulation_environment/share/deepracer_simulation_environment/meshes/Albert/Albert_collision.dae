@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.79.0 commit date:2018-03-22, commit time:14:10, hash:f4dc9f9d68b</authoring_tool>
+    </contributor>
+    <created>2020-07-17T16:26:23</created>
+    <modified>2020-07-17T16:26:23</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_cameras>
+    <camera id="Camera-camera" name="Camera">
+      <optics>
+        <technique_common>
+          <perspective>
+            <xfov sid="xfov">49.13434</xfov>
+            <aspect_ratio>1.777778</aspect_ratio>
+            <znear sid="znear">0.1</znear>
+            <zfar sid="zfar">100</zfar>
+          </perspective>
+        </technique_common>
+      </optics>
+      <extra>
+        <technique profile="blender">
+          <shiftx sid="shiftx" type="float">0</shiftx>
+          <shifty sid="shifty" type="float">0</shifty>
+          <YF_dofdist sid="YF_dofdist" type="float">0</YF_dofdist>
+        </technique>
+      </extra>
+    </camera>
+  </library_cameras>
+  <library_lights>
+    <light id="Lamp-light" name="Lamp">
+      <technique_common>
+        <ambient>
+          <color>1 1 1</color>
+        </ambient>
+      </technique_common>
+      <extra>
+        <technique profile="blender">
+          <type sid="type" type="int">3</type>
+          <flag sid="flag" type="int">0</flag>
+          <mode sid="mode" type="int">12288</mode>
+          <gamma sid="blender_gamma" type="float">1</gamma>
+          <red sid="red" type="float">1</red>
+          <green sid="green" type="float">1</green>
+          <blue sid="blue" type="float">1</blue>
+          <shadow_r sid="blender_shadow_r" type="float">0</shadow_r>
+          <shadow_g sid="blender_shadow_g" type="float">0</shadow_g>
+          <shadow_b sid="blender_shadow_b" type="float">0</shadow_b>
+          <energy sid="blender_energy" type="float">1</energy>
+          <dist sid="blender_dist" type="float">29.99998</dist>
+          <spotsize sid="spotsize" type="float">75</spotsize>
+          <spotblend sid="spotblend" type="float">0.15</spotblend>
+          <halo_intensity sid="blnder_halo_intensity" type="float">1</halo_intensity>
+          <att1 sid="att1" type="float">0</att1>
+          <att2 sid="att2" type="float">1</att2>
+          <falloff_type sid="falloff_type" type="int">2</falloff_type>
+          <clipsta sid="clipsta" type="float">1.000799</clipsta>
+          <clipend sid="clipend" type="float">30.002</clipend>
+          <bias sid="bias" type="float">1</bias>
+          <soft sid="soft" type="float">3</soft>
+          <compressthresh sid="compressthresh" type="float">0.04999995</compressthresh>
+          <bufsize sid="bufsize" type="int">2880</bufsize>
+          <samp sid="samp" type="int">3</samp>
+          <buffers sid="buffers" type="int">1</buffers>
+          <filtertype sid="filtertype" type="int">0</filtertype>
+          <bufflag sid="bufflag" type="int">0</bufflag>
+          <buftype sid="buftype" type="int">2</buftype>
+          <ray_samp sid="ray_samp" type="int">1</ray_samp>
+          <ray_sampy sid="ray_sampy" type="int">1</ray_sampy>
+          <ray_sampz sid="ray_sampz" type="int">1</ray_sampz>
+          <ray_samp_type sid="ray_samp_type" type="int">0</ray_samp_type>
+          <area_shape sid="area_shape" type="int">1</area_shape>
+          <area_size sid="area_size" type="float">0.1</area_size>
+          <area_sizey sid="area_sizey" type="float">0.1</area_sizey>
+          <area_sizez sid="area_sizez" type="float">1</area_sizez>
+          <adapt_thresh sid="adapt_thresh" type="float">0.000999987</adapt_thresh>
+          <ray_samp_method sid="ray_samp_method" type="int">1</ray_samp_method>
+          <shadhalostep sid="shadhalostep" type="int">0</shadhalostep>
+          <sun_effect_type sid="sun_effect_type" type="int">0</sun_effect_type>
+          <skyblendtype sid="skyblendtype" type="int">1</skyblendtype>
+          <horizon_brightness sid="horizon_brightness" type="float">1</horizon_brightness>
+          <spread sid="spread" type="float">1</spread>
+          <sun_brightness sid="sun_brightness" type="float">1</sun_brightness>
+          <sun_size sid="sun_size" type="float">1</sun_size>
+          <backscattered_light sid="backscattered_light" type="float">1</backscattered_light>
+          <sun_intensity sid="sun_intensity" type="float">1</sun_intensity>
+          <atm_turbidity sid="atm_turbidity" type="float">2</atm_turbidity>
+          <atm_extinction_factor sid="atm_extinction_factor" type="float">1</atm_extinction_factor>
+          <atm_distance_factor sid="atm_distance_factor" type="float">1</atm_distance_factor>
+          <skyblendfac sid="skyblendfac" type="float">1</skyblendfac>
+          <sky_exposure sid="sky_exposure" type="float">1</sky_exposure>
+          <sky_colorspace sid="sky_colorspace" type="int">0</sky_colorspace>
+        </technique>
+      </extra>
+    </light>
+  </library_lights>
+  <library_images>
+    <image id="field_png" name="field_png">
+      <init_from>textures/field.png</init_from>
+    </image>
+    <image id="wall_png" name="wall_png">
+      <init_from>textures/wall.png</init_from>
+    </image>
+  </library_images>
+  <library_effects>
+    <effect id="field_materialref-effect">
+      <profile_COMMON>
+        <newparam sid="field_png-surface">
+          <surface type="2D">
+            <init_from>field_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="field_png-sampler">
+          <sampler2D>
+            <source>field_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="field_png-sampler"/>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.5 0.5 0.5 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <transparent opaque="A_ONE">
+              <texture texture="field_png-sampler"/>
+            </transparent>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="wall_materialref-effect">
+      <profile_COMMON>
+        <newparam sid="wall_png-surface">
+          <surface type="2D">
+            <init_from>wall_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_png-sampler">
+          <sampler2D>
+            <source>wall_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="wall_png-sampler"/>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.5 0.5 0.5 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <transparent opaque="A_ONE">
+              <texture texture="wall_png-sampler"/>
+            </transparent>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="field_materialref-material" name="field_materialref">
+      <instance_effect url="#field_materialref-effect"/>
+    </material>
+    <material id="wall_materialref-material" name="wall_materialref">
+      <instance_effect url="#wall_materialref-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="fieldShape-mesh-mesh" name="fieldShape-mesh">
+      <mesh>
+        <source id="fieldShape-mesh-mesh-positions">
+          <float_array id="fieldShape-mesh-mesh-positions-array" count="12">-18.64368 -13.26709 0 19.79182 -13.26709 0 -18.64368 15.79521 0 19.79182 15.79521 0</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fieldShape-mesh-mesh-normals">
+          <float_array id="fieldShape-mesh-mesh-normals-array" count="3">0 0 1</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-normals-array" count="1" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fieldShape-mesh-mesh-map-0">
+          <float_array id="fieldShape-mesh-mesh-map-0-array" count="12">-18.64368 -13.26709 19.79182 -13.26709 -18.64368 15.79521 -18.64368 15.79521 19.79182 -13.26709 19.79182 15.79521</float_array>
+          <technique_common>
+            <accessor source="#fieldShape-mesh-mesh-map-0-array" count="6" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="fieldShape-mesh-mesh-vertices">
+          <input semantic="POSITION" source="#fieldShape-mesh-mesh-positions"/>
+        </vertices>
+        <triangles material="field_materialref-material" count="2">
+          <input semantic="VERTEX" source="#fieldShape-mesh-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#fieldShape-mesh-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#fieldShape-mesh-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 1 0 1 2 0 2 2 0 3 1 0 4 3 0 5</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="wallShape-mesh-mesh" name="wallShape-mesh">
+      <mesh>
+        <source id="wallShape-mesh-mesh-positions">
+          <float_array id="wallShape-mesh-mesh-positions-array" count="24">-18.64368 -13.26709 0 19.79182 -13.26709 0 19.79182 15.79521 0 -18.64368 15.79521 0 -18.64368 -13.26709 1 19.79182 -13.26709 1 19.79182 15.79521 1 -18.64368 15.79521 1</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wallShape-mesh-mesh-normals">
+          <float_array id="wallShape-mesh-mesh-normals-array" count="12">0 1 0 -1 0 0 0 -1 0 1 0 0</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-normals-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wallShape-mesh-mesh-map-0">
+          <float_array id="wallShape-mesh-mesh-map-0-array" count="48">0 0 0 0 1 0 1 0 0 0 1 0 1 0 1 0 0 1 0 1 1 0 0 1 0 1 0 1 1 1 1 1 0 1 1 1 0 0 0 0 1 1 1 1 0 0 1 1</float_array>
+          <technique_common>
+            <accessor source="#wallShape-mesh-mesh-map-0-array" count="24" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="wallShape-mesh-mesh-vertices">
+          <input semantic="POSITION" source="#wallShape-mesh-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_materialref-material" count="8">
+          <input semantic="VERTEX" source="#wallShape-mesh-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wallShape-mesh-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wallShape-mesh-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 4 0 1 1 0 2 1 0 3 4 0 4 5 0 5 1 1 6 5 1 7 2 1 8 2 1 9 5 1 10 6 1 11 2 2 12 6 2 13 3 2 14 3 2 15 6 2 16 7 2 17 4 3 18 0 3 19 7 3 20 7 3 21 0 3 22 3 3 23</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_controllers/>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="field" name="field" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#fieldShape-mesh-mesh" name="field">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="field_materialref-material" target="#field_materialref-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="wall" name="wall" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#wallShape-mesh-mesh" name="wall">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_materialref-material" target="#wall_materialref-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>
