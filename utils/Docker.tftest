@@ -1,0 +1,12 @@
+FROM nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04
+RUN apt-get update && apt-get install -y --no-install-recommends python3-pip python3-dev build-essential
+RUN pip3 install setuptools wheel
+RUN pip3 install tensorflow-gpu==1.12.3 numpy==1.13.3
+
+WORKDIR /work
+COPY tf_test.py /work
+RUN pwd && ls
+ENV CUDA_VISIBLE_DEVICES=0
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["python3 tf_test.py"]
