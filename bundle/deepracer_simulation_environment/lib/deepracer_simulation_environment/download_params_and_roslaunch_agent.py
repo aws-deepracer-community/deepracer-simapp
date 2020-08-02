@@ -46,13 +46,11 @@ def main():
     yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
 
     try:
-        # create boto3 session/client and download yaml/json file
-        session = boto3.session.Session()
 
         s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
         
         if s3_endpoint_url is not None:
-            LOG.info('Endpoint URL {}'.format(s3_endpoint_url))
+            logging.info('Endpoint URL {}'.format(s3_endpoint_url))
             rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
 
         if AgentType.ROLLOUT.value in launch_name:
@@ -93,7 +91,8 @@ def main():
                                            region_name=s3_region,
                                            s3_endpoint_url=s3_endpoint_url,
                                            local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
-            sensors, _, simapp_version = model_metadata.get_model_metadata_info()            simapp_versions.append(str(simapp_version))
+            sensors, _, simapp_version = model_metadata.get_model_metadata_info()            
+            simapp_versions.append(str(simapp_version))
             if Input.STEREO.value in sensors:
                 racecars_with_stereo_cameras.append(racecar_name)
             if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
