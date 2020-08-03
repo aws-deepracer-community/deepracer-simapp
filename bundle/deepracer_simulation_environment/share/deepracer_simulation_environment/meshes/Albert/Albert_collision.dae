@@ -5,13 +5,13 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.79.0 commit date:2018-03-22, commit time:14:10, hash:f4dc9f9d68b</authoring_tool>
     </contributor>
-    <created>2020-04-19T20:52:26</created>
-    <modified>2020-04-19T20:52:26</modified>
+    <created>2020-07-17T16:26:23</created>
+    <modified>2020-07-17T16:26:23</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_cameras>
-    <camera id="Camera_001-camera" name="Camera.001">
+    <camera id="Camera-camera" name="Camera">
       <optics>
         <technique_common>
           <perspective>
@@ -32,7 +32,7 @@
     </camera>
   </library_cameras>
   <library_lights>
-    <light id="Lamp_001-light" name="Lamp.001">
+    <light id="Lamp-light" name="Lamp">
       <technique_common>
         <ambient>
           <color>1 1 1</color>
@@ -77,7 +77,7 @@
           <area_size sid="area_size" type="float">0.1</area_size>
           <area_sizey sid="area_sizey" type="float">0.1</area_sizey>
           <area_sizez sid="area_sizez" type="float">1</area_sizez>
-          <adapt_thresh sid="adapt_thresh" type="float">9.99987e-4</adapt_thresh>
+          <adapt_thresh sid="adapt_thresh" type="float">0.000999987</adapt_thresh>
           <ray_samp_method sid="ray_samp_method" type="int">1</ray_samp_method>
           <shadhalostep sid="shadhalostep" type="int">0</shadhalostep>
           <sun_effect_type sid="sun_effect_type" type="int">0</sun_effect_type>
@@ -99,6 +99,9 @@
     </light>
   </library_lights>
   <library_images>
+    <image id="field_png" name="field_png">
+      <init_from>textures/field.png</init_from>
+    </image>
     <image id="wall_png" name="wall_png">
       <init_from>textures/wall.png</init_from>
     </image>
@@ -184,9 +187,6 @@
     </effect>
   </library_effects>
   <library_materials>
-    <material id="road_materialref-material" name="road_materialref">
-      <instance_effect url="#road_materialref-effect"/>
-    </material>
     <material id="field_materialref-material" name="field_materialref">
       <instance_effect url="#field_materialref-effect"/>
     </material>
@@ -198,7 +198,7 @@
     <geometry id="fieldShape-mesh-mesh" name="fieldShape-mesh">
       <mesh>
         <source id="fieldShape-mesh-mesh-positions">
-          <float_array id="fieldShape-mesh-mesh-positions-array" count="12">-18.05286 -12.41719 0 18.49301 -12.41719 0 -18.05286 13.95517 0 18.49301 13.95517 0</float_array>
+          <float_array id="fieldShape-mesh-mesh-positions-array" count="12">-18.64368 -13.26709 0 19.79182 -13.26709 0 -18.64368 15.79521 0 19.79182 15.79521 0</float_array>
           <technique_common>
             <accessor source="#fieldShape-mesh-mesh-positions-array" count="4" stride="3">
               <param name="X" type="float"/>
@@ -218,7 +218,7 @@
           </technique_common>
         </source>
         <source id="fieldShape-mesh-mesh-map-0">
-          <float_array id="fieldShape-mesh-mesh-map-0-array" count="12">-18.05286 -12.41719 18.49301 -12.41719 -18.05286 13.95517 -18.05286 13.95517 18.49301 -12.41719 18.49301 13.95517</float_array>
+          <float_array id="fieldShape-mesh-mesh-map-0-array" count="12">-18.64368 -13.26709 19.79182 -13.26709 -18.64368 15.79521 -18.64368 15.79521 19.79182 -13.26709 19.79182 15.79521</float_array>
           <technique_common>
             <accessor source="#fieldShape-mesh-mesh-map-0-array" count="6" stride="2">
               <param name="S" type="float"/>
@@ -240,7 +240,7 @@
     <geometry id="wallShape-mesh-mesh" name="wallShape-mesh">
       <mesh>
         <source id="wallShape-mesh-mesh-positions">
-          <float_array id="wallShape-mesh-mesh-positions-array" count="24">-18.05286 -12.41719 0 18.49301 -12.41719 0 18.49301 13.95517 0 -18.05286 13.95517 0 -18.05286 -12.41719 1 18.49301 -12.41719 1 18.49301 13.95517 1 -18.05286 13.95517 1</float_array>
+          <float_array id="wallShape-mesh-mesh-positions-array" count="24">-18.64368 -13.26709 0 19.79182 -13.26709 0 19.79182 15.79521 0 -18.64368 15.79521 0 -18.64368 -13.26709 1 19.79182 -13.26709 1 19.79182 15.79521 1 -18.64368 15.79521 1</float_array>
           <technique_common>
             <accessor source="#wallShape-mesh-mesh-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
@@ -279,60 +279,10 @@
         </triangles>
       </mesh>
     </geometry>
-    <geometry id="Plane-mesh" name="Plane">
-      <mesh>
-        <source id="Plane-mesh-positions">
-          <float_array id="Plane-mesh-positions-array" count="36">0.09125995 -0.125626 0 0.1354122 -0.07621908 0 -0.1354188 0.07694005 0 -0.09126663 0.126347 0 0.3186183 -0.3289342 0 0.3627701 -0.2795272 0 0.09193992 -0.126368 0 0.1360921 -0.07696104 0 -0.1360878 0.07660102 0 -0.09193563 0.126008 0 -0.3627658 0.2791658 0 -0.318615 0.3285728 0</float_array>
-          <technique_common>
-            <accessor source="#Plane-mesh-positions-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane-mesh-normals">
-          <float_array id="Plane-mesh-normals-array" count="9">0 0 1 0 0 1 0 0 1</float_array>
-          <technique_common>
-            <accessor source="#Plane-mesh-normals-array" count="3" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane-mesh-map-0">
-          <float_array id="Plane-mesh-map-0-array" count="36">1.0004e-4 9.998e-5 0.9999001 0.9999001 9.998e-5 0.9999001 1.0004e-4 9.998e-5 0.9999001 0.9999001 9.998e-5 0.9999001 1.0004e-4 9.998e-5 0.9999001 0.9999001 9.998e-5 0.9999001 1.0004e-4 9.998e-5 0.9999001 9.998e-5 0.9999001 0.9999001 1.0004e-4 9.998e-5 0.9999001 9.998e-5 0.9999001 0.9999001 1.0004e-4 9.998e-5 0.9999001 9.998e-5 0.9999001 0.9999001</float_array>
-          <technique_common>
-            <accessor source="#Plane-mesh-map-0-array" count="18" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane-mesh-vertices">
-          <input semantic="POSITION" source="#Plane-mesh-positions"/>
-        </vertices>
-        <triangles material="StartLine-material" count="6">
-          <input semantic="VERTEX" source="#Plane-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane-mesh-map-0" offset="2" set="0"/>
-          <p>0 0 0 3 0 1 2 0 2 4 1 3 7 1 4 6 1 5 8 0 6 11 0 7 10 0 8 0 2 9 1 2 10 3 2 11 4 0 12 5 0 13 7 0 14 8 0 15 9 0 16 11 0 17</p>
-        </triangles>
-      </mesh>
-    </geometry>
   </library_geometries>
   <library_controllers/>
   <library_visual_scenes>
     <visual_scene id="Scene" name="Scene">
-      <node id="Camera_001" name="Camera_001" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 44.75633 0 0 0 1</matrix>
-        <instance_camera url="#Camera_001-camera"/>
-      </node>
-      <node id="Lamp_001" name="Lamp_001" type="NODE">
-        <matrix sid="transform">-0.2908648 -0.7711007 0.5663933 -0.517261 0.9551711 -0.1998834 0.2183913 0.3064664 -0.05518903 0.6045247 0.7946723 15.18328 0 0 0 1</matrix>
-        <instance_light url="#Lamp_001-light"/>
-      </node>
       <node id="field" name="field" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
         <instance_geometry url="#fieldShape-mesh-mesh" name="field">
