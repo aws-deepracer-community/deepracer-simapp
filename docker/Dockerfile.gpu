@@ -47,7 +47,7 @@ RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cach
     PyYAML==3.13 \
     rospkg>=1.1 \
     shapely==1.6.4 \
-    TENSORFLOW_VER \
+    $TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
     future-fstrings==1.2.0 \
