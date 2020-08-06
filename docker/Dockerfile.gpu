@@ -1,6 +1,8 @@
 #if you're not using ubuntu:16.04 make sure to replace xenial with `lsb_release -cs`
 FROM nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04
 
+ARG TENSORFLOW_VER
+
 RUN apt-get update && apt-get upgrade -y && \ 
     apt-get install build-essential wget cmake python3-pip python-boto3 python-pip jq -y && \
     apt-get clean && \
@@ -45,7 +47,7 @@ RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cach
     PyYAML==3.13 \
     rospkg>=1.1 \
     shapely==1.6.4 \
-    $TENSORFLOW_VER \
+    TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
     future-fstrings==1.2.0 \
