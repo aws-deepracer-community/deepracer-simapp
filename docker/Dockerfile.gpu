@@ -31,10 +31,6 @@ RUN apt-get update -y && \
 #Install python3 and setuptools
 RUN python3 -m pip install -U pip setuptools
 
-#Install custom tensorflow
-RUN python3 -m pip install --no-cache-dir \
-    $TENSORFLOW_VER
-
 #Add remaining dependencies
 RUN python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
@@ -56,6 +52,10 @@ RUN python3 -m pip install --no-cache-dir \
     opencv-python==4.1.1.26 \
     future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
+
+#Install custom tensorflow
+RUN python3 -m pip install --no-cache-dir \
+    $TENSORFLOW_VER
 
 RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
 
