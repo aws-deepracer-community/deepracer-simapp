@@ -70,8 +70,8 @@
     4 (length _agent_name)
     ;; int8 _action
     1
-    ;; float32 _reward
-    4
+    ;; float64 _reward
+    8
     ;; int8 _action_space_len
     1
     ;; string[] _speed_list
@@ -89,8 +89,8 @@
        (write-long (length _agent_name) s) (princ _agent_name s)
      ;; int8 _action
        (write-byte _action s)
-     ;; float32 _reward
-       (sys::poke _reward (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
+     ;; float64 _reward
+       (sys::poke _reward (send s :buffer) (send s :count) :double) (incf (stream-count s) 8)
      ;; int8 _action_space_len
        (write-byte _action_space_len s)
      ;; string[] _speed_list
@@ -114,8 +114,8 @@
    ;; int8 _action
      (setq _action (sys::peek buf ptr- :char)) (incf ptr- 1)
      (if (> _action 127) (setq _action (- _action 256)))
-   ;; float32 _reward
-     (setq _reward (sys::peek buf ptr- :float)) (incf ptr- 4)
+   ;; float64 _reward
+     (setq _reward (sys::peek buf ptr- :double)) (incf ptr- 8)
    ;; int8 _action_space_len
      (setq _action_space_len (sys::peek buf ptr- :char)) (incf ptr- 1)
      (if (> _action_space_len 127) (setq _action_space_len (- _action_space_len 256)))
@@ -139,12 +139,12 @@
    self)
   )
 
-(setf (get deepracer_simulation_environment::AgentRewardData :md5sum-) "2d88124db35ddfde5616a1bb8792838a")
+(setf (get deepracer_simulation_environment::AgentRewardData :md5sum-) "af5e8658bf60dab3f19408bd4ad157dd")
 (setf (get deepracer_simulation_environment::AgentRewardData :datatype-) "deepracer_simulation_environment/AgentRewardData")
 (setf (get deepracer_simulation_environment::AgentRewardData :definition-)
       "string agent_name
 int8 action
-float32 reward
+float64 reward
 int8 action_space_len
 string[] speed_list
 string[] steering_angle_list
@@ -202,6 +202,6 @@ string frame_id
 
 
 
-(provide :deepracer_simulation_environment/AgentRewardData "2d88124db35ddfde5616a1bb8792838a")
+(provide :deepracer_simulation_environment/AgentRewardData "af5e8658bf60dab3f19408bd4ad157dd")
 
 

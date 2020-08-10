@@ -15,4 +15,10 @@
           TOTAL_EVALUATION_TIME
           DONE-VAL
           DONE
+          X-VAL
+          X
+          Y-VAL
+          Y
+          OBJECT_LOCATIONS-VAL
+          OBJECT_LOCATIONS
 ))

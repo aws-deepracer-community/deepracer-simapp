@@ -74,9 +74,9 @@ class IconographicImageSize(Enum):
         RACE_COMPLETE_IMAGE_SIZE: [description]
     """
     FULL_IMAGE_SIZE = (640, 480)
-    BOT_CAR_IMAGE_SIZE = (34, 34)
-    OBSTACLE_IMAGE_SIZE = (34, 34)
-    AGENTS_IMAGE_SIZE = (88, 88)
+    BOT_CAR_IMAGE_SIZE = (int(34//SCALE_RATIO), int(34//SCALE_RATIO))
+    OBSTACLE_IMAGE_SIZE = (int(34//SCALE_RATIO), int(34//SCALE_RATIO))
+    AGENTS_IMAGE_SIZE = (int(88//SCALE_RATIO), int(88//SCALE_RATIO))
     RACE_COMPLETE_IMAGE_SIZE = (308, 40)
 
 # Track iconography png enums
@@ -118,3 +118,16 @@ class XYPixelLoc(Enum):
 
 # Race completion flag y-offset
 RACE_COMPLETE_Y_OFFSET = 180
+
+# Mapping the racetype to the text shown on the video
+class FrameQueueData(Enum):
+    """ Enum for frame data put into the queue
+    """
+    FRAME = "frame",
+    AGENT_METRIC_INFO = "agent_metric_info",
+    TRAINING_PHASE = "training_phase"
+
+# Agent Video editor constants
+MAX_FRAMES_IN_QUEUE = 100
+KVS_PUBLISH_PERIOD = 1.0/15.0
+QUEUE_WAIT_TIME = 10 # In seconds

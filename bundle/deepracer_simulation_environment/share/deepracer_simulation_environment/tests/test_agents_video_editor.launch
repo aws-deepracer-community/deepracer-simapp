@@ -1,0 +1,12 @@
+<launch>
+  <param name="JOB_TYPE" value="TIME_TRIAL" />
+  <param name="WORLD_NAME" value="reInvent2019_track" />
+  <param name="RACECAR_NAMES" value="Racer1" />
+
+  <node pkg="deepracer_simulation_environment" type="camera_topic_node.py" name="test_camera_topic_node" args="1"></node>
+
+  <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agent_video_editor" args="1"></node>
+
+  <param name="test_module" value="mp4_saving"/>
+  <test test-name="test_agents_video_editor" pkg="deepracer_simulation_environment" type="pytest_runner.py" />
+</launch>

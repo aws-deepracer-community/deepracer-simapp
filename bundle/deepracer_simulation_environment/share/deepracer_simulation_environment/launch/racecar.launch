@@ -12,8 +12,6 @@
   <arg name="include_second_camera" default="false" />
   <arg name="include_lidar_sensor" default="false" />
 
-  <arg name="single_camera_racecar_body" default="true" />
-
   <!-- Lidar 360 degree - settings -->
   <arg name="lidar_360_degree_sample" default="64" />
   <arg name="lidar_360_degree_horizontal_resolution" default="1" />
@@ -42,9 +40,7 @@
       lidar_360_degree_range_resolution:=$(arg lidar_360_degree_range_resolution)
       lidar_360_degree_noise_mean:=$(arg lidar_360_degree_noise_mean)
       lidar_360_degree_noise_stddev:=$(arg lidar_360_degree_noise_stddev)
-      single_camera_racecar_body:=false
       body_shell_type:=$(arg body_shell_type)" />
-
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <node name="racecar_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param /$(arg racecar_name)/robot_description -model $(arg racecar_name) -z 0.05" />

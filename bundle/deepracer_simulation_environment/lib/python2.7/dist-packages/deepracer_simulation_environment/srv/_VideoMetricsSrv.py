@@ -93,9 +93,10 @@ python3 = True if sys.hexversion > 0x03000000 else False
 import genpy
 import struct
 
+import geometry_msgs.msg
 
 class VideoMetricsSrvResponse(genpy.Message):
-  _md5sum = "da26613e841a5a2b4eb38f31404241d7"
+  _md5sum = "ccf1b22780e2ca6fb64b60963df11d26"
   _type = "deepracer_simulation_environment/VideoMetricsSrvResponse"
   _has_header = False #flag to mark the presence of a Header object
   _full_text = """float32 lap_counter
@@ -106,9 +107,25 @@ float32 steering
 float32 best_lap_time
 float32 total_evaluation_time
 bool done
-"""
-  __slots__ = ['lap_counter','completion_percentage','reset_counter','throttle','steering','best_lap_time','total_evaluation_time','done']
-  _slot_types = ['float32','float32','int32','float32','float32','float32','float32','bool']
+float32 x
+float32 y
+geometry_msgs/Point32[] object_locations
+
+================================================================================
+MSG: geometry_msgs/Point32
+# This contains the position of a point in free space(with 32 bits of precision).
+# It is recommeded to use Point wherever possible instead of Point32.  
+# 
+# This recommendation is to promote interoperability.  
+#
+# This message is designed to take up less space when sending
+# lots of points at once, as in the case of a PointCloud.  
+
+float32 x
+float32 y
+float32 z"""
+  __slots__ = ['lap_counter','completion_percentage','reset_counter','throttle','steering','best_lap_time','total_evaluation_time','done','x','y','object_locations']
+  _slot_types = ['float32','float32','int32','float32','float32','float32','float32','bool','float32','float32','geometry_msgs/Point32[]']
 
   def __init__(self, *args, **kwds):
     """
@@ -118,7 +135,7 @@ bool done
     changes.  You cannot mix in-order arguments and keyword arguments.
 
     The available fields are:
-       lap_counter,completion_percentage,reset_counter,throttle,steering,best_lap_time,total_evaluation_time,done
+       lap_counter,completion_percentage,reset_counter,throttle,steering,best_lap_time,total_evaluation_time,done,x,y,object_locations
 
     :param args: complete set of field values, in .msg order
     :param kwds: use keyword arguments corresponding to message field names
@@ -143,6 +160,12 @@ bool done
         self.total_evaluation_time = 0.
       if self.done is None:
         self.done = False
+      if self.x is None:
+        self.x = 0.
+      if self.y is None:
+        self.y = 0.
+      if self.object_locations is None:
+        self.object_locations = []
     else:
       self.lap_counter = 0.
       self.completion_percentage = 0.
@@ -152,6 +175,9 @@ bool done
       self.best_lap_time = 0.
       self.total_evaluation_time = 0.
       self.done = False
+      self.x = 0.
+      self.y = 0.
+      self.object_locations = []
 
   def _get_types(self):
     """
@@ -166,7 +192,12 @@ bool done
     """
     try:
       _x = self
-      buff.write(_get_struct_2fi4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
+      buff.write(_get_struct_2fi4fB2f().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done, _x.x, _x.y))
+      length = len(self.object_locations)
+      buff.write(_struct_I.pack(length))
+      for val1 in self.object_locations:
+        _x = val1
+        buff.write(_get_struct_3f().pack(_x.x, _x.y, _x.z))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -176,12 +207,25 @@ bool done
     :param str: byte array of serialized message, ``str``
     """
     try:
+      if self.object_locations is None:
+        self.object_locations = None
       end = 0
       _x = self
       start = end
-      end += 29
-      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2fi4fB().unpack(str[start:end])
+      end += 37
+      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done, _x.x, _x.y,) = _get_struct_2fi4fB2f().unpack(str[start:end])
       self.done = bool(self.done)
+      start = end
+      end += 4
+      (length,) = _struct_I.unpack(str[start:end])
+      self.object_locations = []
+      for i in range(0, length):
+        val1 = geometry_msgs.msg.Point32()
+        _x = val1
+        start = end
+        end += 12
+        (_x.x, _x.y, _x.z,) = _get_struct_3f().unpack(str[start:end])
+        self.object_locations.append(val1)
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e) #most likely buffer underfill
@@ -195,7 +239,12 @@ bool done
     """
     try:
       _x = self
-      buff.write(_get_struct_2fi4fB().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done))
+      buff.write(_get_struct_2fi4fB2f().pack(_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done, _x.x, _x.y))
+      length = len(self.object_locations)
+      buff.write(_struct_I.pack(length))
+      for val1 in self.object_locations:
+        _x = val1
+        buff.write(_get_struct_3f().pack(_x.x, _x.y, _x.z))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -206,12 +255,25 @@ bool done
     :param numpy: numpy python module
     """
     try:
+      if self.object_locations is None:
+        self.object_locations = None
       end = 0
       _x = self
       start = end
-      end += 29
-      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done,) = _get_struct_2fi4fB().unpack(str[start:end])
+      end += 37
+      (_x.lap_counter, _x.completion_percentage, _x.reset_counter, _x.throttle, _x.steering, _x.best_lap_time, _x.total_evaluation_time, _x.done, _x.x, _x.y,) = _get_struct_2fi4fB2f().unpack(str[start:end])
       self.done = bool(self.done)
+      start = end
+      end += 4
+      (length,) = _struct_I.unpack(str[start:end])
+      self.object_locations = []
+      for i in range(0, length):
+        val1 = geometry_msgs.msg.Point32()
+        _x = val1
+        start = end
+        end += 12
+        (_x.x, _x.y, _x.z,) = _get_struct_3f().unpack(str[start:end])
+        self.object_locations.append(val1)
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e) #most likely buffer underfill
@@ -220,14 +282,20 @@ _struct_I = genpy.struct_I
 def _get_struct_I():
     global _struct_I
     return _struct_I
-_struct_2fi4fB = None
-def _get_struct_2fi4fB():
-    global _struct_2fi4fB
-    if _struct_2fi4fB is None:
-        _struct_2fi4fB = struct.Struct("<2fi4fB")
-    return _struct_2fi4fB
+_struct_3f = None
+def _get_struct_3f():
+    global _struct_3f
+    if _struct_3f is None:
+        _struct_3f = struct.Struct("<3f")
+    return _struct_3f
+_struct_2fi4fB2f = None
+def _get_struct_2fi4fB2f():
+    global _struct_2fi4fB2f
+    if _struct_2fi4fB2f is None:
+        _struct_2fi4fB2f = struct.Struct("<2fi4fB2f")
+    return _struct_2fi4fB2f
 class VideoMetricsSrv(object):
   _type          = 'deepracer_simulation_environment/VideoMetricsSrv'
-  _md5sum = 'da26613e841a5a2b4eb38f31404241d7'
+  _md5sum = 'ccf1b22780e2ca6fb64b60963df11d26'
   _request_class  = VideoMetricsSrvRequest
   _response_class = VideoMetricsSrvResponse

@@ -9,12 +9,12 @@ import std_msgs.msg
 import sensor_msgs.msg
 
 class AgentRewardData(genpy.Message):
-  _md5sum = "2d88124db35ddfde5616a1bb8792838a"
+  _md5sum = "af5e8658bf60dab3f19408bd4ad157dd"
   _type = "deepracer_simulation_environment/AgentRewardData"
   _has_header = False #flag to mark the presence of a Header object
   _full_text = """string agent_name
 int8 action
-float32 reward
+float64 reward
 int8 action_space_len
 string[] speed_list
 string[] steering_angle_list
@@ -69,7 +69,7 @@ time stamp
 string frame_id
 """
   __slots__ = ['agent_name','action','reward','action_space_len','speed_list','steering_angle_list','image']
-  _slot_types = ['string','int8','float32','int8','string[]','string[]','sensor_msgs/Image']
+  _slot_types = ['string','int8','float64','int8','string[]','string[]','sensor_msgs/Image']
 
   def __init__(self, *args, **kwds):
     """
@@ -130,7 +130,7 @@ string frame_id
         length = len(_x)
       buff.write(struct.pack('<I%ss'%length, length, _x))
       _x = self
-      buff.write(_get_struct_bfb().pack(_x.action, _x.reward, _x.action_space_len))
+      buff.write(_get_struct_bdb().pack(_x.action, _x.reward, _x.action_space_len))
       length = len(self.speed_list)
       buff.write(_struct_I.pack(length))
       for val1 in self.speed_list:
@@ -195,8 +195,8 @@ string frame_id
         self.agent_name = str[start:end]
       _x = self
       start = end
-      end += 6
-      (_x.action, _x.reward, _x.action_space_len,) = _get_struct_bfb().unpack(str[start:end])
+      end += 10
+      (_x.action, _x.reward, _x.action_space_len,) = _get_struct_bdb().unpack(str[start:end])
       start = end
       end += 4
       (length,) = _struct_I.unpack(str[start:end])
@@ -282,7 +282,7 @@ string frame_id
         length = len(_x)
       buff.write(struct.pack('<I%ss'%length, length, _x))
       _x = self
-      buff.write(_get_struct_bfb().pack(_x.action, _x.reward, _x.action_space_len))
+      buff.write(_get_struct_bdb().pack(_x.action, _x.reward, _x.action_space_len))
       length = len(self.speed_list)
       buff.write(_struct_I.pack(length))
       for val1 in self.speed_list:
@@ -348,8 +348,8 @@ string frame_id
         self.agent_name = str[start:end]
       _x = self
       start = end
-      end += 6
-      (_x.action, _x.reward, _x.action_space_len,) = _get_struct_bfb().unpack(str[start:end])
+      end += 10
+      (_x.action, _x.reward, _x.action_space_len,) = _get_struct_bdb().unpack(str[start:end])
       start = end
       end += 4
       (length,) = _struct_I.unpack(str[start:end])
@@ -424,27 +424,27 @@ _struct_I = genpy.struct_I
 def _get_struct_I():
     global _struct_I
     return _struct_I
-_struct_bfb = None
-def _get_struct_bfb():
-    global _struct_bfb
-    if _struct_bfb is None:
-        _struct_bfb = struct.Struct("<bfb")
-    return _struct_bfb
 _struct_3I = None
 def _get_struct_3I():
     global _struct_3I
     if _struct_3I is None:
         _struct_3I = struct.Struct("<3I")
     return _struct_3I
-_struct_2I = None
-def _get_struct_2I():
-    global _struct_2I
-    if _struct_2I is None:
-        _struct_2I = struct.Struct("<2I")
-    return _struct_2I
 _struct_BI = None
 def _get_struct_BI():
     global _struct_BI
     if _struct_BI is None:
         _struct_BI = struct.Struct("<BI")
     return _struct_BI
+_struct_2I = None
+def _get_struct_2I():
+    global _struct_2I
+    if _struct_2I is None:
+        _struct_2I = struct.Struct("<2I")
+    return _struct_2I
+_struct_bdb = None
+def _get_struct_bdb():
+    global _struct_bdb
+    if _struct_bdb is None:
+        _struct_bdb = struct.Struct("<bdb")
+    return _struct_bdb

@@ -15,6 +15,7 @@
 #include <ros/builtin_message_traits.h>
 #include <ros/message_operations.h>
 
+#include <geometry_msgs/Point32.h>
 
 namespace deepracer_simulation_environment
 {
@@ -31,7 +32,10 @@ struct VideoMetricsSrvResponse_
     , steering(0.0)
     , best_lap_time(0.0)
     , total_evaluation_time(0.0)
-    , done(false)  {
+    , done(false)
+    , x(0.0)
+    , y(0.0)
+    , object_locations()  {
     }
   VideoMetricsSrvResponse_(const ContainerAllocator& _alloc)
     : lap_counter(0.0)
@@ -41,7 +45,10 @@ struct VideoMetricsSrvResponse_
     , steering(0.0)
     , best_lap_time(0.0)
     , total_evaluation_time(0.0)
-    , done(false)  {
+    , done(false)
+    , x(0.0)
+    , y(0.0)
+    , object_locations(_alloc)  {
   (void)_alloc;
     }
 
@@ -70,6 +77,15 @@ struct VideoMetricsSrvResponse_
 
    typedef uint8_t _done_type;
   _done_type done;
+
+   typedef float _x_type;
+  _x_type x;
+
+   typedef float _y_type;
+  _y_type y;
+
+   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _object_locations_type;
+  _object_locations_type object_locations;
 
 
 
@@ -105,7 +121,7 @@ namespace message_traits
 
 
 
-// BOOLTRAITS {'IsFixedSize': True, 'IsMessage': True, 'HasHeader': False}
+// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
 // {'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'deepracer_simulation_environment': ['/opt/workspace/AwsSilverstoneSimulationApplication/src/deepracer_simulation_environment/msg']}
 
 // !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
@@ -115,12 +131,12 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator> >
-  : TrueType
+  : FalseType
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator> const>
-  : TrueType
+  : FalseType
   { };
 
 template <class ContainerAllocator>
@@ -149,12 +165,12 @@ struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Cont
 {
   static const char* value()
   {
-    return "da26613e841a5a2b4eb38f31404241d7";
+    return "ccf1b22780e2ca6fb64b60963df11d26";
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0xda26613e841a5a2bULL;
-  static const uint64_t static_value2 = 0x4eb38f31404241d7ULL;
+  static const uint64_t static_value1 = 0xccf1b22780e2ca6fULL;
+  static const uint64_t static_value2 = 0xb64b60963df11d26ULL;
 };
 
 template<class ContainerAllocator>
@@ -181,6 +197,23 @@ float32 steering\n\
 float32 best_lap_time\n\
 float32 total_evaluation_time\n\
 bool done\n\
+float32 x\n\
+float32 y\n\
+geometry_msgs/Point32[] object_locations\n\
+\n\
+================================================================================\n\
+MSG: geometry_msgs/Point32\n\
+# This contains the position of a point in free space(with 32 bits of precision).\n\
+# It is recommeded to use Point wherever possible instead of Point32.  \n\
+# \n\
+# This recommendation is to promote interoperability.  \n\
+#\n\
+# This message is designed to take up less space when sending\n\
+# lots of points at once, as in the case of a PointCloud.  \n\
+\n\
+float32 x\n\
+float32 y\n\
+float32 z\n\
 ";
   }
 
@@ -207,6 +240,9 @@ namespace serialization
       stream.next(m.best_lap_time);
       stream.next(m.total_evaluation_time);
       stream.next(m.done);
+      stream.next(m.x);
+      stream.next(m.y);
+      stream.next(m.object_locations);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -241,6 +277,18 @@ struct Printer< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Con
     Printer<float>::stream(s, indent + "  ", v.total_evaluation_time);
     s << indent << "done: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.done);
+    s << indent << "x: ";
+    Printer<float>::stream(s, indent + "  ", v.x);
+    s << indent << "y: ";
+    Printer<float>::stream(s, indent + "  ", v.y);
+    s << indent << "object_locations[]" << std::endl;
+    for (size_t i = 0; i < v.object_locations.size(); ++i)
+    {
+      s << indent << "  object_locations[" << i << "]: ";
+      s << std::endl;
+      s << indent;
+      Printer< ::geometry_msgs::Point32_<ContainerAllocator> >::stream(s, indent + "    ", v.object_locations[i]);
+    }
   }
 };
 

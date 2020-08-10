@@ -21,43 +21,26 @@ import boto3
 import time
 import rospy
 
-from markov import utils_parse_model_metadata
 from markov.rollout_constants import BodyShellType
 from markov.utils import (force_list, restart_simulation_job,
                           cancel_simulation_job, get_boto_config, get_s3_kms_extra_args)
 from markov.architecture.constants import Input
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
-from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400,
+                                          SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
-
-from download_params_and_roslaunch_agent import get_yaml_dict, get_yaml_values, F1_SHELL_USERS_LIST
+from markov.s3.files.model_metadata import ModelMetadata
+from markov.s3.files.yaml_file import YamlFile
+from markov.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
+                                 YAML_LOCAL_PATH_FORMAT, AgentType, YamlKey)
+from markov.s3.utils import get_s3_key
 
 logger = Logger(__name__, logging.INFO).get_logger()
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
 WAIT_FOR_ROBOMAKER_TIME = 10
 
 RACE_CAR_COLORS = ["Purple", "Orange"]
-
-CAR_COLOR_YAML_KEY = "CAR_COLOR"
-BODY_SHELL_TYPE_YAML_KEY = "BODY_SHELL_TYPE"
-MODEL_S3_BUCKET_YAML_KEY = "MODEL_S3_BUCKET"
-MODEL_S3_PREFIX_YAML_KEY = "MODEL_S3_PREFIX"
-MODEL_METADATA_FILE_S3_YAML_KEY = "MODEL_METADATA_FILE_S3_KEY"
-METRICS_S3_BUCKET_YAML_KEY = "METRICS_S3_BUCKET"
-METRICS_S3_OBJECT_KEY_YAML_KEY = "METRICS_S3_OBJECT_KEY"
-METRICS_S3_PREFIX_YAML_KEY = "METRICS_S3_PREFIX"
-SIMTRACE_S3_BUCKET_YAML_KEY = "SIMTRACE_S3_BUCKET"
-SIMTRACE_S3_PREFIX_YAML_KEY = "SIMTRACE_S3_PREFIX"
-MP4_S3_BUCKET_YAML_KEY = "MP4_S3_BUCKET"
-MP4_S3_PREFIX_YAML_KEY = "MP4_S3_OBJECT_PREFIX"
-DISPLAY_NAME_YAML_KEY = "DISPLAY_NAME"
-VIDEO_JOB_TYPE_YAML_KEY = "VIDEO_JOB_TYPE"
-RACER_NAME_YAML_KEY = "RACER_NAME"
-LEADERBOARD_TYPE_YAML_KEY = "LEADERBOARD_TYPE"
-LEADERBOARD_NAME_YAML_KEY = "LEADERBOARD_NAME"
-
-S3_DOWNLOAD_ERROR_MSG_FORMAT = "S3 download failed. Re-try count: {0}/{1}: [S3_Bucket: {2}, S3_Key: {3}]: {4}"
 
 
 def run_cmd(cmd_args, change_working_directory="./", shell=False,
@@ -117,28 +100,34 @@ def generate_race_yaml(yaml_dict, car1, car2, race_idx):
 
     race_yaml_dict = copy.deepcopy(yaml_dict)
 
-    race_yaml_dict[CAR_COLOR_YAML_KEY] = RACE_CAR_COLORS
-    race_yaml_dict[MODEL_S3_BUCKET_YAML_KEY] = [car1_model_s3_bucket, car2_model_s3_bucket]
-    race_yaml_dict[MODEL_S3_PREFIX_YAML_KEY] = [car1_s3_prefix, car2_s3_prefix]
-    race_yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY] = [car1_model_metadata, car2_model_metadata]
-
-    race_yaml_dict[METRICS_S3_BUCKET_YAML_KEY] = [car1_metrics_bucket, car2_metrics_bucket]
-    race_yaml_dict[METRICS_S3_OBJECT_KEY_YAML_KEY] = [os.path.join(car1_metrics_s3_prefix,
-                                                                   str(uuid.uuid4()),
-                                                                   'evaluation_metrics.json'),
-                                                      os.path.join(car2_metrics_s3_prefix,
-                                                                   str(uuid.uuid4()),
-                                                                   'evaluation_metrics.json')]
-    race_yaml_dict[SIMTRACE_S3_BUCKET_YAML_KEY] = [car1_simtrace_bucket, car2_simtrace_bucket]
-    race_yaml_dict[SIMTRACE_S3_PREFIX_YAML_KEY] = [os.path.join(car1_simtrace_prefix, str(uuid.uuid4())),
-                                                   os.path.join(car2_simtrace_prefix, str(uuid.uuid4()))]
-    race_yaml_dict[MP4_S3_BUCKET_YAML_KEY] = [car1_mp4_bucket, car2_mp4_bucket]
-    race_yaml_dict[MP4_S3_PREFIX_YAML_KEY] = [os.path.join(car1_mp4_prefix, str(uuid.uuid4())),
-                                              os.path.join(car2_mp4_prefix, str(uuid.uuid4()))]
-    race_yaml_dict[DISPLAY_NAME_YAML_KEY] = [car1_display_name, car2_display_name]
+    race_yaml_dict[YamlKey.CAR_COLOR_YAML_KEY.value] = RACE_CAR_COLORS
+    race_yaml_dict[YamlKey.MODEL_S3_BUCKET_YAML_KEY.value] = \
+        [car1_model_s3_bucket, car2_model_s3_bucket]
+    race_yaml_dict[YamlKey.MODEL_S3_PREFIX_YAML_KEY.value] = \
+        [car1_s3_prefix, car2_s3_prefix]
+    race_yaml_dict[YamlKey.MODEL_METADATA_FILE_S3_YAML_KEY.value] = \
+        [car1_model_metadata, car2_model_metadata]
+    race_yaml_dict[YamlKey.METRICS_S3_BUCKET_YAML_KEY.value] = \
+        [car1_metrics_bucket, car2_metrics_bucket]
+    race_yaml_dict[YamlKey.METRICS_S3_OBJECT_KEY_YAML_KEY.value] = \
+        [os.path.join(car1_metrics_s3_prefix, str(uuid.uuid4()), 'evaluation_metrics.json'),
+         os.path.join(car2_metrics_s3_prefix, str(uuid.uuid4()), 'evaluation_metrics.json')]
+    race_yaml_dict[YamlKey.SIMTRACE_S3_BUCKET_YAML_KEY.value] = \
+        [car1_simtrace_bucket, car2_simtrace_bucket]
+    race_yaml_dict[YamlKey.SIMTRACE_S3_PREFIX_YAML_KEY.value] = \
+        [os.path.join(car1_simtrace_prefix, str(uuid.uuid4())),
+         os.path.join(car2_simtrace_prefix, str(uuid.uuid4()))]
+    race_yaml_dict[YamlKey.MP4_S3_BUCKET_YAML_KEY.value] = \
+        [car1_mp4_bucket, car2_mp4_bucket]
+    race_yaml_dict[YamlKey.MP4_S3_PREFIX_YAML_KEY.value] = \
+        [os.path.join(car1_mp4_prefix, str(uuid.uuid4())),
+         os.path.join(car2_mp4_prefix, str(uuid.uuid4()))]
+    race_yaml_dict[YamlKey.DISPLAY_NAME_YAML_KEY.value] = \
+        [car1_display_name, car2_display_name]
     # TODO - Deprecate the DISPLAY_NAME once cloud team pushes the RACER_NAME yaml
-    race_yaml_dict[RACER_NAME_YAML_KEY] = [car1_racer_name, car2_racer_name]
-    race_yaml_dict[BODY_SHELL_TYPE_YAML_KEY] = [car1_body_shell_type, car2_body_shell_type]
+    race_yaml_dict[YamlKey.RACER_NAME_YAML_KEY.value] = [car1_racer_name, car2_racer_name]
+    race_yaml_dict[YamlKey.BODY_SHELL_TYPE_YAML_KEY.value] = \
+        [car1_body_shell_type, car2_body_shell_type]
     return race_yaml_dict
 
 
@@ -155,16 +144,6 @@ def main():
         session = boto3.session.Session()
         s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
         s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
-
-        yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
-        local_yaml_path = os.path.abspath(os.path.join(os.getcwd(), s3_yaml_name))
-        try:
-            s3_client.download_file(Bucket=s3_bucket, Key=yaml_key, Filename=local_yaml_path)
-        except Exception as e:
-            log_and_exit("Failed to download yaml file: s3_bucket: {}, yaml_key: {}, {}"
-                             .format(s3_bucket, yaml_key, e),
-                         SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
 
         # Intermediate tournament files
         queue_pickle_name = 'tournament_candidate_queue.pkl'
@@ -188,32 +167,16 @@ def main():
         except:
             pass
 
-        # Get values passed in yaml files. Default values are for backward compatibility and for single racecar racing
-        yaml_dict = get_yaml_dict(local_yaml_path)
+        # download yaml file
+        yaml_file = YamlFile(agent_type=AgentType.TOURNAMENT.value,
+                             bucket=s3_bucket,
+                             s3_key=get_s3_key(s3_prefix, s3_yaml_name),
+                             region_name=s3_region,
+                             s3_endpoint_url=s3_endpoint_url,
+                             local_path=YAML_LOCAL_PATH_FORMAT.format(s3_yaml_name))
 
-        # Forcing the yaml parameter to list
-        # TODO: Deprecate the DISPLAY_NAME and use only the RACER_NAME after cloud pushes this YAML parameter
-        force_list_params = [MODEL_S3_BUCKET_YAML_KEY, MODEL_S3_PREFIX_YAML_KEY, MODEL_METADATA_FILE_S3_YAML_KEY,
-                             METRICS_S3_BUCKET_YAML_KEY, METRICS_S3_PREFIX_YAML_KEY,
-                             SIMTRACE_S3_BUCKET_YAML_KEY, SIMTRACE_S3_PREFIX_YAML_KEY,
-                             MP4_S3_BUCKET_YAML_KEY, MP4_S3_PREFIX_YAML_KEY,
-                             DISPLAY_NAME_YAML_KEY, RACER_NAME_YAML_KEY,
-                             BODY_SHELL_TYPE_YAML_KEY]
+        yaml_dict = yaml_file.get_yaml_values()
 
-        for params in force_list_params:
-            yaml_dict[params] = force_list(yaml_dict.get(params, None))
-
-        # Populate the model_metadata_s3_key values to handle both training and evaluation for all race_formats
-        if None in yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY]:
-            # MODEL_METADATA_FILE_S3_KEY not passed as part of yaml file ==> This happens during evaluation
-            # Assume model_metadata.json is present in the s3_prefix/model/ folder
-            yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY] = list()
-            for s3_prefix in yaml_dict[MODEL_S3_PREFIX_YAML_KEY]:
-                yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY].append(
-                    os.path.join(s3_prefix, 'model/model_metadata.json'))
-
-        # Validate the yaml values
-        validate_yaml_values(yaml_dict)
         if os.path.exists(local_queue_pickle_path):
             with open(local_queue_pickle_path, 'rb') as f:
                 tournament_candidate_queue = pickle.load(f)
@@ -223,21 +186,22 @@ def main():
         else:
             logger.info('tournament_candidate_queue initialized')
             tournament_candidate_queue = deque()
-            for agent_idx, _ in enumerate(yaml_dict[MODEL_S3_BUCKET_YAML_KEY]):
+            for agent_idx, _ in enumerate(yaml_dict[YamlKey.MODEL_S3_BUCKET_YAML_KEY.value]):
                 tournament_candidate_queue.append((
-                    yaml_dict[MODEL_S3_BUCKET_YAML_KEY][agent_idx],
-                    yaml_dict[MODEL_S3_PREFIX_YAML_KEY][agent_idx],
-                    yaml_dict[MODEL_METADATA_FILE_S3_YAML_KEY][agent_idx],
-                    yaml_dict[METRICS_S3_BUCKET_YAML_KEY][agent_idx],
-                    yaml_dict[METRICS_S3_PREFIX_YAML_KEY][agent_idx],
-                    yaml_dict[SIMTRACE_S3_BUCKET_YAML_KEY][agent_idx],
-                    yaml_dict[SIMTRACE_S3_PREFIX_YAML_KEY][agent_idx],
-                    yaml_dict[MP4_S3_BUCKET_YAML_KEY][agent_idx],
-                    yaml_dict[MP4_S3_PREFIX_YAML_KEY][agent_idx],
-                    yaml_dict[DISPLAY_NAME_YAML_KEY][agent_idx],
+                    yaml_dict[YamlKey.MODEL_S3_BUCKET_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.MODEL_S3_PREFIX_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.MODEL_METADATA_FILE_S3_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.METRICS_S3_BUCKET_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.METRICS_S3_PREFIX_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.SIMTRACE_S3_BUCKET_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.SIMTRACE_S3_PREFIX_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.MP4_S3_BUCKET_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.MP4_S3_PREFIX_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.DISPLAY_NAME_YAML_KEY.value][agent_idx],
                     # TODO: Deprecate the DISPLAY_NAME and use only the RACER_NAME without if else check
-                    "" if None in yaml_dict[RACER_NAME_YAML_KEY] else yaml_dict[RACER_NAME_YAML_KEY][agent_idx],
-                    BodyShellType.F1_2021.value if yaml_dict[RACER_NAME_YAML_KEY][agent_idx] in F1_SHELL_USERS_LIST else BodyShellType.DEFAULT.value
+                    "" if None in yaml_dict.get(YamlKey.RACER_NAME_YAML_KEY.value, [None]) \
+                        else yaml_dict[YamlKey.RACER_NAME_YAML_KEY.value][agent_idx],
+                    yaml_dict[YamlKey.BODY_SHELL_TYPE_YAML_KEY.value][agent_idx]
                 ))
             tournament_report = {"race_results": []}
 
@@ -283,24 +247,22 @@ def main():
             simapp_versions = list()
             for agent_index, model_s3_bucket in enumerate(race_model_s3_buckets):
                 racecar_name = 'racecar_' + str(agent_index)
-                # Make a local folder with the racecar name to download the model_metadata.json
-                os.makedirs(os.path.join(os.getcwd(), racecar_name))
-                dirs_to_delete.append(os.path.join(os.getcwd(), racecar_name))
-                local_model_metadata_path = os.path.abspath(
-                    os.path.join(os.path.join(os.getcwd(), racecar_name), 'model_metadata.json'))
                 json_key = race_model_metadatas[agent_index]
-                json_key = json_key.replace('s3://{}/'.format(model_s3_bucket), '')
+                # download model metadata
                 try:
-                    s3_client.download_file(Bucket=model_s3_bucket,
-                                            Key=json_key,
-                                            Filename=local_model_metadata_path)
+                    model_metadata = ModelMetadata(bucket=model_s3_bucket,
+                                                   s3_key=json_key,
+                                                   region_name=s3_region,
+                                                   s3_endpoint_url=s3_endpoint_url,
+                                                   local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
+                    dirs_to_delete.append(model_metadata.local_dir)
                 except Exception as e:
                     log_and_exit("Failed to download model_metadata file: s3_bucket: {}, s3_key: {}, {}"
-                                     .format(model_s3_bucket, json_key, e),
+                                 .format(model_s3_bucket, json_key, e),
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
-                sensors, _, simapp_version = utils_parse_model_metadata.parse_model_metadata(local_model_metadata_path)
-                simapp_versions.append(simapp_version)
+                sensors, _, simapp_version = model_metadata.get_model_metadata_info()
+                simapp_versions.append(str(simapp_version))
                 if Input.STEREO.value in sensors:
                     racecars_with_stereo_cameras.append(racecar_name)
                 if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
@@ -367,49 +329,14 @@ def main():
 
                 cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
                                       s3_region)
+    except ValueError as ex:
+        log_and_exit("User modified model_metadata.json: {}".format(ex),
+                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_400)
     except Exception as e:
         log_and_exit("Tournament node failed: {}".format(e),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
-
-
-def is_power_of_two(n):
-    """Return True if n is a power of two."""
-    if n <= 0:
-        return False
-    else:
-        return n & (n - 1) == 0
-
-
-def validate_yaml_values(yaml_values):
-    """ Validate that the parameter provided in the yaml file for configuration is correct.
-    Some of the params requires list of two values. This is mostly checked as part of this function
-    Arguments:
-        yaml_values {[dict]} -- [All the yaml parameter as a list]
-        multicar {[bool]} -- [Is multicar enabled (True), else False]
-    Raises:
-        Exception -- [Exception]
-    """
-    # Verify if all the yaml keys required for launching models have same number of values
-    # TODO: Deprecate the DISPLAY_NAME and use only the RACER_NAME after cloud pushes this YAML parameter
-    same_len_values = [MODEL_S3_BUCKET_YAML_KEY, MODEL_S3_PREFIX_YAML_KEY, MODEL_METADATA_FILE_S3_YAML_KEY,
-                       METRICS_S3_BUCKET_YAML_KEY, METRICS_S3_PREFIX_YAML_KEY,
-                       SIMTRACE_S3_BUCKET_YAML_KEY, SIMTRACE_S3_PREFIX_YAML_KEY,
-                       MP4_S3_BUCKET_YAML_KEY, MP4_S3_PREFIX_YAML_KEY,
-                       DISPLAY_NAME_YAML_KEY]
-    if None not in yaml_values[RACER_NAME_YAML_KEY]:
-        same_len_values.append(RACER_NAME_YAML_KEY)
-    logger.info(yaml_values)
-    if not all(map(lambda param: len(yaml_values[param]) == len(yaml_values[same_len_values[0]]), same_len_values)):
-        logger.info("YAML parameter dimensions are not matching:")
-        for val in same_len_values:
-            logger.info("{}: {}".format(val,len(yaml_values[val])))
-        raise Exception('Incorrect number of values for these yaml parameters {}'.format(same_len_values))
-
-    # Verify if all yaml keys have power of 2 number of values.
-    if not is_power_of_two(len(yaml_values[MODEL_S3_PREFIX_YAML_KEY])):
-        raise Exception(
-            'Incorrect number of values for tournament (Requires power of 2): Given {} '.format(len(yaml_values[MODEL_S3_PREFIX_YAML_KEY])))
 
 
 if __name__ == '__main__':

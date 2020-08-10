@@ -74,6 +74,11 @@ RUN patch -p1 -N --directory=/usr/local/lib/python3.5/dist-packages/ < /opt/amaz
 
 COPY ./docker/files/run.sh run.sh
 
+COPY VERSION .
+ARG IMG_VERSION
+LABEL maintainer "AWS DeepRacer Community - deepracing.io"
+LABEL version $IMG_VERSION
+
 RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
 
 ENTRYPOINT ["/bin/bash", "-c"]
