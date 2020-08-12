@@ -224,6 +224,7 @@ def main():
 
             race_yaml_dict = generate_race_yaml(yaml_dict=yaml_dict, car1=car1, car2=car2,
                                                 race_idx=race_idx)
+            race_yaml_dict["S3_ENDPOINT_URL"] = s3_endpoint_url
 
             race_model_s3_buckets = [car1_model_s3_bucket, car2_model_s3_bucket]
             race_model_metadatas = [car1_model_metadata, car2_model_metadata]
