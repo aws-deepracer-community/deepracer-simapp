@@ -13,8 +13,9 @@ import pytest
 import rospy
 from std_srvs.srv import Empty, EmptyRequest
 from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.metrics.constants import (ITERATION_DATA_LOCAL_FILE_PATH,
-                                      IterationDataLocalFileNames)
+from markov.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
+                                 CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
+                                 CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
 from std_srvs.srv import Empty, EmptyResponse
 from deepracer_simulation_environment.srv import TopCamDataSrvResponse, TopCamDataSrv
 from deepracer_simulation_environment.srv import VideoMetricsSrvResponse, VideoMetricsSrv
@@ -98,12 +99,12 @@ def mp4_saved_paths():
     """
     file_paths = list()
     for agent_name in AGENT_NAMES:
-        camera_pip_path = os.path.join(BASE_ROS_PATH, ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                       IterationDataLocalFileNames.CAMERA_PIP_MP4_VALIDATION_LOCAL_PATH.value)
-        camera_45degree_path = os.path.join(BASE_ROS_PATH, ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                            IterationDataLocalFileNames.CAMERA_45DEGREE_MP4_VALIDATION_LOCAL_PATH.value)
-        camera_topview_path = os.path.join(BASE_ROS_PATH, ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                           IterationDataLocalFileNames.CAMERA_TOPVIEW_MP4_VALIDATION_LOCAL_PATH.value)
+        camera_pip_path = os.path.join(BASE_ROS_PATH,
+                                       CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format(agent_name))
+        camera_45degree_path = os.path.join(BASE_ROS_PATH,
+                                            CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format(agent_name))
+        camera_topview_path = os.path.join(BASE_ROS_PATH,
+                                           CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format(agent_name))
         file_paths.extend([camera_pip_path, camera_45degree_path, camera_topview_path])
     return file_paths
 

@@ -18,7 +18,7 @@ from enum import Enum
 from markov.utils import test_internet_connection
 from markov.constants import DEFAULT_COLOR
 from markov.architecture.constants import Input
-from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400, SIMAPP_EVENT_ERROR_CODE_500,
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 from markov.log_handler.exception_handler import log_and_exit
 from markov.s3.files.model_metadata import ModelMetadata
@@ -109,10 +109,10 @@ def main():
         Popen(cmd, shell=True, executable="/bin/bash")
     
     except botocore.exceptions.ClientError as ex:
-        log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
+        log_and_exit("Download params and launch of agent node S3 ClientError: s3_bucket: {}, yaml_key: {}, {}"
                          .format(s3_bucket, yaml_key, ex), 
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
     except botocore.exceptions.EndpointConnectionError:
         log_and_exit("No Internet connection or s3 service unavailable",
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -120,7 +120,7 @@ def main():
     except ValueError as ex:
         log_and_exit("User modified model_metadata.json: {}".format(ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
     except Exception as ex:
         log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
                          .format(s3_bucket, yaml_key, ex), 
