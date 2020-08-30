@@ -38,13 +38,13 @@ for a in $ARCH; do
         if [ "$arch_p2" == "gl" ]; then
             arch_tf=$(echo $a | cut -f3 -d- )
             tf=$(eval echo $TF_PATH)
-            docker build . -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-gl-${arch_tf} -f docker/Dockerfile.cpu-gl --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
+            docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-gl-${arch_tf} -f docker/Dockerfile.cpu-gl --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
         else
             arch_tf=$arch_p2
             tf=$(eval echo $TF_PATH)
-            docker build . -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-${arch_p2} -f docker/Dockerfile.cpu --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
+            docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-${arch_p2} -f docker/Dockerfile.cpu --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
         fi 
     elif [ "$arch_p1" == "gpu" ]; then
-        docker build . -t $PREFIX/deepracer-robomaker:${VERSION}-${a} -f docker/Dockerfile.${a} --build-arg IMG_VERSION=$VERSION
+        docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${a} -f docker/Dockerfile.${a} --build-arg IMG_VERSION=$VERSION
     fi
 done

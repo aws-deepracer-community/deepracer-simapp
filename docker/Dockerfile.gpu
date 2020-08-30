@@ -51,7 +51,7 @@ RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cach
     future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
 
-RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
+RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 'numpy==1.11'
 
 COPY bundle /opt/install
 WORKDIR /opt/install
