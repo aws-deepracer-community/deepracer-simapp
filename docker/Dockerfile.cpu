@@ -11,7 +11,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
     apt-get install ros-kinetic-ros-base python-rosinstall \
-	ros-kinetic-media-export ros-kinetic-web-video-server \
+	ros-kinetic-media-export ros-kinetic-web-video-server ros-kinetic-rosmsg \
 	python-rosinstall-generator python-wstool python-matplotlib -y --allow-unauthenticated && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -29,7 +29,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # RUN pip3 install -U pip setuptools>=41.0.0
-RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install -U pip 'setuptools<50' && python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
