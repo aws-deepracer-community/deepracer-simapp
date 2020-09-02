@@ -30,7 +30,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # RUN pip3 install -U pip setuptools>=41.0.0
-RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install -U pip 'setuptools<50' && python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
@@ -54,12 +54,12 @@ RUN python3 -m pip install -U pip setuptools && python3 -m pip install --no-cach
     future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
 
-RUN python2 -m pip install --no-cache-dir opencv-python 'numpy==1.11'
+RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 'numpy==1.11'
 
 COPY bundle /opt/install
 WORKDIR /opt/install
 RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
-    apt-get install -y ros-kinetic-media-export ros-kinetic-web-video-server python-matplotlib && \
+    apt-get install -y ros-kinetic-media-export ros-kinetic-web-video-server ros-kinetic-rosmsg python-matplotlib && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"

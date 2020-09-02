@@ -6,7 +6,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/reInvent2019_wide/reInvent2019_wide.dae</uri>
+<uri>model://meshes/reInvent2019_wide/reInvent2019_wide_collisions.dae</uri>
 </mesh>
 </geometry>
 </collision>
