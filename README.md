@@ -22,6 +22,7 @@ Version 3 is the current version, and it is receiving both new tracks as well as
 | -------- | -------------- | -------- | -------- | -------- | 
 | 3.0.1   | Upgrade to Simapp 3  |  `3.0.1-cpu-avx` `3.0.1-cpu-gl-avx`  | `3.0.1-cpu-avx2` `3.0.1-cpu-gl-avx` | `3.0.1-gpu` `3.0.1-gpu-gl` |
 | 3.0.2   | September Track  |  `3.0.2-cpu-avx` `3.0.2-cpu-gl-avx`  | `3.0.2-cpu-avx2` `3.0.2-cpu-gl-avx` | `3.0.2-gpu` `3.0.2-gpu-gl` |
+| 3.0.3   | October Track  |  `3.0.3-cpu-avx` `3.0.3-cpu-gl-avx`  | `3.0.3-cpu-avx2` `3.0.3-cpu-gl-avx` | `3.0.3-gpu` `3.0.3-gpu-gl` |
 
 ### Version 2
 
@@ -38,6 +39,7 @@ Version 2 is in maintenance state, and will only receive bug-fixes for breaking 
 | 2.0.10   | Training improvements  |  `2.0.10-cpu-avx` `2.0.10-cpu-gl-avx`  | `2.0.10-cpu-avx2` `2.0.10-cpu-gl-avx` | `2.0.10-gpu` `2.0.10-gpu-gl` |
 | 2.0.11   | August Track  |  `2.0.11-cpu-avx` `2.0.11-cpu-gl-avx`  | `2.0.11-cpu-avx2` `2.0.11-cpu-gl-avx` | `2.0.11-gpu` `2.0.11-gpu-gl` |
 | 2.0.12   | September Track  |  `2.0.12-cpu-avx` `2.0.12-cpu-gl-avx`  | `2.0.12-cpu-avx2` `2.0.12-cpu-gl-avx` | `2.0.12-gpu` `2.0.12-gpu-gl` |
+| 2.0.13   | October Track  |  `2.0.13-cpu-avx` `2.0.13-cpu-gl-avx`  | `2.0.13-cpu-avx2` `2.0.13-cpu-gl-avx` | `2.0.13-gpu` `2.0.13-gpu-gl` |
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 
