@@ -2,7 +2,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get update && \ 
-    apt-get install build-essential wget cmake python3-pip python-boto3 python-pip jq -y && \
+    apt-get install build-essential wget cmake python3-dev python3-pip python-boto3 python-pip jq --no-install-recommends -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -12,7 +12,7 @@ RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E
 RUN apt-get update -y && \
     apt-get install ros-kinetic-ros-base python-rosinstall \
 	ros-kinetic-media-export ros-kinetic-web-video-server ros-kinetic-rosmsg \
-	python-rosinstall-generator python-wstool python-matplotlib -y --allow-unauthenticated && \
+	python-rosinstall-generator python-wstool python-matplotlib -y --allow-unauthenticated --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -24,7 +24,7 @@ ENV ROS_DISTRO=kinetic
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 RUN apt-get update -y && \
-    apt-get install gazebo7 libgazebo7-dev  xvfb x11vnc net-tools x11-xserver-utils jwm rviz x264 libx264-dev -y && \
+    apt-get install gazebo7 libgazebo7-dev  xvfb x11vnc net-tools x11-xserver-utils jwm rviz x264 libx264-dev --no-install-recommends -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

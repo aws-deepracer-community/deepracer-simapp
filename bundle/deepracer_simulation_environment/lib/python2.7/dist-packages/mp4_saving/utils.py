@@ -8,12 +8,13 @@ import rospkg
 import rospy
 from PIL import ImageFont, ImageDraw, Image
 from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.metrics.constants import (ITERATION_DATA_LOCAL_FILE_PATH,
-                                      IterationDataLocalFileNames)
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
+from markov.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
+                                 CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
+                                 CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
 from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
                                   IconographicImageSize)
 from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDataSrv
@@ -142,7 +143,7 @@ def create_folder_path(camera_dir_list):
     """
     for path in camera_dir_list:
         dir_path = os.path.dirname(path)
-        if not os.path.exists(dir_path):
+        if dir_path or not os.path.exists(dir_path):
             os.makedirs(dir_path)
 
 def milliseconds_to_timeformat(dtime_delta):
@@ -183,12 +184,9 @@ def get_cameratype_params(racecar_name, agent_name):
         (dict): camera information local path, topic, name
     """
     camera_info = dict()
-    camera_pip_path = os.path.join(ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                   IterationDataLocalFileNames.CAMERA_PIP_MP4_VALIDATION_LOCAL_PATH.value)
-    camera_45degree_path = os.path.join(ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                        IterationDataLocalFileNames.CAMERA_45DEGREE_MP4_VALIDATION_LOCAL_PATH.value)
-    camera_topview_path = os.path.join(ITERATION_DATA_LOCAL_FILE_PATH, agent_name,
-                                       IterationDataLocalFileNames.CAMERA_TOPVIEW_MP4_VALIDATION_LOCAL_PATH.value)
+    camera_pip_path = CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format(agent_name)
+    camera_45degree_path = CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format(agent_name)
+    camera_topview_path = CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format(agent_name)
     create_folder_path([camera_pip_path, camera_45degree_path, camera_topview_path])
 
     camera_info[CameraTypeParams.CAMERA_PIP_PARAMS] = {

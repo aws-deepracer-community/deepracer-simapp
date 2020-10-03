@@ -35,6 +35,7 @@ from markov.s3.files.yaml_file import YamlFile
 from markov.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
                                  YAML_LOCAL_PATH_FORMAT, AgentType, YamlKey)
 from markov.s3.utils import get_s3_key
+from markov.s3.s3_client import S3Client
 
 logger = Logger(__name__, logging.INFO).get_logger()
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
@@ -143,7 +144,7 @@ def main():
         # create boto3 session/client and download yaml/json file
         session = boto3.session.Session()
         s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
-        s3_client = session.client('s3', region_name=s3_region, endpoint_url=s3_endpoint_url, config=get_boto_config())
+        s3_client = S3Client(region_name=s3_region,s3_endpoint_url=s3_endpoint_url)
 
         # Intermediate tournament files
         queue_pickle_name = 'tournament_candidate_queue.pkl'
@@ -158,12 +159,13 @@ def main():
         final_report_s3_key = os.path.normpath(os.path.join(s3_prefix, final_report_name))
 
         try:
-            s3_client.download_file(Bucket=s3_bucket,
-                                    Key=queue_pickle_s3_key,
-                                    Filename=local_queue_pickle_path)
-            s3_client.download_file(Bucket=s3_bucket,
-                                    Key=report_pickle_s3_key,
-                                    Filename=local_report_pickle_path)
+            s3_client.download_file(bucket=s3_bucket,
+                                    s3_key=queue_pickle_s3_key,
+                                    local_path=local_queue_pickle_path)
+
+            s3_client.download_file(bucket=s3_bucket,
+                                    s3_key=report_pickle_s3_key,
+                                    local_path=local_report_pickle_path)
         except:
             pass
 
@@ -224,6 +226,9 @@ def main():
 
             race_yaml_dict = generate_race_yaml(yaml_dict=yaml_dict, car1=car1, car2=car2,
                                                 race_idx=race_idx)
+            
+            if s3_endpoint_url is not None:
+                race_yaml_dict["S3_ENDPOINT_URL"] = s3_endpoint_url
 
             race_model_s3_buckets = [car1_model_s3_bucket, car2_model_s3_bucket]
             race_model_metadatas = [car1_model_metadata, car2_model_metadata]
@@ -304,15 +309,18 @@ def main():
             # Persist latest queue and report to use after job restarts.
             with open(local_queue_pickle_path, 'wb') as f:
                 pickle.dump(tournament_candidate_queue, f, protocol=2)
-            s3_client.upload_file(Filename=local_queue_pickle_path,
-                                  Bucket=s3_bucket,
-                                  Key=queue_pickle_s3_key, ExtraArgs=s3_extra_args)
+            s3_client.upload_file(bucket=s3_bucket,
+                                  s3_key=queue_pickle_s3_key,
+                                  local_path=local_queue_pickle_path,
+                                  s3_kms_extra_args=s3_extra_args)
 
             with open(local_report_pickle_path, 'wb') as f:
                 pickle.dump(tournament_report, f, protocol=2)
-            s3_client.upload_file(Filename=local_report_pickle_path,
-                                  Bucket=s3_bucket,
-                                  Key=report_pickle_s3_key, ExtraArgs=s3_extra_args)
+
+            s3_client.upload_file(bucket=s3_bucket,
+                                  s3_key=report_pickle_s3_key,
+                                  local_path=local_report_pickle_path,
+                                  s3_kms_extra_args=s3_extra_args)
 
             # If there is more than 1 candidates then restart the simulation job otherwise
             # tournament is finished, persists final report and ends the job.
@@ -323,9 +331,10 @@ def main():
             else:
                 # Persist final tournament report in json format
                 # and terminate the job by canceling it
-                s3_client.put_object(Bucket=s3_bucket,
-                                     Key=final_report_s3_key,
-                                     Body=json.dumps(tournament_report), **s3_extra_args)
+                s3_client.put_object(bucket=s3_bucket,
+                                     s3_key=final_report_s3_key,
+                                     body=json.dumps(tournament_report),
+                                     s3_kms_extra_args=s3_extra_args)
 
                 cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
                                       s3_region)
