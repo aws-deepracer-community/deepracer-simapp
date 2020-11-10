@@ -25,7 +25,7 @@ from markov.s3.files.model_metadata import ModelMetadata
 from markov.s3.files.yaml_file import YamlFile
 from markov.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
                                  YAML_LOCAL_PATH_FORMAT,
-                                 AgentType, YamlKey)
+                                 AgentType, YamlKey, ModelMetadataKeys)
 from markov.s3.utils import get_s3_key
  
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
@@ -91,7 +91,11 @@ def main():
                                            region_name=s3_region,
                                            s3_endpoint_url=s3_endpoint_url,
                                            local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
-            sensors, _, simapp_version = model_metadata.get_model_metadata_info()            
+            sensors, _, simapp_version = model_metadata.get_model_metadata_info()
+            model_metadata_info = model_metadata.get_model_metadata_info()
+            sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
+            simapp_version = model_metadata_info[ModelMetadataKeys.VERSION.value]           
+
             simapp_versions.append(str(simapp_version))
             if Input.STEREO.value in sensors:
                 racecars_with_stereo_cameras.append(racecar_name)

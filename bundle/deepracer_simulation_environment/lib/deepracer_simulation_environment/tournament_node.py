@@ -21,19 +21,20 @@ import boto3
 import time
 import rospy
 
+from markov.constants import ROBOMAKER_CANCEL_JOB_WAIT_TIME
 from markov.rollout_constants import BodyShellType
-from markov.utils import (force_list, restart_simulation_job,
-                          cancel_simulation_job, get_boto_config, get_s3_kms_extra_args)
+from markov.utils import (force_list,
+                          get_boto_config, get_s3_kms_extra_args)
 from markov.architecture.constants import Input
 from markov.log_handler.logger import Logger
-from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.exception_handler import (log_and_exit, simapp_exit_gracefully)
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 from markov.s3.files.model_metadata import ModelMetadata
 from markov.s3.files.yaml_file import YamlFile
 from markov.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
-                                 YAML_LOCAL_PATH_FORMAT, AgentType, YamlKey)
+                                 YAML_LOCAL_PATH_FORMAT, AgentType, YamlKey, ModelMetadataKeys)
 from markov.s3.utils import get_s3_key
 from markov.s3.s3_client import S3Client
 
@@ -42,6 +43,39 @@ logger = Logger(__name__, logging.INFO).get_logger()
 WAIT_FOR_ROBOMAKER_TIME = 10
 
 RACE_CAR_COLORS = ["Purple", "Orange"]
+
+def restart_simulation_job(simulation_job_arn, aws_region):
+    '''boto client call to restart simulation job for tournament worker
+
+    Args:
+      simulation_job_arn (str): RoboMaker simulation job arn
+      aws_region (srt): RoboMaker simulation job region
+    '''
+    logger.info("restart_simulation_job: make sure to shutdown simapp first")
+    if simulation_job_arn:
+        session = boto3.session.Session()
+        robomaker_client = session.client('robomaker', region_name=aws_region)
+        robomaker_client.restart_simulation_job(job=simulation_job_arn)
+    else:
+        simapp_exit_gracefully()
+
+
+def cancel_simulation_job(simulation_job_arn, aws_region):
+    '''boto client call to cancel simulation job for tournament worker
+
+    Args:
+      simulation_job_arn (str): RoboMaker simulation job arn
+      aws_region (srt): RoboMaker simulation job region
+    '''
+    logger.info("cancel_simulation_job: make sure to shutdown simapp first")
+    if simulation_job_arn:
+        session = boto3.session.Session()
+        robomaker_client = session.client('robomaker', region_name=aws_region)
+        robomaker_client.cancel_simulation_job(job=simulation_job_arn)
+        time.sleep(ROBOMAKER_CANCEL_JOB_WAIT_TIME)
+    else:
+        simapp_exit_gracefully()
+
 
 
 def run_cmd(cmd_args, change_working_directory="./", shell=False,
@@ -266,7 +300,10 @@ def main():
                                  .format(model_s3_bucket, json_key, e),
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
-                sensors, _, simapp_version = model_metadata.get_model_metadata_info()
+                model_metadata_info = model_metadata.get_model_metadata_info()
+                sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
+                simapp_version = model_metadata_info[ModelMetadataKeys.VERSION.value]
+
                 simapp_versions.append(str(simapp_version))
                 if Input.STEREO.value in sensors:
                     racecars_with_stereo_cameras.append(racecar_name)
