@@ -1,0 +1,732 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>sagar.sarambalkar</author>
+      <authoring_tool>OpenCOLLADA2018;  Version: 1.6;  Revision: 61</authoring_tool>
+      <comments>
+			ColladaMaya export options: 
+			bakeTransforms=0;relativePaths=0;preserveSourceTree=0;copyTextures=0;exportTriangles=0;exportCgfxFileReferences=1;
+			isSampling=0;curveConstrainSampling=0;removeStaticCurves=1;exportPhysics=0;exportConvexMeshGeometries=1;exportPolygonMeshes=1;exportLights=1;
+			exportCameras=1;exportAnimationsOnly=0;exportSeparateFile=0;modelNameDAE=;exportJoints=1;exportSkin=1;exportAnimations=1;exportOptimizedBezierAnimation=0;exportInvisibleNodes=0;exportDefaultCameras=0;
+			exportTexCoords=1;exportNormals=1;exportNormalsPerVertex=1;exportVertexColors=1;exportVertexColorsPerVertex=1;
+			exportTexTangents=0;exportTangents=0;exportReferencedMaterials=0;exportMaterialsOnly=0;
+			exportXRefs=1;dereferenceXRefs=1;exportCameraAsLookat=0;cameraXFov=0;cameraYFov=1;encodedNames=1;doublePrecision=0
+		</comments>
+      <source_data>source/Austin_track_01.ma</source_data>
+    </contributor>
+    <created>2020-10-29T20:56:12</created>
+    <modified>2020-10-29T20:56:12</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_materials>
+    <material id="MI_Sign_01" name="MI_Sign_01">
+      <instance_effect url="#MI_Sign_01-fx"/>
+    </material>
+    <material id="MI_Metal_T_01" name="MI_Metal_T_01">
+      <instance_effect url="#MI_Metal_T_01-fx"/>
+    </material>
+  </library_materials>
+  <library_effects>
+    <effect id="MI_Metal_T_01-fx">
+      <profile_COMMON>
+        <newparam sid="metal_T_01-surface">
+          <surface type="2D">
+            <init_from>metal_T_01</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="metal_T_01-sampler">
+          <sampler2D>
+            <source>metal_T_01-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <blinn>
+            <emission>
+              <color>0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color>0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="metal_T_01-sampler" texcoord="TEX0">
+                <extra>
+                  <technique profile="OpenCOLLADAMaya">
+                    <wrapU sid="wrapU" type="bool">1</wrapU>
+                    <wrapV sid="wrapV" type="bool">1</wrapV>
+                    <mirrorU sid="mirrorU" type="bool">0</mirrorU>
+                    <mirrorV sid="mirrorV" type="bool">0</mirrorV>
+                    <coverageU sid="coverageU" type="float">1</coverageU>
+                    <coverageV sid="coverageV" type="float">1</coverageV>
+                    <translateFrameU sid="translateFrameU" type="float">0</translateFrameU>
+                    <translateFrameV sid="translateFrameV" type="float">0</translateFrameV>
+                    <rotateFrame sid="rotateFrame" type="float">0</rotateFrame>
+                    <stagger sid="stagger" type="bool">0</stagger>
+                    <fast sid="fast" type="bool">0</fast>
+                    <repeatU sid="repeatU" type="float">1</repeatU>
+                    <repeatV sid="repeatV" type="float">1</repeatV>
+                    <offsetU sid="offsetU" type="float">0</offsetU>
+                    <offsetV sid="offsetV" type="float">0</offsetV>
+                    <rotateUV sid="rotateUV" type="float">0</rotateUV>
+                    <noiseU sid="noiseU" type="float">0</noiseU>
+                    <noiseV sid="noiseV" type="float">0</noiseV>
+                    <blend_mode sid="blend_mode" type="string">NONE</blend_mode>
+                  </technique>
+                </extra>
+              </texture>
+            </diffuse>
+            <specular>
+              <color>0.5 0.5 0.5 1</color>
+            </specular>
+            <shininess>
+              <float>0.3</float>
+            </shininess>
+            <reflective>
+              <color>0 0 0 1</color>
+            </reflective>
+            <reflectivity>
+              <float>0.5</float>
+            </reflectivity>
+            <transparent opaque="RGB_ZERO">
+              <color>0 0 0 1</color>
+            </transparent>
+            <transparency>
+              <float>1</float>
+            </transparency>
+          </blinn>
+        </technique>
+      </profile_COMMON>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">MI_Metal_T_01</originalMayaNodeId>
+        </technique>
+      </extra>
+    </effect>
+    <effect id="MI_Sign_01-fx">
+      <profile_COMMON>
+        <newparam sid="sign_U_01-surface">
+          <surface type="2D">
+            <init_from>sign_U_01</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="sign_U_01-sampler">
+          <sampler2D>
+            <source>sign_U_01-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color>0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color>0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="sign_U_01-sampler" texcoord="TEX0">
+                <extra>
+                  <technique profile="OpenCOLLADAMaya">
+                    <wrapU sid="wrapU" type="bool">1</wrapU>
+                    <wrapV sid="wrapV" type="bool">1</wrapV>
+                    <mirrorU sid="mirrorU" type="bool">0</mirrorU>
+                    <mirrorV sid="mirrorV" type="bool">0</mirrorV>
+                    <coverageU sid="coverageU" type="float">1</coverageU>
+                    <coverageV sid="coverageV" type="float">1</coverageV>
+                    <translateFrameU sid="translateFrameU" type="float">0</translateFrameU>
+                    <translateFrameV sid="translateFrameV" type="float">0</translateFrameV>
+                    <rotateFrame sid="rotateFrame" type="float">0</rotateFrame>
+                    <stagger sid="stagger" type="bool">0</stagger>
+                    <fast sid="fast" type="bool">0</fast>
+                    <repeatU sid="repeatU" type="float">1</repeatU>
+                    <repeatV sid="repeatV" type="float">1</repeatV>
+                    <offsetU sid="offsetU" type="float">0</offsetU>
+                    <offsetV sid="offsetV" type="float">0</offsetV>
+                    <rotateUV sid="rotateUV" type="float">0</rotateUV>
+                    <noiseU sid="noiseU" type="float">0</noiseU>
+                    <noiseV sid="noiseV" type="float">0</noiseV>
+                    <blend_mode sid="blend_mode" type="string">NONE</blend_mode>
+                  </technique>
+                </extra>
+              </texture>
+            </diffuse>
+            <transparent opaque="RGB_ZERO">
+              <color>0 0 0 1</color>
+            </transparent>
+            <transparency>
+              <float>1</float>
+            </transparency>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">MI_Sign_01</originalMayaNodeId>
+        </technique>
+      </extra>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="metal_T_01" name="metal_T_01">
+      <init_from>textures/Austin_track_metal_T_01.png</init_from>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">metal_T_01</originalMayaNodeId>
+          <dgnode_type sid="dgnode_type" type="string">kFile</dgnode_type>
+          <image_sequence sid="image_sequence" type="bool">0</image_sequence>
+        </technique>
+      </extra>
+    </image>
+    <image id="sign_U_01" name="sign_U_01">
+      <init_from>textures/Austin_track_sign_U_01.png</init_from>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_U_01</originalMayaNodeId>
+          <dgnode_type sid="dgnode_type" type="string">kFile</dgnode_type>
+          <image_sequence sid="image_sequence" type="bool">0</image_sequence>
+        </technique>
+      </extra>
+    </image>
+  </library_images>
+  <library_geometries>
+    <geometry id="sign_01Shape" name="sign_01Shape">
+      <mesh>
+        <source id="sign_01Shape-positions" name="sign_01Shape-positions">
+          <float_array id="sign_01Shape-positions-array" count="60">5.596074 -28.33449 2.329734 5.596074 -28.33449 1.932217 4.721252 -28.99424 1.932216 4.721252 -28.99424 2.329736 5.594495 -28.34036 2.3171 5.594492 -28.34037 1.94485 4.727328 -28.99433 1.944851 4.727331 -28.99433 2.317101 5.626799 -28.34878 2.345608 5.626795 -28.34878 1.916343 4.726537 -29.0277 1.916344 4.726537 -29.0277 2.345608 5.593238 -28.3256 2.326657 5.59324 -28.3256 1.935294 5.603489 -28.31787 2.345608 5.603489 -28.31787 1.916343 4.713481 -28.98907 1.935294 4.703229 -28.99679 1.916344 4.713478 -28.98906 2.326656 4.703231 -28.99679 2.345608</float_array>
+          <technique_common>
+            <accessor source="#sign_01Shape-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_01Shape-normals" name="sign_01Shape-normals">
+          <float_array id="sign_01Shape-normals-array" count="150">-0.6021149 0.7984094 0 -0.6021149 0.7984095 0 -0.6021149 0.7984095 0 -0.6021149 0.7984095 0 0.6021154 -0.7984092 0 0.6021153 -0.7984091 0 0.6021153 -0.7984092 0 0 0 -0.9999999 0 0 -1 0 0 -1 0 0 -1 -0.7984536 -0.6020564 0 -0.7984536 -0.6020564 0 -0.7984535 -0.6020563 0 -0.7984536 -0.6020564 0 0 0 1 0 0 1 0 0 0.9999999 0 0 1 -0.6021382 0.7983919 0 -0.6021329 0.7983959 -1.22439e-4 -0.6021248 0.7984019 -1.37399e-4 -0.6021307 0.7983975 0 -0.6020763 0.7984385 0 -0.6020947 0.7984246 0 -0.6020711 0.7984425 -1.2349e-4 -0.6020889 0.7984291 -1.38035e-4 -0.9964119 -0.08463775 0 -0.9964118 -0.08463775 0 -0.9964117 -0.08463775 0 -0.9964117 -0.08463775 0 0.7984426 0.6020709 0 0.7984426 0.6020709 0 0.7984426 0.6020709 0 0.7984426 0.6020709 0 -0.3649212 0.4838908 0.7954133 -0.3649212 0.4838908 0.7954133 -0.3649212 0.4838908 0.7954133 -0.3649212 0.4838908 0.7954132 0.3551934 0.9347928 0 0.3551934 0.9347928 0 0.3551934 0.9347929 0 0.3551934 0.9347928 0 -0.3649512 0.48393 -0.7953756 -0.3649512 0.48393 -0.7953756 -0.3649512 0.48393 -0.7953756 -0.3649512 0.48393 -0.7953756 0.6021148 -0.7984095 0 0.6021149 -0.7984095 0 0.6021148 -0.7984095 0</float_array>
+          <technique_common>
+            <accessor source="#sign_01Shape-normals-array" count="50" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_01Shape-map1" name="sign_01Shape-map1">
+          <float_array id="sign_01Shape-map1-array" count="64">0.34444 0.986075 0.34444 0.5241802 0.6549275 0.5241802 0.6549275 0.986075 -1.213532 1.379685 1.527998 1.379689 -1.211901 2.321343 -1.211298 1.326285 1.52576 1.326298 -1.27341 2.323671 -1.275385 1.377635 1.526376 2.32135 1.524106 2.374642 -1.209629 2.374642 1.638398 1.41838 1.636401 2.283141 1.587883 2.323667 1.589848 1.377625 -1.16944 1.285435 1.483907 1.285428 -1.321924 2.283151 -1.323934 1.418384 1.482303 2.415414 -1.167828 2.415416 1.696979 1.439102 1.694872 2.262735 -1.143955 1.240567 1.458418 1.240552 -1.3804 2.262738 -1.382512 1.439105 1.45686 2.46021 -1.142385 2.460217</float_array>
+          <technique_common>
+            <accessor source="#sign_01Shape-map1-array" count="32" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_01Shape-SculptFreezeColorTemp" name="sign_01Shape-SculptFreezeColorTemp">
+          <float_array id="sign_01Shape-SculptFreezeColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_01Shape-SculptFreezeColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_01Shape-SculptMaskColorTemp" name="sign_01Shape-SculptMaskColorTemp">
+          <float_array id="sign_01Shape-SculptMaskColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_01Shape-SculptMaskColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="sign_01Shape-vertices" name="sign_01Shape-vertices">
+          <input semantic="POSITION" source="#sign_01Shape-positions"/>
+        </vertices>
+        <polylist material="lambert35SG" count="1">
+          <input semantic="VERTEX" source="#sign_01Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_01Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_01Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_01Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_01Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>4</vcount>
+          <p>0 0 0 0 0 1 1 1 0 0 2 2 2 0 0 3 3 3 0 0</p>
+        </polylist>
+        <polylist material="blinn1SG" count="14">
+          <input semantic="VERTEX" source="#sign_01Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_01Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_01Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_01Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_01Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>3 4 4 4 4 4 4 4 4 4 4 4 4 3</vcount>
+          <p>10 4 4 0 0 9 5 5 0 0 11 6 6 0 0 9 7 5 0 0 10 8 4 0 0 17 9 7 0 0 15 10 8 0 0 10 11 4 0 0 11 12 6 0 0 19 13 9 0 0 17 14 10 0 0 11 15 6 0 0 8 16 11 0 0 14 17 12 0 0 19 18 13 0 0 13 19 14 0 0 12 20 15 0 0 14 21 16 0 0 15 22 17 0 0 16 23 18 0 0 13 19 19 0 0 15 22 8 0 0 17 24 7 0 0 18 25 20 0 0 16 23 21 0 0 17 24 10 0 0 19 26 9 0 0 12 20 22 0 0 18 25 23 0 0 19 26 13 0 0 14 21 12 0 0 5 27 24 0 0 4 28 25 0 0 12 29 15 0 0 13 30 14 0 0 9 31 5 0 0 15 32 17 0 0 14 33 16 0 0 8 34 11 0 0 6 35 26 0 0 5 36 27 0 0 13 37 19 0 0 16 38 18 0 0 7 39 28 0 0 6 40 29 0 0 16 41 21 0 0 18 42 20 0 0 4 43 30 0 0 7 44 31 0 0 18 45 23 0 0 12 46 22 0 0 11 47 6 0 0 9 48 5 0 0 8 49 11 0 0</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">sign_01Shape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+    <geometry id="sign_02Shape" name="sign_02Shape">
+      <mesh>
+        <source id="sign_02Shape-positions" name="sign_02Shape-positions">
+          <float_array id="sign_02Shape-positions-array" count="156">-30.21183 -2.985414 2.344684 -30.19339 -3.019876 2.344684 -30.21183 -2.985414 2.583083 -30.19339 -3.019876 2.583083 -30.19417 -2.975958 2.583083 -30.17572 -3.010421 2.583083 -30.19417 -2.975958 2.344684 -30.17572 -3.010421 2.344684 -30.14656 -3.107396 2.442069 -30.14621 -3.108053 2.481148 -30.25902 -2.897236 2.446619 -30.25867 -2.897894 2.485698 -30.24135 -2.887781 2.446619 -30.241 -2.888439 2.485698 -30.12889 -3.09794 2.442069 -30.12854 -3.098598 2.481148 -29.20574 -4.89126 2.344684 -29.18772 -4.925948 2.344684 -29.20574 -4.89126 2.583084 -29.18772 -4.925948 2.583084 -29.18795 -4.882024 2.583084 -29.16994 -4.916711 2.583084 -29.18795 -4.882024 2.344684 -29.16994 -4.916711 2.344684 -29.14198 -5.01404 2.44207 -29.14163 -5.014702 2.481149 -29.25183 -4.802507 2.44662 -29.25148 -4.803168 2.485699 -29.23404 -4.79327 2.44662 -29.2337 -4.793932 2.485699 -29.12419 -5.004804 2.44207 -29.12385 -5.005465 2.481149 -29.30732 -4.601698 2.759103 -29.30732 -4.601699 2.197781 -30.03738 -3.237547 2.197781 -30.03738 -3.237543 2.759106 -29.31517 -4.598214 2.741262 -29.31516 -4.598213 2.215621 -30.03882 -3.245998 2.215621 -30.03881 -3.245997 2.741266 -29.33396 -4.641457 2.78152 -29.33395 -4.641455 2.175367 -30.0852 -3.237629 2.175367 -30.0852 -3.237628 2.781519 -29.2943 -4.599674 2.754759 -29.29428 -4.599677 2.202128 -29.28576 -4.615667 2.78152 -29.28576 -4.615665 2.175367 -30.02848 -3.22782 2.202127 -30.037 -3.211836 2.175367 -30.02848 -3.227821 2.754757 -30.037 -3.211837 2.781519</float_array>
+          <technique_common>
+            <accessor source="#sign_02Shape-positions-array" count="52" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_02Shape-normals" name="sign_02Shape-normals">
+          <float_array id="sign_02Shape-normals-array" count="438">-0.8816767 -0.4718538 0 -0.8816767 -0.4718538 0 -0.8816767 -0.4718538 0 -0.8816767 -0.4718538 0 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0.8816786 0.4718506 0 0.8816786 0.4718506 0 0.8816786 0.4718506 0 0.8816786 0.4718506 0 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0.4718843 -0.8816605 0 0.4718843 -0.8816605 0 0.4718843 -0.8816605 0 0.4718843 -0.8816605 0 -0.4718959 0.8816542 0 -0.4718959 0.8816542 0 -0.4718959 0.8816542 0 -0.4718959 0.8816542 0 -0.881697 -0.4718162 0 -0.8816969 -0.4718162 0 -0.8816969 -0.4718163 0 -0.8816969 -0.4718163 0 -0.4717157 0.8815443 0.01907846 -0.4717157 0.8815442 0.01907846 -0.4717157 0.8815444 0.01907847 -0.4717158 0.8815443 0.01907847 0.8817024 0.471806 0 0.8817024 0.471806 0 0.8817024 0.4718061 0 0.8817024 0.4718061 0 0.4717732 -0.8815124 -0.01913113 0.4717732 -0.8815124 -0.01913113 0.4717732 -0.8815124 -0.01913112 0.4717732 -0.8815123 -0.01913112 0.009003408 -0.01682902 0.9998178 0.009003409 -0.01682902 0.9998178 0.009003409 -0.01682902 0.9998178 0.009003409 -0.01682902 0.9998178 -0.008993741 0.0168275 -0.9998179 -0.008993742 0.0168275 -0.9998179 -0.008993742 0.0168275 -0.999818 -0.008993742 0.0168275 -0.999818 -0.8874974 -0.4608126 0 -0.8874974 -0.4608126 0 -0.8874974 -0.4608126 0 -0.8874974 -0.4608126 0 0 0 0.9999999 0 0 0.9999999 0 0 0.9999999 0 0 0.9999999 0.8874633 0.4608786 0 0.8874633 0.4608786 0 0.8874633 0.4608786 0 0.8874633 0.4608786 0 0 0 -0.9999999 0 0 -0.9999999 0 0 -0.9999999 0 0 -0.9999999 0.4608213 -0.8874929 0 0.4608213 -0.8874929 0 0.4608213 -0.8874929 0 0.4608213 -0.8874929 0 -0.4608882 0.8874581 0 -0.4608882 0.8874581 0 -0.4608882 0.8874581 0 -0.4608882 0.8874581 0 -0.8874685 -0.4608682 0 -0.8874685 -0.4608683 0 -0.8874685 -0.4608683 0 -0.8874686 -0.4608683 0 -0.4608198 0.8872886 0.01908256 -0.4608198 0.8872885 0.01908256 -0.4608198 0.8872886 0.01908256 -0.4608198 0.8872886 0.01908257 0.8874643 0.4608765 0 0.8874642 0.4608765 0 0.8874643 0.4608765 0 0.8874643 0.4608765 0 0.4607504 -0.8873248 -0.01907287 0.4607504 -0.8873248 -0.01907287 0.4607504 -0.8873248 -0.01907287 0.4607505 -0.8873248 -0.01907287 0.008799828 -0.01693788 0.9998178 0.008799828 -0.01693788 0.9998178 0.008799828 -0.01693788 0.9998178 0.008799828 -0.01693788 0.9998178 -0.008798839 0.01693853 -0.9998178 -0.008798838 0.01693853 -0.9998178 -0.008798839 0.01693853 -0.9998178 -0.008798839 0.01693853 -0.9998178 0.8816776 0.4718521 0 0.8816777 0.4718522 0 0.8816777 0.4718522 0 0.8816777 0.4718522 0 -0.881689 -0.4718309 0 -0.881689 -0.471831 0 -0.881689 -0.471831 0 0 0 -1 0 0 -1 0 0 -1 0 0 -1 -0.4717984 0.8817064 0 -0.4717984 0.8817065 0 -0.4717984 0.8817065 0 -0.4717984 0.8817064 0 0 0 1 0 0 1 0 0 1 0 0 1 0.8818277 0.4715718 0 0.881828 0.4715712 -1.5608e-4 0.8817677 0.4716837 -1.76038e-4 0.8817675 0.4716845 0 0.8818451 0.4715389 0 0.8817776 0.4716654 0 0.8818455 0.4715383 -1.57468e-4 0.881778 0.4716648 -1.76885e-4 0.06987762 0.9975556 0 0.06987762 0.9975556 0 0.06987761 0.9975556 0 0.06987762 0.9975556 0 0.4718078 -0.8817014 0 0.4718078 -0.8817015 0 0.4718078 -0.8817015 0 0.4718078 -0.8817014 0 0.5344436 0.2860202 0.795338 0.5344436 0.2860202 0.795338 0.5344436 0.2860202 0.795338 0.5344435 0.2860202 0.795338 0.8693188 -0.4942517 0 0.8693189 -0.4942518 0 0.8693188 -0.4942518 0 0.8693188 -0.4942517 0 0.5345536 0.2860727 -0.7952452 0.5345536 0.2860727 -0.7952452 0.5345536 0.2860727 -0.7952452 0.5345535 0.2860726 -0.7952452 -0.8816913 -0.4718267 0 -0.8816913 -0.4718267 0 -0.8816913 -0.4718267 0</float_array>
+          <technique_common>
+            <accessor source="#sign_02Shape-normals-array" count="146" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_02Shape-map1" name="sign_02Shape-map1">
+          <float_array id="sign_02Shape-map1-array" count="176">0.7480389 0.9442416 0.748039 0.9009153 0.7913654 0.9009153 0.7913654 0.9442416 0.8346918 0.9009153 0.8346918 0.9442416 0.8780179 0.9009154 0.878018 0.9442415 0.9213443 0.9009154 0.9213443 0.9442415 0.7480389 0.8575888 0.7913654 0.8575888 0.7480389 0.9875679 0.7913654 0.9875679 0.7480389 0.9442416 0.748039 0.9009153 0.7913654 0.9009153 0.7913654 0.9442416 0.8346918 0.9009153 0.8346918 0.9442416 0.8780179 0.9009154 0.878018 0.9442415 0.9213443 0.9009154 0.9213443 0.9442415 0.7480389 0.8575888 0.7913654 0.8575888 0.7480389 0.9875679 0.7913654 0.9875679 0.7480389 0.9442416 0.748039 0.9009153 0.7913654 0.9009153 0.7913654 0.9442416 0.8346918 0.9009153 0.8346918 0.9442416 0.878018 0.9009154 0.8780181 0.9442415 0.9213443 0.9009154 0.9213443 0.9442415 0.7480389 0.8575888 0.7913654 0.8575888 0.7480389 0.9875679 0.7913654 0.9875679 0.7480389 0.9442416 0.748039 0.9009153 0.7913654 0.9009153 0.7913654 0.9442416 0.8346918 0.9009153 0.8346918 0.9442416 0.878018 0.9009154 0.8780181 0.9442415 0.9213443 0.9009154 0.9213443 0.9442415 0.7480389 0.8575888 0.7913654 0.8575888 0.7480389 0.9875679 0.7913654 0.9875679 -0.002126932 0.4799735 -0.002126932 0.01807863 0.4937206 0.01807863 0.4937206 0.4799735 -1.213532 1.379685 1.527998 1.379689 -1.211901 2.321343 -1.211298 1.326285 1.52576 1.326298 -1.27341 2.323671 -1.275385 1.377635 1.526376 2.32135 1.524106 2.374642 -1.209629 2.374642 1.638398 1.41838 1.636401 2.283141 1.587883 2.323667 1.589848 1.377625 -1.16944 1.285435 1.483907 1.285428 -1.321924 2.283151 -1.323934 1.418384 1.482303 2.415414 -1.167828 2.415416 1.696979 1.439102 1.694872 2.262735 -1.143955 1.240567 1.458418 1.240552 -1.3804 2.262738 -1.382512 1.439105 1.45686 2.46021 -1.142385 2.460217</float_array>
+          <technique_common>
+            <accessor source="#sign_02Shape-map1-array" count="88" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_02Shape-SculptFreezeColorTemp" name="sign_02Shape-SculptFreezeColorTemp">
+          <float_array id="sign_02Shape-SculptFreezeColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_02Shape-SculptFreezeColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_02Shape-SculptMaskColorTemp" name="sign_02Shape-SculptMaskColorTemp">
+          <float_array id="sign_02Shape-SculptMaskColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_02Shape-SculptMaskColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="sign_02Shape-vertices" name="sign_02Shape-vertices">
+          <input semantic="POSITION" source="#sign_02Shape-positions"/>
+        </vertices>
+        <polylist material="lambert35SG" count="25">
+          <input semantic="VERTEX" source="#sign_02Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_02Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_02Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_02Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_02Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4</vcount>
+          <p>0 0 0 0 0 1 1 1 0 0 3 2 2 0 0 2 3 3 0 0 2 4 3 0 0 3 5 2 0 0 5 6 4 0 0 4 7 5 0 0 4 8 5 0 0 5 9 4 0 0 7 10 6 0 0 6 11 7 0 0 6 12 7 0 0 7 13 6 0 0 1 14 8 0 0 0 15 9 0 0 1 16 1 0 0 7 17 10 0 0 5 18 11 0 0 3 19 2 0 0 6 20 12 0 0 0 21 0 0 0 2 22 3 0 0 4 23 13 0 0 8 24 14 0 0 9 25 15 0 0 11 26 16 0 0 10 27 17 0 0 10 28 17 0 0 11 29 16 0 0 13 30 18 0 0 12 31 19 0 0 12 32 19 0 0 13 33 18 0 0 15 34 20 0 0 14 35 21 0 0 14 36 21 0 0 15 37 20 0 0 9 38 22 0 0 8 39 23 0 0 9 40 15 0 0 15 41 24 0 0 13 42 25 0 0 11 43 16 0 0 14 44 26 0 0 8 45 14 0 0 10 46 17 0 0 12 47 27 0 0 16 48 28 0 0 17 49 29 0 0 19 50 30 0 0 18 51 31 0 0 18 52 31 0 0 19 53 30 0 0 21 54 32 0 0 20 55 33 0 0 20 56 33 0 0 21 57 32 0 0 23 58 34 0 0 22 59 35 0 0 22 60 35 0 0 23 61 34 0 0 17 62 36 0 0 16 63 37 0 0 17 64 29 0 0 23 65 38 0 0 21 66 39 0 0 19 67 30 0 0 22 68 40 0 0 16 69 28 0 0 18 70 31 0 0 20 71 41 0 0 24 72 42 0 0 25 73 43 0 0 27 74 44 0 0 26 75 45 0 0 26 76 45 0 0 27 77 44 0 0 29 78 46 0 0 28 79 47 0 0 28 80 47 0 0 29 81 46 0 0 31 82 48 0 0 30 83 49 0 0 30 84 49 0 0 31 85 48 0 0 25 86 50 0 0 24 87 51 0 0 25 88 43 0 0 31 89 52 0 0 29 90 53 0 0 27 91 44 0 0 30 92 54 0 0 24 93 42 0 0 26 94 45 0 0 28 95 55 0 0 32 96 56 0 0 33 97 57 0 0 34 98 58 0 0 35 99 59 0 0</p>
+        </polylist>
+        <polylist material="blinn1SG" count="14">
+          <input semantic="VERTEX" source="#sign_02Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_02Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_02Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_02Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_02Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>3 4 4 4 4 4 4 4 4 4 4 4 4 3</vcount>
+          <p>42 100 60 0 0 41 101 61 0 0 43 102 62 0 0 41 103 61 0 0 42 104 60 0 0 49 105 63 0 0 47 106 64 0 0 42 107 60 0 0 43 108 62 0 0 51 109 65 0 0 49 110 66 0 0 43 111 62 0 0 40 112 67 0 0 46 113 68 0 0 51 114 69 0 0 45 115 70 0 0 44 116 71 0 0 46 117 72 0 0 47 118 73 0 0 48 119 74 0 0 45 115 75 0 0 47 118 64 0 0 49 120 63 0 0 50 121 76 0 0 48 119 77 0 0 49 120 66 0 0 51 122 65 0 0 44 116 78 0 0 50 121 79 0 0 51 122 69 0 0 46 117 68 0 0 37 123 80 0 0 36 124 81 0 0 44 125 71 0 0 45 126 70 0 0 41 127 61 0 0 47 128 73 0 0 46 129 72 0 0 40 130 67 0 0 38 131 82 0 0 37 132 83 0 0 45 133 75 0 0 48 134 74 0 0 39 135 84 0 0 38 136 85 0 0 48 137 77 0 0 50 138 76 0 0 36 139 86 0 0 39 140 87 0 0 50 141 79 0 0 44 142 78 0 0 43 143 62 0 0 41 144 61 0 0 40 145 67 0 0</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">sign_02Shape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+    <geometry id="sign_03Shape" name="sign_03Shape">
+      <mesh>
+        <source id="sign_03Shape-positions" name="sign_03Shape-positions">
+          <float_array id="sign_03Shape-positions-array" count="60">25.42584 -11.164 1.826791 25.42855 -11.17143 1.52582 24.65943 -11.4831 1.526592 24.65672 -11.47567 1.827564 25.42362 -11.16822 1.817302 25.42616 -11.17518 1.535464 24.66377 -11.48412 1.536229 24.66123 -11.47716 1.818069 25.44542 -11.18015 1.839393 25.44834 -11.18817 1.514385 24.65686 -11.50891 1.515179 24.65393 -11.50089 1.840186 25.42552 -11.157 1.824285 25.42819 -11.16431 1.527973 25.43441 -11.15299 1.838623 25.43733 -11.16101 1.513616 24.65473 -11.47774 1.52875 24.64585 -11.48174 1.51441 24.65207 -11.47043 1.825059 24.64292 -11.47372 1.839417</float_array>
+          <technique_common>
+            <accessor source="#sign_03Shape-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_03Shape-normals" name="sign_03Shape-normals">
+          <float_array id="sign_03Shape-normals-array" count="150">-0.3754568 0.9264684 -0.02624037 -0.3754568 0.9264683 -0.02624037 -0.3754569 0.9264684 -0.02624037 -0.3754569 0.9264684 -0.02624037 0.3754556 -0.9264689 0.02623804 0.3754556 -0.9264689 0.02623804 0.3754556 -0.926469 0.02623804 0.008993274 -0.02466654 -0.9996553 0.008993274 -0.02466654 -0.9996553 0.008993274 -0.02466654 -0.9996553 0.008993274 -0.02466654 -0.9996553 -0.9267856 -0.3755896 9.25812e-4 -0.9267856 -0.3755896 9.25812e-4 -0.9267856 -0.3755896 9.25812e-4 -0.9267856 -0.3755896 9.25812e-4 -0.008994712 0.02466964 0.9996552 -0.008994711 0.02466964 0.9996552 -0.00899471 0.02466964 0.9996551 -0.008994712 0.02466964 0.9996552 -0.3754136 0.9264863 -0.02622384 -0.3754081 0.926488 -0.02624207 -0.3754277 0.9264801 -0.02624241 -0.3754339 0.9264782 -0.02622195 -0.3753505 0.9265119 -0.02622283 -0.3753971 0.926493 -0.02622136 -0.375345 0.9265136 -0.02624106 -0.3753909 0.9264951 -0.02624182 -0.9844362 0.1752482 -0.01318188 -0.984436 0.1752481 -0.01318188 -0.984436 0.1752481 -0.01318188 -0.984436 0.1752481 -0.01318188 0.9267364 0.3757108 -9.46718e-4 0.9267365 0.3757109 -9.46718e-4 0.9267364 0.3757108 -9.46718e-4 0.9267365 0.3757109 -9.46718e-4 -0.2346514 0.581 0.7793445 -0.2346513 0.581 0.7793444 -0.2346513 0.581 0.7793444 -0.2346514 0.581 0.7793445 0.5846514 0.8111501 -0.01477144 0.5846514 0.8111501 -0.01477144 0.5846514 0.8111502 -0.01477144 0.5846513 0.8111502 -0.01477144 -0.2204298 0.5419499 -0.8109876 -0.2204298 0.5419499 -0.8109876 -0.2204299 0.5419499 -0.8109877 -0.2204299 0.54195 -0.8109877 0.3754571 -0.9264683 0.02624094 0.3754571 -0.9264683 0.02624094 0.3754571 -0.9264683 0.02624094</float_array>
+          <technique_common>
+            <accessor source="#sign_03Shape-normals-array" count="50" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_03Shape-map1" name="sign_03Shape-map1">
+          <float_array id="sign_03Shape-map1-array" count="64">0.5060347 0.4927154 0.5060347 0.005336702 0.995576 0.005336702 0.995576 0.4927154 -1.213532 1.379685 1.527998 1.379689 -1.211901 2.321343 -1.211298 1.326285 1.52576 1.326298 -1.27341 2.323671 -1.275385 1.377635 1.526376 2.32135 1.524106 2.374642 -1.209629 2.374642 1.638398 1.41838 1.636401 2.283141 1.587883 2.323667 1.589848 1.377625 -1.16944 1.285435 1.483907 1.285428 -1.321924 2.283151 -1.323934 1.418384 1.482303 2.415414 -1.167828 2.415416 1.696979 1.439102 1.694872 2.262735 -1.143955 1.240567 1.458418 1.240552 -1.3804 2.262738 -1.382512 1.439105 1.45686 2.46021 -1.142385 2.460217</float_array>
+          <technique_common>
+            <accessor source="#sign_03Shape-map1-array" count="32" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_03Shape-SculptFreezeColorTemp" name="sign_03Shape-SculptFreezeColorTemp">
+          <float_array id="sign_03Shape-SculptFreezeColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_03Shape-SculptFreezeColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_03Shape-SculptMaskColorTemp" name="sign_03Shape-SculptMaskColorTemp">
+          <float_array id="sign_03Shape-SculptMaskColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_03Shape-SculptMaskColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="sign_03Shape-vertices" name="sign_03Shape-vertices">
+          <input semantic="POSITION" source="#sign_03Shape-positions"/>
+        </vertices>
+        <polylist material="lambert35SG" count="1">
+          <input semantic="VERTEX" source="#sign_03Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_03Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_03Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_03Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_03Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>4</vcount>
+          <p>0 0 0 0 0 1 1 1 0 0 2 2 2 0 0 3 3 3 0 0</p>
+        </polylist>
+        <polylist material="blinn1SG" count="14">
+          <input semantic="VERTEX" source="#sign_03Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_03Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_03Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_03Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_03Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>3 4 4 4 4 4 4 4 4 4 4 4 4 3</vcount>
+          <p>10 4 4 0 0 9 5 5 0 0 11 6 6 0 0 9 7 5 0 0 10 8 4 0 0 17 9 7 0 0 15 10 8 0 0 10 11 4 0 0 11 12 6 0 0 19 13 9 0 0 17 14 10 0 0 11 15 6 0 0 8 16 11 0 0 14 17 12 0 0 19 18 13 0 0 13 19 14 0 0 12 20 15 0 0 14 21 16 0 0 15 22 17 0 0 16 23 18 0 0 13 19 19 0 0 15 22 8 0 0 17 24 7 0 0 18 25 20 0 0 16 23 21 0 0 17 24 10 0 0 19 26 9 0 0 12 20 22 0 0 18 25 23 0 0 19 26 13 0 0 14 21 12 0 0 5 27 24 0 0 4 28 25 0 0 12 29 15 0 0 13 30 14 0 0 9 31 5 0 0 15 32 17 0 0 14 33 16 0 0 8 34 11 0 0 6 35 26 0 0 5 36 27 0 0 13 37 19 0 0 16 38 18 0 0 7 39 28 0 0 6 40 29 0 0 16 41 21 0 0 18 42 20 0 0 4 43 30 0 0 7 44 31 0 0 18 45 23 0 0 12 46 22 0 0 11 47 6 0 0 9 48 5 0 0 8 49 11 0 0</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">sign_03Shape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+    <geometry id="sign_04Shape" name="sign_04Shape">
+      <mesh>
+        <source id="sign_04Shape-positions" name="sign_04Shape-positions">
+          <float_array id="sign_04Shape-positions-array" count="60">-17.86968 20.66592 1.60279 -17.86968 20.66592 1.114767 -16.71245 21.35171 1.114766 -16.71245 21.35171 1.602793 -17.86695 20.67286 1.587279 -17.86695 20.67286 1.130277 -16.71985 21.35265 1.130277 -16.71985 21.35265 1.587282 -17.90522 20.68753 1.62228 -17.90522 20.68753 1.095278 -16.71434 21.39326 1.095279 -16.71434 21.39326 1.62228 -17.86743 20.65468 1.599015 -17.86743 20.65467 1.118545 -17.881 20.64664 1.62228 -17.88099 20.64665 1.095278 -16.70367 21.34434 1.118545 -16.69011 21.35237 1.095279 -16.70367 21.34434 1.599012 -16.69011 21.35237 1.62228</float_array>
+          <technique_common>
+            <accessor source="#sign_04Shape-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_04Shape-normals" name="sign_04Shape-normals">
+          <float_array id="sign_04Shape-normals-array" count="150">0.5098159 -0.8602836 0 0.5098159 -0.8602835 0 0.5098159 -0.8602836 0 0.5098159 -0.8602834 0 -0.5098165 0.8602832 0 -0.5098165 0.8602831 0 -0.5098165 0.8602833 0 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0.8602961 0.5097945 0 0.8602962 0.5097945 0 0.8602962 0.5097945 0 0.8602962 0.5097946 0 0 0 1 0 0 1 0 0 1 0 0 1 0.5097849 -0.8603019 0 0.5097826 -0.8603033 0 0.5097955 -0.8602955 0 0.5097983 -0.860294 0 0.5097682 -0.8603119 0 0.5097885 -0.8602998 0 0.5097657 -0.8603132 0 0.5097858 -0.8603014 0 0.9996483 -0.02652173 0 0.9996483 -0.02652173 0 0.9996482 -0.02652173 0 0.9996482 -0.02652173 0 -0.8603313 -0.5097353 0 -0.8603313 -0.5097353 0 -0.8603313 -0.5097353 0 -0.8603314 -0.5097353 0 0.3089517 -0.5213344 0.7954618 0.3089516 -0.5213344 0.7954618 0.3089516 -0.5213344 0.7954618 0.3089516 -0.5213344 0.7954617 -0.4568273 -0.8895554 0 -0.4568274 -0.8895555 0 -0.4568274 -0.8895555 0 -0.4568274 -0.8895553 0 0.3089803 -0.5213881 -0.7954153 0.3089803 -0.5213881 -0.7954153 0.3089803 -0.5213882 -0.7954154 0.3089803 -0.5213881 -0.7954153 -0.5098161 0.8602834 0 -0.5098162 0.8602833 0 -0.5098162 0.8602834 0</float_array>
+          <technique_common>
+            <accessor source="#sign_04Shape-normals-array" count="50" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_04Shape-map1" name="sign_04Shape-map1">
+          <float_array id="sign_04Shape-map1-array" count="64">-1.636e-4 0.9891514 -1.636e-4 0.5279002 0.3423037 0.5279002 0.3423037 0.9891514 -1.213532 1.379685 1.527998 1.379689 -1.211901 2.321343 -1.211298 1.326285 1.52576 1.326298 -1.27341 2.323671 -1.275385 1.377635 1.526376 2.32135 1.524106 2.374642 -1.209629 2.374642 1.638398 1.41838 1.636401 2.283141 1.587883 2.323667 1.589848 1.377625 -1.16944 1.285435 1.483907 1.285428 -1.321924 2.283151 -1.323934 1.418384 1.482303 2.415414 -1.167828 2.415416 1.696979 1.439102 1.694872 2.262735 -1.143955 1.240567 1.458418 1.240552 -1.3804 2.262738 -1.382512 1.439105 1.45686 2.46021 -1.142385 2.460217</float_array>
+          <technique_common>
+            <accessor source="#sign_04Shape-map1-array" count="32" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_04Shape-SculptFreezeColorTemp" name="sign_04Shape-SculptFreezeColorTemp">
+          <float_array id="sign_04Shape-SculptFreezeColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_04Shape-SculptFreezeColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_04Shape-SculptMaskColorTemp" name="sign_04Shape-SculptMaskColorTemp">
+          <float_array id="sign_04Shape-SculptMaskColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_04Shape-SculptMaskColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="sign_04Shape-vertices" name="sign_04Shape-vertices">
+          <input semantic="POSITION" source="#sign_04Shape-positions"/>
+        </vertices>
+        <polylist material="lambert35SG" count="1">
+          <input semantic="VERTEX" source="#sign_04Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_04Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_04Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_04Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_04Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>4</vcount>
+          <p>0 0 0 0 0 1 1 1 0 0 2 2 2 0 0 3 3 3 0 0</p>
+        </polylist>
+        <polylist material="blinn1SG" count="14">
+          <input semantic="VERTEX" source="#sign_04Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_04Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_04Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_04Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_04Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>3 4 4 4 4 4 4 4 4 4 4 4 4 3</vcount>
+          <p>10 4 4 0 0 9 5 5 0 0 11 6 6 0 0 9 7 5 0 0 10 8 4 0 0 17 9 7 0 0 15 10 8 0 0 10 11 4 0 0 11 12 6 0 0 19 13 9 0 0 17 14 10 0 0 11 15 6 0 0 8 16 11 0 0 14 17 12 0 0 19 18 13 0 0 13 19 14 0 0 12 20 15 0 0 14 21 16 0 0 15 22 17 0 0 16 23 18 0 0 13 19 19 0 0 15 22 8 0 0 17 24 7 0 0 18 25 20 0 0 16 23 21 0 0 17 24 10 0 0 19 26 9 0 0 12 20 22 0 0 18 25 23 0 0 19 26 13 0 0 14 21 12 0 0 5 27 24 0 0 4 28 25 0 0 12 29 15 0 0 13 30 14 0 0 9 31 5 0 0 15 32 17 0 0 14 33 16 0 0 8 34 11 0 0 6 35 26 0 0 5 36 27 0 0 13 37 19 0 0 16 38 18 0 0 7 39 28 0 0 6 40 29 0 0 16 41 21 0 0 18 42 20 0 0 4 43 30 0 0 7 44 31 0 0 18 45 23 0 0 12 46 22 0 0 11 47 6 0 0 9 48 5 0 0 8 49 11 0 0</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">sign_04Shape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+    <geometry id="sign_05Shape" name="sign_05Shape">
+      <mesh>
+        <source id="sign_05Shape-positions" name="sign_05Shape-positions">
+          <float_array id="sign_05Shape-positions-array" count="60">20.75404 19.42689 3.699637 20.75404 19.42689 3.399593 21.43309 18.9548 3.399592 21.43309 18.9548 3.699639 20.75862 19.42714 3.6901 20.75862 19.42714 3.409128 21.43173 18.95918 3.409128 21.43173 18.95918 3.690102 20.75705 19.45229 3.711619 20.75705 19.45228 3.38761 21.45585 18.96647 3.38761 21.45585 18.96647 3.711619 20.74833 19.42277 3.697315 20.74832 19.42276 3.401916 20.74037 19.4283 3.711619 20.74037 19.4283 3.38761 21.43122 18.94801 3.401916 21.43917 18.94247 3.38761 21.43121 18.94801 3.697314 21.43917 18.94247 3.711619</float_array>
+          <technique_common>
+            <accessor source="#sign_05Shape-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_05Shape-normals" name="sign_05Shape-normals">
+          <float_array id="sign_05Shape-normals-array" count="150">-0.5708264 -0.8210707 0 -0.5708264 -0.8210707 0 -0.5708265 -0.8210707 0 -0.5708265 -0.8210707 0 0.5708187 0.8210761 0 0.5708187 0.8210762 0 0.5708187 0.8210762 0 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0.8211324 -0.5707377 0 0.8211324 -0.5707378 0 0.8211324 -0.5707378 0 0.8211324 -0.5707377 0 0 0 1 0 0 1 0 0 1 0 0 0.9999999 -0.5708269 -0.8210703 2.54388e-4 -0.5708289 -0.8210691 -2.78953e-4 -0.570826 -0.821071 -3.14039e-4 -0.570824 -0.8210724 2.84513e-4 -0.5709831 -0.8209618 2.52525e-4 -0.5709149 -0.8210092 2.83405e-4 -0.5709848 -0.8209605 -2.80773e-4 -0.570917 -0.8210077 -3.15082e-4 0.3910613 -0.9203646 0 0.3910613 -0.9203646 0 0.3910613 -0.9203647 0 0.3910613 -0.9203646 0 -0.8210642 0.5708359 0 -0.8210642 0.5708359 0 -0.8210642 0.5708358 0 -0.8210642 0.5708359 0 -0.3459153 -0.4975663 0.7954687 -0.3459153 -0.4975663 0.7954686 -0.3459153 -0.4975663 0.7954686 -0.3459153 -0.4975663 0.7954686 -0.9989436 0.04595108 0 -0.9989436 0.04595109 0 -0.9989437 0.04595109 0 -0.9989437 0.04595109 0 -0.3460785 -0.4977981 -0.7952526 -0.3460785 -0.4977981 -0.7952526 -0.3460785 -0.4977982 -0.7952526 -0.3460786 -0.4977981 -0.7952527 0.5708263 0.8210708 0 0.5708263 0.8210708 0 0.5708263 0.8210709 0</float_array>
+          <technique_common>
+            <accessor source="#sign_05Shape-normals-array" count="50" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_05Shape-map1" name="sign_05Shape-map1">
+          <float_array id="sign_05Shape-map1-array" count="64">0.6562721 0.9945717 0.6562721 0.507193 0.9987394 0.507193 0.9987394 0.9945717 -1.213532 1.379685 1.527998 1.379689 -1.211901 2.321343 -1.211298 1.326285 1.52576 1.326298 -1.27341 2.323671 -1.275385 1.377635 1.526376 2.32135 1.524106 2.374642 -1.209629 2.374642 1.638398 1.41838 1.636401 2.283141 1.587883 2.323667 1.589848 1.377625 -1.16944 1.285435 1.483907 1.285428 -1.321924 2.283151 -1.323934 1.418384 1.482303 2.415414 -1.167828 2.415416 1.696979 1.439102 1.694872 2.262735 -1.143955 1.240567 1.458418 1.240552 -1.3804 2.262738 -1.382512 1.439105 1.45686 2.46021 -1.142385 2.460217</float_array>
+          <technique_common>
+            <accessor source="#sign_05Shape-map1-array" count="32" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_05Shape-SculptFreezeColorTemp" name="sign_05Shape-SculptFreezeColorTemp">
+          <float_array id="sign_05Shape-SculptFreezeColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_05Shape-SculptFreezeColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="sign_05Shape-SculptMaskColorTemp" name="sign_05Shape-SculptMaskColorTemp">
+          <float_array id="sign_05Shape-SculptMaskColorTemp-array" count="4">0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#sign_05Shape-SculptMaskColorTemp-array" count="1" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="sign_05Shape-vertices" name="sign_05Shape-vertices">
+          <input semantic="POSITION" source="#sign_05Shape-positions"/>
+        </vertices>
+        <polylist material="lambert35SG" count="1">
+          <input semantic="VERTEX" source="#sign_05Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_05Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_05Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_05Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_05Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>4</vcount>
+          <p>0 0 0 0 0 1 1 1 0 0 2 2 2 0 0 3 3 3 0 0</p>
+        </polylist>
+        <polylist material="blinn1SG" count="14">
+          <input semantic="VERTEX" source="#sign_05Shape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#sign_05Shape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#sign_05Shape-map1" offset="2" set="0"/>
+          <input semantic="COLOR" source="#sign_05Shape-SculptFreezeColorTemp" offset="3" set="0"/>
+          <input semantic="COLOR" source="#sign_05Shape-SculptMaskColorTemp" offset="4" set="1"/>
+          <vcount>3 4 4 4 4 4 4 4 4 4 4 4 4 3</vcount>
+          <p>10 4 4 0 0 9 5 5 0 0 11 6 6 0 0 9 7 5 0 0 10 8 4 0 0 17 9 7 0 0 15 10 8 0 0 10 11 4 0 0 11 12 6 0 0 19 13 9 0 0 17 14 10 0 0 11 15 6 0 0 8 16 11 0 0 14 17 12 0 0 19 18 13 0 0 13 19 14 0 0 12 20 15 0 0 14 21 16 0 0 15 22 17 0 0 16 23 18 0 0 13 19 19 0 0 15 22 8 0 0 17 24 7 0 0 18 25 20 0 0 16 23 21 0 0 17 24 10 0 0 19 26 9 0 0 12 20 22 0 0 18 25 23 0 0 19 26 13 0 0 14 21 12 0 0 5 27 24 0 0 4 28 25 0 0 12 29 15 0 0 13 30 14 0 0 9 31 5 0 0 15 32 17 0 0 14 33 16 0 0 8 34 11 0 0 6 35 26 0 0 5 36 27 0 0 13 37 19 0 0 16 38 18 0 0 7 39 28 0 0 6 40 29 0 0 16 41 21 0 0 18 42 20 0 0 4 43 30 0 0 7 44 31 0 0 18 45 23 0 0 12 46 22 0 0 11 47 6 0 0 9 48 5 0 0 8 49 11 0 0</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">sign_05Shape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="VisualSceneNode" name="Austin_track_01">
+      <node id="_Austin_track_Austin_track_sign" name="Austin_track_sign" type="NODE">
+        <translate sid="translate">0 0 0</translate>
+        <rotate sid="rotateZ">0 0 1 0</rotate>
+        <rotate sid="rotateY">0 1 0 0</rotate>
+        <rotate sid="rotateX">1 0 0 0</rotate>
+        <scale sid="scale">1 1 1</scale>
+        <node id="_Austin_track_Austin_track_sign_sign_01" name="sign_01" type="NODE">
+          <translate sid="translate">0 0 0</translate>
+          <scale sid="scale">1 1 1</scale>
+          <instance_geometry url="#sign_01Shape">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="lambert35SG" target="#MI_Sign_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="blinn1SG" target="#MI_Metal_T_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADAMaya">
+              <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_01</originalMayaNodeId>
+            </technique>
+          </extra>
+        </node>
+        <node id="_Austin_track_Austin_track_sign_sign_02" name="sign_02" type="NODE">
+          <translate sid="translate">0 0 0</translate>
+          <scale sid="scale">1 1 1</scale>
+          <instance_geometry url="#sign_02Shape">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="lambert35SG" target="#MI_Sign_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="blinn1SG" target="#MI_Metal_T_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADAMaya">
+              <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_02</originalMayaNodeId>
+            </technique>
+          </extra>
+        </node>
+        <node id="_Austin_track_Austin_track_sign_sign_03" name="sign_03" type="NODE">
+          <translate sid="translate">0 0 0</translate>
+          <scale sid="scale">1 1 1</scale>
+          <instance_geometry url="#sign_03Shape">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="lambert35SG" target="#MI_Sign_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="blinn1SG" target="#MI_Metal_T_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADAMaya">
+              <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_03</originalMayaNodeId>
+            </technique>
+          </extra>
+        </node>
+        <node id="_Austin_track_Austin_track_sign_sign_04" name="sign_04" type="NODE">
+          <translate sid="translate">0 0 0</translate>
+          <scale sid="scale">1 1 1</scale>
+          <instance_geometry url="#sign_04Shape">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="lambert35SG" target="#MI_Sign_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="blinn1SG" target="#MI_Metal_T_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADAMaya">
+              <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_04</originalMayaNodeId>
+            </technique>
+          </extra>
+        </node>
+        <node id="_Austin_track_Austin_track_sign_sign_05" name="sign_05" type="NODE">
+          <translate sid="translate">0 0 0</translate>
+          <scale sid="scale">1 1 1</scale>
+          <instance_geometry url="#sign_05Shape">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="lambert35SG" target="#MI_Sign_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="blinn1SG" target="#MI_Metal_T_01">
+                  <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADAMaya">
+              <originalMayaNodeId sid="originalMayaNodeId" type="string">sign_05</originalMayaNodeId>
+            </technique>
+          </extra>
+        </node>
+        <extra>
+          <technique profile="OpenCOLLADAMaya">
+            <originalMayaNodeId sid="originalMayaNodeId" type="string">Austin_track_sign</originalMayaNodeId>
+          </technique>
+        </extra>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#VisualSceneNode"/>
+  </scene>
+  <extra>
+    <technique profile="COLLADA">
+      <source_data_base_uri>file:///C:/Users/sagar.sarambalkar/Documents/maya/projects/default/</source_data_base_uri>
+    </technique>
+  </extra>
+</COLLADA>
