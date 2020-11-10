@@ -18,6 +18,7 @@
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
   <depend>deepracer_msgs</depend>
+  <depend>aws_robomaker_simulation_ros_pkgs</depend>
 
   <exec_depend>catkin</exec_depend>
   <exec_depend>aws_cpp_sdk_logs</exec_depend>
