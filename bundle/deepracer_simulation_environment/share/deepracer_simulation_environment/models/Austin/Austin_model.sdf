@@ -1,0 +1,302 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+    <model name=" Austin_model">
+        <link name="Austin_track_field">
+            <collision name="collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_field.dae</uri>
+                </mesh>
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_field.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_city_01">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_city_01.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_city_02">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_city_02.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_city_03">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_city_03.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_city_04">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_city_04.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_city_05">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_city_05.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_building_wall">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_building_wall.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_Camera">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_Camera.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_city_road">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_city_road.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+<!-- these beautiful trees contribute 16516/134984 of total meshes-->
+<!--         <link name="Austin_track_city_tree">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_city_tree.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link> -->
+
+        <link name="Austin_track_cloud">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_cloud.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_01">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_01.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_02">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_02.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_03">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_03.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_04">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_04.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_05">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_05.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_landmark_06">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_landmark_06.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_Light">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_Light.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_road">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_road_barrier">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road_barrier.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_road_centerline">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road_centerline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+<!-- these fantastic road lights contribute 91460/134984 of total meshes-->
+<!--         <link name="Austin_track_road_light">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road_light.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link> -->
+
+        <link name="Austin_track_road_outerline">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road_outerline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_road_Stars_and_stripe_desig">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_road_Stars_and_stripe_desig.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_sign">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_sign.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Austin_track_terrain_wall">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Austin/Austin_track_terrain_wall.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <static>1</static>
+    </model>
+</sdf>
