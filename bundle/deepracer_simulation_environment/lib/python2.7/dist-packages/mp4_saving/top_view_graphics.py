@@ -5,20 +5,20 @@ This class takes the top view of the track and overlaps the agents with differen
 circles by getting the agents (x,y) value.
 """
 import math
-import time
+import logging
 import numpy as np
 import rospy
+import cv2
 
+from markov.log_handler.logger import Logger
+from markov.reset.constants import RaceType
 from markov.track_geom.track_data import TrackData
 from markov.utils import force_list
-import cv2
 from mp4_saving.constants import (TrackAssetsIconographicPngs,
-                                  IconographicImageSize, SCALE_RATIO)
+                                  IconographicImageSize, SCALE_RATIO,
+                                  ModelImgNames, XYPixelLoc)
 from mp4_saving import utils
 
-
-import logging
-from markov.log_handler.logger import Logger
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 class TopViewGraphics(object):
@@ -30,7 +30,7 @@ class TopViewGraphics(object):
     The camera location, horizontal fov, padding percentage, image width and height are
     taken from the top view camera.
     """
-    def __init__(self, horizontal_fov, padding_percent, image_width, image_height, racecars_info):
+    def __init__(self, horizontal_fov, padding_percent, image_width, image_height, racecars_info, race_type=None):
         """ Camera information is required to map the (x, y) value of the agent on the camera image.
         This is because each track will have its own FOV and padding percent because to avoid
         Z-fighting. Once the camera position, padding percentage is available. We can map the
@@ -43,12 +43,14 @@ class TopViewGraphics(object):
             image_width (int): Image width from the camera
             image_height (int): Image width from the camera
             racecars_info (list): This is the list of dicts of racecars on the track
+            race_type (str): Type of the race, TT, H2B, OA, F1. (default: {None})
         """
         self.horizontal_fov = horizontal_fov
         self.padding_percent = padding_percent
         self.image_width = image_width
         self.image_height = image_height
         self.racecars_info = force_list(racecars_info)
+        self.is_f1_race_type = race_type == RaceType.F1.value
 
         self.model_imgs = self._get_all_models_info()
 
@@ -64,18 +66,21 @@ class TopViewGraphics(object):
         overlaying on top of it. Thus making it prominent.
 
         Returns:
-            (list, list): model_names (Names of agent, bots, obstacles)
-                          model_imgs (The appropriate image icons for these)
+            (dict): "object_imgs" - Appropriate image icons for boxes and bots
+                    "agent_imgs" - Appropriate image icons for agents
+                    "agent_num_imgs" - Appropriate image icons for agents number
         """
-        model_imgs = list()
+        object_imgs = list()
+        agent_imgs = list()
+        agent_num_imgs = list()
         # Adding obstacles to the list
         num_obstacles = int(rospy.get_param("NUMBER_OF_OBSTACLES", 0))
         if num_obstacles:
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.
             for i in range(num_obstacles):
-                model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.OBSTACLES_PNG.value,
-                                                  IconographicImageSize.OBSTACLE_IMAGE_SIZE.value))
+                object_imgs.append(utils.get_image(TrackAssetsIconographicPngs.OBSTACLES_PNG.value,
+                                                   IconographicImageSize.OBSTACLE_IMAGE_SIZE.value))
 
         # Adding bot cars to the list
         num_bots = int(rospy.get_param("NUMBER_OF_BOT_CARS", 0))
@@ -83,14 +88,31 @@ class TopViewGraphics(object):
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.
             for i in range(num_bots):
-                model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.BOTS_PNG.value,
-                                                  IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
+                object_imgs.append(utils.get_image(TrackAssetsIconographicPngs.BOTS_PNG.value,
+                                                   IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
 
         # Adding all agents to the list
         for i, _ in enumerate(self.racecars_info):
-            model_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
-                                              IconographicImageSize.AGENTS_IMAGE_SIZE.value))
-        return model_imgs
+            # If the number of racecars are greater than 2
+            if self.is_f1_race_type:
+                hex_car_color = self.racecars_info[i]['racecar_color'].split('_')[-1]
+                racer_number = int(self.racecars_info[i]['name'].split("_")[1])
+                agents_round_img = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_PNG.value,
+                                                  hex_car_color)
+                agent_imgs.append(utils.get_image(agents_round_img,
+                                                  IconographicImageSize.F1_AGENTS_IMAGE_SIZE.value))
+                agent_number_img_name = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_NUM_PNG.value,
+                                                       racer_number + 1)
+                agent_num_imgs.append(utils.get_image(agent_number_img_name,
+                                                      IconographicImageSize.F1_AGENTS_IMAGE_SIZE.value))
+            else:
+                agent_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
+                                                  IconographicImageSize.AGENTS_IMAGE_SIZE.value))
+        return {
+            ModelImgNames.OBJECT_IMGS.value: object_imgs,
+            ModelImgNames.AGENT_IMGS.value: agent_imgs,
+            ModelImgNames.AGENT_NUM_IMGS.value: agent_num_imgs
+        }
 
     def initialize_parameters(self):
         """ This maps the (x, y) of an agent in track frame to the top camera image frame
@@ -176,6 +198,28 @@ class TopViewGraphics(object):
         #
         self.x_offset, self.y_offset = -track_x_min, -track_y_min
 
+    def get_model_imgs_on_track_loc(self, object_loc, track_start_loc):
+        """ Given the co-ordinates of agents in Top view, find its corresponding x, y location
+        in the picture in picture image.
+
+        Args:
+            object_loc (float): Location of object in top view image
+            track_start_loc (tuple): (x, y) offset of track image start location on the background image
+
+        Returns:
+            (tuple):
+                x (int): Pixel x value on the background image
+                y (int): Pixel y value on the background image
+        """
+        object_xy = np.array([object_loc[0] + self.x_offset,
+                              object_loc[1] + self.y_offset,
+                              1]).reshape(3, 1)
+        gui_xy = np.dot(self.gui_affine_transform, object_xy)
+        pixel_xy = gui_xy * self.pixel_scale
+        loc_x, loc_y = (pixel_xy[0][0] // SCALE_RATIO + track_start_loc[0],
+                        pixel_xy[1][0] // SCALE_RATIO + track_start_loc[1])
+        return loc_x, loc_y
+
     def plot_agents_as_circles(self, image, agents_loc, objects_loc, track_start_loc):
         """
         For the given image plot a circle on top of the racecar. To plot the circle,
@@ -187,16 +231,22 @@ class TopViewGraphics(object):
         Returns:
             Image: Edited image with the circle
         """
-        # Add the agents location to objects location.
-        objects_loc.extend(agents_loc)
-
-        for model_img, object_loc in zip(self.model_imgs, objects_loc):
-            object_xy = np.array([object_loc[0] + self.x_offset,
-                                  object_loc[1] + self.y_offset,
-                                  1]).reshape(3, 1)
-            gui_xy = np.dot(self.gui_affine_transform, object_xy)
-            pixel_xy = gui_xy * self.pixel_scale
-            loc_x, loc_y = (pixel_xy[0][0]//SCALE_RATIO + track_start_loc[0],
-                            pixel_xy[1][0]//SCALE_RATIO + track_start_loc[1])
+        # For objects like box or bots
+        for model_img, object_loc in zip(self.model_imgs[ModelImgNames.OBJECT_IMGS.value], objects_loc):
+            loc_x, loc_y = self.get_model_imgs_on_track_loc(object_loc, track_start_loc)
             image = utils.plot_rectangular_image_on_main_image(image, model_img, (loc_x, loc_y))
+
+        # For agents on the track
+        for i, agent_img in enumerate(self.model_imgs[ModelImgNames.AGENT_IMGS.value]):
+            # For plotting the agents
+            agent_loc = agents_loc[i]
+            loc_x, loc_y = self.get_model_imgs_on_track_loc(agent_loc, track_start_loc)
+            image = utils.plot_rectangular_image_on_main_image(image, agent_img, (loc_x, loc_y))
+
+            # For F1 race plot the number on top of the agents
+            if self.is_f1_race_type:
+                agent_num_img = self.model_imgs[ModelImgNames.AGENT_NUM_IMGS.value][i]
+                loc_x = loc_x + XYPixelLoc.F1_AGENT_NUM_OFFSET.value[0]
+                loc_y = loc_y - XYPixelLoc.F1_AGENT_NUM_OFFSET.value[1]
+                image = utils.plot_rectangular_image_on_main_image(image, agent_num_img, (loc_x, loc_y))
         return image

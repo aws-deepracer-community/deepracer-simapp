@@ -133,6 +133,5 @@ def main():
 
 if __name__ == '__main__':
     rospy.init_node('download_params_and_roslaunch_agent_node', anonymous=True)
-    time.sleep(WAIT_FOR_ROBOMAKER_TIME)
     main()
     rospy.spin()
