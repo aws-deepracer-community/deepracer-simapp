@@ -25,6 +25,7 @@ Version 3 is the current version, and it is receiving both new tracks as well as
 | 3.0.3   | October Track  |  `3.0.3-cpu-avx` `3.0.3-cpu-gl-avx`  | `3.0.3-cpu-avx2` `3.0.3-cpu-gl-avx` | `3.0.3-gpu` `3.0.3-gpu-gl` |
 | 3.0.4   | Code fixes  |  `3.0.4-cpu-avx` `3.0.4-cpu-gl-avx`  | `3.0.4-cpu-avx2` `3.0.4-cpu-gl-avx` | `3.0.4-gpu` `3.0.4-gpu-gl` |
 | 3.0.5   | Reinvent 2020 Tracks  |  `3.0.5-cpu-avx` `3.0.5-cpu-gl-avx`  | `3.0.5-cpu-avx2` `3.0.5-cpu-gl-avx` | `3.0.5-gpu` `3.0.5-gpu-gl` |
+| 3.0.6   | Updated Reinvent 2020 Tracks  |  `3.0.6-cpu-avx` `3.0.6-cpu-gl-avx`  | `3.0.6-cpu-avx2` `3.0.6-cpu-gl-avx` | `3.0.6-gpu` `3.0.6-gpu-gl` |
 
 ### Version 2
 
