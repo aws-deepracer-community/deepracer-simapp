@@ -20,6 +20,205 @@
             </visual>
         </link>
 
+        <link name="Singapore_track_building_city_01">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_building_city_01.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_building_city_02">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_building_city_02.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_building_city_03">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_building_city_03.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_building_city_04">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_building_city_04.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_building_wall">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_building_wall.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_centerline">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_centerline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_city_road">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_city_road.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+<!--         <link name="Singapore_track_city_tree">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_city_tree.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link> -->
+
+        <link name="Singapore_track_cloud">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_cloud.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_01">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_01.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_02">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_02.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+
+        <link name="Singapore_track_landmark_03">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_03.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_04">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_04.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_05">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_05.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_06">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_06.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_landmark_07">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_landmark_07.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+<!--         <link name="Singapore_track_Light">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_Light.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link> -->
+
+        <link name="Singapore_track_river">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_river.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
         <link name="Singapore_track_road">
             <visual name="visual">
                 <pose>0 0 0 0 0 0</pose>
@@ -42,12 +241,45 @@
             </visual>
         </link>
 
-        <link name="Singapore_track_centerline">
+        <link name="Singapore_track_road_finishline">
             <visual name="visual">
                 <pose>0 0 0 0 0 0</pose>
                 <geometry>
                 <mesh>
-                <uri>model://meshes/Singapore/Singapore_track_centerline.dae</uri>
+                <uri>model://meshes/Singapore/Singapore_track_road_finishline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+<!--         <link name="Singapore_track_road_light">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_road_light.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link> -->
+
+        <link name="Singapore_track_sign">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_sign.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="Singapore_track_terrain_wall">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_terrain_wall.dae</uri>
                 </mesh>
                 </geometry>
             </visual>
@@ -63,6 +295,18 @@
                 </geometry>
             </visual>
         </link>
+
+        <link name="Singapore_track_billboard">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_billboard.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
         <static>1</static>
     </model>
 </sdf>
