@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>sagar.sarambalkar</author>
+      <authoring_tool>OpenCOLLADA2018;  Version: 1.6;  Revision: 61</authoring_tool>
+      <comments>
+			ColladaMaya export options: 
+			bakeTransforms=0;relativePaths=0;preserveSourceTree=0;copyTextures=0;exportTriangles=0;exportCgfxFileReferences=1;
+			isSampling=0;curveConstrainSampling=0;removeStaticCurves=1;exportPhysics=0;exportConvexMeshGeometries=1;exportPolygonMeshes=1;exportLights=1;
+			exportCameras=1;exportAnimationsOnly=0;exportSeparateFile=0;modelNameDAE=;exportJoints=1;exportSkin=1;exportAnimations=1;exportOptimizedBezierAnimation=0;exportInvisibleNodes=0;exportDefaultCameras=0;
+			exportTexCoords=1;exportNormals=1;exportNormalsPerVertex=1;exportVertexColors=1;exportVertexColorsPerVertex=1;
+			exportTexTangents=0;exportTangents=0;exportReferencedMaterials=0;exportMaterialsOnly=0;
+			exportXRefs=1;dereferenceXRefs=1;exportCameraAsLookat=0;cameraXFov=0;cameraYFov=1;encodedNames=1;doublePrecision=0
+		</comments>
+      <source_data>source/Austin_track.ma</source_data>
+    </contributor>
+    <created>2020-11-17T13:22:29</created>
+    <modified>2020-11-17T13:22:29</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_materials>
+    <material id="MI_road_outerline" name="MI_road_outerline">
+      <instance_effect url="#MI_road_outerline-fx"/>
+    </material>
+  </library_materials>
+  <library_effects>
+    <effect id="MI_road_outerline-fx">
+      <profile_COMMON>
+        <newparam sid="outerLine_T_01-surface">
+          <surface type="2D">
+            <init_from>outerLine_T_01</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="outerLine_T_01-sampler">
+          <sampler2D>
+            <source>outerLine_T_01-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color>0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color>0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="outerLine_T_01-sampler" texcoord="TEX0">
+                <extra>
+                  <technique profile="OpenCOLLADAMaya">
+                    <wrapU sid="wrapU" type="bool">1</wrapU>
+                    <wrapV sid="wrapV" type="bool">1</wrapV>
+                    <mirrorU sid="mirrorU" type="bool">0</mirrorU>
+                    <mirrorV sid="mirrorV" type="bool">0</mirrorV>
+                    <coverageU sid="coverageU" type="float">1</coverageU>
+                    <coverageV sid="coverageV" type="float">1</coverageV>
+                    <translateFrameU sid="translateFrameU" type="float">0</translateFrameU>
+                    <translateFrameV sid="translateFrameV" type="float">0</translateFrameV>
+                    <rotateFrame sid="rotateFrame" type="float">0</rotateFrame>
+                    <stagger sid="stagger" type="bool">0</stagger>
+                    <fast sid="fast" type="bool">0</fast>
+                    <repeatU sid="repeatU" type="float">1</repeatU>
+                    <repeatV sid="repeatV" type="float">1</repeatV>
+                    <offsetU sid="offsetU" type="float">0</offsetU>
+                    <offsetV sid="offsetV" type="float">0</offsetV>
+                    <rotateUV sid="rotateUV" type="float">0</rotateUV>
+                    <noiseU sid="noiseU" type="float">0</noiseU>
+                    <noiseV sid="noiseV" type="float">0</noiseV>
+                    <blend_mode sid="blend_mode" type="string">NONE</blend_mode>
+                  </technique>
+                </extra>
+              </texture>
+            </diffuse>
+            <transparent opaque="RGB_ZERO">
+              <color>0 0 0 1</color>
+            </transparent>
+            <transparency>
+              <float>1</float>
+            </transparency>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">MI_road_outerline</originalMayaNodeId>
+        </technique>
+      </extra>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="outerLine_T_01" name="outerLine_T_01">
+      <init_from>textures/Austin_track_outerLine_T_01.png</init_from>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId" type="string">outerLine_T_01</originalMayaNodeId>
+          <dgnode_type sid="dgnode_type" type="string">kFile</dgnode_type>
+          <image_sequence sid="image_sequence" type="bool">0</image_sequence>
+        </technique>
+      </extra>
+    </image>
+  </library_images>
+  <library_geometries>
+    <geometry id="finishlineShape" name="finishlineShape">
+      <mesh>
+        <source id="finishlineShape-positions" name="finishlineShape-positions">
+          <float_array id="finishlineShape-positions-array" count="354">-9.981703 -0.4932961 0.007631142 -8.670718 0.1380019 0.007631142 -9.941837 -0.5761007 0.007631142 -8.630845 0.05520641 0.007631142 -9.901965 -0.6589009 0.007631142 -8.590981 -0.02760078 0.007631142 -8.660746 0.1172993 0.007631142 -9.971731 -0.5140117 0.007631142 -8.600955 -0.006889114 0.007631142 -9.911938 -0.6381986 0.007631141 -9.912706 -0.4600698 0.007631142 -9.902732 -0.4807848 0.007631142 -9.872837 -0.542874 0.007631142 -9.842938 -0.6049718 0.007631142 -9.832966 -0.6256745 0.007631142 -9.843706 -0.4268436 0.007631142 -9.833732 -0.4475579 0.007631142 -9.803838 -0.5096473 0.007631142 -9.773939 -0.571745 0.007631142 -9.763965 -0.5924482 0.007631142 -9.774707 -0.3936174 0.007631142 -9.764733 -0.4143311 0.007631142 -9.734838 -0.4764207 0.007631142 -9.70494 -0.5385182 0.007631142 -9.694967 -0.5592219 0.007631142 -9.705707 -0.3603912 0.007631142 -9.695734 -0.3811042 0.007631142 -9.665838 -0.443194 0.007631142 -9.635942 -0.5052914 0.007631142 -9.625968 -0.5259956 0.007631142 -9.636708 -0.327165 0.007631142 -9.626735 -0.3478772 0.007631142 -9.596839 -0.4099673 0.007631142 -9.566942 -0.4720646 0.007631142 -9.556969 -0.4927692 0.007631142 -9.567709 -0.2939388 0.007631142 -9.557736 -0.3146504 0.007631142 -9.527839 -0.3767406 0.007631142 -9.497943 -0.4388378 0.007631142 -9.487969 -0.4595429 0.007631142 -9.49871 -0.2607126 0.007631142 -9.488736 -0.2814235 0.007631142 -9.45884 -0.3435139 0.007631142 -9.428943 -0.405611 0.007631142 -9.41897 -0.4263166 0.007631142 -9.429711 -0.2274864 0.007631142 -9.419737 -0.2481966 0.007631142 -9.38984 -0.3102872 0.007631142 -9.359944 -0.3723842 0.007631142 -9.349972 -0.3930902 0.007631142 -9.360711 -0.1942601 0.007631142 -9.350737 -0.2149697 0.007631142 -9.320841 -0.2770605 0.007631142 -9.290945 -0.3391573 0.007631142 -9.280972 -0.359864 0.007631142 -9.291712 -0.1610339 0.007631142 -9.281738 -0.1817428 0.007631142 -9.251841 -0.2438338 0.007631142 -9.221947 -0.3059305 0.007631142 -9.211972 -0.3266376 0.007631142 -9.222712 -0.1278077 0.007631142 -9.212739 -0.1485159 0.007631142 -9.182842 -0.2106071 0.007631142 -9.152947 -0.2727037 0.007631142 -9.142974 -0.2934113 0.007631142 -9.153713 -0.09458151 0.007631142 -9.143741 -0.115289 0.007631142 -9.113842 -0.1773804 0.007631142 -9.083948 -0.2394768 0.007631142 -9.073975 -0.260185 0.007631142 -9.084714 -0.0613553 0.007631142 -9.074741 -0.08206211 0.007631142 -9.044843 -0.1441537 0.007631142 -9.014949 -0.20625 0.007631142 -9.004976 -0.2269587 0.007631142 -9.015715 -0.02812908 0.007631142 -9.005741 -0.04883518 0.007631142 -8.975842 -0.110927 0.007631142 -8.94595 -0.1730232 0.007631142 -8.935977 -0.1937324 0.007631142 -8.946715 0.005097103 0.007631142 -8.936742 -0.01560827 0.007631142 -8.906843 -0.07770041 0.007631142 -8.87695 -0.1397964 0.007631142 -8.866978 -0.160506 0.007631142 -8.877716 0.03832335 0.007631142 -8.867742 0.01761864 0.007631142 -8.837844 -0.04447371 0.007631142 -8.807952 -0.1065696 0.007631142 -8.797977 -0.1272797 0.007631142 -8.808717 0.07154956 0.007631142 -8.798744 0.05084549 0.007631142 -8.768843 -0.01124699 0.007631142 -8.738953 -0.07334274 0.007631142 -8.728979 -0.09405342 0.007631142 -8.739717 0.1047758 0.007631142 -8.729744 0.08407242 0.007631142 -8.699844 0.02197971 0.007631142 -8.669954 -0.04011593 0.007631142 -8.65998 -0.06082714 0.007631142 -9.872837 -0.542874 0.007631142 -9.803838 -0.5096473 0.007631142 -9.734838 -0.4764207 0.007631142 -9.665838 -0.443194 0.007631142 -9.596839 -0.4099673 0.007631142 -9.527839 -0.3767406 0.007631142 -9.45884 -0.3435139 0.007631142 -9.38984 -0.3102872 0.007631142 -9.320841 -0.2770605 0.007631142 -9.251841 -0.2438338 0.007631142 -9.182842 -0.2106071 0.007631142 -9.113842 -0.1773804 0.007631142 -9.044843 -0.1441537 0.007631142 -8.975842 -0.110927 0.007631142 -8.906843 -0.07770041 0.007631142 -8.837844 -0.04447371 0.007631142 -8.768843 -0.01124699 0.007631142 -8.699844 0.02197971 0.007631142</float_array>
+          <technique_common>
+            <accessor source="#finishlineShape-positions-array" count="118" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="finishlineShape-normals" name="finishlineShape-normals">
+          <float_array id="finishlineShape-normals-array" count="414">0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#finishlineShape-normals-array" count="138" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="finishlineShape-map1" name="finishlineShape-map1">
+          <float_array id="finishlineShape-map1-array" count="236">0.01181936 0.6272111 0.0668861 0.6272162 0.06688443 0.6437454 0.01181793 0.6437407 -0.05883443 0.4554797 -0.003767937 0.4554843 -0.003771633 0.4720083 -0.05883834 0.4720032 -0.003775477 0.5215629 -0.05884248 0.521558 0.9323657 0.4555653 0.9874322 0.4555702 0.9874324 0.4721021 0.9323657 0.4720968 0.9323641 0.5216474 0.9874312 0.5216523 1.003017 0.6438227 1.003021 0.6272992 1.058087 0.6273041 1.058083 0.6438273 0.8772992 0.4555604 0.8772985 0.4720917 0.9479537 0.6272945 0.947955 0.5777372 1.003022 0.5777417 0.94795 0.6438184 0.8222322 0.4555557 0.8222317 0.4720864 0.82223 0.5216374 0.877297 0.5216424 0.8928834 0.6438138 0.892887 0.6272897 0.7671657 0.4555508 0.7671649 0.4720811 0.8378203 0.6272849 0.8378209 0.577728 0.8928879 0.5777326 0.837817 0.6438093 0.7120992 0.455546 0.7120978 0.4720759 0.7120957 0.5216275 0.7671628 0.5216324 0.7827504 0.6438047 0.7827536 0.6272799 0.6570323 0.4555413 0.6570311 0.4720706 0.727687 0.6272751 0.7276868 0.5777187 0.7827538 0.5777233 0.7276835 0.6438004 0.6019657 0.4555365 0.6019639 0.4720655 0.6019616 0.5216175 0.6570287 0.5216225 0.672617 0.6437958 0.6726199 0.6272705 0.5468988 0.4555318 0.5468972 0.4720602 0.6175532 0.6272656 0.6175528 0.5777096 0.6726198 0.5777141 0.6175505 0.6437913 0.4918322 0.4555269 0.4918304 0.4720549 0.4918278 0.5216074 0.5468946 0.5216125 0.5624839 0.6437867 0.5624865 0.6272607 0.4367653 0.4555222 0.4367633 0.4720498 0.5074199 0.6272558 0.5074188 0.5777004 0.5624862 0.5777048 0.507417 0.6437824 0.3816988 0.4555174 0.3816966 0.4720445 0.3816936 0.5215973 0.4367603 0.5216025 0.4523505 0.6437778 0.4523532 0.6272509 0.3266322 0.4555126 0.3266298 0.4720392 0.3972861 0.6272462 0.397285 0.577691 0.4523521 0.5776956 0.397284 0.6437733 0.2715653 0.4555079 0.2715627 0.4720341 0.2715595 0.5215874 0.3266266 0.5215923 0.3422175 0.6437687 0.3422194 0.6272413 0.2164988 0.455503 0.2164959 0.4720288 0.2871527 0.6272364 0.2871509 0.5776818 0.342218 0.5776864 0.2871509 0.6437641 0.1614319 0.4554984 0.1614288 0.4720237 0.1614256 0.5215775 0.2164924 0.5215824 0.2320844 0.6437596 0.2320861 0.6272316 0.1063652 0.4554937 0.106362 0.4720185 0.1770197 0.6272264 0.1770171 0.5776724 0.2320844 0.5776772 0.1770177 0.643755 0.05129901 0.4554888 0.05129555 0.4720132 0.0512915 0.5215676 0.1063583 0.5215726 0.1219509 0.6437501 0.1219528 0.6272212 0.066883 0.5776626 0.1219502 0.5776674</float_array>
+          <technique_common>
+            <accessor source="#finishlineShape-map1-array" count="118" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="finishlineShape-vertices" name="finishlineShape-vertices">
+          <input semantic="POSITION" source="#finishlineShape-positions"/>
+        </vertices>
+        <polylist material="lambert38SG" count="57">
+          <input semantic="VERTEX" source="#finishlineShape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#finishlineShape-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#finishlineShape-map1" offset="2" set="0"/>
+          <vcount>4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4</vcount>
+          <p>8 0 0 98 1 1 99 2 2 5 3 3 1 4 4 95 5 5 96 6 6 6 7 7 6 8 7 96 9 6 117 10 8 3 11 9 10 12 10 0 13 11 7 14 12 11 15 13 100 16 14 11 17 13 7 18 12 2 19 15 14 20 16 13 21 17 9 22 18 4 23 19 15 24 20 10 12 10 11 15 13 16 25 21 18 26 22 101 27 23 12 28 24 13 21 17 19 29 25 18 26 22 13 21 17 14 20 16 20 30 26 15 24 20 16 25 21 21 31 27 102 32 28 21 33 27 16 34 21 17 35 29 24 36 30 23 37 31 18 26 22 19 29 25 25 38 32 20 30 26 21 31 27 26 39 33 28 40 34 103 41 35 22 42 36 23 37 31 29 43 37 28 40 34 23 37 31 24 36 30 30 44 38 25 38 32 26 39 33 31 45 39 104 46 40 31 47 39 26 48 33 27 49 41 34 50 42 33 51 43 28 40 34 29 43 37 35 52 44 30 44 38 31 45 39 36 53 45 38 54 46 105 55 47 32 56 48 33 51 43 39 57 49 38 54 46 33 51 43 34 50 42 40 58 50 35 52 44 36 53 45 41 59 51 106 60 52 41 61 51 36 62 45 37 63 53 44 64 54 43 65 55 38 54 46 39 57 49 45 66 56 40 58 50 41 59 51 46 67 57 48 68 58 107 69 59 42 70 60 43 65 55 49 71 61 48 68 58 43 65 55 44 64 54 50 72 62 45 66 56 46 67 57 51 73 63 108 74 64 51 75 63 46 76 57 47 77 65 54 78 66 53 79 67 48 68 58 49 71 61 55 80 68 50 72 62 51 73 63 56 81 69 58 82 70 109 83 71 52 84 72 53 79 67 59 85 73 58 82 70 53 79 67 54 78 66 60 86 74 55 80 68 56 81 69 61 87 75 110 88 76 61 89 75 56 90 69 57 91 77 64 92 78 63 93 79 58 82 70 59 85 73 65 94 80 60 86 74 61 87 75 66 95 81 68 96 82 111 97 83 62 98 84 63 93 79 69 99 85 68 96 82 63 93 79 64 92 78 70 100 86 65 94 80 66 95 81 71 101 87 112 102 88 71 103 87 66 104 81 67 105 89 74 106 90 73 107 91 68 96 82 69 99 85 75 108 92 70 100 86 71 101 87 76 109 93 78 110 94 113 111 95 72 112 96 73 107 91 79 113 97 78 110 94 73 107 91 74 106 90 80 114 98 75 108 92 76 109 93 81 115 99 114 116 100 81 117 99 76 118 93 77 119 101 84 120 102 83 121 103 78 110 94 79 113 97 85 122 104 80 114 98 81 115 99 86 123 105 88 124 106 115 125 107 82 126 108 83 121 103 89 127 109 88 124 106 83 121 103 84 120 102 90 128 110 85 122 104 86 123 105 91 129 111 116 130 112 91 131 111 86 132 105 87 133 113 94 134 114 93 135 115 88 124 106 89 127 109 95 5 5 90 128 110 91 129 111 96 6 6 98 1 1 97 136 116 92 137 117 93 135 115 99 2 2 98 1 1 93 135 115 94 134 114</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId sid="originalMayaNodeId">finishlineShape</originalMayaNodeId>
+          <double_sided sid="double_sided">1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="VisualSceneNode" name="Austin_track">
+      <node id="_Austin_track_track_finishline" name="finishline" type="NODE">
+        <translate sid="translate">0 0 0</translate>
+        <rotate sid="rotateZ">0 0 1 0</rotate>
+        <rotate sid="rotateY">0 1 0 0</rotate>
+        <rotate sid="rotateX">1 0 0 0</rotate>
+        <scale sid="scale">1 1 1</scale>
+        <instance_geometry url="#finishlineShape">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="lambert38SG" target="#MI_road_outerline">
+                <bind_vertex_input semantic="TEX0" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADAMaya">
+            <originalMayaNodeId sid="originalMayaNodeId" type="string">finishline</originalMayaNodeId>
+          </technique>
+        </extra>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#VisualSceneNode"/>
+  </scene>
+  <extra>
+    <technique profile="COLLADA">
+      <source_data_base_uri>file:///C:/Users/sagar.sarambalkar/Documents/maya/projects/default/</source_data_base_uri>
+    </technique>
+  </extra>
+</COLLADA>
