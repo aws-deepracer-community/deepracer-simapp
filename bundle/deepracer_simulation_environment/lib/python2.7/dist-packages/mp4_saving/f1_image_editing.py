@@ -81,7 +81,15 @@ class F1ImageEditing(ImageEditingInterface):
             self.gradient_finisher_img)
 
         # Top camera gradient
-        gradient_top_camera_img_path = TrackAssetsIconographicPngs.F1_OVERLAY_TOPVIEW_PNG.value
+        num_racers = len(self.racecars_info)
+        if num_racers <= 8:
+            # TODO: Add one box image and use 1 box image if number of racers are <= 4.
+            gradient_top_camera_img_path = TrackAssetsIconographicPngs.F1_OVERLAY_TOPVIEW_2BOX_PNG.value
+        elif num_racers <= 12:
+            gradient_top_camera_img_path = TrackAssetsIconographicPngs.F1_OVERLAY_TOPVIEW_3BOX_PNG.value
+        else:
+            raise Exception("More than 12 racers are not supported for Grand Prix")
+
         gradient_top_camera_img = utils.get_image(gradient_top_camera_img_path,
                                                   IconographicImageSize.FULL_IMAGE_SIZE.value)
         gradient_top_camera_img = cv2.cvtColor(gradient_top_camera_img, cv2.COLOR_RGBA2BGRA)
