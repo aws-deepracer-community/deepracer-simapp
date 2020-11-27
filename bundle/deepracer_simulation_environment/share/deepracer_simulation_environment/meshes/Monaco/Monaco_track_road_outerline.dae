@@ -15,8 +15,8 @@
 		</comments>
       <source_data>source/Monaco_track.ma</source_data>
     </contributor>
-    <created>2020-11-23T23:49:08</created>
-    <modified>2020-11-23T23:49:08</modified>
+    <created>2020-10-30T12:55:48</created>
+    <modified>2020-10-30T12:55:48</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -154,7 +154,7 @@
   </library_geometries>
   <library_visual_scenes>
     <visual_scene id="VisualSceneNode" name="Monaco_track">
-      <node id="_Monaco_track_track_road_outerline" name="road_outerline" type="NODE">
+      <node id="_Monaco_track_road_outerline" name="road_outerline" type="NODE">
         <translate sid="translate">0 0 0</translate>
         <rotate sid="rotateZ">0 0 1 0</rotate>
         <rotate sid="rotateY">0 1 0 0</rotate>
