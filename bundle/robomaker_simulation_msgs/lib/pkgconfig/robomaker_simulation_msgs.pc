@@ -1,8 +1,0 @@
-prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/robomaker_simulation_msgs
-
-Name: robomaker_simulation_msgs
-Description: Description of robomaker_simulation_msgs
-Version: 1.1.0
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib 
-Requires: message_runtime std_msgs
