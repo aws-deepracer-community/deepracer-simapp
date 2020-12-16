@@ -202,6 +202,10 @@ def get_cameratype_params(racecar_name, agent_name, is_f1_race_type):
         'local_path': camera_45degree_path
     }
     # For F1 we have to edit the top camera image
+    # %TODO editing is done for racecar_0, so all the other folders topcamera video file
+    # will be corrupted since no frames will be published. Need to handle this case
+    # gracefully both here and in markov package. Need changes to markov package because
+    # it will try to upload a file that doesnt exist.
     if is_f1_race_type:
         camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS] = {
             'name': CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
