@@ -20,6 +20,7 @@
 (ros::load-ros-package "nav_msgs")
 (ros::load-ros-package "nodelet")
 (ros::load-ros-package "polled_camera")
+(ros::load-ros-package "robomaker_simulation_msgs")
 (ros::load-ros-package "roscpp")
 (ros::load-ros-package "rosgraph_msgs")
 (ros::load-ros-package "sensor_msgs")
