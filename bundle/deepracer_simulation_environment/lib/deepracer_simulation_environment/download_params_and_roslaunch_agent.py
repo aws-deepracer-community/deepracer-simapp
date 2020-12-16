@@ -91,7 +91,6 @@ def main():
                                            region_name=s3_region,
                                            s3_endpoint_url=s3_endpoint_url,
                                            local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
-            sensors, _, simapp_version = model_metadata.get_model_metadata_info()
             model_metadata_info = model_metadata.get_model_metadata_info()
             sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
             simapp_version = model_metadata_info[ModelMetadataKeys.VERSION.value]           
