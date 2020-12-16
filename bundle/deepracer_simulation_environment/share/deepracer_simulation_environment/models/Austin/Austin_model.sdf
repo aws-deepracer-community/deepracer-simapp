@@ -22,7 +22,7 @@
 
         <link name="Austin_track_road_finishline">
             <visual name="visual">
-                <pose>0 0 0 0 0 0</pose>
+                <pose>0.65 -1.25 0 0 0 0</pose>
                 <geometry>
                 <mesh>
                 <uri>model://meshes/Austin/Austin_track_road_finishline.dae</uri>
