@@ -32,14 +32,15 @@ class SaveToMp4(object):
         self.fps = fps
         self.frame_size = frame_size
         self.cv2_video_writers = dict()
-        self.mp4_subscription = dict()
         # The SaveToMp4 would crash and bring down the entire application causing a fault.
         # In the ROS logs observed that
         #       topic impl's ref count is zero, deleting topic /racecar_0/deepracer/kvs_stream...
         #       topic[/racecar_0/deepracer/kvs_stream] removing connection to http://169.254.1.3:42335/
         # Then when unsubscribe service request is made fails with below error.
         #       Unknown error initiating TCP/IP socket to 169.254.1.3:38623
-        # To fix this having a dummy subscriber to all the image topics. So reference count doesnt go to zero
+        # To fix this, we shouldn't really release the subscribe of ROS topic,
+        # but just stop the mp4 saving. So reference count doesnt go to zero.
+        self.mp4_subscription = dict()
         self.mp4_subscription_lock_map = dict()
 
     def _subscribe_to_image_topic(self, data, camera_type):
@@ -77,9 +78,10 @@ class SaveToMp4(object):
                 local_path, topic_name = camera_enum['local_path'], camera_enum['topic_name']
                 self.cv2_video_writers[name] = cv2.VideoWriter(local_path, self.fourcc,
                                                                self.fps, self.frame_size)
-                self.mp4_subscription[name] = rospy.Subscriber(topic_name, Image,
-                                                               callback=self._subscribe_to_image_topic,
-                                                               callback_args=name)
+                if name not in self.mp4_subscription or self.mp4_subscription[name] is None:
+                    self.mp4_subscription[name] = rospy.Subscriber(topic_name, Image,
+                                                                   callback=self._subscribe_to_image_topic,
+                                                                   callback_args=name)
                 if name not in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name] = threading.Lock()
                 else:
@@ -102,7 +104,6 @@ class SaveToMp4(object):
                 name = camera_enum['name']
                 if name in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name].acquire()
-                    self.mp4_subscription[name].unregister()
                 if name in self.cv2_video_writers:
                     self.cv2_video_writers[name].release()
                     del self.cv2_video_writers[name]

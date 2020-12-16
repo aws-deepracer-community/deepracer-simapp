@@ -78,6 +78,11 @@ class IconographicImageSize(Enum):
     OBSTACLE_IMAGE_SIZE = (int(34//SCALE_RATIO), int(34//SCALE_RATIO))
     AGENTS_IMAGE_SIZE = (int(88//SCALE_RATIO), int(88//SCALE_RATIO))
     RACE_COMPLETE_IMAGE_SIZE = (308, 40)
+    # F1 related
+    F1_LOGO_IMAGE_SIZE = (125, 50)
+    F1_RACER_SLASH_DISPLAY_ICON_SIZE = (35, 20)
+    F1_RACER_RECT_DISPLAY_ICON_SIZE = (6, 13)
+    F1_AGENTS_IMAGE_SIZE = (18, 18)
 
 # Track iconography png enums
 class TrackAssetsIconographicPngs(Enum):
@@ -99,6 +104,17 @@ class TrackAssetsIconographicPngs(Enum):
     RACE_COMPLETE_OVERLAY_PNG = "DRL_video_racecomplete_overlay"
     HEAD_TO_HEAD_OVERLAY_PNG_LEAGUE_LEADERBOARD = "DRL_video_h2h_overlay_league_leaderboard"
     OBSTACLE_OVERLAY_PNG_LEAGUE_LEADERBOARD = "DRL_video_oa_overlay_league_leaderboard"
+    #F1
+    F1_LOGO_PNG = "F1_logo_official"
+    F1_OVERLAY_DEFAULT_PNG = "F1_video_overlay_default"
+    F1_OVERLAY_MIDWAY_PNG = "F1_video_overlay_midway"
+    F1_OVERLAY_FINISHERS_PNG = "F1_video_overlay_finishers"
+    F1_OVERLAY_TOPVIEW_2BOX_PNG = "F1_video_overlay_topview_2box"
+    F1_OVERLAY_TOPVIEW_3BOX_PNG = "F1_video_overlay_topview_3box"
+    F1_AGENTS_PNG = "./oval/oval"
+    F1_AGENTS_NUM_PNG = "./numbers/number"
+    F1_AGENTS_SLASH_DISPLAY_ICON_PNG = "./slash/slash"
+    F1_AGENTS_RECT_DISPLAY_ICON_PNG = "./rectangle/rectangle"
 
 class XYPixelLoc(Enum):
     """ The mp4 image size is (480, 640). Rendering text at different locations
@@ -115,6 +131,35 @@ class XYPixelLoc(Enum):
     TRAINING_PHASE_LOC = (40, 400)
     TRACK_IMG_WITH_OFFSET_LOC = (0, 20)
     TRACK_IMG_WITHOUT_OFFSET_LOC = (0, 0)
+    # F1 related pixel
+    F1_LOGO_LOC = (80, 35)
+    F1_DISPLAY_NAME_SLASH_LOC = (40, 390)
+    F1_DISPLAY_NAME_LOC = (60, 386)
+    F1_RANKING_LOC = (20, 410)
+    F1_LAP_EVAL_GAP_LOC = (20, 435)
+    F1_LAP_EVAL_GAP_VAL_LOC = (270, 435)
+    F1_LEADERBOARD_NAME_LOC = (20, 460)
+    # F1 midway progress
+    F1_MIDWAY_LAP_TEXT_LOC = (50, 55)
+    F1_MIDWAY_LAP_COUNTER_LOC = (57, 73)
+    F1_MIDWAY_LEADER_RANK_LOC = (30, 100)
+    F1_MIDWAY_LEADER_COLOR_CODE_LOC = (55, 105)
+    F1_MIDWAY_LEADER_DISPLAY_NAME_LOC = (62, 100)
+    F1_MIDWAY_LEADER_GAP_LOC = (140, 100)
+    # F1 finished lap
+    F1_FINISHED_TITLE_LOC = (40, 120)
+    F1_FINISHED_RANK_LOC = (30, 145)
+    F1_FINISHED_COLOR_CODE_LOC = (50, 150)
+    F1_FINISHED_DISPLAY_NAME_LOC = (62, 145)
+    # F1 Top camera
+    F1_TOP_CAMERA_LAP_TEXT_LOC = (10, 10)
+    F1_TOP_CAMERA_LAP_COUNTER_LOC = (10, 30)
+    F1_TOP_CAMERA_LEADER_RANK_LOC = (80, 15)
+    F1_TOP_CAMERA_LEADER_COLOR_CODE_LOC = (100, 20)
+    F1_TOP_CAMERA_LEADER_DISPLAY_NAME_LOC = (107, 15)
+    F1_TOP_CAMERA_LEADER_GAP_LOC = (182, 15)
+    # F1 Agent num offset
+    F1_AGENT_NUM_OFFSET = (8, 8)
 
 # Race completion flag y-offset
 RACE_COMPLETE_Y_OFFSET = 180
@@ -131,3 +176,27 @@ class FrameQueueData(Enum):
 MAX_FRAMES_IN_QUEUE = 100
 KVS_PUBLISH_PERIOD = 1.0/15.0
 QUEUE_WAIT_TIME = 10 # In seconds
+
+
+class ModelImgNames(Enum):
+    """ Mapping the different objects and agents image
+
+    Attributes:
+        OBJECT_IMGS: This could be boxes or the bots
+        AGENT_IMGS: This is the agents image
+        AGENT_NUM_IMGS: This is the agent number, used only in F1
+    """
+    OBJECT_IMGS = "object_imgs"
+    AGENT_IMGS = "agent_imgs"
+    AGENT_NUM_IMGS = "agent_num_imgs"
+
+
+class FrameTypes(Enum):
+    """ Different frames to be edited as part of Mp4 and KVS
+
+    Attributes:
+        MAIN_CAMERA_FRAME: Frames coming from 45degree camera
+        TOP_CAMERA_FRAME: Frames from the top view camera
+    """
+    MAIN_CAMERA_FRAME = "main_camera_frame"
+    TOP_CAMERA_FRAME = "top_camera_frame"

@@ -1,0 +1,23 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# This service is loaded at runtime in AWS RoboMaker simulations.
+#
+# Calling this service will remove tags from the running
+# simulation job.
+#
+# More information about usage can be found here:
+# https://docs.aws.amazon.com/robomaker
+#
+# This uses the UntagResource API:
+# https://docs.aws.amazon.com/robomaker/latest/dg/API_UntagResource.html
+
+# Key values for tags to remove from the simulation job
+string[] keys
+---
+# True if tags were successfully removed. False otherwise.
+bool success
+
+# Message containing more information about the error if success
+# is false.
+string message

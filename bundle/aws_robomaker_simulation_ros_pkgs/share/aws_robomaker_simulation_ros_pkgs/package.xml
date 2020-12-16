@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>aws_robomaker_simulation_ros_pkgs</name> <!-- This is a meta package! -->
+  <version>1.1.0</version>
+  <description>
+    AWS RoboMaker package for accessing the simulation service.
+  </description>
+  <license>Apache 2.0</license>
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>robomaker_simulation_msgs</exec_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

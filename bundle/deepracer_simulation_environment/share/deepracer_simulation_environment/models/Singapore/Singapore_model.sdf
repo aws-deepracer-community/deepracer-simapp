@@ -63,6 +63,17 @@
                 </geometry>
             </visual>
         </link>
+
+        <link name="Singapore_track_road_finishline">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/Singapore/Singapore_track_road_finishline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
         <static>1</static>
     </model>
 </sdf>
