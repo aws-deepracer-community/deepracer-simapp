@@ -8,8 +8,8 @@
 import sys
 import time
 import logging
-from threading import Thread, Condition
-from Queue import Queue
+from threading import Thread
+import Queue
 import cv2
 import rospy
 from std_srvs.srv import Empty
@@ -18,7 +18,7 @@ from sensor_msgs.msg import Image as ROSImg
 from std_msgs.msg import String
 
 from markov.utils import DoubleBuffer, force_list, get_video_display_name, get_racecar_names
-from markov.constants import DEFAULT_COLOR                     
+from markov.constants import DEFAULT_COLOR
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
@@ -39,6 +39,7 @@ from mp4_saving.save_to_mp4 import SaveToMp4
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
+
 class AgentsVideoEditor(object):
     """ This node is used to produce frames for the AWS kinesis video stream and
     for saving the mp4 and uploading to S3. Both are subscribed to the output of
@@ -46,8 +47,6 @@ class AgentsVideoEditor(object):
     """
     _agents_metrics = list()
     _mp4_queue = list()
-    _mp4_edited_frame_queue = list()
-    _mp4_condition_lock = list()
 
     def __init__(self, racecar_name, racecars_info):
         #
@@ -71,7 +70,15 @@ class AgentsVideoEditor(object):
         self.is_training = rospy.get_param("JOB_TYPE") == 'TRAINING'
         self.race_type = rospy.get_param("RACE_TYPE", RaceType.TIME_TRIAL.value)
         self.is_f1_race_type = self.race_type == RaceType.F1.value
-        self.job_type_image_edit = self._get_image_editing_job_type()
+        #
+        # Two job types are required because in the F1 editing we have static variables
+        # to compute the gap and ranking. With Mp4 stacking frames, these values would be already updated by KVS.
+        # If same class is used then during the finish phase you see all the racers information at once
+        # and not updated real time when racers finish the lap.
+        # %TODO seperate out the kvs and Mp4 functionality
+        #
+        self.job_type_image_edit_mp4 = self._get_image_editing_job_type()
+        self.job_type_image_edit_kvs = self._get_image_editing_job_type()
         if self.is_training:
             # String indicating the current phase
             self._current_training_phase = DoubleBuffer(clear_data_on_get=False)
@@ -89,9 +96,7 @@ class AgentsVideoEditor(object):
         self.kvs_pub = rospy.Publisher('/{}/deepracer/kvs_stream'.format(self.racecar_name), ROSImg, queue_size=1)
 
         # All Mp4 related initialization
-        self._mp4_queue.append(Queue())
-        self._mp4_edited_frame_queue.append(Queue(MAX_FRAMES_IN_QUEUE))
-        self._mp4_condition_lock.append(Condition())
+        self._mp4_queue.append(Queue.Queue())
 
         # Initialize save mp4 ROS service for the markov package to signal when to
         # start and stop collecting video frames
@@ -118,7 +123,8 @@ class AgentsVideoEditor(object):
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited
-        if self.is_f1_race_type:
+        self.top_camera_mp4_pub = None
+        if self.is_f1_race_type and self.racecar_index == 0:
             self._top_camera_frame_buffer = DoubleBuffer(clear_data_on_get=False)
             top_camera_topic = "/sub_camera/zed/rgb/image_rect_color"
             rospy.Subscriber(top_camera_topic, ROSImg, self._top_camera_cb)
@@ -128,7 +134,6 @@ class AgentsVideoEditor(object):
         rospy.Subscriber(main_camera_topic, ROSImg, self._producer_frame_thread)
         Thread(target=self._consumer_mp4_frame_thread).start()
         Thread(target=self._kvs_publisher).start()
-        Thread(target=self._mp4_publisher).start()
 
     def subscribe_to_save_mp4(self, req):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -150,9 +155,24 @@ class AgentsVideoEditor(object):
             [] - Empty list else ros service throws exception
         """
         self.is_save_mp4_enabled = False
-        while not (self._mp4_queue[self.racecar_index].empty() and self._mp4_edited_frame_queue[self.racecar_index].empty()):
+        # This is required because when unsubscribe call is made the frames in the queue will continue editing,
+        # but at this time the 45degree camera will continue to be subscribed and saved to mp4 which we do not want.
+        camera_topics_stop_immediately, camera_topics_stop_post_empty_queue = list(), list()
+        if not self.top_camera_mp4_pub:
+            camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value,
+                                              CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value]
+            camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_PIP_PARAMS.value]
+        else:
+            camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value]
+            camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
+                                                   CameraTypeParams.CAMERA_PIP_PARAMS.value]
+
+        self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_immediately)
+        LOG.info("Waiting to flush the Mp4 queue for racecar_{}...".format(self.racecar_index))
+        while not self._mp4_queue[self.racecar_index].empty():
             time.sleep(1)
-        self.save_to_mp4_obj.unsubscribe_to_save_mp4()
+        LOG.info("Done flushing the Mp4 queue for racecar_{}...".format(self.racecar_index))
+        self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_post_empty_queue)
         return []
 
     def _top_camera_cb(self, frame):
@@ -193,6 +213,41 @@ class AgentsVideoEditor(object):
             video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrvRequest())
             self._agents_metrics[self.racecar_index].put(video_metrics)
 
+    def _edit_main_camera_images(self, frame_data, metric_info, is_mp4, edited_frame_result):
+        """ Thread to edit main camera frames
+
+        Args:
+            frame_data (dict): Dictionary of frame, agent_metric_info, training_phase
+            metric_info (dict): This contains metric information to edit the videos also the phase like training phase
+            is_mp4 (bool): Is this editing part of KVS or MP4
+            edited_frame_result (dict): A mutable variable holding the dict result of edited frame
+        """
+        main_frame = frame_data[FrameQueueData.FRAME.value][FrameTypes.MAIN_CAMERA_FRAME.value]
+        major_cv_image = self.bridge.imgmsg_to_cv2(main_frame, "bgr8")
+        major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
+        # Edit the image based on the racecar type and job type
+        if is_mp4:
+            major_cv_image = self.job_type_image_edit_mp4.edit_image(major_cv_image, metric_info)
+        else:
+            major_cv_image = self.job_type_image_edit_kvs.edit_image(major_cv_image, metric_info)
+        edited_main_frame = self.bridge.cv2_to_imgmsg(major_cv_image, "bgr8")
+        edited_frame_result[FrameTypes.MAIN_CAMERA_FRAME.value] = edited_main_frame
+
+    def _edit_top_camera_images(self, frame_data, metric_info, edited_frame_result):
+        """ Thread to edit top camera frames. This is only for the F1 format
+
+        Args:
+            frame_data (dict): Dictionary of frame, agent_metric_info, training_phase
+            metric_info (dict): This contains metric information to edit the videos also the phase like training phase
+            edited_frame_result (dict): A mutable variable holding the dict result of edited frame
+        """
+        top_camera_frame = frame_data[FrameQueueData.FRAME.value][FrameTypes.TOP_CAMERA_FRAME.value]
+        top_cv_image = self.bridge.imgmsg_to_cv2(top_camera_frame, "bgr8")
+        top_cv_image = cv2.cvtColor(top_cv_image, cv2.COLOR_RGB2RGBA)
+        top_cv_image = self.job_type_image_edit_mp4.edit_top_camera_image(top_cv_image, metric_info)
+        edited_top_frame = self.bridge.cv2_to_imgmsg(top_cv_image, "bgr8")
+        edited_frame_result[FrameTypes.TOP_CAMERA_FRAME.value] = edited_top_frame
+
     def _edit_camera_images(self, frame_data, is_mp4):
         """ Edit camera image by calling respective job type
 
@@ -203,7 +258,6 @@ class AgentsVideoEditor(object):
         Returns:
             Image: Edited image
         """
-        main_frame = frame_data[FrameQueueData.FRAME.value][FrameTypes.MAIN_CAMERA_FRAME.value]
         metric_info = {
             FrameQueueData.AGENT_METRIC_INFO.value: frame_data[FrameQueueData.AGENT_METRIC_INFO.value],
             FrameQueueData.TRAINING_PHASE.value: frame_data[FrameQueueData.TRAINING_PHASE.value]
@@ -211,24 +265,13 @@ class AgentsVideoEditor(object):
 
         # convert ros image message to cv image
         try:
-            major_cv_image = self.bridge.imgmsg_to_cv2(main_frame, "bgr8")
-            major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
-            # Edit the image based on the racecar type and job type
-            major_cv_image = self.job_type_image_edit.edit_image(major_cv_image, metric_info)
-            edited_main_frame = self.bridge.cv2_to_imgmsg(major_cv_image, "bgr8")
-
+            edited_frame_result = dict()
+            self._edit_main_camera_images(frame_data, metric_info, is_mp4, edited_frame_result)
             # Edit top camera image only if its F1
-            edited_top_frame = []
-            if self.is_f1_race_type and is_mp4:
-                top_camera_frame = frame_data[FrameQueueData.FRAME.value][FrameTypes.TOP_CAMERA_FRAME.value]
-                top_cv_image = self.bridge.imgmsg_to_cv2(top_camera_frame, "bgr8")
-                top_cv_image = cv2.cvtColor(top_cv_image, cv2.COLOR_RGB2RGBA)
-                top_cv_image = self.job_type_image_edit.edit_top_camera_image(top_cv_image, metric_info)
-                edited_top_frame = self.bridge.cv2_to_imgmsg(top_cv_image, "bgr8")
-            return {
-                FrameTypes.MAIN_CAMERA_FRAME.value: edited_main_frame,
-                FrameTypes.TOP_CAMERA_FRAME.value: edited_top_frame
-            }
+            edited_frame_result[FrameTypes.TOP_CAMERA_FRAME.value] = None
+            if self.top_camera_mp4_pub and is_mp4:
+                self._edit_top_camera_images(frame_data, metric_info, edited_frame_result)
+            return edited_frame_result
         except CvBridgeError as ex:
             LOG.info("cv2 to ROS image message error: {}".format(ex))
 
@@ -249,7 +292,8 @@ class AgentsVideoEditor(object):
             queue_data = {
                 FrameQueueData.FRAME.value: {
                     FrameTypes.MAIN_CAMERA_FRAME.value: frame,
-                    FrameTypes.TOP_CAMERA_FRAME.value: self._top_camera_frame_buffer.get() if self.is_f1_race_type else []
+                    FrameTypes.TOP_CAMERA_FRAME.value: (self._top_camera_frame_buffer.get()
+                                                        if self.top_camera_mp4_pub else [])
                 },
                 FrameQueueData.AGENT_METRIC_INFO.value: agent_metric_info,
                 FrameQueueData.TRAINING_PHASE.value: self._current_training_phase.get() if self.is_training else ''
@@ -258,49 +302,28 @@ class AgentsVideoEditor(object):
             self._kvs_frame_buffer.put(queue_data)
 
             if self.is_save_mp4_enabled:
-                with self._mp4_condition_lock[self.racecar_index]:
-                    if self._mp4_queue[self.racecar_index].qsize() == MAX_FRAMES_IN_QUEUE:
-                        LOG.info("Dropping Mp4 frame from the queue")
-                        self._mp4_queue[self.racecar_index].get()
-                    # Append to the MP4 queue
-                    self._mp4_queue[self.racecar_index].put(queue_data)
-                    self._mp4_condition_lock[self.racecar_index].notify()
+                if self._mp4_queue[self.racecar_index].qsize() == MAX_FRAMES_IN_QUEUE:
+                    LOG.info("Dropping Mp4 frame from the queue")
+                    self._mp4_queue[self.racecar_index].get()
+                # Append to the MP4 queue
+                self._mp4_queue[self.racecar_index].put(queue_data)
 
     def _consumer_mp4_frame_thread(self):
         """ Consumes the frame produced by the _producer_frame_thread and edits the image
         The edited image is put into another queue for publishing to MP4 topic
         """
         while not rospy.is_shutdown():
-            with self._mp4_condition_lock[self.racecar_index]:
-                if self._mp4_queue[self.racecar_index].empty():
-                    # Wait untill producer adds something to queue
-                    self._mp4_condition_lock[self.racecar_index].wait(QUEUE_WAIT_TIME)
-                    continue
+            frame_data = None
+            try:
                 # Pop from the queue and edit the image
-                frame_data = self._mp4_queue[self.racecar_index].get()
+                frame_data = self._mp4_queue[self.racecar_index].get(timeout=QUEUE_WAIT_TIME)
+            except Queue.Empty:
+                LOG.info("AgentsVideoEditor._mp4_queue['{}'] is empty. Retrying...".format(self.racecar_index))
+            if frame_data:
                 edited_frames = self._edit_camera_images(frame_data, is_mp4=True)
-                self._mp4_edited_frame_queue[self.racecar_index].put(edited_frames)
-
-    def _mp4_publisher(self):
-        """ Publishing the latest edited image to Mp4 topic at 15FPS simulation time
-
-        In case of mp4 videos we want to maintain the 15FPS no matter what RTF the actual
-        simulator is running. This is done by using the rospy.Rate. The 15FPS will be the simulation time
-        and not the real time.
-        """
-        try:
-            publish_rate = rospy.Rate(Mp4Parameter.FPS.value)
-            while not rospy.is_shutdown():
-                if not self._mp4_edited_frame_queue[self.racecar_index].empty():
-                    if rospy.is_shutdown():
-                        break
-                    edited_frames = self._mp4_edited_frame_queue[self.racecar_index].get()
-                    self.mp4_main_camera_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
-                    if self.is_f1_race_type:
-                        self.top_camera_mp4_pub.publish(edited_frames[FrameTypes.TOP_CAMERA_FRAME.value])
-                publish_rate.sleep()
-        except (rospy.ROSInterruptException, rospy.ROSException):
-            pass
+                self.mp4_main_camera_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
+                if self.top_camera_mp4_pub:
+                    self.top_camera_mp4_pub.publish(edited_frames[FrameTypes.TOP_CAMERA_FRAME.value])
 
     def _kvs_publisher(self):
         """ Publishing the latest edited image to KVS topic at 15 FPS real time.

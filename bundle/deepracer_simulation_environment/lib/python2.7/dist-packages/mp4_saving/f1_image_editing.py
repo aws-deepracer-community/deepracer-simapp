@@ -10,6 +10,9 @@ import numpy as np
 from sensor_msgs.msg import Image as ROSImg
 
 from markov.log_handler.logger import Logger
+from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
 from markov.reset.constants import RaceType
 from markov.utils import get_racecar_idx
 from mp4_saving.top_view_graphics import TopViewGraphics
@@ -103,6 +106,20 @@ class F1ImageEditing(ImageEditingInterface):
                                                  top_camera_info.image_width, top_camera_info.image_height,
                                                  racecars_info, race_type)
         self.hex_car_colors = [val['racecar_color'].split('_')[-1] for val in racecars_info]
+        self._racer_color_code_rect_img = list()
+        self._racer_color_code_slash_img = list()
+        for car_color in self.hex_car_colors:
+            # Rectangular png of racers
+            racer_color_code_rect = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_RECT_DISPLAY_ICON_PNG.value,
+                                                   car_color)
+            self._racer_color_code_rect_img.append(
+                utils.get_image(racer_color_code_rect, IconographicImageSize.F1_RACER_RECT_DISPLAY_ICON_SIZE.value))
+            # Slash png of racers
+            racer_color_code_slash = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_SLASH_DISPLAY_ICON_PNG.value,
+                                                    car_color)
+            racer_color_code_slash_img = utils.get_image(racer_color_code_slash,
+                                                         IconographicImageSize.F1_RACER_SLASH_DISPLAY_ICON_SIZE.value)
+            self._racer_color_code_slash_img.append(cv2.cvtColor(racer_color_code_slash_img, cv2.COLOR_RGBA2BGRA))
 
     def _get_racecar_ranking(self, racers_ranking, racer_number):
         """ Returns the rank of the racer given the racing number.
@@ -114,13 +131,21 @@ class F1ImageEditing(ImageEditingInterface):
         Returns:
             (int): The rank of the racer
         """
-        if racer_number in self._finished_lap_time:
-            return list(self._finished_lap_time.keys()).index(racer_number) + 1
-        else:
+        if racer_number in racers_ranking:
             rank = list(racers_ranking.keys()).index(racer_number) + 1
-            if self._finished_lap_time:
-                rank += len(self._finished_lap_time)
+            # The difference between self.racecars_info and racers_ranking will give
+            # the number of racers completed the race at given time frame.
+            # Relying on self._finished_lap_time for the ranking is a bad idea as given racers_ranking may not
+            # be from current time (can be from queued frame which is from the past),
+            # where self._finished_lap_time always contains the latest information.
+            rank += len(self.racecars_info) - len(racers_ranking)
             return rank
+        else:
+            # If racer_number is not in racers_ranking then given racer_number racer at the given time frame
+            # has already completed the race, then it must rely on self._finished_lap_time to
+            # retrieve its ranking as racers_ranking won't contain the given racer_number and
+            # self._finished_lap_time is the ONLY source to retrieve its ranking.
+            return list(self._finished_lap_time.keys()).index(racer_number) + 1
 
     def _get_gap_time(self, racers_ranking, racer_number, racer_metrics_info):
         """ Checks if a car has complete the race and considers the difference in the
@@ -133,19 +158,40 @@ class F1ImageEditing(ImageEditingInterface):
             racer_number (int): This is the racers number assigned when kinesis video node is spwan
             racer_metrics_info (dict): Given racers metric information
         """
-        if self._finished_lap_time:
+        if len(racers_ranking) < len(self.racecars_info):
+            # if size of racers_ranking is smaller than size of self.racecars_info, then
+            # it means there is at least one racer completed the race.
             leader_elapsed_time = list(self._finished_lap_time.items())[0][1]
-            if racer_number in self._finished_lap_time:
+            if racer_number not in racers_ranking:
+                # If given racer has been also completed the race then the gap time is
+                # just difference between the race finish times of given racer and leader.
+                # Otherwise, the gap time needs to be retrieved from interpolation estimation.
                 return (self._finished_lap_time[racer_number] - leader_elapsed_time) / 1000
-            return (racer_metrics_info.total_evaluation_time - leader_elapsed_time) / 1000
+            # Once leader completed the race, it's unnecessary to update
+            # self._leader_elapsed_time and self._leader_percentage_completion lists.
+            # Thus, set race_leader_index to None to avoid updating these static lists.
+            race_leader_index = None
+        else:
+            # If none of the racers completed the race then every progress and time of the leader
+            # needs to be recorded.
+            race_leader_index = list(racers_ranking.items())[0][0]
 
-        race_leader_index = list(racers_ranking.items())[0][0]
         with self._lock:
             try:
-                self._leader_percentage_completion.append(racers_ranking[race_leader_index])
-                # Since the total evaluation time is same for all the racers
-                self._leader_elapsed_time.append(racer_metrics_info.total_evaluation_time)
+                if race_leader_index is not None:
+                    if len(self._leader_elapsed_time) == 0 or \
+                            (racer_metrics_info.total_evaluation_time > self._leader_elapsed_time[-1] and
+                             racers_ranking[race_leader_index] > self._leader_percentage_completion[-1]):
+                        # ONLY append leader's datapoint when there is an actual latest new datapoint.
+                        self._leader_percentage_completion.append(racers_ranking[race_leader_index])
+                        # Since the total evaluation time is same for all the racers
+                        self._leader_elapsed_time.append(racer_metrics_info.total_evaluation_time)
 
+                if racers_ranking[racer_number] < 0.0:
+                    # If the progress of the racer is less than 0 then it means racer hasn't passed the start line yet.
+                    # In such case, the gap time based on leader's elapsed time is meaningless.
+                    # Thus, just return 0.
+                    return 0
                 leader_elapsed_time = np.interp(racers_ranking[racer_number], self._leader_percentage_completion,
                                                 self._leader_elapsed_time)
                 return (racer_metrics_info.total_evaluation_time - leader_elapsed_time) / 1000
@@ -234,7 +280,11 @@ class F1ImageEditing(ImageEditingInterface):
         current_lap = min(int(cur_racer_metrics_info.lap_counter) + 1, int(self.total_laps))
         lap_counter_text = "Lap {:2d} / {:2d}".format(current_lap, int(self.total_laps))
         # Total eval time
-        total_eval_milli_seconds = cur_racer_metrics_info.total_evaluation_time
+        if self.racecar_index in self._finished_lap_time:
+            # If the racer finished the race then lock the total evaluation time to finished lap time.
+            total_eval_milli_seconds = self._finished_lap_time[self.racecar_index]
+        else:
+            total_eval_milli_seconds = cur_racer_metrics_info.total_evaluation_time
         time_delta = datetime.timedelta(milliseconds=total_eval_milli_seconds)
         total_eval_time_text = "{}".format(utils.milliseconds_to_timeformat(time_delta))
         # Writing to the frame (Lap Counter|Total eval|gap time)
@@ -267,13 +317,8 @@ class F1ImageEditing(ImageEditingInterface):
         if show_racer_name:
             # Draw racer color code
             loc_x, loc_y = XYPixelLoc.F1_DISPLAY_NAME_SLASH_LOC.value
-            racer_color_code = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_SLASH_DISPLAY_ICON_PNG.value,
-                                              self.hex_car_colors[self.racecar_index])
-            racecomplete_image = utils.get_image(racer_color_code,
-                                                 IconographicImageSize.F1_RACER_SLASH_DISPLAY_ICON_SIZE.value)
-            racecomplete_image = cv2.cvtColor(racecomplete_image, cv2.COLOR_RGBA2BGRA)
-            major_cv_image = utils.plot_rectangular_image_on_main_image(major_cv_image, racecomplete_image,
-                                                                        (loc_x, loc_y))
+            major_cv_image = utils.plot_rectangular_image_on_main_image(
+                major_cv_image, self._racer_color_code_slash_img[self.racecar_index], (loc_x, loc_y))
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 
@@ -325,12 +370,8 @@ class F1ImageEditing(ImageEditingInterface):
                                                        font_color=RaceCarColorToRGB.White.value,
                                                        font_shadow_color=RaceCarColorToRGB.Black.value)
             # Draw racer color code icon
-            racer_color_code = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_RECT_DISPLAY_ICON_PNG.value,
-                                              self.hex_car_colors[racer_number])
-            racer_color_code_img = utils.get_image(racer_color_code,
-                                                   IconographicImageSize.F1_RACER_RECT_DISPLAY_ICON_SIZE.value,
-                                                   is_rgb=True)
-            major_cv_image = utils.plot_rectangular_image_on_main_image(major_cv_image, racer_color_code_img,
+            major_cv_image = utils.plot_rectangular_image_on_main_image(major_cv_image,
+                                                                        self._racer_color_code_rect_img[racer_number],
                                                                         (color_code_loc_x, color_code_loc_y))
             # Adding display name to the table
             display_name_txt = display_name if len(display_name) <= 6 else "{}".format(display_name[:6])
@@ -401,12 +442,8 @@ class F1ImageEditing(ImageEditingInterface):
                                                        font_color=RaceCarColorToRGB.White.value,
                                                        font_shadow_color=RaceCarColorToRGB.Black.value)
             # Draw racer color code icon
-            racer_color_code = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_RECT_DISPLAY_ICON_PNG.value,
-                                              self.hex_car_colors[racer_number])
-            racer_color_code_img = utils.get_image(racer_color_code,
-                                                   IconographicImageSize.F1_RACER_RECT_DISPLAY_ICON_SIZE.value,
-                                                   is_rgb=True)
-            major_cv_image = utils.plot_rectangular_image_on_main_image(major_cv_image, racer_color_code_img,
+            major_cv_image = utils.plot_rectangular_image_on_main_image(major_cv_image,
+                                                                        self._racer_color_code_rect_img[racer_number],
                                                                         (color_code_loc_x, color_code_loc_y))
 
             # Adding display name to the table
@@ -423,27 +460,31 @@ class F1ImageEditing(ImageEditingInterface):
 
     def _get_racers_metric_info(self, mp4_video_metrics_info):
         racers_ranking = OrderedDict()
+        is_finish_lap_time_changed = False
         for i in range(len(self.racecars_info)):
             racer_number = int(self.racecars_info[i]['name'].split("_")[1])
             mp4_video_metrics = mp4_video_metrics_info[racer_number]
-            if mp4_video_metrics.done and (mp4_video_metrics.lap_counter) + 1 >= int(self.total_laps):
+            if mp4_video_metrics.done and mp4_video_metrics.lap_counter + 1 >= int(self.total_laps):
                 if racer_number not in self._finished_lap_time:
                     self._finished_lap_time[racer_number] = mp4_video_metrics.total_evaluation_time
+                    is_finish_lap_time_changed = True
             else:
                 racers_ranking[racer_number] = mp4_video_metrics.completion_percentage / 100.0 +\
                     mp4_video_metrics.lap_counter
 
-        if self._finished_lap_time:
+        if is_finish_lap_time_changed:
+            # Re-order the self._finished_lap_time ONLY if there is any information updated.
             self._finished_lap_time = OrderedDict(sorted(self._finished_lap_time.items(), key=lambda item: item[1]))
 
         racers_ranking = OrderedDict(sorted(racers_ranking.items(), key=lambda item: item[1], reverse=True))
         rank_name_gap_time = self._racers_rank_name_gap_time(racers_ranking, mp4_video_metrics_info)
-        return (racers_ranking, rank_name_gap_time)
+        return racers_ranking, rank_name_gap_time
 
     def _edit_major_cv_image(self, major_cv_image, mp4_video_metrics_info):
         """ Apply all the editing for the Major 45degree camera image
         Args:
             major_cv_image (Image): Image straight from the camera
+            mp4_video_metrics_info (list): All the racers metric information
         Returns:
             Image: Edited main camera image
         """
@@ -520,6 +561,11 @@ class F1ImageEditing(ImageEditingInterface):
 
     def edit_image(self, major_cv_image, metric_info):
         mp4_video_metrics_info = metric_info[FrameQueueData.AGENT_METRIC_INFO.value]
+        # Find max total_evaluation_time from mp4_video_metrics_info
+        # to synchronize the total evaluation time throughout racers.
+        max_total_evaluation_time = max([item.total_evaluation_time for item in mp4_video_metrics_info])
+        for info in mp4_video_metrics_info:
+            info.total_evaluation_time = max_total_evaluation_time
         major_cv_image = self._edit_major_cv_image(major_cv_image, mp4_video_metrics_info)
         major_cv_image = self._plot_agents_on_major_cv_image(major_cv_image, mp4_video_metrics_info)
         return cv2.cvtColor(major_cv_image, cv2.COLOR_BGRA2RGB)
@@ -547,9 +593,12 @@ class F1ImageEditing(ImageEditingInterface):
                                                      loc=(loc_x, loc_y), font=self.formula1_display_wide_12px,
                                                      font_color=RaceCarColorToRGB.White.value,
                                                      font_shadow_color=RaceCarColorToRGB.Black.value)
+
         # LAP counter
         loc_x, loc_y = XYPixelLoc.F1_TOP_CAMERA_LAP_COUNTER_LOC.value
-        current_lap = min(int(mp4_video_metrics_info[self.racecar_index].lap_counter) + 1, int(self.total_laps))
+        # For Top view, lap counter should be based on leader's lap count.
+        leader_index = rank_name_gap_time[0][3]
+        current_lap = min(int(mp4_video_metrics_info[leader_index].lap_counter) + 1, int(self.total_laps))
         lap_counter_text = "{} / {}".format(current_lap, int(self.total_laps))
         top_camera_image = utils.write_text_on_image(image=top_camera_image, text=lap_counter_text,
                                                      loc=(loc_x, loc_y), font=self.formula1_display_bold_16px,
@@ -576,12 +625,8 @@ class F1ImageEditing(ImageEditingInterface):
                                                              font_shadow_color=RaceCarColorToRGB.Black.value)
                 # Draw racer color code icon
                 loc_x, loc_y = color_code_loc_x + (col * 185), color_code_loc_y + (row * 20)
-                racer_color_code = "{}_{}".format(TrackAssetsIconographicPngs.F1_AGENTS_RECT_DISPLAY_ICON_PNG.value,
-                                                  self.hex_car_colors[racer_number])
-                racer_color_code_img = utils.get_image(racer_color_code,
-                                                       IconographicImageSize.F1_RACER_RECT_DISPLAY_ICON_SIZE.value,
-                                                       is_rgb=True)
-                top_camera_image = utils.plot_rectangular_image_on_main_image(top_camera_image, racer_color_code_img,
+                top_camera_image = utils.plot_rectangular_image_on_main_image(top_camera_image,
+                                                                              self._racer_color_code_rect_img[racer_number],
                                                                               (loc_x, loc_y))
                 # Adding display name to the table
                 loc_x, loc_y = display_name_loc_x + (col * 185), display_name_loc_y + (row * 20)

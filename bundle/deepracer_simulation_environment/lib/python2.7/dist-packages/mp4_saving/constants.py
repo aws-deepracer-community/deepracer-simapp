@@ -173,7 +173,7 @@ class FrameQueueData(Enum):
     TRAINING_PHASE = "training_phase"
 
 # Agent Video editor constants
-MAX_FRAMES_IN_QUEUE = 100
+MAX_FRAMES_IN_QUEUE = 1500
 KVS_PUBLISH_PERIOD = 1.0/15.0
 QUEUE_WAIT_TIME = 10 # In seconds
 

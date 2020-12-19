@@ -222,7 +222,7 @@
 
         <link name="Monaco_track_road_finishline">
             <visual name="visual">
-                <pose>0 0 0 0 0 0</pose>
+                <pose>-0.08 -0.15 0 0 0 0</pose>
                 <geometry>
                 <mesh>
                 <uri>model://meshes/Monaco_building/Monaco_track_road_finishline.dae</uri>

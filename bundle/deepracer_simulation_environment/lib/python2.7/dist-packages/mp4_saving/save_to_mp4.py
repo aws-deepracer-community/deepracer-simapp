@@ -91,17 +91,14 @@ class SaveToMp4(object):
                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
 
-    def unsubscribe_to_save_mp4(self):
-        """ Ros service handler function used to unsubscribe from the Image topic.
+    def unsubscribe_to_save_mp4(self, camera_enum_names):
+        """ Function used to unsubscribe from the Image topic given the camera_enum_name
         This will take care of cleaning and releasing the cv2 VideoWriter
         Arguments:
-            req (req): Dummy req else the ros service throws exception
-        Return:
-            [] - Empty list else ros service throws exception
+            camera_enum_name (list): List of the CameraTypeParams names
         """
         try:
-            for camera_enum in self.camera_infos:
-                name = camera_enum['name']
+            for name in camera_enum_names:
                 if name in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name].acquire()
                 if name in self.cv2_video_writers:
