@@ -34,6 +34,20 @@ if [ "$1" == "multi" ]; then
 
 fi
 
+# Check if we have an RTF_OVERRIDE to change the RTF - change the world file.
+if [[ -n "${RTF_OVERRIDE}" ]]; then
+	echo "Setting RTF to ${RTF_OVERRIDE} for ${WORLD_NAME}"
+	RTF_UPDATE_RATE=$(awk -v rtf=$RTF_OVERRIDE 'BEGIN{ update_rate=rtf*1000; printf "%0.6f", update_rate}')
+	WORLD_FILE="/opt/install/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
+	xmlstarlet ed -s '/sdf/world' -t elem -n physics $WORLD_FILE | \
+	xmlstarlet ed -a '/sdf/world/physics' -t attr -n type -v ode | \
+	xmlstarlet ed -s '/sdf/world/physics' -t elem -n max_step_size -v 0.001000 | \
+	xmlstarlet ed -s '/sdf/world/physics' -t elem -n real_time_factor -v ${RTF_OVERRIDE} | \
+	xmlstarlet ed -s '/sdf/world/physics' -t elem -n real_time_update_rate -v ${RTF_UPDATE_RATE} | \
+	xmlstarlet ed -s '/sdf/world/physics' -t elem -n gravity -v '0.000000 0.000000 -9.800000' | \
+	tee "/opt/install/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
+fi
+
 # If no run-option given then use the distributed training
 if [ -z ${2+x} ]; then
 	$2 = "distributed_training.launch"
