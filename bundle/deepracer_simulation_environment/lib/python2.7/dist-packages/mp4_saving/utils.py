@@ -169,7 +169,8 @@ def get_speed_formatted_str(speed):
     speed_str = "{:0.2f}".format(round(speed, 2))
     return speed_str.zfill(5)
 
-def get_cameratype_params(racecar_name, agent_name):
+
+def get_cameratype_params(racecar_name, agent_name, is_f1_race_type):
     """ The function initializes the camera information for different camera settings
     This holds the location where the different camera mp4 are saved, also the topic
     of the camera to subscribe to get the videos.
@@ -180,6 +181,7 @@ def get_cameratype_params(racecar_name, agent_name):
     Arguments:
         racecar_name (str): Name of the racecar
         agent_name (str): Agent name of the racecar
+        is_f1_race_type (bool): Is this f1 race type
     Returns:
         (dict): camera information local path, topic, name
     """
@@ -199,11 +201,23 @@ def get_cameratype_params(racecar_name, agent_name):
         'topic_name': "/{}/main_camera/zed/rgb/image_rect_color".format(racecar_name),
         'local_path': camera_45degree_path
     }
-    camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS] = {
-        'name': CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
-        'topic_name': "/sub_camera/zed/rgb/image_rect_color",
-        'local_path': camera_topview_path
-    }
+    # For F1 we have to edit the top camera image
+    # %TODO editing is done for racecar_0, so all the other folders topcamera video file
+    # will be corrupted since no frames will be published. Need to handle this case
+    # gracefully both here and in markov package. Need changes to markov package because
+    # it will try to upload a file that doesnt exist.
+    if is_f1_race_type:
+        camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS] = {
+            'name': CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
+            'topic_name': '/{}/topcamera/deepracer/mp4_stream'.format(racecar_name),
+            'local_path': camera_topview_path
+        }
+    else:
+        camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS] = {
+            'name': CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
+            'topic_name': "/sub_camera/zed/rgb/image_rect_color",
+            'local_path': camera_topview_path
+        }
     return camera_info
 
 def resize_image(image, scale_ratio):

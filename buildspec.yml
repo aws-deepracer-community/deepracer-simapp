@@ -5,7 +5,7 @@ phases:
         - docker login --username ${DOCKER_HUB_USER} --password ${DOCKER_HUB_KEY} 
   build:
     commands:
-       - bash build.sh -a "${CPU_FLAGS}" -p ${DOCKER_HUB_REPO}
+       - bash build.sh -a "${CPU_FLAGS}" -p ${DOCKER_HUB_REPO} -f
   post_build:
     commands:
        - bash push.sh -a "${CPU_FLAGS}" -p ${DOCKER_HUB_REPO}
