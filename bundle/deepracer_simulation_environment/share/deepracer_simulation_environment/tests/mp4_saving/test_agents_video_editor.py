@@ -13,9 +13,9 @@ import pytest
 import rospy
 from std_srvs.srv import Empty, EmptyRequest
 from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
-                                 CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
-                                 CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
+from markov.boto.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
+                                      CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
+                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
 from std_srvs.srv import Empty, EmptyResponse
 from deepracer_simulation_environment.srv import TopCamDataSrvResponse, TopCamDataSrv
 from deepracer_simulation_environment.srv import VideoMetricsSrvResponse, VideoMetricsSrv

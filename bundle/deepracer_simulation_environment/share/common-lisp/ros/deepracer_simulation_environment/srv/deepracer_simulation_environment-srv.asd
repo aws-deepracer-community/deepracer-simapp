@@ -9,4 +9,6 @@
     (:file "_package_TopCamDataSrv" :depends-on ("_package"))
     (:file "VideoMetricsSrv" :depends-on ("_package_VideoMetricsSrv"))
     (:file "_package_VideoMetricsSrv" :depends-on ("_package"))
+    (:file "VirtualEventVideoEditSrv" :depends-on ("_package_VirtualEventVideoEditSrv"))
+    (:file "_package_VirtualEventVideoEditSrv" :depends-on ("_package"))
   ))

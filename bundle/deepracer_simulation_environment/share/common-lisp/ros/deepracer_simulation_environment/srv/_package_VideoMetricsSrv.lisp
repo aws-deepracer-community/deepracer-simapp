@@ -21,4 +21,8 @@
           Y
           OBJECT_LOCATIONS-VAL
           OBJECT_LOCATIONS
+          EPISODE_STATUS-VAL
+          EPISODE_STATUS
+          PAUSE_DURATION-VAL
+          PAUSE_DURATION
 ))
