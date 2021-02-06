@@ -2,8 +2,8 @@
 cd bundle-src
 aws s3 cp s3://deepracer-managed-resources-us-east-1/deepracer-simapp.tar.gz .
 tar xvf deepracer-simapp.tar.gz bundle.tar
-CUR_DATE="nov-15"
-PREV_DATE="nov-10"
+CUR_DATE="jan-29"
+PREV_DATE="dec-16"
 mkdir "bundle-$CUR_DATE" && cd "bundle-$CUR_DATE"
 tar xvf ../bundle.tar opt/install
 find . -name __pycache__ | xargs rm -rf
