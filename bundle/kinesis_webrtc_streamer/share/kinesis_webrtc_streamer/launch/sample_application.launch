@@ -1,0 +1,14 @@
+<!-- This is an example launch file for how a ROS application could use a kinesis_webrtc_streamer -->
+
+<launch>
+    <!-- Custom Nodes would be launched here -->
+
+    <arg name="node_config_file" default="$(find kinesis_webrtc_streamer)/config/webrtc_node_config.yaml"/>
+    <arg name="stream_config_file" default="$(find kinesis_webrtc_streamer)/config/webrtc_stream_configuration.yaml"/>
+
+    <include file="$(find kinesis_webrtc_streamer)/launch/kinesis_webrtc_streamer.launch" >
+        <!-- The configuration can either be passed in using the "node_config_file" and "stream_config_file" parameters
+         or by using a rosparam tag to load the config into the parameter server -->
+        <arg name="node_config_file" value="$(arg node_config_file)"/>
+        <arg name="stream_config_file" value="$(arg stream_config_file)"/>
+    </include>
