@@ -1,1 +1,1 @@
-Pillow:PyOpenGL:PyYAML:annoy:boto3:future-fstrings:futures:h5py:kubernetes:matplotlib:minio:numpy:opencv-python:pandas:pygame:python-dateutil:redis:rl-coach-slim:rospkg:scikit-image:scipy:shapely:tensorflow
+Pillow:PyOpenGL:PyYAML:annoy:bokeh:boto3:cryptography:docutils:future-fstrings:futures:h5py:importlib-metadata:jsonschema:kubernetes:matplotlib:minio:numpy:opencv-python:pandas:pygame:pytest:python-dateutil:pytz:redis:rl-coach-slim:rospkg:scikit-image:scipy:shapely:tensorflow:tokenize-rt
