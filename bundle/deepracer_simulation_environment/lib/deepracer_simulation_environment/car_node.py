@@ -39,7 +39,7 @@ from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
                                 SetVisualColors, SetVisualColorsRequest, SetVisualColorsResponse,
                                 SetVisualTransparencies, SetVisualTransparenciesRequest, SetVisualTransparenciesResponse,
                                 SetVisualVisibles, SetVisualVisiblesRequest, SetVisualVisiblesResponse)
-
+from markov.gazebo_utils.model_updater import ModelUpdater
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -92,11 +92,19 @@ class DeepRacer(object):
         self.track_data = TrackData.get_instance()
         # Set all racers start position in track data
         self.start_positions = get_start_positions(self.racer_num)
+        # get model update instance
+        self.model_update = ModelUpdater.get_instance()
         car_poses = []
         for racecar_idx, racecar_name in enumerate(racecar_names):
-            car_model_state = self.get_initial_position(racecar_name,
-                                                        racecar_idx)
-            car_poses.append(car_model_state.pose)
+            # get car initial start pose
+            car_model_pose = self.track_data.get_racecar_start_pose(
+                racecar_idx=racecar_idx,
+                racer_num=self.racer_num,
+                start_position=self.start_positions[racecar_idx])
+            # set car at start position
+            self.model_update.set_model_pose(model_name=racecar_name,
+                                             model_pose=car_model_pose)
+            car_poses.append(car_model_pose)
             self.update_model_visual(racecar_name,
                                      self.shell_types[racecar_idx],
                                      self.car_colors[racecar_idx])
@@ -187,37 +195,6 @@ class DeepRacer(object):
         else:
             self._update_color(visuals=visuals,
                                car_color=car_color)
-
-    def get_initial_position(self, racecar_name, racecar_idx):
-        ''' get initial car position on the track
-        '''
-        # Compute the starting position and heading
-        # single racer: spawn at centerline
-        if self.racer_num == 1:
-            car_model_pose = self.track_data.center_line.interpolate_pose(
-                distance=0.0,
-                normalized=True,
-                finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
-        # multi racers: spawn odd car at inner lane and even car at outer lane
-        else:
-            lane = self.track_data.inner_lane if racecar_idx % 2 else \
-                self.track_data.outer_lane
-            car_model_pose = lane.interpolate_pose(
-                distance=self.start_positions[racecar_idx],
-                normalized=False,
-                finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
-        # Construct the model state and send to Gazebo
-        car_model_state = ModelState()
-        car_model_state.model_name = racecar_name
-        car_model_state.pose = car_model_pose
-        car_model_state.twist.linear.x = 0
-        car_model_state.twist.linear.y = 0
-        car_model_state.twist.linear.z = 0
-        car_model_state.twist.angular.x = 0
-        car_model_state.twist.angular.y = 0
-        car_model_state.twist.angular.z = 0
-        self.model_state_client(car_model_state)
-        return car_model_state
 
 
 if __name__ == '__main__':
