@@ -44,7 +44,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
         self.is_racing = rospy.get_param("VIDEO_JOB_TYPE", "") == "RACING"
         self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
         self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
-        self._total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
+        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
 
         # The track image as iconography
         self.track_icongraphy_img = utils.get_track_iconography_image()

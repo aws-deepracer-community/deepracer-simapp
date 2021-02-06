@@ -55,7 +55,7 @@ class F1ImageEditing(ImageEditingInterface):
         self.formula1_display_wide_12px = utils.get_font('Formula1-Display-Wide', 12)
         self.formula1_display_bold_16px = utils.get_font('Formula1-Display-Bold', 16)
 
-        self.total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
+        self.total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
         self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
         self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
 
