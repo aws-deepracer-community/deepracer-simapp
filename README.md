@@ -26,23 +26,15 @@ Version 3 is the current version, and it is receiving both new tracks as well as
 | 3.0.4   | Code fixes  |  `3.0.4-cpu-avx` `3.0.4-cpu-gl-avx`  | `3.0.4-cpu-avx2` `3.0.4-cpu-gl-avx` | `3.0.4-gpu` `3.0.4-gpu-gl` |
 | 3.0.5   | Reinvent 2020 Tracks  |  `3.0.5-cpu-avx` `3.0.5-cpu-gl-avx`  | `3.0.5-cpu-avx2` `3.0.5-cpu-gl-avx` | `3.0.5-gpu` `3.0.5-gpu-gl` |
 | 3.0.6   | Updated Reinvent 2020 Tracks  |  `3.0.6-cpu-avx` `3.0.6-cpu-gl-avx`  | `3.0.6-cpu-avx2` `3.0.6-cpu-gl-avx` | `3.0.6-gpu` `3.0.6-gpu-gl` |
+| 3.1.0   | December features  |  `3.1.0-cpu-avx` `3.1.0-cpu-gl-avx`  | `3.1.0-cpu-avx2` `3.1.0-cpu-gl-avx` | `3.1.0-gpu` `3.1.0-gpu-gl` |
 
 ### Version 2
 
-Version 2 is in maintenance state, and will only receive bug-fixes for breaking issues as well as new tracks.
+Version 2 is in retired state, and will no longer get updates.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
 | Release  | Version 2.0.11  | `cpu`, `cpu-avx`, `cpu-gl-avx` | `cpu-avx2`, `cpu-gl-avx2`  | `gpu`, `gpu-gl` | 
-| 2.0.5    | Update 07-MAY  |  `2.0.5-cpu-avx`  | `2.0.5-cpu-avx2` |  `2.0.5-gpu` |
-| 2.0.6    | Update 20-MAY and 22-May  |  `2.0.6-cpu-avx`  | `2.0.6-cpu-avx2` | `2.0.6-gpu` |
-| 2.0.7    | June track + fixes  |  `2.0.7-cpu-avx`  | `2.0.7-cpu-avx2` | `2.0.7-gpu` |
-| 2.0.8    | Update 8-JUN + fixes  |  `2.0.8-cpu-avx` `2.0.8-cpu-gl-avx`  | `2.0.8-cpu-avx2` `2.0.8-cpu-gl-avx` | `2.0.8-gpu` `2.0.8-gpu-gl` |
-| 2.0.9    | July Track  |  `2.0.9-cpu-avx` `2.0.9-cpu-gl-avx`  | `2.0.9-cpu-avx2` `2.0.9-cpu-gl-avx` | `2.0.9-gpu` `2.0.9-gpu-gl` |
-| 2.0.10   | Training improvements  |  `2.0.10-cpu-avx` `2.0.10-cpu-gl-avx`  | `2.0.10-cpu-avx2` `2.0.10-cpu-gl-avx` | `2.0.10-gpu` `2.0.10-gpu-gl` |
-| 2.0.11   | August Track  |  `2.0.11-cpu-avx` `2.0.11-cpu-gl-avx`  | `2.0.11-cpu-avx2` `2.0.11-cpu-gl-avx` | `2.0.11-gpu` `2.0.11-gpu-gl` |
-| 2.0.12   | September Track  |  `2.0.12-cpu-avx` `2.0.12-cpu-gl-avx`  | `2.0.12-cpu-avx2` `2.0.12-cpu-gl-avx` | `2.0.12-gpu` `2.0.12-gpu-gl` |
-| 2.0.13   | October Track  |  `2.0.13-cpu-avx` `2.0.13-cpu-gl-avx`  | `2.0.13-cpu-avx2` `2.0.13-cpu-gl-avx` | `2.0.13-gpu` `2.0.13-gpu-gl` |
 | 2.0.14   | Reinvent 2020 Tracks   |  `2.0.14-cpu-avx` `2.0.14-cpu-gl-avx`  | `2.0.14-cpu-avx2` `2.0.14-cpu-gl-avx` | `2.0.14-gpu` `2.0.14-gpu-gl` |
 
 The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.

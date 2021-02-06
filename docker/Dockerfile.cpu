@@ -29,7 +29,7 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # RUN pip3 install -U pip setuptools>=41.0.0
-RUN python3 -m pip install -U pip 'setuptools<50' && python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install -U 'pip<21' 'setuptools<50' && python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
