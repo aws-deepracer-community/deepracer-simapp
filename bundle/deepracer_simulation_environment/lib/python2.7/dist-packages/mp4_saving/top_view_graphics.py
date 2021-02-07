@@ -30,7 +30,9 @@ class TopViewGraphics(object):
     The camera location, horizontal fov, padding percentage, image width and height are
     taken from the top view camera.
     """
-    def __init__(self, horizontal_fov, padding_percent, image_width, image_height, racecars_info, race_type=None):
+    def __init__(self, horizontal_fov, padding_percent, image_width, image_height, racecars_info,
+                 race_type=None,
+                 is_virtual_event=False):
         """ Camera information is required to map the (x, y) value of the agent on the camera image.
         This is because each track will have its own FOV and padding percent because to avoid
         Z-fighting. Once the camera position, padding percentage is available. We can map the
@@ -44,6 +46,7 @@ class TopViewGraphics(object):
             image_height (int): Image width from the camera
             racecars_info (list): This is the list of dicts of racecars on the track
             race_type (str): Type of the race, TT, H2B, OA, F1. (default: {None})
+            is_virtual_event (bool): True if virtual event and False otherwise.
         """
         self.horizontal_fov = horizontal_fov
         self.padding_percent = padding_percent
@@ -51,6 +54,7 @@ class TopViewGraphics(object):
         self.image_height = image_height
         self.racecars_info = force_list(racecars_info)
         self.is_f1_race_type = race_type == RaceType.F1.value
+        self._is_virtual_event = is_virtual_event
 
         self.model_imgs = self._get_all_models_info()
 
@@ -92,6 +96,10 @@ class TopViewGraphics(object):
                                                    IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
 
         # Adding all agents to the list
+        agents_png = TrackAssetsIconographicPngs.VIRTUAL_EVENT_AGENTS_PNG.value \
+            if self._is_virtual_event else TrackAssetsIconographicPngs.AGENTS_PNG.value
+        agent_size = IconographicImageSize.VIRTUAL_EVENT_AGENTS_IMAGE_SIZE.value \
+            if self._is_virtual_event else IconographicImageSize.AGENTS_IMAGE_SIZE.value
         for i, _ in enumerate(self.racecars_info):
             # If the number of racecars are greater than 2
             if self.is_f1_race_type:

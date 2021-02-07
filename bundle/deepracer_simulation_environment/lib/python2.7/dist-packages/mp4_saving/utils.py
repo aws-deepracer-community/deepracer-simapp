@@ -12,14 +12,21 @@ from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
-from markov.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
-                                 CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
-                                 CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
 from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
-                                  IconographicImageSize)
+                                  IconographicImageSize, SCALE_RATIO,
+                                  TrackColors,
+                                  SECTOR_COLORS_DICT)
 from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDataSrv
 
 LOG = Logger(__name__, logging.INFO).get_logger()
+
+CUSTOM_FILES_PATH = "./custom_files"
+CAMERA_PIP_MP4_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
+                                                "iteration_data/{}/camera-pip/video.mp4")
+CAMERA_45DEGREE_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
+                                                 "iteration_data/{}/camera-45degree/video.mp4")
+CAMERA_TOPVIEW_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
+                                                "iteration_data/{}/camera-topview/video.mp4")
 
 IMAGE_CACHE = dict()
 
@@ -318,19 +325,22 @@ def plot_rectangular_image_on_main_image(background_image, rect_image, pixel_xy)
         pass
     return background_image
 
-def get_gradient_values(gradient_img):
+
+def get_gradient_values(gradient_img, multiplier=1):
     """ Given the image gradient returns gradient_alpha_rgb_mul and one_minus_gradient_alpha.
     These pre-calculated numbers are used to apply the gradient on the camera image
 
     Arguments:
         gradient_img (Image): Gradient image that has to applied on the camera image
+        multiplier (float): This decides what percentage of gradient images alpha has to be applied.
+                            This is useful in fading feature.
 
     Returns:
         (tuple): gradient_alpha_rgb_mul (Numpy.Array) gradient_img * gradient_alpha value
                  one_minus_gradient_alpha (Numpy.Array) (1 - gradient_alpha)
     """
     (height, width, _) = gradient_img.shape
-    gradient_alpha = (gradient_img[:, :, 3] / 255.0).reshape(height, width, 1)
+    gradient_alpha = (gradient_img[:, :, 3] / 255.0 * multiplier).reshape(height, width, 1)
 
     gradient_alpha_rgb_mul = gradient_img * gradient_alpha
     one_minus_gradient_alpha = (1 - gradient_alpha).reshape(height, width)
@@ -368,3 +378,75 @@ def racecar_name_to_agent_name(racecars_info, racecar_name):
         racecar_name (str): Racecar name
     """
     return 'agent' if len(racecars_info) == 1 else "agent_{}".format(racecar_name.split("_")[1])
+
+
+def overlay_sector_color_on_track(major_cv_image, sector_img, x_min, x_max, y_min, y_max):
+    """overlay the sector_img on top of major_cv_image at input location
+
+    Args:
+        major_cv_image (Image): major cv image as background
+        sector_img (Image): overlay foreground cv image
+        x_min (int): x min location for overlay foreground sector image
+        x_max (int): x max location for overlay foreground sector image
+        y_min (int): y min location for overlay foreground sector image
+        y_max (int): y max location for overlay foreground sector image
+
+    Returns:
+        Image: combined image with foreground sector image on top of major cv image.
+    """
+    track_sector_icongraphy_scaled = resize_image(sector_img, SCALE_RATIO)
+    track_sector_icongraphy_alpha = track_sector_icongraphy_scaled[:, :, 3] / 255.0
+
+    for channel in range(0, 4):
+        major_cv_image[x_min:x_max, y_min:y_max, channel] =\
+            (track_sector_icongraphy_alpha * track_sector_icongraphy_scaled[:, :, channel]) + \
+            (1 - track_sector_icongraphy_alpha) * (major_cv_image[x_min:x_max, y_min:y_max, channel])
+
+    return major_cv_image
+
+
+def get_sector_color(best_session_time, best_personal_time, current_personal_time):
+    """compare the current personal sector time with best sector time and
+    best personal sector time to determine sector overlay color by return the
+    path to the image.
+
+    Green for personal best, yellow for slower sectors, and purple for session best.
+
+    Args:
+        best_session_time (int): best session sector time in milliseconds
+        best_personal_time (int): best personal sector time in milliseconds
+        current_personal_time (int): current personal sector time in milliseconds
+
+    Returns:
+        str: Purple for session best, Green for personal best. Otherwise, yellow
+    """
+
+    # current personal time faster than best personal and best session time
+    if current_personal_time <= best_personal_time and current_personal_time <= best_session_time:
+        return TrackColors.PURPLE.value
+    # current personal time faster than best personal only
+    elif current_personal_time <= best_personal_time:
+        return TrackColors.GREEN.value
+    # current personal time is worse
+    else:
+        return TrackColors.YELLOW.value
+
+
+def init_sector_img_dict(world_name, sector):
+    """initialize sector color overlay images dictionary
+
+    Args:
+        world_name (str): current gazebo world name
+        sector (str): sector name such as sector1 for example
+    
+    Returns:
+        dict: sector img overlay dictionary with key as sector name + color name (sector1_yellow)
+        and value as the Image.
+    """
+    sector_img_dict = dict()
+    for color in TrackColors:
+        sector_image = \
+            get_image(world_name + SECTOR_COLORS_DICT[sector + "_" + color.value])
+        sector_image = cv2.cvtColor(sector_image, cv2.COLOR_RGBA2BGRA)
+        sector_img_dict[color.value] = sector_image
+    return sector_img_dict

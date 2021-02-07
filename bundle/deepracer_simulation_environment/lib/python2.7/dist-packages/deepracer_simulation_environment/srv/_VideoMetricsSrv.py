@@ -100,7 +100,7 @@ import struct
 import geometry_msgs.msg
 
 class VideoMetricsSrvResponse(genpy.Message):
-  _md5sum = "ccf1b22780e2ca6fb64b60963df11d26"
+  _md5sum = "bdf8a82e025237227055893ab956222e"
   _type = "deepracer_simulation_environment/VideoMetricsSrvResponse"
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """float32 lap_counter
@@ -114,6 +114,8 @@ bool done
 float32 x
 float32 y
 geometry_msgs/Point32[] object_locations
+string episode_status
+float32 pause_duration
 
 ================================================================================
 MSG: geometry_msgs/Point32
@@ -128,8 +130,8 @@ MSG: geometry_msgs/Point32
 float32 x
 float32 y
 float32 z"""
-  __slots__ = ['lap_counter','completion_percentage','reset_counter','throttle','steering','best_lap_time','total_evaluation_time','done','x','y','object_locations']
-  _slot_types = ['float32','float32','int32','float32','float32','float32','float32','bool','float32','float32','geometry_msgs/Point32[]']
+  __slots__ = ['lap_counter','completion_percentage','reset_counter','throttle','steering','best_lap_time','total_evaluation_time','done','x','y','object_locations','episode_status','pause_duration']
+  _slot_types = ['float32','float32','int32','float32','float32','float32','float32','bool','float32','float32','geometry_msgs/Point32[]','string','float32']
 
   def __init__(self, *args, **kwds):
     """
@@ -139,7 +141,7 @@ float32 z"""
     changes.  You cannot mix in-order arguments and keyword arguments.
 
     The available fields are:
-       lap_counter,completion_percentage,reset_counter,throttle,steering,best_lap_time,total_evaluation_time,done,x,y,object_locations
+       lap_counter,completion_percentage,reset_counter,throttle,steering,best_lap_time,total_evaluation_time,done,x,y,object_locations,episode_status,pause_duration
 
     :param args: complete set of field values, in .msg order
     :param kwds: use keyword arguments corresponding to message field names
@@ -170,6 +172,10 @@ float32 z"""
         self.y = 0.
       if self.object_locations is None:
         self.object_locations = []
+      if self.episode_status is None:
+        self.episode_status = ''
+      if self.pause_duration is None:
+        self.pause_duration = 0.
     else:
       self.lap_counter = 0.
       self.completion_percentage = 0.
@@ -182,6 +188,8 @@ float32 z"""
       self.x = 0.
       self.y = 0.
       self.object_locations = []
+      self.episode_status = ''
+      self.pause_duration = 0.
 
   def _get_types(self):
     """
@@ -202,6 +210,14 @@ float32 z"""
       for val1 in self.object_locations:
         _x = val1
         buff.write(_get_struct_3f().pack(_x.x, _x.y, _x.z))
+      _x = self.episode_status
+      length = len(_x)
+      if python3 or type(_x) == unicode:
+        _x = _x.encode('utf-8')
+        length = len(_x)
+      buff.write(struct.Struct('<I%ss'%length).pack(length, _x))
+      _x = self.pause_duration
+      buff.write(_get_struct_f().pack(_x))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -231,6 +247,18 @@ float32 z"""
         end += 12
         (_x.x, _x.y, _x.z,) = _get_struct_3f().unpack(str[start:end])
         self.object_locations.append(val1)
+      start = end
+      end += 4
+      (length,) = _struct_I.unpack(str[start:end])
+      start = end
+      end += length
+      if python3:
+        self.episode_status = str[start:end].decode('utf-8', 'rosmsg')
+      else:
+        self.episode_status = str[start:end]
+      start = end
+      end += 4
+      (self.pause_duration,) = _get_struct_f().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -250,6 +278,14 @@ float32 z"""
       for val1 in self.object_locations:
         _x = val1
         buff.write(_get_struct_3f().pack(_x.x, _x.y, _x.z))
+      _x = self.episode_status
+      length = len(_x)
+      if python3 or type(_x) == unicode:
+        _x = _x.encode('utf-8')
+        length = len(_x)
+      buff.write(struct.Struct('<I%ss'%length).pack(length, _x))
+      _x = self.pause_duration
+      buff.write(_get_struct_f().pack(_x))
     except struct.error as se: self._check_types(struct.error("%s: '%s' when writing '%s'" % (type(se), str(se), str(locals().get('_x', self)))))
     except TypeError as te: self._check_types(ValueError("%s: '%s' when writing '%s'" % (type(te), str(te), str(locals().get('_x', self)))))
 
@@ -280,6 +316,18 @@ float32 z"""
         end += 12
         (_x.x, _x.y, _x.z,) = _get_struct_3f().unpack(str[start:end])
         self.object_locations.append(val1)
+      start = end
+      end += 4
+      (length,) = _struct_I.unpack(str[start:end])
+      start = end
+      end += length
+      if python3:
+        self.episode_status = str[start:end].decode('utf-8', 'rosmsg')
+      else:
+        self.episode_status = str[start:end]
+      start = end
+      end += 4
+      (self.pause_duration,) = _get_struct_f().unpack(str[start:end])
       return self
     except struct.error as e:
       raise genpy.DeserializationError(e)  # most likely buffer underfill
@@ -300,8 +348,14 @@ def _get_struct_3f():
     if _struct_3f is None:
         _struct_3f = struct.Struct("<3f")
     return _struct_3f
+_struct_f = None
+def _get_struct_f():
+    global _struct_f
+    if _struct_f is None:
+        _struct_f = struct.Struct("<f")
+    return _struct_f
 class VideoMetricsSrv(object):
   _type          = 'deepracer_simulation_environment/VideoMetricsSrv'
-  _md5sum = 'ccf1b22780e2ca6fb64b60963df11d26'
+  _md5sum = 'bdf8a82e025237227055893ab956222e'
   _request_class  = VideoMetricsSrvRequest
   _response_class = VideoMetricsSrvResponse

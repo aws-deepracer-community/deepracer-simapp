@@ -49,7 +49,7 @@
 
 (defclass deepracer_simulation_environment::VideoMetricsSrvResponse
   :super ros::object
-  :slots (_lap_counter _completion_percentage _reset_counter _throttle _steering _best_lap_time _total_evaluation_time _done _x _y _object_locations ))
+  :slots (_lap_counter _completion_percentage _reset_counter _throttle _steering _best_lap_time _total_evaluation_time _done _x _y _object_locations _episode_status _pause_duration ))
 
 (defmethod deepracer_simulation_environment::VideoMetricsSrvResponse
   (:init
@@ -65,6 +65,8 @@
     ((:x __x) 0.0)
     ((:y __y) 0.0)
     ((:object_locations __object_locations) (let (r) (dotimes (i 0) (push (instance geometry_msgs::Point32 :init) r)) r))
+    ((:episode_status __episode_status) "")
+    ((:pause_duration __pause_duration) 0.0)
     )
    (send-super :init)
    (setq _lap_counter (float __lap_counter))
@@ -78,6 +80,8 @@
    (setq _x (float __x))
    (setq _y (float __y))
    (setq _object_locations __object_locations)
+   (setq _episode_status (string __episode_status))
+   (setq _pause_duration (float __pause_duration))
    self)
   (:lap_counter
    (&optional __lap_counter)
@@ -116,6 +120,12 @@
      (progn
        (if __object_locations (setq _object_locations (car __object_locations)))
        _object_locations)))
+  (:episode_status
+   (&optional __episode_status)
+   (if __episode_status (setq _episode_status __episode_status)) _episode_status)
+  (:pause_duration
+   (&optional __pause_duration)
+   (if __pause_duration (setq _pause_duration __pause_duration)) _pause_duration)
   (:serialization-length
    ()
    (+
@@ -141,6 +151,10 @@
     4
     ;; geometry_msgs/Point32[] _object_locations
     (apply #'+ (send-all _object_locations :serialization-length)) 4
+    ;; string _episode_status
+    4 (length _episode_status)
+    ;; float32 _pause_duration
+    4
     ))
   (:serialize
    (&optional strm)
@@ -171,6 +185,10 @@
      (dolist (elem _object_locations)
        (send elem :serialize s)
        )
+     ;; string _episode_status
+       (write-long (length _episode_status) s) (princ _episode_status s)
+     ;; float32 _pause_duration
+       (sys::poke _pause_duration (send s :buffer) (send s :count) :float) (incf (stream-count s) 4)
      ;;
      (if (null strm) (get-output-stream-string s))))
   (:deserialize
@@ -202,6 +220,10 @@
      (dolist (elem- _object_locations)
      (send elem- :deserialize buf ptr-) (incf ptr- (send elem- :serialization-length))
      ))
+   ;; string _episode_status
+     (let (n) (setq n (sys::peek buf ptr- :integer)) (incf ptr- 4) (setq _episode_status (subseq buf ptr- (+ ptr- n))) (incf ptr- n))
+   ;; float32 _pause_duration
+     (setq _pause_duration (sys::peek buf ptr- :float)) (incf ptr- 4)
    ;;
    self)
   )
@@ -210,7 +232,7 @@
   :super ros::object
   :slots ())
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
+(setf (get deepracer_simulation_environment::VideoMetricsSrv :md5sum-) "bdf8a82e025237227055893ab956222e")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :datatype-) "deepracer_simulation_environment/VideoMetricsSrv")
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :request) deepracer_simulation_environment::VideoMetricsSrvRequest)
 (setf (get deepracer_simulation_environment::VideoMetricsSrv :response) deepracer_simulation_environment::VideoMetricsSrvResponse)
@@ -218,7 +240,7 @@
 (defmethod deepracer_simulation_environment::VideoMetricsSrvRequest
   (:response () (instance deepracer_simulation_environment::VideoMetricsSrvResponse :init)))
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :md5sum-) "bdf8a82e025237227055893ab956222e")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :datatype-) "deepracer_simulation_environment/VideoMetricsSrvRequest")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvRequest :definition-)
       "---
@@ -233,6 +255,8 @@ bool done
 float32 x
 float32 y
 geometry_msgs/Point32[] object_locations
+string episode_status
+float32 pause_duration
 
 ================================================================================
 MSG: geometry_msgs/Point32
@@ -248,7 +272,7 @@ float32 x
 float32 y
 ")
 
-(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "ccf1b22780e2ca6fb64b60963df11d26")
+(setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :md5sum-) "bdf8a82e025237227055893ab956222e")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :datatype-) "deepracer_simulation_environment/VideoMetricsSrvResponse")
 (setf (get deepracer_simulation_environment::VideoMetricsSrvResponse :definition-)
       "---
@@ -263,6 +287,8 @@ bool done
 float32 x
 float32 y
 geometry_msgs/Point32[] object_locations
+string episode_status
+float32 pause_duration
 
 ================================================================================
 MSG: geometry_msgs/Point32
@@ -280,6 +306,6 @@ float32 y
 
 
 
-(provide :deepracer_simulation_environment/VideoMetricsSrv "ccf1b22780e2ca6fb64b60963df11d26")
+(provide :deepracer_simulation_environment/VideoMetricsSrv "bdf8a82e025237227055893ab956222e")
 
 

@@ -35,7 +35,9 @@ struct VideoMetricsSrvResponse_
     , done(false)
     , x(0.0)
     , y(0.0)
-    , object_locations()  {
+    , object_locations()
+    , episode_status()
+    , pause_duration(0.0)  {
     }
   VideoMetricsSrvResponse_(const ContainerAllocator& _alloc)
     : lap_counter(0.0)
@@ -48,7 +50,9 @@ struct VideoMetricsSrvResponse_
     , done(false)
     , x(0.0)
     , y(0.0)
-    , object_locations(_alloc)  {
+    , object_locations(_alloc)
+    , episode_status(_alloc)
+    , pause_duration(0.0)  {
   (void)_alloc;
     }
 
@@ -86,6 +90,12 @@ struct VideoMetricsSrvResponse_
 
    typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _object_locations_type;
   _object_locations_type object_locations;
+
+   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _episode_status_type;
+  _episode_status_type episode_status;
+
+   typedef float _pause_duration_type;
+  _pause_duration_type pause_duration;
 
 
 
@@ -165,12 +175,12 @@ struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Cont
 {
   static const char* value()
   {
-    return "ccf1b22780e2ca6fb64b60963df11d26";
+    return "bdf8a82e025237227055893ab956222e";
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator>&) { return value(); }
-  static const uint64_t static_value1 = 0xccf1b22780e2ca6fULL;
-  static const uint64_t static_value2 = 0xb64b60963df11d26ULL;
+  static const uint64_t static_value1 = 0xbdf8a82e02523722ULL;
+  static const uint64_t static_value2 = 0x7055893ab956222eULL;
 };
 
 template<class ContainerAllocator>
@@ -200,6 +210,8 @@ bool done\n\
 float32 x\n\
 float32 y\n\
 geometry_msgs/Point32[] object_locations\n\
+string episode_status\n\
+float32 pause_duration\n\
 \n\
 ================================================================================\n\
 MSG: geometry_msgs/Point32\n\
@@ -243,6 +255,8 @@ namespace serialization
       stream.next(m.x);
       stream.next(m.y);
       stream.next(m.object_locations);
+      stream.next(m.episode_status);
+      stream.next(m.pause_duration);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -289,6 +303,10 @@ struct Printer< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Con
       s << indent;
       Printer< ::geometry_msgs::Point32_<ContainerAllocator> >::stream(s, indent + "    ", v.object_locations[i]);
     }
+    s << indent << "episode_status: ";
+    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.episode_status);
+    s << indent << "pause_duration: ";
+    Printer<float>::stream(s, indent + "  ", v.pause_duration);
   }
 };
 

@@ -10,3 +10,5 @@ bool done
 float32 x
 float32 y
 geometry_msgs/Point32[] object_locations
+string episode_status
+float32 pause_duration

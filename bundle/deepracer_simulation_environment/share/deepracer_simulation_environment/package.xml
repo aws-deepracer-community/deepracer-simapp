@@ -38,6 +38,7 @@
   <exec_depend>python-numpy</exec_depend>
   <exec_depend>python-boto3-pip</exec_depend>
   <exec_depend>python-imaging</exec_depend>
+  <exec_depend>python-jsonschema</exec_depend>
 
   <test_depend>python-pytest</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
