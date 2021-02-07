@@ -162,18 +162,15 @@ index 866fe8a..cf0873a 100644
                  self.call_memory('store', transition)
  
 diff --git a/rl_coach/agents/clipped_ppo_agent.py b/rl_coach/agents/clipped_ppo_agent.py
-index cc29f33..0f34745 100644
+index cc29f33..4f1a7d9 100644
 --- a/rl_coach/agents/clipped_ppo_agent.py
 +++ b/rl_coach/agents/clipped_ppo_agent.py
-@@ -182,7 +182,10 @@ class ClippedPPOAgent(ActorCriticAgent):
+@@ -182,7 +182,7 @@ class ClippedPPOAgent(ActorCriticAgent):
              screen.warning("WARNING: The requested policy gradient rescaler is not available")
  
          # standardize
 -        advantages = (advantages - np.mean(advantages)) / np.std(advantages)
-+        advantages_std = np.std(advantages)
-+        advantages_zero_mean = advantages - np.mean(advantages)
-+
-+        advantages = advantages_zero_mean / float(advantages_std) if advantages_std != 0.0 else advantages_zero_mean
++        advantages = (advantages - np.mean(advantages)) / (np.std(advantages) + 1e-8)
  
          for transition, advantage, value_target in zip(batch.transitions, advantages, value_targets):
              transition.info['advantage'] = advantage
@@ -251,7 +248,7 @@ index 8821ac6..fc0b3ac 100644
          self.num_heads_per_network = 1 if self.network_parameters.use_separate_networks_per_head else \
              len(self.network_parameters.heads_parameters)
 diff --git a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
-index 63f95a3..0cd49e1 100644
+index 63f95a3..d476c10 100644
 --- a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
 +++ b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
 @@ -25,6 +25,11 @@ from rl_coach.spaces import BoxActionSpace, DiscreteActionSpace
@@ -276,21 +273,29 @@ index 63f95a3..0cd49e1 100644
  
          # define the distributions for the policy and the old policy
          self.policy_distribution = tf.contrib.distributions.Categorical(probs=self.policy_mean)
-diff --git a/rl_coach/architectures/tensorflow_components/layers.py b/rl_coach/architectures/tensorflow_components/layers.py
-index 91c0c30..bd17a0c 100644
---- a/rl_coach/architectures/tensorflow_components/layers.py
-+++ b/rl_coach/architectures/tensorflow_components/layers.py
-@@ -153,7 +153,7 @@ class BatchnormActivationDropout(layers.BatchnormActivationDropout):
-     @staticmethod
-     @reg_to_tf_instance(layers.BatchnormActivationDropout)
-     def to_tf_instance(base: layers.BatchnormActivationDropout):
--        return BatchnormActivationDropout, BatchnormActivationDropout(
-+        return BatchnormActivationDropout(
-                 batchnorm=base.batchnorm,
-                 activation_function=base.activation_function,
-                 dropout_rate=base.dropout_rate)
+@@ -123,9 +129,8 @@ class PPOHead(Head):
+         self.old_policy_std = tf.placeholder(tf.float32, [None, num_actions], "old_policy_std")
+ 
+         self.input = [self.actions, self.old_policy_mean, self.old_policy_std]
+-        self.policy_mean = self.dense_layer(num_actions)(input_layer, name='policy_mean',
+-                                           kernel_initializer=normalized_columns_initializer(0.01))
+-
++        self.policy_mean = tf.identity(self.dense_layer(num_actions)(input_layer, name='policy_mean',
++                                           kernel_initializer=normalized_columns_initializer(0.01)), name="policy")
+         # for local networks in distributed settings, we need to move variables we create manually to the
+         # tf.GraphKeys.LOCAL_VARIABLES collection, since the variable scope custom getter which is set in
+         # Architecture does not apply to them
+@@ -135,7 +140,7 @@ class PPOHead(Head):
+         else:
+             self.policy_logstd = tf.Variable(np.zeros((1, num_actions)), dtype='float32', name="policy_log_std")
+ 
+-        self.policy_std = tf.tile(tf.exp(self.policy_logstd), [tf.shape(input_layer)[0], 1], name='policy_std')
++        self.policy_std = tf.tile(tf.exp(tf.clip_by_value(self.policy_logstd, -20.0, 3.0)), [tf.shape(input_layer)[0], 1], name='policy_std')
+ 
+         # define the distributions for the policy and the old policy
+         self.policy_distribution = tf.contrib.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std + eps)
 diff --git a/rl_coach/architectures/tensorflow_components/savers.py b/rl_coach/architectures/tensorflow_components/savers.py
-index 531c523..78b4e1c 100644
+index 531c523..4bde2ad 100644
 --- a/rl_coach/architectures/tensorflow_components/savers.py
 +++ b/rl_coach/architectures/tensorflow_components/savers.py
 @@ -28,11 +28,11 @@ class GlobalVariableSaver(Saver):
@@ -303,7 +308,7 @@ index 531c523..78b4e1c 100644
          # target network is never saved or restored directly from checkpoint, so we are removing all its variables from the list
          # the target network would be synched back from the online network in graph_manager.improve(...), at the beginning of the run flow.
 -        self._variables = [v for v in self._variables if "/target" not in v.name]
-+        self._variables = [v for v in self._variables if ('/target' not in v.name and name.split('/')[0] in v.name)]
++        self._variables = [v for v in self._variables if ('/target' not in v.name and name.split('/')[0]+'/'  in v.name)]
  
          # Using a placeholder to update the variable during restore to avoid memory leak.
          # Ref: https://github.com/tensorflow/tensorflow/issues/4151
