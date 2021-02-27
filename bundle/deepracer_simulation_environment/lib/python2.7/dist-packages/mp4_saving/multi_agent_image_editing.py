@@ -46,7 +46,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
         self.is_racing = rospy.get_param("VIDEO_JOB_TYPE", "") == "RACING"
         self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
         self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
-        self._total_laps = rospy.get_param("NUMBER_OF_TRIALS", 0)
+        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
 
         # The track image as iconography
         self.track_icongraphy_img = utils.get_track_iconography_image()
@@ -92,7 +92,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
                                                            font_shadow_color=RaceCarColorToRGB.Black.value)
                 # Lap Counter
                 loc_y += 30
-                current_lap = int(mp4_video_metrics_info[i].lap_counter) + 1
+                current_lap = min(int(mp4_video_metrics_info[i].lap_counter) + 1, self._total_laps)
                 lap_counter_text = "{}/{}".format(current_lap, self._total_laps)
                 major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
                                                            loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,

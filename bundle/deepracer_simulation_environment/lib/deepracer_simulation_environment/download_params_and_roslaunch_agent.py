@@ -21,12 +21,13 @@ from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 from markov.log_handler.exception_handler import log_and_exit
-from markov.s3.files.model_metadata import ModelMetadata
-from markov.s3.files.yaml_file import YamlFile
-from markov.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
-                                 YAML_LOCAL_PATH_FORMAT,
-                                 AgentType, YamlKey, ModelMetadataKeys)
-from markov.s3.utils import get_s3_key
+from markov.boto.s3.files.model_metadata import ModelMetadata
+from markov.boto.s3.files.yaml_file import YamlFile
+from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_METADATA_S3_POSTFIX,
+                                      YAML_LOCAL_PATH_FORMAT,
+                                      AgentType, YamlKey, ModelMetadataKeys)
+from markov.boto.s3.utils import get_s3_key
+ 
  
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
 WAIT_FOR_ROBOMAKER_TIME = 10
@@ -59,6 +60,9 @@ def main():
         elif AgentType.EVALUATION.value in launch_name:
             # For eval, launch_name is "evaluation_rl_agent.launch"
             agent_type = AgentType.EVALUATION.value
+        elif AgentType.VIRTUAL_EVENT.value in launch_name:
+            # For virtual event, launch_name is "virtual_event_rl_agent.launch"
+            agent_type = AgentType.VIRTUAL_EVENT.value            
         else:
             log_and_exit("Unknown agent type in launch file: {}".format(launch_name),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -73,42 +77,52 @@ def main():
                              s3_endpoint_url=s3_endpoint_url,
                              local_path=YAML_LOCAL_PATH_FORMAT.format(s3_yaml_name))
         yaml_file.get_yaml_values()
-        # List of racecar names that should include second camera while launching
-        racecars_with_stereo_cameras = list()
-        # List of racecar names that should include lidar while launching
-        racecars_with_lidars = list()
-        # List of SimApp versions
-        simapp_versions = list()
 
-        for agent_index, model_s3_bucket in enumerate(yaml_file.model_s3_buckets):
-            racecar_name = 'racecar_' + str(agent_index) \
-                if yaml_file.is_multicar else 'racecar'
-            json_key = yaml_file.model_metadata_s3_keys[agent_index]
+        if not agent_type == AgentType.VIRTUAL_EVENT.value:
+            # List of racecar names that should include second camera while launching
+            racecars_with_stereo_cameras = list()
+            # List of racecar names that should include lidar while launching
+            racecars_with_lidars = list()
+            # List of SimApp versions
+            simapp_versions = list()
+            for agent_index, model_s3_bucket in enumerate(yaml_file.model_s3_buckets):
+                racecar_name = 'racecar_{}'.format(agent_index) \
+                    if yaml_file.is_multicar else 'racecar'
+                json_key = yaml_file.model_metadata_s3_keys[agent_index]
 
-            # download model metadata
-            model_metadata = ModelMetadata(bucket=model_s3_bucket,
-                                           s3_key=json_key,
-                                           region_name=s3_region,
-                                           s3_endpoint_url=s3_endpoint_url,
-                                           local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
-            model_metadata_info = model_metadata.get_model_metadata_info()
-            sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
-            simapp_version = model_metadata_info[ModelMetadataKeys.VERSION.value]           
+                # download model metadata
+                model_metadata = ModelMetadata(bucket=model_s3_bucket,
+                                               s3_key=json_key,
+                                               region_name=s3_region,
+                                               s3_endpoint_url=s3_endpoint_url,
+                                               local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
+                model_metadata_info = model_metadata.get_model_metadata_info()
+                sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
+                simapp_version = model_metadata_info[ModelMetadataKeys.VERSION.value]
 
-            simapp_versions.append(str(simapp_version))
-            if Input.STEREO.value in sensors:
-                racecars_with_stereo_cameras.append(racecar_name)
-            if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
-                racecars_with_lidars.append(racecar_name)
+                simapp_versions.append(str(simapp_version))
+                if Input.STEREO.value in sensors:
+                    racecars_with_stereo_cameras.append(racecar_name)
+                if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
+                    racecars_with_lidars.append(racecar_name)
 
-        cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
-                        "local_yaml_path:={} ".format(yaml_file.local_path),
-                        "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
-                        "racecars_with_lidars:={} ".format(','.join(racecars_with_lidars)),
-                        "multicar:={} ".format(yaml_file.is_multicar),
-                        "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
-                        "simapp_versions:={} ".format(','.join(simapp_versions)),
-                        "f1:={}".format(yaml_file.is_f1)))]
+            cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
+                            "local_yaml_path:={} ".format(yaml_file.local_path),
+                            "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
+                            "racecars_with_lidars:={} ".format(','.join(racecars_with_lidars)),
+                            "multicar:={} ".format(yaml_file.is_multicar),
+                            "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
+                            "simapp_versions:={} ".format(','.join(simapp_versions)),
+                            "f1:={}".format(yaml_file.is_f1)))]
+        else:
+            # Note: SimApp Version is default to 3.0: virtual event only have a single body_shell_types
+            cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
+                            "local_yaml_path:={} ".format(yaml_file.local_path),
+                            "body_shell_types:={} ".format(yaml_file.body_shell_types),
+                            "simapp_versions:={} ".format('3.0'),
+                            "f1:={} ".format(yaml_file.is_f1),
+                            "kinesis_webrtc_signaling_channel_name:={}".format(yaml_file.kinesis_webrtc_signaling_channel_name)))]
+
         Popen(cmd, shell=True, executable="/bin/bash")
     
     except botocore.exceptions.ClientError as ex:

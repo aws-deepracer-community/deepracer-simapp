@@ -85,6 +85,8 @@ class VideoMetricsSrvResponse {
       this.x = null;
       this.y = null;
       this.object_locations = null;
+      this.episode_status = null;
+      this.pause_duration = null;
     }
     else {
       if (initObj.hasOwnProperty('lap_counter')) {
@@ -153,6 +155,18 @@ class VideoMetricsSrvResponse {
       else {
         this.object_locations = [];
       }
+      if (initObj.hasOwnProperty('episode_status')) {
+        this.episode_status = initObj.episode_status
+      }
+      else {
+        this.episode_status = '';
+      }
+      if (initObj.hasOwnProperty('pause_duration')) {
+        this.pause_duration = initObj.pause_duration
+      }
+      else {
+        this.pause_duration = 0.0;
+      }
     }
   }
 
@@ -184,6 +198,10 @@ class VideoMetricsSrvResponse {
     obj.object_locations.forEach((val) => {
       bufferOffset = geometry_msgs.msg.Point32.serialize(val, buffer, bufferOffset);
     });
+    // Serialize message field [episode_status]
+    bufferOffset = _serializer.string(obj.episode_status, buffer, bufferOffset);
+    // Serialize message field [pause_duration]
+    bufferOffset = _serializer.float32(obj.pause_duration, buffer, bufferOffset);
     return bufferOffset;
   }
 
@@ -218,13 +236,18 @@ class VideoMetricsSrvResponse {
     for (let i = 0; i < len; ++i) {
       data.object_locations[i] = geometry_msgs.msg.Point32.deserialize(buffer, bufferOffset)
     }
+    // Deserialize message field [episode_status]
+    data.episode_status = _deserializer.string(buffer, bufferOffset);
+    // Deserialize message field [pause_duration]
+    data.pause_duration = _deserializer.float32(buffer, bufferOffset);
     return data;
   }
 
   static getMessageSize(object) {
     let length = 0;
     length += 12 * object.object_locations.length;
-    return length + 41;
+    length += object.episode_status.length;
+    return length + 49;
   }
 
   static datatype() {
@@ -234,7 +257,7 @@ class VideoMetricsSrvResponse {
 
   static md5sum() {
     //Returns md5sum for a message object
-    return 'ccf1b22780e2ca6fb64b60963df11d26';
+    return 'bdf8a82e025237227055893ab956222e';
   }
 
   static messageDefinition() {
@@ -251,6 +274,8 @@ class VideoMetricsSrvResponse {
     float32 x
     float32 y
     geometry_msgs/Point32[] object_locations
+    string episode_status
+    float32 pause_duration
     
     ================================================================================
     MSG: geometry_msgs/Point32
@@ -354,6 +379,20 @@ class VideoMetricsSrvResponse {
       resolved.object_locations = []
     }
 
+    if (msg.episode_status !== undefined) {
+      resolved.episode_status = msg.episode_status;
+    }
+    else {
+      resolved.episode_status = ''
+    }
+
+    if (msg.pause_duration !== undefined) {
+      resolved.pause_duration = msg.pause_duration;
+    }
+    else {
+      resolved.pause_duration = 0.0
+    }
+
     return resolved;
     }
 };
@@ -361,6 +400,6 @@ class VideoMetricsSrvResponse {
 module.exports = {
   Request: VideoMetricsSrvRequest,
   Response: VideoMetricsSrvResponse,
-  md5sum() { return 'ccf1b22780e2ca6fb64b60963df11d26'; },
+  md5sum() { return 'bdf8a82e025237227055893ab956222e'; },
   datatype() { return 'deepracer_simulation_environment/VideoMetricsSrv'; }
 };

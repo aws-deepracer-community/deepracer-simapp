@@ -67,6 +67,4 @@
     <arg name="racecar_name" value="$(arg racecar_name)" />
   </include>
 
-  
-
 </launch>

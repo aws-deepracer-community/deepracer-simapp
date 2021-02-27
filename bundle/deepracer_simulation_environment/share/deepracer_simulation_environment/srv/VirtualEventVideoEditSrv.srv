@@ -1,0 +1,4 @@
+string display_name
+string racecar_color
+---
+bool success

@@ -32,10 +32,10 @@
   "deepracer_simulation_environment/VideoMetricsSrvRequest")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<VideoMetricsSrv-request>)))
   "Returns md5sum for a message object of type '<VideoMetricsSrv-request>"
-  "ccf1b22780e2ca6fb64b60963df11d26")
+  "bdf8a82e025237227055893ab956222e")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'VideoMetricsSrv-request)))
   "Returns md5sum for a message object of type 'VideoMetricsSrv-request"
-  "ccf1b22780e2ca6fb64b60963df11d26")
+  "bdf8a82e025237227055893ab956222e")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<VideoMetricsSrv-request>)))
   "Returns full string definition for message of type '<VideoMetricsSrv-request>"
   (cl:format cl:nil "~%~%"))
@@ -106,7 +106,17 @@
     :reader object_locations
     :initarg :object_locations
     :type (cl:vector geometry_msgs-msg:Point32)
-   :initform (cl:make-array 0 :element-type 'geometry_msgs-msg:Point32 :initial-element (cl:make-instance 'geometry_msgs-msg:Point32))))
+   :initform (cl:make-array 0 :element-type 'geometry_msgs-msg:Point32 :initial-element (cl:make-instance 'geometry_msgs-msg:Point32)))
+   (episode_status
+    :reader episode_status
+    :initarg :episode_status
+    :type cl:string
+    :initform "")
+   (pause_duration
+    :reader pause_duration
+    :initarg :pause_duration
+    :type cl:float
+    :initform 0.0))
 )
 
 (cl:defclass VideoMetricsSrv-response (<VideoMetricsSrv-response>)
@@ -171,6 +181,16 @@
 (cl:defmethod object_locations-val ((m <VideoMetricsSrv-response>))
   (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:object_locations-val is deprecated.  Use deepracer_simulation_environment-srv:object_locations instead.")
   (object_locations m))
+
+(cl:ensure-generic-function 'episode_status-val :lambda-list '(m))
+(cl:defmethod episode_status-val ((m <VideoMetricsSrv-response>))
+  (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:episode_status-val is deprecated.  Use deepracer_simulation_environment-srv:episode_status instead.")
+  (episode_status m))
+
+(cl:ensure-generic-function 'pause_duration-val :lambda-list '(m))
+(cl:defmethod pause_duration-val ((m <VideoMetricsSrv-response>))
+  (roslisp-msg-protocol:msg-deprecation-warning "Using old-style slot reader deepracer_simulation_environment-srv:pause_duration-val is deprecated.  Use deepracer_simulation_environment-srv:pause_duration instead.")
+  (pause_duration m))
 (cl:defmethod roslisp-msg-protocol:serialize ((msg <VideoMetricsSrv-response>) ostream)
   "Serializes a message object of type '<VideoMetricsSrv-response>"
   (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'lap_counter))))
@@ -227,6 +247,17 @@
     (cl:write-byte (cl:ldb (cl:byte 8 24) __ros_arr_len) ostream))
   (cl:map cl:nil #'(cl:lambda (ele) (roslisp-msg-protocol:serialize ele ostream))
    (cl:slot-value msg 'object_locations))
+  (cl:let ((__ros_str_len (cl:length (cl:slot-value msg 'episode_status))))
+    (cl:write-byte (cl:ldb (cl:byte 8 0) __ros_str_len) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 8) __ros_str_len) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 16) __ros_str_len) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 24) __ros_str_len) ostream))
+  (cl:map cl:nil #'(cl:lambda (c) (cl:write-byte (cl:char-code c) ostream)) (cl:slot-value msg 'episode_status))
+  (cl:let ((bits (roslisp-utils:encode-single-float-bits (cl:slot-value msg 'pause_duration))))
+    (cl:write-byte (cl:ldb (cl:byte 8 0) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 8) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 16) bits) ostream)
+    (cl:write-byte (cl:ldb (cl:byte 8 24) bits) ostream))
 )
 (cl:defmethod roslisp-msg-protocol:deserialize ((msg <VideoMetricsSrv-response>) istream)
   "Deserializes a message object of type '<VideoMetricsSrv-response>"
@@ -295,6 +326,20 @@
     (cl:dotimes (i __ros_arr_len)
     (cl:setf (cl:aref vals i) (cl:make-instance 'geometry_msgs-msg:Point32))
   (roslisp-msg-protocol:deserialize (cl:aref vals i) istream))))
+    (cl:let ((__ros_str_len 0))
+      (cl:setf (cl:ldb (cl:byte 8 0) __ros_str_len) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 8) __ros_str_len) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 16) __ros_str_len) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 24) __ros_str_len) (cl:read-byte istream))
+      (cl:setf (cl:slot-value msg 'episode_status) (cl:make-string __ros_str_len))
+      (cl:dotimes (__ros_str_idx __ros_str_len msg)
+        (cl:setf (cl:char (cl:slot-value msg 'episode_status) __ros_str_idx) (cl:code-char (cl:read-byte istream)))))
+    (cl:let ((bits 0))
+      (cl:setf (cl:ldb (cl:byte 8 0) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 8) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 16) bits) (cl:read-byte istream))
+      (cl:setf (cl:ldb (cl:byte 8 24) bits) (cl:read-byte istream))
+    (cl:setf (cl:slot-value msg 'pause_duration) (roslisp-utils:decode-single-float-bits bits)))
   msg
 )
 (cl:defmethod roslisp-msg-protocol:ros-datatype ((msg (cl:eql '<VideoMetricsSrv-response>)))
@@ -305,16 +350,16 @@
   "deepracer_simulation_environment/VideoMetricsSrvResponse")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql '<VideoMetricsSrv-response>)))
   "Returns md5sum for a message object of type '<VideoMetricsSrv-response>"
-  "ccf1b22780e2ca6fb64b60963df11d26")
+  "bdf8a82e025237227055893ab956222e")
 (cl:defmethod roslisp-msg-protocol:md5sum ((type (cl:eql 'VideoMetricsSrv-response)))
   "Returns md5sum for a message object of type 'VideoMetricsSrv-response"
-  "ccf1b22780e2ca6fb64b60963df11d26")
+  "bdf8a82e025237227055893ab956222e")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<VideoMetricsSrv-response>)))
   "Returns full string definition for message of type '<VideoMetricsSrv-response>"
-  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%float32 x~%float32 y~%geometry_msgs/Point32[] object_locations~%~%================================================================================~%MSG: geometry_msgs/Point32~%# This contains the position of a point in free space(with 32 bits of precision).~%# It is recommeded to use Point wherever possible instead of Point32.  ~%# ~%# This recommendation is to promote interoperability.  ~%#~%# This message is designed to take up less space when sending~%# lots of points at once, as in the case of a PointCloud.  ~%~%float32 x~%float32 y~%float32 z~%~%"))
+  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%float32 x~%float32 y~%geometry_msgs/Point32[] object_locations~%string episode_status~%float32 pause_duration~%~%================================================================================~%MSG: geometry_msgs/Point32~%# This contains the position of a point in free space(with 32 bits of precision).~%# It is recommeded to use Point wherever possible instead of Point32.  ~%# ~%# This recommendation is to promote interoperability.  ~%#~%# This message is designed to take up less space when sending~%# lots of points at once, as in the case of a PointCloud.  ~%~%float32 x~%float32 y~%float32 z~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'VideoMetricsSrv-response)))
   "Returns full string definition for message of type 'VideoMetricsSrv-response"
-  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%float32 x~%float32 y~%geometry_msgs/Point32[] object_locations~%~%================================================================================~%MSG: geometry_msgs/Point32~%# This contains the position of a point in free space(with 32 bits of precision).~%# It is recommeded to use Point wherever possible instead of Point32.  ~%# ~%# This recommendation is to promote interoperability.  ~%#~%# This message is designed to take up less space when sending~%# lots of points at once, as in the case of a PointCloud.  ~%~%float32 x~%float32 y~%float32 z~%~%"))
+  (cl:format cl:nil "float32 lap_counter~%float32 completion_percentage~%int32 reset_counter~%float32 throttle~%float32 steering~%float32 best_lap_time~%float32 total_evaluation_time~%bool done~%float32 x~%float32 y~%geometry_msgs/Point32[] object_locations~%string episode_status~%float32 pause_duration~%~%================================================================================~%MSG: geometry_msgs/Point32~%# This contains the position of a point in free space(with 32 bits of precision).~%# It is recommeded to use Point wherever possible instead of Point32.  ~%# ~%# This recommendation is to promote interoperability.  ~%#~%# This message is designed to take up less space when sending~%# lots of points at once, as in the case of a PointCloud.  ~%~%float32 x~%float32 y~%float32 z~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <VideoMetricsSrv-response>))
   (cl:+ 0
      4
@@ -328,6 +373,8 @@
      4
      4
      4 (cl:reduce #'cl:+ (cl:slot-value msg 'object_locations) :key #'(cl:lambda (ele) (cl:declare (cl:ignorable ele)) (cl:+ (roslisp-msg-protocol:serialization-length ele))))
+     4 (cl:length (cl:slot-value msg 'episode_status))
+     4
 ))
 (cl:defmethod roslisp-msg-protocol:ros-message-to-list ((msg <VideoMetricsSrv-response>))
   "Converts a ROS message object to a list"
@@ -343,6 +390,8 @@
     (cl:cons ':x (x msg))
     (cl:cons ':y (y msg))
     (cl:cons ':object_locations (object_locations msg))
+    (cl:cons ':episode_status (episode_status msg))
+    (cl:cons ':pause_duration (pause_duration msg))
 ))
 (cl:defmethod roslisp-msg-protocol:service-request-type ((msg (cl:eql 'VideoMetricsSrv)))
   'VideoMetricsSrv-request)
