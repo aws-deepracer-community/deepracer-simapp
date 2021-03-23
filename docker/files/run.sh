@@ -37,14 +37,29 @@ fi
 # Check if we have an RTF_OVERRIDE to change the RTF - change the world file.
 if [[ -n "${RTF_OVERRIDE}" ]]; then
 	echo "Setting RTF to ${RTF_OVERRIDE} for ${WORLD_NAME}"
-	RTF_UPDATE_RATE=$(awk -v rtf=$RTF_OVERRIDE 'BEGIN{ update_rate=rtf*1000; printf "%0.6f", update_rate}')
+
+	# If manually defined RTF_UPDATE_RATE, use that value, else compute it.
+	if [[ -n "${RTF_UPDATE_RATE}" ]]; then
+		echo "Setting RTF_UPDATE_RATE to ${RTF_UPDATE_RATE} for ${WORLD_NAME}"
+	else
+		RTF_UPDATE_RATE=$(awk -v rtf=$RTF_OVERRIDE 'BEGIN{ update_rate=rtf*1000; printf "%0.6f", update_rate}')
+	fi
+
+	# If manually defined RTF_MAX_STEP_SIZE, use that value, else use default.
+	if [[ -n "${RTF_MAX_STEP_SIZE}" ]]; then
+		echo "Setting RTF_MAX_STEP_SIZE to ${RTF_MAX_STEP_SIZE} for ${WORLD_NAME}"
+	else
+		RTF_MAX_STEP_SIZE=0.001000
+	fi
+
 	WORLD_FILE="/opt/install/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
-	xmlstarlet ed -L -s '/sdf/world' -t elem -n physics $WORLD_FILE 
-	xmlstarlet ed -L -a '/sdf/world/physics' -t attr -n type -v ode $WORLD_FILE 
-	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n max_step_size -v 0.001000 $WORLD_FILE 
-	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n real_time_factor -v ${RTF_OVERRIDE} $WORLD_FILE 
-	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n real_time_update_rate -v ${RTF_UPDATE_RATE} $WORLD_FILE 
-	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n gravity -v '0.000000 0.000000 -9.800000' $WORLD_FILE 
+
+	xmlstarlet ed -L -s '/sdf/world' -t elem -n physics $WORLD_FILE
+	xmlstarlet ed -L -a '/sdf/world/physics' -t attr -n type -v ode $WORLD_FILE
+	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n max_step_size -v ${RTF_MAX_STEP_SIZE} $WORLD_FILE
+	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n real_time_factor -v ${RTF_OVERRIDE} $WORLD_FILE
+	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n real_time_update_rate -v ${RTF_UPDATE_RATE} $WORLD_FILE
+	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n gravity -v '0.000000 0.000000 -9.800000' $WORLD_FILE
 	xmlstarlet sel -t -c '/sdf/world/physics' $WORLD_FILE
 fi
 
