@@ -115,11 +115,11 @@ def main():
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={}".format(yaml_file.is_f1)))]
         else:
-            # Note: SimApp Version is default to 3.0: virtual event only have a single body_shell_types
+            # Note: SimApp Version is default to 4.0: virtual event only have a single body_shell_types
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
                             "body_shell_types:={} ".format(yaml_file.body_shell_types),
-                            "simapp_versions:={} ".format('3.0'),
+                            "simapp_versions:={} ".format('4.0'),                            
                             "f1:={} ".format(yaml_file.is_f1),
                             "kinesis_webrtc_signaling_channel_name:={}".format(yaml_file.kinesis_webrtc_signaling_channel_name)))]
 
