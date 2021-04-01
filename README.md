@@ -14,9 +14,18 @@ In most cases it will be sufficient to use one of our pre-built images which use
 
 Available tags are:
 
+### Version 4
+
+Version 4 is the current development version, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
+
+| Version  | Comment         | AVX      | AVX2     | GPU      |
+| -------- | -------------- | -------- | -------- | -------- | 
+| 4.0.0-dev   | Upgrade to Physics 4  |  `4.0.0-dev-cpu-avx` `4.0.0-dev-cpu-gl-avx`  | `4.0.0-dev-cpu-avx2` `4.0.0-dev-cpu-gl-avx` | `4.0.0-dev-gpu` `4.0.0-dev-gpu-gl` |
+| 4.0.1-dev   | April Track  |  `4.0.1-dev-cpu-avx` `4.0.1-dev-cpu-gl-avx`  | `4.0.1-dev-cpu-avx2` `4.0.1-dev-cpu-gl-avx` | `4.0.1-dev-gpu` `4.0.1-dev-gpu-gl` |
+
 ### Version 3
 
-Version 3 is the current version, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
+Version 3 is the stable version, and it is receiving new tracks.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
@@ -29,6 +38,7 @@ Version 3 is the current version, and it is receiving both new tracks as well as
 | 3.1.0   | December features  |  `3.1.0-cpu-avx` `3.1.0-cpu-gl-avx`  | `3.1.0-cpu-avx2` `3.1.0-cpu-gl-avx` | `3.1.0-gpu` `3.1.0-gpu-gl` |
 | 3.1.1   | January features  |  `3.1.1-cpu-avx` `3.1.1-cpu-gl-avx`  | `3.1.1-cpu-avx2` `3.1.1-cpu-gl-avx` | `3.1.1-gpu` `3.1.1-gpu-gl` |
 | 3.1.2   | March Track  |  `3.1.2-cpu-avx` `3.1.2-cpu-gl-avx`  | `3.1.2-cpu-avx2` `3.1.2-cpu-gl-avx` | `3.1.2-gpu` `3.1.2-gpu-gl` |
+| 3.1.3   | April Track  |  `3.1.3-cpu-avx` `3.1.3-cpu-gl-avx`  | `3.1.3-cpu-avx2` `3.1.3-cpu-gl-avx` | `3.1.3-gpu` `3.1.3-gpu-gl` |
 
 ### Version 2
 
