@@ -57,8 +57,8 @@ struct DataType< ::deepracer_msgs::SetVisualPoses > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPosesRequest> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPoses > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPosesRequest> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPoses >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetVisualPosesRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_msgs::SetVisualPosesRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetVisualPosesRequest> should match 
-// service_traits::DataType< ::deepracer_msgs::SetVisualPoses > 
+// service_traits::DataType< ::deepracer_msgs::SetVisualPosesRequest> should match
+// service_traits::DataType< ::deepracer_msgs::SetVisualPoses >
 template<>
 struct DataType< ::deepracer_msgs::SetVisualPosesRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_msgs::SetVisualPosesRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPosesResponse> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPoses > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPosesResponse> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualPoses >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetVisualPosesResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_msgs::SetVisualPosesResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetVisualPosesResponse> should match 
-// service_traits::DataType< ::deepracer_msgs::SetVisualPoses > 
+// service_traits::DataType< ::deepracer_msgs::SetVisualPosesResponse> should match
+// service_traits::DataType< ::deepracer_msgs::SetVisualPoses >
 template<>
 struct DataType< ::deepracer_msgs::SetVisualPosesResponse>
 {

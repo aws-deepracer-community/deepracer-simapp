@@ -11,11 +11,11 @@ class GetLinkStatesRequest(genpy.Message):
   _md5sum = "284df52820947bf6fdad4d9fe2eb3466"
   _type = "deepracer_msgs/GetLinkStatesRequest"
   _has_header = False  # flag to mark the presence of a Header object
-  _full_text = """string[] link_names
-
-string[] reference_frames
-
-
+  _full_text = """string[] link_names          # name of link
+                             # link names are prefixed by model name, e.g. pr2::base_link
+string[] reference_frames    # reference frame of returned information, must be a valid link
+                             # if empty, use inertial (gazebo world) frame
+                             # reference_frame names are prefixed by model name, e.g. pr2::base_link
 """
   __slots__ = ['link_names','reference_frames']
   _slot_types = ['string[]','string[]']
@@ -208,9 +208,9 @@ class GetLinkStatesResponse(genpy.Message):
   _type = "deepracer_msgs/GetLinkStatesResponse"
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """gazebo_msgs/LinkState[] link_states
-bool success
-string status_message
-int8[] status
+bool success                 # return true if get info is successful
+string status_message        # comments if available
+int8[] status                # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================

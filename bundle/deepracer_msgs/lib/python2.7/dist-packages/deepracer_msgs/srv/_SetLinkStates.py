@@ -325,9 +325,9 @@ class SetLinkStatesResponse(genpy.Message):
   _md5sum = "a0af81bf1f7c2eacb2693173f999072a"
   _type = "deepracer_msgs/SetLinkStatesResponse"
   _has_header = False  # flag to mark the presence of a Header object
-  _full_text = """bool success
-string status_message
-int8[] status
+  _full_text = """bool success                # return true if set wrench successful
+string status_message       # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 """
   __slots__ = ['success','status_message','status','messages']

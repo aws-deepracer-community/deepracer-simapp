@@ -82,6 +82,24 @@ ros::message_operations::Printer< ::deepracer_msgs::SetVisualMeshesRequest_<Cont
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator2> & rhs)
+{
+  return lhs.link_names == rhs.link_names &&
+    lhs.visual_names == rhs.visual_names &&
+    lhs.filenames == rhs.filenames &&
+    lhs.scales == rhs.scales &&
+    lhs.block == rhs.block;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_msgs
 
 namespace ros
@@ -89,12 +107,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'gazebo_msgs': ['/opt/ros/kinetic/share/gazebo_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'trajectory_msgs': ['/opt/ros/kinetic/share/trajectory_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -159,25 +171,25 @@ struct Definition< ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator>
 {
   static const char* value()
   {
-    return "string[] link_names\n\
-string[] visual_names\n\
-string[] filenames\n\
-geometry_msgs/Vector3[] scales\n\
-bool block\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Vector3\n\
-# This represents a vector in free space. \n\
-# It is only meant to represent a direction. Therefore, it does not\n\
-# make sense to apply a translation to it (e.g., when applying a \n\
-# generic rigid transformation to a Vector3, tf2 will only apply the\n\
-# rotation). If you want your data to be translatable too, use the\n\
-# geometry_msgs/Point message instead.\n\
-\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-";
+    return "string[] link_names\n"
+"string[] visual_names\n"
+"string[] filenames\n"
+"geometry_msgs/Vector3[] scales\n"
+"bool block\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Vector3\n"
+"# This represents a vector in free space. \n"
+"# It is only meant to represent a direction. Therefore, it does not\n"
+"# make sense to apply a translation to it (e.g., when applying a \n"
+"# generic rigid transformation to a Vector3, tf2 will only apply the\n"
+"# rotation). If you want your data to be translatable too, use the\n"
+"# geometry_msgs/Point message instead.\n"
+"\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+;
   }
 
   static const char* value(const ::deepracer_msgs::SetVisualMeshesRequest_<ContainerAllocator>&) { return value(); }

@@ -57,8 +57,8 @@ struct DataType< ::deepracer_msgs::SetLinkStates > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStatesRequest> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStates > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStatesRequest> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStates >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetLinkStatesRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_msgs::SetLinkStatesRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetLinkStatesRequest> should match 
-// service_traits::DataType< ::deepracer_msgs::SetLinkStates > 
+// service_traits::DataType< ::deepracer_msgs::SetLinkStatesRequest> should match
+// service_traits::DataType< ::deepracer_msgs::SetLinkStates >
 template<>
 struct DataType< ::deepracer_msgs::SetLinkStatesRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_msgs::SetLinkStatesRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStatesResponse> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStates > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStatesResponse> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetLinkStates >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetLinkStatesResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_msgs::SetLinkStatesResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetLinkStatesResponse> should match 
-// service_traits::DataType< ::deepracer_msgs::SetLinkStates > 
+// service_traits::DataType< ::deepracer_msgs::SetLinkStatesResponse> should match
+// service_traits::DataType< ::deepracer_msgs::SetLinkStates >
 template<>
 struct DataType< ::deepracer_msgs::SetLinkStatesResponse>
 {

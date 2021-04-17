@@ -223,9 +223,9 @@ MSG: geometry_msgs/Vector3
 float64 x
 float64 y
 ---
-bool success
-string status_message
-int8[] status
+bool success                  # return true if setting state successful
+string status_message         # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 ")
 
@@ -284,9 +284,9 @@ MSG: geometry_msgs/Vector3
 float64 x
 float64 y
 ---
-bool success
-string status_message
-int8[] status
+bool success                  # return true if setting state successful
+string status_message         # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 ")
 

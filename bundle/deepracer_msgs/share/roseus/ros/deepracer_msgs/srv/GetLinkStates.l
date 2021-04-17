@@ -209,16 +209,16 @@
 (setf (get deepracer_msgs::GetLinkStatesRequest :md5sum-) "1bc3add906c1ea529af2b9b4ae208741")
 (setf (get deepracer_msgs::GetLinkStatesRequest :datatype-) "deepracer_msgs/GetLinkStatesRequest")
 (setf (get deepracer_msgs::GetLinkStatesRequest :definition-)
-      "string[] link_names
-
-string[] reference_frames
-
-
+      "string[] link_names          # name of link
+                             # link names are prefixed by model name, e.g. pr2::base_link
+string[] reference_frames    # reference frame of returned information, must be a valid link
+                             # if empty, use inertial (gazebo world) frame
+                             # reference_frame names are prefixed by model name, e.g. pr2::base_link
 ---
 gazebo_msgs/LinkState[] link_states
-bool success
-string status_message
-int8[] status
+bool success                 # return true if get info is successful
+string status_message        # comments if available
+int8[] status                # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================
@@ -274,16 +274,16 @@ float64 y
 (setf (get deepracer_msgs::GetLinkStatesResponse :md5sum-) "1bc3add906c1ea529af2b9b4ae208741")
 (setf (get deepracer_msgs::GetLinkStatesResponse :datatype-) "deepracer_msgs/GetLinkStatesResponse")
 (setf (get deepracer_msgs::GetLinkStatesResponse :definition-)
-      "string[] link_names
-
-string[] reference_frames
-
-
+      "string[] link_names          # name of link
+                             # link names are prefixed by model name, e.g. pr2::base_link
+string[] reference_frames    # reference frame of returned information, must be a valid link
+                             # if empty, use inertial (gazebo world) frame
+                             # reference_frame names are prefixed by model name, e.g. pr2::base_link
 ---
 gazebo_msgs/LinkState[] link_states
-bool success
-string status_message
-int8[] status
+bool success                 # return true if get info is successful
+string status_message        # comments if available
+int8[] status                # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================

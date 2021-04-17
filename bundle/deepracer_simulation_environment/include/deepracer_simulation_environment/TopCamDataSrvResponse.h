@@ -76,6 +76,23 @@ ros::message_operations::Printer< ::deepracer_simulation_environment::TopCamData
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_simulation_environment::TopCamDataSrvResponse_<ContainerAllocator1> & lhs, const ::deepracer_simulation_environment::TopCamDataSrvResponse_<ContainerAllocator2> & rhs)
+{
+  return lhs.horizontal_fov == rhs.horizontal_fov &&
+    lhs.padding_pct == rhs.padding_pct &&
+    lhs.image_width == rhs.image_width &&
+    lhs.image_height == rhs.image_height;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_simulation_environment::TopCamDataSrvResponse_<ContainerAllocator1> & lhs, const ::deepracer_simulation_environment::TopCamDataSrvResponse_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_simulation_environment
 
 namespace ros
@@ -83,12 +100,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': True, 'IsMessage': True, 'HasHeader': False}
-// {'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'deepracer_simulation_environment': ['/opt/workspace/AwsSilverstoneSimulationApplication/src/deepracer_simulation_environment/msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -153,11 +164,11 @@ struct Definition< ::deepracer_simulation_environment::TopCamDataSrvResponse_<Co
 {
   static const char* value()
   {
-    return "float32 horizontal_fov\n\
-float32 padding_pct\n\
-float32 image_width\n\
-float32 image_height\n\
-";
+    return "float32 horizontal_fov\n"
+"float32 padding_pct\n"
+"float32 image_width\n"
+"float32 image_height\n"
+;
   }
 
   static const char* value(const ::deepracer_simulation_environment::TopCamDataSrvResponse_<ContainerAllocator>&) { return value(); }

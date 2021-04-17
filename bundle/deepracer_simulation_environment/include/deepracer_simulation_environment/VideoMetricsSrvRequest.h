@@ -58,6 +58,7 @@ ros::message_operations::Printer< ::deepracer_simulation_environment::VideoMetri
 return s;
 }
 
+
 } // namespace deepracer_simulation_environment
 
 namespace ros
@@ -65,12 +66,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': True, 'IsMessage': True, 'HasHeader': False}
-// {'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'deepracer_simulation_environment': ['/opt/workspace/AwsSilverstoneSimulationApplication/src/deepracer_simulation_environment/msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -135,8 +130,8 @@ struct Definition< ::deepracer_simulation_environment::VideoMetricsSrvRequest_<C
 {
   static const char* value()
   {
-    return "\n\
-";
+    return "\n"
+;
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrvRequest_<ContainerAllocator>&) { return value(); }

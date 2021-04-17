@@ -142,6 +142,35 @@ ros::message_operations::Printer< ::deepracer_msgs::GetVisualsResponse_<Containe
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator1> & lhs, const ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator2> & rhs)
+{
+  return lhs.link_names == rhs.link_names &&
+    lhs.visual_names == rhs.visual_names &&
+    lhs.ambients == rhs.ambients &&
+    lhs.diffuses == rhs.diffuses &&
+    lhs.speculars == rhs.speculars &&
+    lhs.emissives == rhs.emissives &&
+    lhs.transparencies == rhs.transparencies &&
+    lhs.visibles == rhs.visibles &&
+    lhs.geometry_types == rhs.geometry_types &&
+    lhs.mesh_geom_filenames == rhs.mesh_geom_filenames &&
+    lhs.mesh_geom_scales == rhs.mesh_geom_scales &&
+    lhs.poses == rhs.poses &&
+    lhs.success == rhs.success &&
+    lhs.status_message == rhs.status_message &&
+    lhs.status == rhs.status &&
+    lhs.messages == rhs.messages;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator1> & lhs, const ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_msgs
 
 namespace ros
@@ -149,12 +178,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'gazebo_msgs': ['/opt/ros/kinetic/share/gazebo_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'trajectory_msgs': ['/opt/ros/kinetic/share/trajectory_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -219,64 +242,64 @@ struct Definition< ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "string[] link_names\n\
-string[] visual_names\n\
-std_msgs/ColorRGBA[] ambients\n\
-std_msgs/ColorRGBA[] diffuses\n\
-std_msgs/ColorRGBA[] speculars\n\
-std_msgs/ColorRGBA[] emissives\n\
-float64[] transparencies\n\
-int8[] visibles\n\
-uint16[] geometry_types\n\
-string[] mesh_geom_filenames\n\
-geometry_msgs/Vector3[] mesh_geom_scales\n\
-geometry_msgs/Pose[] poses\n\
-bool success\n\
-string status_message\n\
-int8[] status\n\
-string[] messages\n\
-\n\
-================================================================================\n\
-MSG: std_msgs/ColorRGBA\n\
-float32 r\n\
-float32 g\n\
-float32 b\n\
-float32 a\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Vector3\n\
-# This represents a vector in free space. \n\
-# It is only meant to represent a direction. Therefore, it does not\n\
-# make sense to apply a translation to it (e.g., when applying a \n\
-# generic rigid transformation to a Vector3, tf2 will only apply the\n\
-# rotation). If you want your data to be translatable too, use the\n\
-# geometry_msgs/Point message instead.\n\
-\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-================================================================================\n\
-MSG: geometry_msgs/Pose\n\
-# A representation of pose in free space, composed of position and orientation. \n\
-Point position\n\
-Quaternion orientation\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Point\n\
-# This contains the position of a point in free space\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Quaternion\n\
-# This represents an orientation in free space in quaternion form.\n\
-\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-float64 w\n\
-";
+    return "string[] link_names\n"
+"string[] visual_names\n"
+"std_msgs/ColorRGBA[] ambients\n"
+"std_msgs/ColorRGBA[] diffuses\n"
+"std_msgs/ColorRGBA[] speculars\n"
+"std_msgs/ColorRGBA[] emissives\n"
+"float64[] transparencies\n"
+"int8[] visibles\n"
+"uint16[] geometry_types\n"
+"string[] mesh_geom_filenames\n"
+"geometry_msgs/Vector3[] mesh_geom_scales\n"
+"geometry_msgs/Pose[] poses\n"
+"bool success\n"
+"string status_message\n"
+"int8[] status                        # status of each request: true if succeeded otherwise false\n"
+"string[] messages\n"
+"\n"
+"================================================================================\n"
+"MSG: std_msgs/ColorRGBA\n"
+"float32 r\n"
+"float32 g\n"
+"float32 b\n"
+"float32 a\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Vector3\n"
+"# This represents a vector in free space. \n"
+"# It is only meant to represent a direction. Therefore, it does not\n"
+"# make sense to apply a translation to it (e.g., when applying a \n"
+"# generic rigid transformation to a Vector3, tf2 will only apply the\n"
+"# rotation). If you want your data to be translatable too, use the\n"
+"# geometry_msgs/Point message instead.\n"
+"\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Pose\n"
+"# A representation of pose in free space, composed of position and orientation. \n"
+"Point position\n"
+"Quaternion orientation\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Point\n"
+"# This contains the position of a point in free space\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Quaternion\n"
+"# This represents an orientation in free space in quaternion form.\n"
+"\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+"float64 w\n"
+;
   }
 
   static const char* value(const ::deepracer_msgs::GetVisualsResponse_<ContainerAllocator>&) { return value(); }

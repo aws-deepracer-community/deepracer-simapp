@@ -324,10 +324,10 @@
   "34fbd02ec7c4149646080e935ee8f1b0")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<SetVisualTransparencies-response>)))
   "Returns full string definition for message of type '<SetVisualTransparencies-response>"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'SetVisualTransparencies-response)))
   "Returns full string definition for message of type 'SetVisualTransparencies-response"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <SetVisualTransparencies-response>))
   (cl:+ 0
      1

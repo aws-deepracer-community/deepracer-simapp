@@ -242,9 +242,9 @@ class SetLinkStatesResponse {
   static messageDefinition() {
     // Returns full string definition for message
     return `
-    bool success
-    string status_message
-    int8[] status
+    bool success                # return true if set wrench successful
+    string status_message       # comments if available
+    int8[] status                        # status of each request: true if succeeded otherwise false
     string[] messages
     
     `;

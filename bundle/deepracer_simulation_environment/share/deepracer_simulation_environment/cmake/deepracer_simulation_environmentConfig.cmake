@@ -67,14 +67,14 @@ set(deepracer_simulation_environment_CONFIG_INCLUDED TRUE)
 
 # set variables for source/devel/install prefixes
 if("FALSE" STREQUAL "TRUE")
-  set(deepracer_simulation_environment_SOURCE_PREFIX /opt/workspace/AwsSilverstoneSimulationApplication/src/deepracer_simulation_environment)
-  set(deepracer_simulation_environment_DEVEL_PREFIX /opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/deepracer_simulation_environment/devel)
+  set(deepracer_simulation_environment_SOURCE_PREFIX /opt/amazon/src/deepracer_simulation_environment)
+  set(deepracer_simulation_environment_DEVEL_PREFIX /opt/amazon/build/private/tmp/colcon/deepracer_simulation_environment/devel)
   set(deepracer_simulation_environment_INSTALL_PREFIX "")
   set(deepracer_simulation_environment_PREFIX ${deepracer_simulation_environment_DEVEL_PREFIX})
 else()
   set(deepracer_simulation_environment_SOURCE_PREFIX "")
   set(deepracer_simulation_environment_DEVEL_PREFIX "")
-  set(deepracer_simulation_environment_INSTALL_PREFIX /opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_simulation_environment)
+  set(deepracer_simulation_environment_INSTALL_PREFIX /opt/amazon/build/private/tmp/colcon/install/deepracer_simulation_environment)
   set(deepracer_simulation_environment_PREFIX ${deepracer_simulation_environment_INSTALL_PREFIX})
 endif()
 
@@ -154,7 +154,7 @@ foreach(library ${libraries})
     set(lib_path "")
     set(lib "${library}-NOTFOUND")
     # since the path where the library is found is returned we have to iterate over the paths manually
-    foreach(path /opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_simulation_environment/lib;/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_msgs/lib;/opt/ros/kinetic/lib)
+    foreach(path /opt/amazon/build/private/tmp/colcon/install/deepracer_simulation_environment/lib;/opt/amazon/build/private/tmp/colcon/install/deepracer_msgs/lib;/opt/ros/melodic/lib)
       find_library(lib ${library}
         PATHS ${path}
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
