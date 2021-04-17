@@ -56,6 +56,7 @@ if [ -z ${2+x} ]; then
 fi
 
 # Initialize ROS & the Bundle
+export IGN_IP=127.0.0.1
 source /opt/ros/${ROS_DISTRO}/setup.bash
 source setup.bash
 
