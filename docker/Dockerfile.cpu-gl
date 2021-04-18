@@ -1,28 +1,28 @@
-FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu16.04
+FROM nvidia/opengl:1.0-glvnd-runtime-ubuntu18.04
 
 # Install Linux stuff
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl net-tools build-essential wget cmake jq xmlstarlet \
+    lsb-core ca-certificates curl net-tools build-essential wget cmake jq xmlstarlet gnupg  \
     xterm x11-xkb-utils xauth xfonts-base xkb-data  x11-xserver-utils \
     mesa-utils xvfb libgl1-mesa-dri libgl1-mesa-glx libglib2.0-0 libxext6 libsm6 libxrender1 \
     libglu1 libglu1:i386 libxv1 libxv1:i386 \
     python python3-dev python3-pip python-boto3 python-pip libpython3-dev libpython-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# install ROS Kinetic
-RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+# install ROS melodic
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
-    apt-get install ros-kinetic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
+    apt-get install ros-melodic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN rosdep init && rosdep update 
 
-ENV ROS_DISTRO=kinetic
+ENV ROS_DISTRO=melodic
 
 # install gazebo7
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main" > /etc/apt/sources.list.d/gazebo-stable.list'
+RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 RUN apt-get update -y && \
     apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev libignition-math2 libignition-math2-dev --no-install-recommends -y && \
@@ -30,7 +30,10 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # RUN pip3 install -U pip setuptools>=41.0.0
-RUN python3 -m pip install -U 'pip<21' 'setuptools<50' && python3 -m pip install --no-cache-dir \
+ARG TENSORFLOW_VER
+
+# RUN pip3 install -U pip setuptools>=41.0.0
+RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
@@ -43,28 +46,26 @@ RUN python3 -m pip install -U 'pip<21' 'setuptools<50' && python3 -m pip install
     futures==3.1.1 \
     boto3==1.9.23 \ 
     minio==4.0.5 \
-    # kubernetes==7.0.0 \
     rl-coach-slim==1.0.0 \
     PyYAML==3.13 \
     rospkg>=1.1 \
     shapely==1.6.4 \
-    tensorflow==1.11 \
+    $TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
-    future-fstrings==1.2.0 \
     'tokenize-rt>=3,<4' 
 
-RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 'numpy==1.11'
+RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 
 
 COPY bundle /opt/install
 WORKDIR /opt/install
 RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
-    apt-get install -y ros-kinetic-media-export ros-kinetic-web-video-server ros-kinetic-rosmsg python-matplotlib --no-install-recommends && \
+    apt-get install -y ros-melodic-media-export ros-melodic-web-video-server ros-melodic-rosmsg python-matplotlib --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
-ENV _CATKIN_SETUP_DIR="/opt/ros/kinetic"
+ENV _CATKIN_SETUP_DIR="/opt/ros/melodic"
 
 ARG TENSORFLOW_VER
 RUN python3 -m pip install --no-cache-dir $TENSORFLOW_VER
@@ -78,8 +79,6 @@ COPY VERSION .
 ARG IMG_VERSION
 LABEL maintainer "AWS DeepRacer Community - deepracing.io"
 LABEL version $IMG_VERSION
-
-RUN rm -f /opt/ros/kinetic/lib/python2.7/dist-packages/cv2.so
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["./run.sh run distributed_training.launch"]
