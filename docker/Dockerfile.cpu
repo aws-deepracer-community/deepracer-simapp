@@ -32,7 +32,7 @@ RUN apt-get update -y && \
 ARG TENSORFLOW_VER
 
 # RUN pip3 install -U pip setuptools>=41.0.0
-RUN python3 -m pip install -U 'pip<21' 'setuptools<50' && python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install --no-cache-dir \
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
@@ -49,15 +49,12 @@ RUN python3 -m pip install -U 'pip<21' 'setuptools<50' && python3 -m pip install
     PyYAML==3.13 \
     rospkg>=1.1 \
     shapely==1.6.4 \
-    tensorflow==1.11 \
+    $TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
     'tokenize-rt>=3,<4' 
 
-ARG TENSORFLOW_VER
-RUN python3 -m pip install --no-cache-dir $TENSORFLOW_VER
-
-RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 'numpy==1.14.5'
+RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 
 
 COPY bundle /opt/install
 WORKDIR /opt/install
