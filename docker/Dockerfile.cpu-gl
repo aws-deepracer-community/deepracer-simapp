@@ -13,7 +13,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
-    apt-get install ros-melodic-ros-base python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
+    apt-get install ros-melodic-ros-base python-rosdep python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -25,7 +25,7 @@ ENV ROS_DISTRO=melodic
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 RUN apt-get update -y && \
-    apt-get install gazebo7 libgazebo7-dev rviz x264 libx264-dev libignition-math2 libignition-math2-dev --no-install-recommends -y && \
+    apt-get install gazebo9 libgazebo9-dev rviz x264 libx264-dev libignition-math2 libignition-math2-dev --no-install-recommends -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -37,7 +37,7 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
-    numpy==1.14.5 \
+    numpy==1.18.5 \
     pandas==0.22.0 \
     pygame==1.9.3 \
     PyOpenGL==3.1.0 \
@@ -71,9 +71,10 @@ ARG TENSORFLOW_VER
 RUN python3 -m pip install --no-cache-dir $TENSORFLOW_VER
 
 COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
-RUN patch -p1 -N --directory=/usr/local/lib/python3.5/dist-packages/ < /opt/amazon/rl_coach.patch
+RUN patch -p1 -N --directory=/usr/local/lib/python3.6/dist-packages/ < /opt/amazon/rl_coach.patch
 
 COPY ./docker/files/run.sh run.sh
+COPY ./docker/files/debug-reward.diff debug-reward.diff
 
 COPY VERSION .
 ARG IMG_VERSION

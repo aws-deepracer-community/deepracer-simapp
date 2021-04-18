@@ -36,7 +36,7 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
     annoy==1.8.3 \
     Pillow==4.3.0 \
     matplotlib==2.0.2 \
-    numpy==1.14.5 \
+    numpy==1.18.5 \
     pandas==0.22.0 \
     pygame==1.9.3 \
     PyOpenGL==3.1.0 \
@@ -68,6 +68,7 @@ ENV _CATKIN_SETUP_DIR="/opt/ros/melodic"
 COPY ./docker/files/rl_coach.patch /opt/amazon/rl_coach.patch
 RUN patch -p1 -N --directory=/usr/local/lib/python3.6/dist-packages/ < /opt/amazon/rl_coach.patch
 COPY ./docker/files/run.sh run.sh
+COPY ./docker/files/debug-reward.diff debug-reward.diff
 
 COPY VERSION .
 ARG IMG_VERSION

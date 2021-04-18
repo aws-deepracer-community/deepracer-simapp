@@ -48,6 +48,12 @@ if [[ -n "${RTF_OVERRIDE}" ]]; then
 	xmlstarlet sel -t -c '/sdf/world/physics' $WORLD_FILE
 fi
 
+# Check if we want to do reward-function debugging
+if [[ "${DEBUG_REWARD,,}" == "true" ]]; then
+	echo "Enabling Reward Debugging"
+	patch -p2 -N --directory=/opt/install < debug-reward.diff
+fi
+
 # If no run-option given then use the distributed training
 if [ -z ${2+x} ]; then
 	$2 = "distributed_training.launch"

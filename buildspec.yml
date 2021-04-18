@@ -3,6 +3,7 @@ phases:
   pre_build:
     commands:
         - docker login --username ${DOCKER_HUB_USER} --password ${DOCKER_HUB_KEY} 
+        - apt-get update && apt-get install gawk
   build:
     commands:
        - bash build.sh -a "${CPU_FLAGS}" -p ${DOCKER_HUB_REPO} -f
