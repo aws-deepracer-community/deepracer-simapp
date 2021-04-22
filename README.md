@@ -22,6 +22,7 @@ Version 4 is the current development version, and it is receiving both new track
 | -------- | -------------- | -------- | -------- | -------- | 
 | 4.0.0-dev   | Upgrade to Physics 4  |  `4.0.0-dev-cpu-avx` `4.0.0-dev-cpu-gl-avx`  | `4.0.0-dev-cpu-avx2` `4.0.0-dev-cpu-gl-avx` | `4.0.0-dev-gpu` `4.0.0-dev-gpu-gl` |
 | 4.0.1-dev   | April Track  |  `4.0.1-dev-cpu-avx` `4.0.1-dev-cpu-gl-avx`  | `4.0.1-dev-cpu-avx2` `4.0.1-dev-cpu-gl-avx` | `4.0.1-dev-gpu` `4.0.1-dev-gpu-gl` |
+| 4.0.2-dev   | Melodic Upgrade  |  `4.0.2-dev-cpu-avx` `4.0.2-dev-cpu-gl-avx`  | `4.0.2-dev-cpu-avx2` `4.0.2-dev-cpu-gl-avx` | `4.0.2-dev-gpu` `4.0.2-dev-gpu-gl` |
 
 ### Version 3
 
