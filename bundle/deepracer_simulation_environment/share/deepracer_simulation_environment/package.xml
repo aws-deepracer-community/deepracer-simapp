@@ -20,6 +20,7 @@
   <depend>deepracer_msgs</depend>
   <depend>aws_robomaker_simulation_ros_pkgs</depend>
 
+  <exec_depend>python3-defusedxml</exec_depend>
   <exec_depend>catkin</exec_depend>
   <exec_depend>aws_cpp_sdk_logs</exec_depend>
   <exec_depend>aws_cpp_sdk_kinesis</exec_depend>

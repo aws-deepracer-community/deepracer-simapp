@@ -321,7 +321,7 @@ class SetVisualPosesResponse(genpy.Message):
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """bool success
 string status_message
-int8[] status
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 """
   __slots__ = ['success','status_message','status','messages']

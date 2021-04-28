@@ -1,6 +1,6 @@
 #!/bin/bash
 cd bundle-src
-aws s3 cp s3://deepracer-managed-resources-us-east-1/deepracer-simapp.tar.gz .
+aws s3 cp s3://deepracer-melodic-managed-resources-us-east-1/deepracer-simapp.tar.gz .
 tar xvf deepracer-simapp.tar.gz bundle.tar
 CUR_DATE="2021-apr-01"
 PREV_DATE="mar-14"

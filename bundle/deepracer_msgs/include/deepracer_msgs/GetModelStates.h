@@ -57,8 +57,8 @@ struct DataType< ::deepracer_msgs::GetModelStates > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_msgs::GetModelStatesRequest> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::GetModelStates > 
+// service_traits::MD5Sum< ::deepracer_msgs::GetModelStatesRequest> should match
+// service_traits::MD5Sum< ::deepracer_msgs::GetModelStates >
 template<>
 struct MD5Sum< ::deepracer_msgs::GetModelStatesRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_msgs::GetModelStatesRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::GetModelStatesRequest> should match 
-// service_traits::DataType< ::deepracer_msgs::GetModelStates > 
+// service_traits::DataType< ::deepracer_msgs::GetModelStatesRequest> should match
+// service_traits::DataType< ::deepracer_msgs::GetModelStates >
 template<>
 struct DataType< ::deepracer_msgs::GetModelStatesRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_msgs::GetModelStatesRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_msgs::GetModelStatesResponse> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::GetModelStates > 
+// service_traits::MD5Sum< ::deepracer_msgs::GetModelStatesResponse> should match
+// service_traits::MD5Sum< ::deepracer_msgs::GetModelStates >
 template<>
 struct MD5Sum< ::deepracer_msgs::GetModelStatesResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_msgs::GetModelStatesResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::GetModelStatesResponse> should match 
-// service_traits::DataType< ::deepracer_msgs::GetModelStates > 
+// service_traits::DataType< ::deepracer_msgs::GetModelStatesResponse> should match
+// service_traits::DataType< ::deepracer_msgs::GetModelStates >
 template<>
 struct DataType< ::deepracer_msgs::GetModelStatesResponse>
 {

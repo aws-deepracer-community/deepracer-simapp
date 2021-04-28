@@ -57,8 +57,8 @@ struct DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrv > 
 };
 
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvReque
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest> should match
+// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvReq
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_simulation_environment::VirtualEventVideoEditSrvRespo
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse> should match
+// service_traits::DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::VirtualEventVideoEditSrvResponse>
 {

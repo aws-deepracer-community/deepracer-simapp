@@ -57,8 +57,8 @@ struct DataType< ::deepracer_simulation_environment::VideoMetricsSrv > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvRequest> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvRequest> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrvRequest> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrvRequest> should match
+// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::VideoMetricsSrvRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_simulation_environment::VideoMetricsSrvRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_simulation_environment::VideoMetricsSrvResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrvResponse> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrvResponse> should match
+// service_traits::DataType< ::deepracer_simulation_environment::VideoMetricsSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::VideoMetricsSrvResponse>
 {

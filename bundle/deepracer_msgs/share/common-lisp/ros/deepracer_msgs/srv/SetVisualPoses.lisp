@@ -308,10 +308,10 @@
   "d316ff8d78498f26ce79e9a43ac6ed65")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<SetVisualPoses-response>)))
   "Returns full string definition for message of type '<SetVisualPoses-response>"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'SetVisualPoses-response)))
   "Returns full string definition for message of type 'SetVisualPoses-response"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <SetVisualPoses-response>))
   (cl:+ 0
      1

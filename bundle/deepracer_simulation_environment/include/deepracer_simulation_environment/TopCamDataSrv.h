@@ -57,8 +57,8 @@ struct DataType< ::deepracer_simulation_environment::TopCamDataSrv > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvRequest> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvRequest> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrvRequest> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrvRequest> should match
+// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::TopCamDataSrvRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_simulation_environment::TopCamDataSrvRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvResponse> should match 
-// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrv > 
+// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvResponse> should match
+// service_traits::MD5Sum< ::deepracer_simulation_environment::TopCamDataSrv >
 template<>
 struct MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_simulation_environment::TopCamDataSrvResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrvResponse> should match 
-// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrv > 
+// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrvResponse> should match
+// service_traits::DataType< ::deepracer_simulation_environment::TopCamDataSrv >
 template<>
 struct DataType< ::deepracer_simulation_environment::TopCamDataSrvResponse>
 {

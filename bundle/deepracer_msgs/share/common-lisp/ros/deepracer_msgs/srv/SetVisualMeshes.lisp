@@ -348,10 +348,10 @@
   "a09fb2814d823a8b3a634fc955be2d1a")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<SetVisualMeshes-response>)))
   "Returns full string definition for message of type '<SetVisualMeshes-response>"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'SetVisualMeshes-response)))
   "Returns full string definition for message of type 'SetVisualMeshes-response"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <SetVisualMeshes-response>))
   (cl:+ 0
      1

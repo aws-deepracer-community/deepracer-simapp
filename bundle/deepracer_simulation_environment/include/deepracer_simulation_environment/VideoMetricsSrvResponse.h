@@ -122,6 +122,32 @@ ros::message_operations::Printer< ::deepracer_simulation_environment::VideoMetri
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator1> & lhs, const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator2> & rhs)
+{
+  return lhs.lap_counter == rhs.lap_counter &&
+    lhs.completion_percentage == rhs.completion_percentage &&
+    lhs.reset_counter == rhs.reset_counter &&
+    lhs.throttle == rhs.throttle &&
+    lhs.steering == rhs.steering &&
+    lhs.best_lap_time == rhs.best_lap_time &&
+    lhs.total_evaluation_time == rhs.total_evaluation_time &&
+    lhs.done == rhs.done &&
+    lhs.x == rhs.x &&
+    lhs.y == rhs.y &&
+    lhs.object_locations == rhs.object_locations &&
+    lhs.episode_status == rhs.episode_status &&
+    lhs.pause_duration == rhs.pause_duration;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator1> & lhs, const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_simulation_environment
 
 namespace ros
@@ -129,12 +155,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'deepracer_simulation_environment': ['/opt/workspace/AwsSilverstoneSimulationApplication/src/deepracer_simulation_environment/msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -199,34 +219,34 @@ struct Definition< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<
 {
   static const char* value()
   {
-    return "float32 lap_counter\n\
-float32 completion_percentage\n\
-int32 reset_counter\n\
-float32 throttle\n\
-float32 steering\n\
-float32 best_lap_time\n\
-float32 total_evaluation_time\n\
-bool done\n\
-float32 x\n\
-float32 y\n\
-geometry_msgs/Point32[] object_locations\n\
-string episode_status\n\
-float32 pause_duration\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Point32\n\
-# This contains the position of a point in free space(with 32 bits of precision).\n\
-# It is recommeded to use Point wherever possible instead of Point32.  \n\
-# \n\
-# This recommendation is to promote interoperability.  \n\
-#\n\
-# This message is designed to take up less space when sending\n\
-# lots of points at once, as in the case of a PointCloud.  \n\
-\n\
-float32 x\n\
-float32 y\n\
-float32 z\n\
-";
+    return "float32 lap_counter\n"
+"float32 completion_percentage\n"
+"int32 reset_counter\n"
+"float32 throttle\n"
+"float32 steering\n"
+"float32 best_lap_time\n"
+"float32 total_evaluation_time\n"
+"bool done\n"
+"float32 x\n"
+"float32 y\n"
+"geometry_msgs/Point32[] object_locations\n"
+"string episode_status\n"
+"float32 pause_duration\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Point32\n"
+"# This contains the position of a point in free space(with 32 bits of precision).\n"
+"# It is recommeded to use Point wherever possible instead of Point32.  \n"
+"# \n"
+"# This recommendation is to promote interoperability.  \n"
+"#\n"
+"# This message is designed to take up less space when sending\n"
+"# lots of points at once, as in the case of a PointCloud.  \n"
+"\n"
+"float32 x\n"
+"float32 y\n"
+"float32 z\n"
+;
   }
 
   static const char* value(const ::deepracer_simulation_environment::VideoMetricsSrvResponse_<ContainerAllocator>&) { return value(); }
