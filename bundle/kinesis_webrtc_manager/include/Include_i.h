@@ -41,7 +41,6 @@ extern "C" {
 #include <mbedtls/error.h>
 #include <mbedtls/certs.h>
 #include <mbedtls/sha256.h>
-#include <mbedtls/md5.h>
 #endif
 
 #include <srtp2/srtp.h>

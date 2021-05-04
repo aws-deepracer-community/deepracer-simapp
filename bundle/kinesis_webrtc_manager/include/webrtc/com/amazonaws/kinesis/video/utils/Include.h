@@ -13,22 +13,22 @@ extern "C" {
 #include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
 #include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
 
-#define MAX_STRING_CONVERSION_BASE 36
+#define MAX_STRING_CONVERSION_BASE          36
 
 // Max path characters as defined in linux/limits.h
-#define MAX_PATH_LEN 4096
+#define MAX_PATH_LEN                        4096
 
 // thread stack size to use when running on constrained device like raspberry pi
-#define THREAD_STACK_SIZE_ON_CONSTRAINED_DEVICE (512 * 1024)
+#define THREAD_STACK_SIZE_ON_CONSTRAINED_DEVICE     (512 * 1024)
 
 // Check for whitespace
-#define IS_WHITE_SPACE(ch) (((ch) == ' ') || ((ch) == '\t') || ((ch) == '\r') || ((ch) == '\n') || ((ch) == '\v') || ((ch) == '\f'))
+#define IS_WHITE_SPACE(ch)          (((ch) == ' ') || ((ch) == '\t') || ((ch) == '\r') || ((ch) == '\n') || ((ch) == '\v') ||  ((ch) == '\f'))
 
 /**
- * EMA (Exponential Moving Average) alpha value and 1-alpha value - over appx 20 samples
- */
-#define EMA_ALPHA_VALUE           ((DOUBLE) 0.05)
-#define ONE_MINUS_EMA_ALPHA_VALUE ((DOUBLE)(1 - EMA_ALPHA_VALUE))
+* EMA (Exponential Moving Average) alpha value and 1-alpha value - over appx 20 samples
+*/
+#define EMA_ALPHA_VALUE                 ((DOUBLE) 0.05)
+#define ONE_MINUS_EMA_ALPHA_VALUE       ((DOUBLE) (1 - EMA_ALPHA_VALUE))
 
 /**
  * Calculates the EMA (Exponential Moving Average) accumulator value
@@ -38,33 +38,33 @@ extern "C" {
  *
  * @return the new Accumulator value
  */
-#define EMA_ACCUMULATOR_GET_NEXT(a, v) (DOUBLE)(EMA_ALPHA_VALUE * (v) + ONE_MINUS_EMA_ALPHA_VALUE * (a))
+#define EMA_ACCUMULATOR_GET_NEXT(a, v)    (DOUBLE) (EMA_ALPHA_VALUE * (v) + ONE_MINUS_EMA_ALPHA_VALUE * (a))
 
 /**
  * Error values
  */
-#define STATUS_UTILS_BASE                            0x40000000
-#define STATUS_INVALID_BASE64_ENCODE                 STATUS_UTILS_BASE + 0x00000001
-#define STATUS_INVALID_BASE                          STATUS_UTILS_BASE + 0x00000002
-#define STATUS_INVALID_DIGIT                         STATUS_UTILS_BASE + 0x00000003
-#define STATUS_INT_OVERFLOW                          STATUS_UTILS_BASE + 0x00000004
-#define STATUS_EMPTY_STRING                          STATUS_UTILS_BASE + 0x00000005
-#define STATUS_DIRECTORY_OPEN_FAILED                 STATUS_UTILS_BASE + 0x00000006
-#define STATUS_PATH_TOO_LONG                         STATUS_UTILS_BASE + 0x00000007
-#define STATUS_UNKNOWN_DIR_ENTRY_TYPE                STATUS_UTILS_BASE + 0x00000008
-#define STATUS_REMOVE_DIRECTORY_FAILED               STATUS_UTILS_BASE + 0x00000009
-#define STATUS_REMOVE_FILE_FAILED                    STATUS_UTILS_BASE + 0x0000000a
-#define STATUS_REMOVE_LINK_FAILED                    STATUS_UTILS_BASE + 0x0000000b
-#define STATUS_DIRECTORY_ACCESS_DENIED               STATUS_UTILS_BASE + 0x0000000c
-#define STATUS_DIRECTORY_MISSING_PATH                STATUS_UTILS_BASE + 0x0000000d
-#define STATUS_DIRECTORY_ENTRY_STAT_ERROR            STATUS_UTILS_BASE + 0x0000000e
-#define STATUS_STRFTIME_FALIED                       STATUS_UTILS_BASE + 0x0000000f
-#define STATUS_MAX_TIMESTAMP_FORMAT_STR_LEN_EXCEEDED STATUS_UTILS_BASE + 0x00000010
-#define STATUS_UTIL_MAX_TAG_COUNT                    STATUS_UTILS_BASE + 0x00000011
-#define STATUS_UTIL_INVALID_TAG_VERSION              STATUS_UTILS_BASE + 0x00000012
-#define STATUS_UTIL_TAGS_COUNT_NON_ZERO_TAGS_NULL    STATUS_UTILS_BASE + 0x00000013
-#define STATUS_UTIL_INVALID_TAG_NAME_LEN             STATUS_UTILS_BASE + 0x00000014
-#define STATUS_UTIL_INVALID_TAG_VALUE_LEN            STATUS_UTILS_BASE + 0x00000015
+#define STATUS_UTILS_BASE                               0x40000000
+#define STATUS_INVALID_BASE64_ENCODE                    STATUS_UTILS_BASE + 0x00000001
+#define STATUS_INVALID_BASE                             STATUS_UTILS_BASE + 0x00000002
+#define STATUS_INVALID_DIGIT                            STATUS_UTILS_BASE + 0x00000003
+#define STATUS_INT_OVERFLOW                             STATUS_UTILS_BASE + 0x00000004
+#define STATUS_EMPTY_STRING                             STATUS_UTILS_BASE + 0x00000005
+#define STATUS_DIRECTORY_OPEN_FAILED                    STATUS_UTILS_BASE + 0x00000006
+#define STATUS_PATH_TOO_LONG                            STATUS_UTILS_BASE + 0x00000007
+#define STATUS_UNKNOWN_DIR_ENTRY_TYPE                   STATUS_UTILS_BASE + 0x00000008
+#define STATUS_REMOVE_DIRECTORY_FAILED                  STATUS_UTILS_BASE + 0x00000009
+#define STATUS_REMOVE_FILE_FAILED                       STATUS_UTILS_BASE + 0x0000000a
+#define STATUS_REMOVE_LINK_FAILED                       STATUS_UTILS_BASE + 0x0000000b
+#define STATUS_DIRECTORY_ACCESS_DENIED                  STATUS_UTILS_BASE + 0x0000000c
+#define STATUS_DIRECTORY_MISSING_PATH                   STATUS_UTILS_BASE + 0x0000000d
+#define STATUS_DIRECTORY_ENTRY_STAT_ERROR               STATUS_UTILS_BASE + 0x0000000e
+#define STATUS_STRFTIME_FALIED                          STATUS_UTILS_BASE + 0x0000000f
+#define STATUS_MAX_TIMESTAMP_FORMAT_STR_LEN_EXCEEDED    STATUS_UTILS_BASE + 0x00000010
+#define STATUS_UTIL_MAX_TAG_COUNT                       STATUS_UTILS_BASE + 0x00000011
+#define STATUS_UTIL_INVALID_TAG_VERSION                 STATUS_UTILS_BASE + 0x00000012
+#define STATUS_UTIL_TAGS_COUNT_NON_ZERO_TAGS_NULL       STATUS_UTILS_BASE + 0x00000013
+#define STATUS_UTIL_INVALID_TAG_NAME_LEN                STATUS_UTILS_BASE + 0x00000014
+#define STATUS_UTIL_INVALID_TAG_VALUE_LEN               STATUS_UTILS_BASE + 0x00000015
 
 /**
  * Base64 encode/decode functionality
@@ -163,9 +163,7 @@ STATUS tolowerupperstr(PCHAR, UINT32, BOOL, PCHAR);
 PUBLIC_API STATUS readFile(PCHAR filePath, BOOL binMode, PBYTE pBuffer, PUINT64 pSize);
 PUBLIC_API STATUS readFileSegment(PCHAR filePath, BOOL binMode, PBYTE pBuffer, UINT64 offset, UINT64 readSize);
 PUBLIC_API STATUS writeFile(PCHAR filePath, BOOL binMode, BOOL append, PBYTE pBuffer, UINT64 size);
-PUBLIC_API STATUS updateFile(PCHAR filePath, BOOL binMode, PBYTE pBuffer, UINT64 offset, UINT64 size);
 PUBLIC_API STATUS getFileLength(PCHAR filePath, PUINT64 pSize);
-PUBLIC_API STATUS setFileLength(PCHAR filePath, UINT64 size);
 PUBLIC_API STATUS fileExists(PCHAR filePath, PBOOL pExists);
 PUBLIC_API STATUS createFile(PCHAR filePath, UINT64 size);
 
@@ -176,28 +174,28 @@ PUBLIC_API STATUS createFile(PCHAR filePath, UINT64 size);
 /**
  * Max tag count
  */
-#define MAX_TAG_COUNT 50
+#define MAX_TAG_COUNT                            50
 
 /**
  * Max tag name length in chars
  */
-#define MAX_TAG_NAME_LEN 128
+#define MAX_TAG_NAME_LEN                         128
 
 /**
  * Max tag value length in chars
  */
-#define MAX_TAG_VALUE_LEN 1024
+#define MAX_TAG_VALUE_LEN                        1024
 
 /**
  * Defines the full tag structure length when the pointers to the strings are allocated after the
  * main struct. We will add 2 for NULL terminators
  */
-#define TAG_FULL_LENGTH (SIZEOF(Tag) + (MAX_TAG_NAME_LEN + MAX_TAG_VALUE_LEN + 2) * SIZEOF(CHAR))
+#define TAG_FULL_LENGTH                         (SIZEOF(Tag) + (MAX_TAG_NAME_LEN + MAX_TAG_VALUE_LEN + 2) * SIZEOF(CHAR))
 
 /**
  * Current version of the tag structure
  */
-#define TAG_CURRENT_VERSION 0
+#define TAG_CURRENT_VERSION                                 0
 
 /**
  * Tag declaration
@@ -242,7 +240,12 @@ PUBLIC_API STATUS packageTags(UINT32, PTag, UINT32, PTag, PUINT32);
 // Directory functionality
 /////////////////////////////////////////
 
-typedef enum { DIR_ENTRY_TYPE_FILE, DIR_ENTRY_TYPE_LINK, DIR_ENTRY_TYPE_DIRECTORY, DIR_ENTRY_TYPE_UNKNOWN } DIR_ENTRY_TYPES;
+typedef enum {
+    DIR_ENTRY_TYPE_FILE,
+    DIR_ENTRY_TYPE_LINK,
+    DIR_ENTRY_TYPE_DIRECTORY,
+    DIR_ENTRY_TYPE_UNKNOWN
+} DIR_ENTRY_TYPES;
 
 /**
  * Callback function declaration.
@@ -540,7 +543,7 @@ typedef PSingleList PStackQueue;
 typedef PSingleListNode StackQueueIterator;
 typedef StackQueueIterator* PStackQueueIterator;
 
-#define IS_VALID_ITERATOR(x) ((x) != NULL)
+#define IS_VALID_ITERATOR(x)    ((x) != NULL)
 
 /**
  * Create a new stack queue
@@ -659,7 +662,7 @@ typedef struct {
 /**
  * Minimum number of buckets
  */
-#define MIN_HASH_BUCKET_COUNT 16
+#define MIN_HASH_BUCKET_COUNT                   16
 
 /**
  * Hash table iteration callback function.
@@ -675,10 +678,10 @@ typedef STATUS (*HashEntryCallbackFunc)(UINT64, PHashEntry);
 /**
  * Hash table error values starting from 0x40100000
  */
-#define STATUS_HASH_TABLE_BASE            STATUS_UTILS_BASE + 0x00100000
-#define STATUS_HASH_KEY_NOT_PRESENT       STATUS_HASH_TABLE_BASE + 0x00000001
-#define STATUS_HASH_KEY_ALREADY_PRESENT   STATUS_HASH_TABLE_BASE + 0x00000002
-#define STATUS_HASH_ENTRY_ITERATION_ABORT STATUS_HASH_TABLE_BASE + 0x00000003
+#define STATUS_HASH_TABLE_BASE                      STATUS_UTILS_BASE + 0x00100000
+#define STATUS_HASH_KEY_NOT_PRESENT                 STATUS_HASH_TABLE_BASE + 0x00000001
+#define STATUS_HASH_KEY_ALREADY_PRESENT             STATUS_HASH_TABLE_BASE + 0x00000002
+#define STATUS_HASH_ENTRY_ITERATION_ABORT           STATUS_HASH_TABLE_BASE + 0x00000003
 
 /**
  * Create a new hash table with default parameters
@@ -805,9 +808,9 @@ PUBLIC_API STATUS bitFieldSet(PBitField, UINT32, BOOL);
 /**
  * Bit reader error values starting from 0x41000000
  */
-#define STATUS_BIT_READER_BASE         STATUS_UTILS_BASE + 0x01000000
-#define STATUS_BIT_READER_OUT_OF_RANGE STATUS_BIT_READER_BASE + 0x00000001
-#define STATUS_BIT_READER_INVALID_SIZE STATUS_BIT_READER_BASE + 0x00000002
+#define STATUS_BIT_READER_BASE                      STATUS_UTILS_BASE + 0x01000000
+#define STATUS_BIT_READER_OUT_OF_RANGE              STATUS_BIT_READER_BASE + 0x00000001
+#define STATUS_BIT_READER_INVALID_SIZE              STATUS_BIT_READER_BASE + 0x00000002
 
 /**
  * Bit Buffer reader declaration
@@ -856,12 +859,12 @@ PUBLIC_API STATUS bitReaderReadExpGolombSe(PBitReader, PINT32);
 ////////////////////////////////////////////////////
 // Endianness functionality
 ////////////////////////////////////////////////////
-typedef INT16 (*getInt16Func)(INT16);
-typedef INT32 (*getInt32Func)(INT32);
-typedef INT64 (*getInt64Func)(INT64);
-typedef VOID (*putInt16Func)(PINT16, INT16);
-typedef VOID (*putInt32Func)(PINT32, INT32);
-typedef VOID (*putInt64Func)(PINT64, INT64);
+typedef INT16 (*getInt16Func) (INT16);
+typedef INT32 (*getInt32Func) (INT32);
+typedef INT64 (*getInt64Func) (INT64);
+typedef VOID (*putInt16Func) (PINT16, INT16);
+typedef VOID (*putInt32Func) (PINT32, INT32);
+typedef VOID (*putInt64Func) (PINT64, INT64);
 
 extern getInt16Func getInt16;
 extern getInt32Func getInt32;
@@ -876,13 +879,13 @@ PUBLIC_API VOID initializeEndianness();
 ////////////////////////////////////////////////////
 // Unaligned access functionality
 ////////////////////////////////////////////////////
-typedef INT16 (*getUnalignedInt16Func)(PVOID);
-typedef INT32 (*getUnalignedInt32Func)(PVOID);
-typedef INT64 (*getUnalignedInt64Func)(PVOID);
+typedef INT16 (*getUnalignedInt16Func) (PVOID);
+typedef INT32 (*getUnalignedInt32Func) (PVOID);
+typedef INT64 (*getUnalignedInt64Func) (PVOID);
 
-typedef VOID (*putUnalignedInt16Func)(PVOID, INT16);
-typedef VOID (*putUnalignedInt32Func)(PVOID, INT32);
-typedef VOID (*putUnalignedInt64Func)(PVOID, INT64);
+typedef VOID (*putUnalignedInt16Func) (PVOID, INT16);
+typedef VOID (*putUnalignedInt32Func) (PVOID, INT32);
+typedef VOID (*putUnalignedInt64Func) (PVOID, INT64);
 
 extern getUnalignedInt16Func getUnalignedInt16;
 extern getUnalignedInt32Func getUnalignedInt32;
@@ -910,60 +913,63 @@ extern putUnalignedInt32Func putUnalignedInt32LittleEndian;
 extern putUnalignedInt64Func putUnalignedInt64LittleEndian;
 
 // Helper macro for unaligned
-#define GET_UNALIGNED(ptr)                                                                                                                           \
-    SIZEOF(*(ptr)) == 1 ? *(ptr)                                                                                                                     \
-                        : SIZEOF(*(ptr)) == 2 ? getUnalignedInt16(ptr)                                                                               \
-                                              : SIZEOF(*(ptr)) == 4 ? getUnalignedInt32(ptr) : SIZEOF(*(ptr)) == 8 ? getUnalignedInt64(ptr) : 0
+#define GET_UNALIGNED(ptr)                                      \
+    SIZEOF(*(ptr)) == 1 ? *(ptr) :                              \
+    SIZEOF(*(ptr)) == 2 ? getUnalignedInt16(ptr) :              \
+    SIZEOF(*(ptr)) == 4 ? getUnalignedInt32(ptr) :              \
+    SIZEOF(*(ptr)) == 8 ? getUnalignedInt64(ptr) :              \
+    0                                                           \
 
-#define GET_UNALIGNED_BIG_ENDIAN(ptr)                                                                                                                \
-    SIZEOF(*(ptr)) == 1                                                                                                                              \
-        ? *(ptr)                                                                                                                                     \
-        : SIZEOF(*(ptr)) == 2 ? getUnalignedInt16BigEndian(ptr)                                                                                      \
-                              : SIZEOF(*(ptr)) == 4 ? getUnalignedInt32BigEndian(ptr) : SIZEOF(*(ptr)) == 8 ? getUnalignedInt64BigEndian(ptr) : 0
+#define GET_UNALIGNED_BIG_ENDIAN(ptr)                           \
+    SIZEOF(*(ptr)) == 1 ? *(ptr) :                              \
+    SIZEOF(*(ptr)) == 2 ? getUnalignedInt16BigEndian(ptr) :     \
+    SIZEOF(*(ptr)) == 4 ? getUnalignedInt32BigEndian(ptr) :     \
+    SIZEOF(*(ptr)) == 8 ? getUnalignedInt64BigEndian(ptr) :     \
+    0                                                           \
 
-#define PUT_UNALIGNED(ptr, val)                                                                                                                      \
-    do {                                                                                                                                             \
-        PVOID __pVoid = (ptr);                                                                                                                       \
-        switch (SIZEOF(*(ptr))) {                                                                                                                    \
-            case 1:                                                                                                                                  \
-                *(PINT8) __pVoid = (INT8)(val);                                                                                                      \
-                break;                                                                                                                               \
-            case 2:                                                                                                                                  \
-                putUnalignedInt16(__pVoid, (INT16)(val));                                                                                            \
-                break;                                                                                                                               \
-            case 4:                                                                                                                                  \
-                putUnalignedInt32(__pVoid, (INT32)(val));                                                                                            \
-                break;                                                                                                                               \
-            case 8:                                                                                                                                  \
-                putUnalignedInt64(__pVoid, (INT64)(val));                                                                                            \
-                break;                                                                                                                               \
-            default:                                                                                                                                 \
-                CHECK_EXT(FALSE, "Bad alignment size.");                                                                                             \
-                break;                                                                                                                               \
-        }                                                                                                                                            \
-    } while (0);
+#define PUT_UNALIGNED(ptr, val)                                 \
+    do {                                                        \
+    PVOID __pVoid = (ptr);                                      \
+    switch (SIZEOF(*(ptr))) {                                   \
+        case 1:                                                 \
+            *(PINT8)__pVoid = (INT8)(val);                      \
+            break;                                              \
+        case 2:                                                 \
+            putUnalignedInt16(__pVoid, (INT16) (val));          \
+            break;                                              \
+        case 4:                                                 \
+            putUnalignedInt32(__pVoid, (INT32) (val));          \
+            break;                                              \
+        case 8:                                                 \
+            putUnalignedInt64(__pVoid, (INT64) (val));          \
+            break;                                              \
+        default:                                                \
+            CHECK_EXT(FALSE, "Bad alignment size.");            \
+            break;                                              \
+        }                                                       \
+    }  while (0);                                               \
 
-#define PUT_UNALIGNED_BIG_ENDIAN(ptr, val)                                                                                                           \
-    do {                                                                                                                                             \
-        PVOID __pVoid = (ptr);                                                                                                                       \
-        switch (SIZEOF(*(ptr))) {                                                                                                                    \
-            case 1:                                                                                                                                  \
-                *(PINT8) __pVoid = (INT8)(val);                                                                                                      \
-                break;                                                                                                                               \
-            case 2:                                                                                                                                  \
-                putUnalignedInt16BigEndian(__pVoid, (INT16)(val));                                                                                   \
-                break;                                                                                                                               \
-            case 4:                                                                                                                                  \
-                putUnalignedInt32BigEndian(__pVoid, (INT32)(val));                                                                                   \
-                break;                                                                                                                               \
-            case 8:                                                                                                                                  \
-                putUnalignedInt64BigEndian(__pVoid, (INT64)(val));                                                                                   \
-                break;                                                                                                                               \
-            default:                                                                                                                                 \
-                CHECK_EXT(FALSE, "Bad alignment size.");                                                                                             \
-                break;                                                                                                                               \
-        }                                                                                                                                            \
-    } while (0);
+#define PUT_UNALIGNED_BIG_ENDIAN(ptr, val)                      \
+    do {                                                        \
+    PVOID __pVoid = (ptr);                                      \
+    switch (SIZEOF(*(ptr))) {                                   \
+        case 1:                                                 \
+            *(PINT8)__pVoid = (INT8)(val);                      \
+            break;                                              \
+        case 2:                                                 \
+            putUnalignedInt16BigEndian(__pVoid, (INT16) (val)); \
+            break;                                              \
+        case 4:                                                 \
+            putUnalignedInt32BigEndian(__pVoid, (INT32) (val)); \
+            break;                                              \
+        case 8:                                                 \
+            putUnalignedInt64BigEndian(__pVoid, (INT64) (val)); \
+            break;                                              \
+        default:                                                \
+            CHECK_EXT(FALSE, "Bad alignment size.");            \
+            break;                                              \
+        }                                                       \
+    } while(0);
 
 ////////////////////////////////////////////////////
 // Dumping memory functionality
@@ -989,22 +995,22 @@ BOOL checkBufferValues(PVOID, BYTE, SIZE_T);
 PUBLIC_API STATUS generateTimestampStr(UINT64, PCHAR, PCHAR, UINT32, PUINT32);
 
 // yyyy-mm-dd HH:MM:SS
-#define MAX_TIMESTAMP_FORMAT_STR_LEN 19
+#define MAX_TIMESTAMP_FORMAT_STR_LEN                    19
 
 // Max timestamp string length including null terminator
-#define MAX_TIMESTAMP_STR_LEN 17
+#define MAX_TIMESTAMP_STR_LEN                           17
 
 // (thread-0x7000076b3000)
-#define MAX_THREAD_ID_STR_LEN 23
+#define MAX_THREAD_ID_STR_LEN                           23
 
 // Max log message length
-#define MAX_LOG_FORMAT_LENGTH 600
+#define MAX_LOG_FORMAT_LENGTH                           600
 
 // Set the global log level
-#define SET_LOGGER_LOG_LEVEL(l) loggerSetLogLevel((l))
+#define SET_LOGGER_LOG_LEVEL(l)                         loggerSetLogLevel((l))
 
 // Get the global log level
-#define GET_LOGGER_LOG_LEVEL() loggerGetLogLevel()
+#define GET_LOGGER_LOG_LEVEL()                          loggerGetLogLevel()
 
 /*
  * Set log level
@@ -1051,22 +1057,22 @@ PUBLIC_API UINT32 updateCrc32(UINT32, PBYTE, UINT32);
 /**
  * Minimum number of timers in the timer queue
  */
-#define MIN_TIMER_QUEUE_TIMER_COUNT 1
+#define MIN_TIMER_QUEUE_TIMER_COUNT                                 1
 
 /**
  * Default timer queue max timer count
  */
-#define DEFAULT_TIMER_QUEUE_TIMER_COUNT 32
+#define DEFAULT_TIMER_QUEUE_TIMER_COUNT                             32
 
 /**
  * Sentinel value to specify no periodic invocation
  */
-#define TIMER_QUEUE_SINGLE_INVOCATION_PERIOD 0
+#define TIMER_QUEUE_SINGLE_INVOCATION_PERIOD                        0
 
 /**
  * Shortest period value to schedule the call
  */
-#define MIN_TIMER_QUEUE_PERIOD_DURATION (1 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
+#define MIN_TIMER_QUEUE_PERIOD_DURATION                             (1 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
 
 /**
  * Definition of the TimerQueue handle
@@ -1109,12 +1115,11 @@ typedef STATUS (*TimerCallbackFunc)(UINT32, UINT64, UINT64);
 /**
  * Timer queue error values starting from 0x41100000
  */
-#define STATUS_TIMER_QUEUE_BASE            STATUS_UTILS_BASE + 0x01100000
-#define STATUS_TIMER_QUEUE_STOP_SCHEDULING STATUS_TIMER_QUEUE_BASE + 0x00000001
-#define STATUS_INVALID_TIMER_COUNT_VALUE   STATUS_TIMER_QUEUE_BASE + 0x00000002
-#define STATUS_INVALID_TIMER_PERIOD_VALUE  STATUS_TIMER_QUEUE_BASE + 0x00000003
-#define STATUS_MAX_TIMER_COUNT_REACHED     STATUS_TIMER_QUEUE_BASE + 0x00000004
-#define STATUS_TIMER_QUEUE_SHUTDOWN        STATUS_TIMER_QUEUE_BASE + 0x00000005
+#define STATUS_TIMER_QUEUE_BASE                                     STATUS_UTILS_BASE + 0x01100000
+#define STATUS_TIMER_QUEUE_STOP_SCHEDULING                          STATUS_TIMER_QUEUE_BASE + 0x00000001
+#define STATUS_INVALID_TIMER_COUNT_VALUE                            STATUS_TIMER_QUEUE_BASE + 0x00000002
+#define STATUS_INVALID_TIMER_PERIOD_VALUE                           STATUS_TIMER_QUEUE_BASE + 0x00000003
+#define STATUS_MAX_TIMER_COUNT_REACHED                              STATUS_TIMER_QUEUE_BASE + 0x00000004
 
 /**
  * @param - PTIMER_QUEUE_HANDLE - OUT - Timer queue handle
@@ -1234,7 +1239,7 @@ PUBLIC_API STATUS timerQueueShutdown(TIMER_QUEUE_HANDLE);
 /**
  * Semaphore shutdown timeout value
  */
-#define SEMAPHORE_SHUTDOWN_TIMEOUT (200 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
+#define SEMAPHORE_SHUTDOWN_TIMEOUT                                      (200 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
 
 /**
  * Definition of the Semaphore handle
@@ -1259,9 +1264,9 @@ typedef SEMAPHORE_HANDLE* PSEMAPHORE_HANDLE;
 /**
  * Semaphore error values starting from 0x41200000
  */
-#define STATUS_SEMAPHORE_BASE                     STATUS_UTILS_BASE + 0x01200000
-#define STATUS_SEMAPHORE_OPERATION_AFTER_SHUTDOWN STATUS_SEMAPHORE_BASE + 0x00000001
-#define STATUS_SEMAPHORE_ACQUIRE_WHEN_LOCKED      STATUS_SEMAPHORE_BASE + 0x00000002
+#define STATUS_SEMAPHORE_BASE                                           STATUS_UTILS_BASE + 0x01200000
+#define STATUS_SEMAPHORE_OPERATION_AFTER_SHUTDOWN                       STATUS_SEMAPHORE_BASE + 0x00000001
+#define STATUS_SEMAPHORE_ACQUIRE_WHEN_LOCKED                            STATUS_SEMAPHORE_BASE + 0x00000002
 
 /**
  * Create a semaphore object
@@ -1390,11 +1395,11 @@ PUBLIC_API STATUS resetInstrumentedAllocatorsNoop();
 PUBLIC_API SIZE_T getInstrumentedTotalAllocationSize();
 
 #ifdef INSTRUMENTED_ALLOCATORS
-#define SET_INSTRUMENTED_ALLOCATORS()   setInstrumentedAllocators()
-#define RESET_INSTRUMENTED_ALLOCATORS() resetInstrumentedAllocators()
+#define SET_INSTRUMENTED_ALLOCATORS()               setInstrumentedAllocators()
+#define RESET_INSTRUMENTED_ALLOCATORS()             resetInstrumentedAllocators()
 #else
-#define SET_INSTRUMENTED_ALLOCATORS()   setInstrumentedAllocatorsNoop()
-#define RESET_INSTRUMENTED_ALLOCATORS() resetInstrumentedAllocatorsNoop()
+#define SET_INSTRUMENTED_ALLOCATORS()               setInstrumentedAllocatorsNoop()
+#define RESET_INSTRUMENTED_ALLOCATORS()             resetInstrumentedAllocatorsNoop()
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1404,24 +1409,24 @@ PUBLIC_API SIZE_T getInstrumentedTotalAllocationSize();
 /**
  * File logger error values starting from 0x41300000
  */
-#define STATUS_FILE_LOGGER_BASE                    STATUS_UTILS_BASE + 0x01200000
-#define STATUS_FILE_LOGGER_INDEX_FILE_INVALID_SIZE STATUS_SEMAPHORE_BASE + 0x00000001
+#define STATUS_FILE_LOGGER_BASE                                             STATUS_UTILS_BASE + 0x01200000
+#define STATUS_FILE_LOGGER_INDEX_FILE_INVALID_SIZE                          STATUS_SEMAPHORE_BASE + 0x00000001
 
 /**
  * File based logger limit constants
  */
-#define MAX_FILE_LOGGER_STRING_BUFFER_SIZE (100 * 1024 * 1024)
-#define MIN_FILE_LOGGER_STRING_BUFFER_SIZE (10 * 1024)
-#define MAX_FILE_LOGGER_LOG_FILE_COUNT     (10 * 1024)
+#define MAX_FILE_LOGGER_STRING_BUFFER_SIZE          (100 * 1024 * 1024)
+#define MIN_FILE_LOGGER_STRING_BUFFER_SIZE          (10 * 1024)
+#define MAX_FILE_LOGGER_LOG_FILE_COUNT              (10 * 1024)
 
 /**
  * Default values used in the file logger
  */
-#define FILE_LOGGER_LOG_FILE_NAME           "kvsFileLog"
-#define FILE_LOGGER_LAST_INDEX_FILE_NAME    "kvsFileLogIndex"
-#define FILE_LOGGER_STRING_BUFFER_SIZE      (100 * 1024)
-#define FILE_LOGGER_LOG_FILE_COUNT          3
-#define FILE_LOGGER_LOG_FILE_DIRECTORY_PATH "./"
+#define FILE_LOGGER_LOG_FILE_NAME                   "kvsFileLog"
+#define FILE_LOGGER_LAST_INDEX_FILE_NAME            "kvsFileLogIndex"
+#define FILE_LOGGER_STRING_BUFFER_SIZE              (100 * 1024)
+#define FILE_LOGGER_LOG_FILE_COUNT                  3
+#define FILE_LOGGER_LOG_FILE_DIRECTORY_PATH         "./"
 
 /**
  * Creates a file based logger object and installs the global logger callback function
@@ -1448,10 +1453,13 @@ PUBLIC_API STATUS freeFileLogger();
 /**
  * Helper macros to be used in pairs at the application start and end
  */
-#define CREATE_DEFAULT_FILE_LOGGER()                                                                                                                 \
-    createFileLogger(FILE_LOGGER_STRING_BUFFER_SIZE, FILE_LOGGER_LOG_FILE_COUNT, (PCHAR) FILE_LOGGER_LOG_FILE_DIRECTORY_PATH, TRUE, TRUE, NULL);
+#define CREATE_DEFAULT_FILE_LOGGER()                                \
+    createFileLogger(FILE_LOGGER_STRING_BUFFER_SIZE,                \
+                     FILE_LOGGER_LOG_FILE_COUNT,                    \
+                     (PCHAR) FILE_LOGGER_LOG_FILE_DIRECTORY_PATH,   \
+                     TRUE, TRUE, NULL);
 
-#define RELEASE_FILE_LOGGER() freeFileLogger();
+#define RELEASE_FILE_LOGGER()                                       freeFileLogger();
 
 #ifdef __cplusplus
 }

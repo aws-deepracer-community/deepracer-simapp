@@ -14,153 +14,82 @@ extern "C" {
 ////////////////////////////////////////////////////
 // Public headers
 ////////////////////////////////////////////////////
-#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #pragma clang diagnostic pop
-#endif
 
-/////////////////////////////////////////////////////
-/// Nullable Macros
-/////////////////////////////////////////////////////
-
-/*! \addtogroup NullableMacroUtilities
- * @brief Use this to set the value to NULL. If value field is set after calling this, it is ignored
- * @{
- */
 #define NULLABLE_SET_EMPTY(a)                                                                                                                        \
     do {                                                                                                                                             \
         (a).isNull = TRUE;                                                                                                                           \
     } while (FALSE)
 
-/**
- * @brief Used to check if the value is NULL. If yes, the value field should not be populated
- */
 #define NULLABLE_CHECK_EMPTY(a) ((a).isNull == TRUE)
 
-/**
- * @brief Used to set a value. The macro sets the isNull flag to FALSE and sets the passed in value
- */
 #define NULLABLE_SET_VALUE(a, val)                                                                                                                   \
     do {                                                                                                                                             \
         (a).isNull = FALSE;                                                                                                                          \
         (a).value = val;                                                                                                                             \
     } while (FALSE)
-/*!@} */
 
-/////////////////////////////////////////////////////
-/// Nullable data type Related structures
-/////////////////////////////////////////////////////
-
-/*! \addtogroup NullableStructures
- * @brief Custom data type to allow setting BOOL data type to NULL since C does
- * not support setting basic data types to NULL
- * @{
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    BOOL value;  //!< This value is used only if isNull is not set. Can be set to TRUE/FALSE
+    BOOL isNull;
+    BOOL value;
 } NullableBool;
 
-/**
- * @brief Custom data type to allow setting UINT8 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    UINT8 value; //!< This value is used only if isNull is not set. Can be set to a unsigned 8 bit value
+    BOOL isNull;
+    UINT8 value;
 } NullableUint8;
 
-/**
- * @brief Custom data type to allow setting INT8 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    INT8 value;  //!< This value is used only if isNull is not set. Can be set to a signed 8 bit value
+    BOOL isNull;
+    INT8 value;
 } NullableInt8;
 
-/**
- * @brief Custom data type to allow setting UINT16 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull;  //!< If this value is set, the value field will be ignored
-    UINT16 value; //!< This value is used only if isNull is not set. Can be set to a unsigned 16 bit value
+    BOOL isNull;
+    UINT16 value;
 } NullableUint16;
 
-/**
- * @brief Custom data type to allow setting INT16 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    INT16 value; //!< This value is used only if isNull is not set. Can be set to a signed 16 bit value
+    BOOL isNull;
+    INT16 value;
 } NullableInt16;
 
-/**
- * @brief Custom data type to allow setting UINT32 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull;  //!< If this value is set, the value field will be ignored
-    UINT32 value; //!< This value is used only if isNull is not set. Can be set to a unsigned 32 bit value
+    BOOL isNull;
+    UINT32 value;
 } NullableUint32;
 
-/**
- * @brief Custom data type to allow setting INT32 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    INT32 value; //!< This value is used only if isNull is not set. Can be set to a signed 32 bit value
+    BOOL isNull;
+    INT32 value;
 } NullableInt32;
 
-/**
- * @brief Custom data type to allow setting UINT64 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull;  //!< If this value is set, the value field will be ignored
-    UINT64 value; //!< This value is used only if isNull is not set. Can be set to a unsigned 64 bit value
+    BOOL isNull;
+    UINT64 value;
 } NullableUint64;
 
-/**
- * @brief Custom data type to allow setting INT64 data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    INT64 value; //!< This value is used only if isNull is not set. Can be set to a signed 64 bit value
+    BOOL isNull;
+    INT64 value;
 } NullableInt64;
 
-/**
- * @brief Custom data type to allow setting FLOAT data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull; //!< If this value is set, the value field will be ignored
-    FLOAT value; //!< This value is used only if isNull is not set. Can be set to a float value
+    BOOL isNull;
+    FLOAT value;
 } NullableFloat;
 
-/**
- * @brief Custom data type to allow setting DOUBLE data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull;  //!< If this value is set, the value field will be ignored
-    DOUBLE value; //!< This value is used only if isNull is not set. Can be set to a double value
+    BOOL isNull;
+    DOUBLE value;
 } NullableDouble;
 
-/**
- * @brief Custom data type to allow setting LONG DOUBLE data type to NULL since C does
- * not support setting basic data types to NULL
- */
 typedef struct {
-    BOOL isNull;   //!< If this value is set, the value field will be ignored
-    LDOUBLE value; //!< This value is used only if isNull is not set. Can be set to a long double value
+    BOOL isNull;
+    LDOUBLE value;
 } NullableLongDouble;
-/*!@} */
 
 #ifdef __cplusplus
 }

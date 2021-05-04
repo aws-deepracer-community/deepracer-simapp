@@ -1,5 +1,6 @@
 """ util module for all the mp4 saving
 """
+import errno
 import os
 import logging
 import numpy as np
@@ -150,8 +151,15 @@ def create_folder_path(camera_dir_list):
     """
     for path in camera_dir_list:
         dir_path = os.path.dirname(path)
-        if dir_path or not os.path.exists(dir_path):
+        # addressing mkdir and check directory race condition:
+        # https://stackoverflow.com/questions/12468022/python-fileexists-error-when-making-directory/30174982#30174982
+        # TODO: change this to os.makedirs(simtrace_dirname, exist_ok=True) when we migrate off python 2.7
+        try:
             os.makedirs(dir_path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            LOG.error("File already exist %s", dir_path)
 
 def milliseconds_to_timeformat(dtime_delta):
     """ Convert milliseconds to mm:ss.000 format
