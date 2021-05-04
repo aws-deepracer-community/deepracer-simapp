@@ -138,7 +138,8 @@ float64 z"""
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.link_states is None:
         self.link_states = None
@@ -240,7 +241,8 @@ float64 z"""
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.link_states is None:
         self.link_states = None
@@ -325,9 +327,9 @@ class SetLinkStatesResponse(genpy.Message):
   _md5sum = "a0af81bf1f7c2eacb2693173f999072a"
   _type = "deepracer_msgs/SetLinkStatesResponse"
   _has_header = False  # flag to mark the presence of a Header object
-  _full_text = """bool success
-string status_message
-int8[] status
+  _full_text = """bool success                # return true if set wrench successful
+string status_message       # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 """
   __slots__ = ['success','status_message','status','messages']
@@ -404,7 +406,8 @@ string[] messages
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end
@@ -484,7 +487,8 @@ string[] messages
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end

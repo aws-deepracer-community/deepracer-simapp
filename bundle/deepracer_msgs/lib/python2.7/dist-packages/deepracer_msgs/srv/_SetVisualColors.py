@@ -128,7 +128,8 @@ float32 a
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.ambients is None:
         self.ambients = None
@@ -276,7 +277,8 @@ float32 a
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.ambients is None:
         self.ambients = None
@@ -400,7 +402,7 @@ class SetVisualColorsResponse(genpy.Message):
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """bool success
 string status_message
-int8[] status
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 """
   __slots__ = ['success','status_message','status','messages']
@@ -477,7 +479,8 @@ string[] messages
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end
@@ -557,7 +560,8 @@ string[] messages
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end

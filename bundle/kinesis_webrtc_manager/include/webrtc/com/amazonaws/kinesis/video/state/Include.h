@@ -6,7 +6,7 @@
 
 #pragma once
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -22,9 +22,9 @@ extern "C" {
 ////////////////////////////////////////////////////
 // Status return codes
 ////////////////////////////////////////////////////
-#define STATUS_STATE_BASE                                                           0x52000000
-#define STATUS_INVALID_STREAM_STATE                                                 STATUS_STATE_BASE + 0x0000000e
-#define STATUS_STATE_MACHINE_STATE_NOT_FOUND                                        STATUS_STATE_BASE + 0x00000056
+#define STATUS_STATE_BASE                    0x52000000
+#define STATUS_INVALID_STREAM_STATE          STATUS_STATE_BASE + 0x0000000e
+#define STATUS_STATE_MACHINE_STATE_NOT_FOUND STATUS_STATE_BASE + 0x00000056
 
 ////////////////////////////////////////////////////
 // Main structure declarations
@@ -32,17 +32,17 @@ extern "C" {
 /**
  * Service call retry timeout - 100ms
  */
-#define SERVICE_CALL_RETRY_TIMEOUT                  (100 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
+#define SERVICE_CALL_RETRY_TIMEOUT (100 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND)
 
 /**
  * Indicates infinite retries
  */
-#define INFINITE_RETRY_COUNT_SENTINEL               0
+#define INFINITE_RETRY_COUNT_SENTINEL 0
 
 /**
  * State machine current version
  */
-#define STATE_MACHINE_CURRENT_VERSION               0
+#define STATE_MACHINE_CURRENT_VERSION 0
 
 /**
  * State transition function definitions
@@ -100,7 +100,7 @@ PUBLIC_API STATUS getStateMachineCurrentState(PStateMachine, PStateMachineState*
 PUBLIC_API STATUS setStateMachineCurrentState(PStateMachine, UINT64);
 PUBLIC_API STATUS resetStateMachineRetryCount(PStateMachine);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
-#endif  /* __CONTENT_STATE_INCLUDE__ */
+#endif /* __CONTENT_STATE_INCLUDE__ */

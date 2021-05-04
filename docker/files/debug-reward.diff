@@ -1,0 +1,109 @@
+diff --git a/bundle/sagemaker_rl_agent/lib/python3.6/site-packages/markov/defaults.py b/bundle/sagemaker_rl_agent/lib/python3.6/site-packages/markov/defaults.py
+index 3f5d7de..3cf4479 100644
+--- a/bundle/sagemaker_rl_agent/lib/python3.6/site-packages/markov/defaults.py
++++ b/bundle/sagemaker_rl_agent/lib/python3.6/site-packages/markov/defaults.py
+@@ -30,29 +30,85 @@ model_metadata = {
+     ]
+ }
+ 
+-"""
+-Default reward function is the centerline.
+-"""
+-def reward_function(params):
+ 
+-    distance_from_center = params['distance_from_center']
+-    track_width = params['track_width']
++import math
++import numpy
++import rospy
++import time
++
++class Reward:
++
++    '''
++    Debugging reward function to be used to track performance of local training.
++    Will print out the Real-Time-Factor (RTF), as well as how many
++    steps-per-second (sim-time) that the system is able to deliver.
++    '''
++
++    def __init__(self, verbose=False, track_time=False):
++        self.verbose = verbose
++        self.track_time = track_time
++
++        if track_time:
++            TIME_WINDOW=10
++            self.time = numpy.zeros([TIME_WINDOW, 2])
++
++        if verbose:
++            print("Initializing Reward Class")
++
++    def get_time(self):
++
++        wall_time_incr = numpy.max(self.time[:,0]) - numpy.min(self.time[:,0])
++        sim_time_incr = numpy.max(self.time[:,1]) - numpy.min(self.time[:,1])
++
++        rtf = sim_time_incr / wall_time_incr
++        fps = (self.time.shape[0] - 1) / sim_time_incr
++
++        return rtf, fps
+ 
+-    marker_1 = 0.1 * track_width
+-    marker_2 = 0.25 * track_width
+-    marker_3 = 0.5 * track_width
++    def record_time(self, steps):
+ 
+-    reward = 1e-3
+-    if distance_from_center <= marker_1:
+-        reward = 1
+-    elif distance_from_center <= marker_2:
+-        reward = 0.5
+-    elif distance_from_center <= marker_3:
+-        reward = 0.1
+-    else:
+-        reward = 1e-3  # likely crashed/ close to off track
++        index = int(steps) % self.time.shape[0]
++        self.time[index,0] = time.time()
++        self.time[index,1] = rospy.get_time()
+ 
+-    return float(reward)
++    def reward_function(self, params):
++
++        # Read input parameters
++        steps = params["steps"]
++
++        if self.track_time:
++            self.record_time(steps)
++
++        if self.track_time:
++            if steps >= self.time.shape[0]:
++                rtf, fps = self.get_time()
++                if fps > 2.0:
++                    print("TIME: s: {}, rtf: {}, fps:{}".format(int(steps), round(rtf, 2), round(fps, 2) ))
++
++        distance_from_center = params['distance_from_center']
++        track_width = params['track_width']
++
++        marker_1 = 0.1 * track_width
++        marker_2 = 0.25 * track_width
++        marker_3 = 0.5 * track_width
++
++        reward = 1e-3
++        if distance_from_center <= marker_1:
++            reward = 1
++        elif distance_from_center <= marker_2:
++            reward = 0.5
++        elif distance_from_center <= marker_3:
++            reward = 0.1
++        else:
++            reward = 1e-3  # likely crashed/ close to off track
++
++        return float(reward)
++
++
++reward_object = Reward(verbose=False, track_time=True)
++
++def reward_function(params):
++    return reward_object.reward_function(params)
+ 
+ 
+ """

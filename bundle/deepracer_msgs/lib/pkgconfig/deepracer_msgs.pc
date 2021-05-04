@@ -1,4 +1,4 @@
-prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_msgs
+prefix=/opt/amazon/build/private/tmp/colcon/install/deepracer_msgs
 
 Name: deepracer_msgs
 Description: Description of deepracer_msgs

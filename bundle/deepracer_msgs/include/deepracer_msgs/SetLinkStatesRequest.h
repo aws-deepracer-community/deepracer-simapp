@@ -62,6 +62,20 @@ ros::message_operations::Printer< ::deepracer_msgs::SetLinkStatesRequest_<Contai
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator2> & rhs)
+{
+  return lhs.link_states == rhs.link_states;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_msgs
 
 namespace ros
@@ -69,12 +83,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'gazebo_msgs': ['/opt/ros/kinetic/share/gazebo_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'trajectory_msgs': ['/opt/ros/kinetic/share/trajectory_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -139,58 +147,58 @@ struct Definition< ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "gazebo_msgs/LinkState[] link_states\n\
-\n\
-================================================================================\n\
-MSG: gazebo_msgs/LinkState\n\
-# @todo: FIXME: sets pose and twist of a link.  All children link poses/twists of the URDF tree are not updated accordingly, but should be.\n\
-string link_name            # link name, link_names are in gazebo scoped name notation, [model_name::body_name]\n\
-geometry_msgs/Pose pose     # desired pose in reference frame\n\
-geometry_msgs/Twist twist   # desired twist in reference frame\n\
-string reference_frame      # set pose/twist relative to the frame of this link/body\n\
-                            # leave empty or \"world\" or \"map\" defaults to world-frame\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Pose\n\
-# A representation of pose in free space, composed of position and orientation. \n\
-Point position\n\
-Quaternion orientation\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Point\n\
-# This contains the position of a point in free space\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Quaternion\n\
-# This represents an orientation in free space in quaternion form.\n\
-\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-float64 w\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Twist\n\
-# This expresses velocity in free space broken into its linear and angular parts.\n\
-Vector3  linear\n\
-Vector3  angular\n\
-\n\
-================================================================================\n\
-MSG: geometry_msgs/Vector3\n\
-# This represents a vector in free space. \n\
-# It is only meant to represent a direction. Therefore, it does not\n\
-# make sense to apply a translation to it (e.g., when applying a \n\
-# generic rigid transformation to a Vector3, tf2 will only apply the\n\
-# rotation). If you want your data to be translatable too, use the\n\
-# geometry_msgs/Point message instead.\n\
-\n\
-float64 x\n\
-float64 y\n\
-float64 z\n\
-";
+    return "gazebo_msgs/LinkState[] link_states\n"
+"\n"
+"================================================================================\n"
+"MSG: gazebo_msgs/LinkState\n"
+"# @todo: FIXME: sets pose and twist of a link.  All children link poses/twists of the URDF tree are not updated accordingly, but should be.\n"
+"string link_name            # link name, link_names are in gazebo scoped name notation, [model_name::body_name]\n"
+"geometry_msgs/Pose pose     # desired pose in reference frame\n"
+"geometry_msgs/Twist twist   # desired twist in reference frame\n"
+"string reference_frame      # set pose/twist relative to the frame of this link/body\n"
+"                            # leave empty or \"world\" or \"map\" defaults to world-frame\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Pose\n"
+"# A representation of pose in free space, composed of position and orientation. \n"
+"Point position\n"
+"Quaternion orientation\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Point\n"
+"# This contains the position of a point in free space\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Quaternion\n"
+"# This represents an orientation in free space in quaternion form.\n"
+"\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+"float64 w\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Twist\n"
+"# This expresses velocity in free space broken into its linear and angular parts.\n"
+"Vector3  linear\n"
+"Vector3  angular\n"
+"\n"
+"================================================================================\n"
+"MSG: geometry_msgs/Vector3\n"
+"# This represents a vector in free space. \n"
+"# It is only meant to represent a direction. Therefore, it does not\n"
+"# make sense to apply a translation to it (e.g., when applying a \n"
+"# generic rigid transformation to a Vector3, tf2 will only apply the\n"
+"# rotation). If you want your data to be translatable too, use the\n"
+"# geometry_msgs/Point message instead.\n"
+"\n"
+"float64 x\n"
+"float64 y\n"
+"float64 z\n"
+;
   }
 
   static const char* value(const ::deepracer_msgs::SetLinkStatesRequest_<ContainerAllocator>&) { return value(); }

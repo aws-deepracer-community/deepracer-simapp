@@ -65,8 +65,6 @@ uint32 seq
 # time-handling sugar is provided by the client library
 time stamp
 #Frame this data is associated with
-# 0: no frame
-# 1: global frame
 string frame_id
 """
   __slots__ = ['agent_name','action','reward','action_space_len','speed_list','steering_angle_list','image']
@@ -181,7 +179,8 @@ string frame_id
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.image is None:
         self.image = sensor_msgs.msg.Image()
@@ -335,7 +334,8 @@ string frame_id
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.image is None:
         self.image = sensor_msgs.msg.Image()

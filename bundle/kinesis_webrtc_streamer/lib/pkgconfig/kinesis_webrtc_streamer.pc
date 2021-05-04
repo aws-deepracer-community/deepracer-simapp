@@ -1,4 +1,4 @@
-prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/kinesis_webrtc_streamer
+prefix=/opt/amazon/build/private/tmp/colcon/install/kinesis_webrtc_streamer
 
 Name: kinesis_webrtc_streamer
 Description: Description of kinesis_webrtc_streamer

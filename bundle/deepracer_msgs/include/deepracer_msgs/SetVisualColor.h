@@ -57,8 +57,8 @@ struct DataType< ::deepracer_msgs::SetVisualColor > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColorRequest> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColor > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColorRequest> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColor >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetVisualColorRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_msgs::SetVisualColorRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetVisualColorRequest> should match 
-// service_traits::DataType< ::deepracer_msgs::SetVisualColor > 
+// service_traits::DataType< ::deepracer_msgs::SetVisualColorRequest> should match
+// service_traits::DataType< ::deepracer_msgs::SetVisualColor >
 template<>
 struct DataType< ::deepracer_msgs::SetVisualColorRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_msgs::SetVisualColorRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColorResponse> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColor > 
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColorResponse> should match
+// service_traits::MD5Sum< ::deepracer_msgs::SetVisualColor >
 template<>
 struct MD5Sum< ::deepracer_msgs::SetVisualColorResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_msgs::SetVisualColorResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::SetVisualColorResponse> should match 
-// service_traits::DataType< ::deepracer_msgs::SetVisualColor > 
+// service_traits::DataType< ::deepracer_msgs::SetVisualColorResponse> should match
+// service_traits::DataType< ::deepracer_msgs::SetVisualColor >
 template<>
 struct DataType< ::deepracer_msgs::SetVisualColorResponse>
 {

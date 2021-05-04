@@ -8,7 +8,7 @@ function ctrl_c() {
 
 PREFIX="awsdeepracercommunity"
 ARCH="cpu-avx cpu-avx2 cpu-gl-avx cpu-gl-avx2 gpu gpu-gl"
-TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_tf}/tensorflow-1.12.3-cp35-cp35m-linux_x86_64.whl'
+TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_secondary}/tensorflow-1.12.3-cp36-cp36m-linux_x86_64.whl'
 
 while getopts ":a:fp:t:" opt; do
 case $opt in
@@ -31,20 +31,30 @@ VERSION=$(cat $DIR/VERSION)
 
 echo "Preparing docker images for [$ARCH]"
 
-for a in $ARCH; do   
-    arch_p1=$(echo $a | cut -f1 -d- )
-    if [ "$arch_p1" == "cpu" ]; then
-        arch_p2=$(echo $a | cut -f2 -d- )
-        if [ "$arch_p2" == "gl" ]; then
-            arch_tf=$(echo $a | cut -f3 -d- )
-            tf=$(eval echo $TF_PATH)
-            docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-gl-${arch_tf} -f docker/Dockerfile.cpu-gl --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
+for a in $ARCH; do 
+
+    if [ -n "$(echo $a | gawk '/cpu/')" ]; then 
+        if [ -n "$(echo $a | gawk '/cpu-gl/')" ]; then 
+            arch_primary="cpu-gl"
         else
-            arch_tf=$arch_p2
-            tf=$(eval echo $TF_PATH)
-            docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-cpu-${arch_p2} -f docker/Dockerfile.cpu --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
-        fi 
-    elif [ "$arch_p1" == "gpu" ]; then
-        docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${a} -f docker/Dockerfile.${a} --build-arg IMG_VERSION=$VERSION
+            arch_primary="cpu"
+        fi           
+
+        arch_secondary="$(echo $a | gawk 'match($0, /(cpu)(-gl)?-(.*)/, m) { print m[3] }' )"
+        tf=$(eval echo $TF_PATH)
+        arch_tag="$arch_primary-$arch_secondary"
+
+    elif [ -n "$(echo $a | gawk '/gpu/')" ]; then 
+        arch_primary=$a
+        arch_tag=$a
+        tf="tensorflow-gpu==1.13.1"
+
+    else
+        echo "Architecture $a unknown."
     fi
+
+    set -x
+    docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
+    set +x
+
 done

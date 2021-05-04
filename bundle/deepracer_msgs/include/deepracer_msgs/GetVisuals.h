@@ -57,8 +57,8 @@ struct DataType< ::deepracer_msgs::GetVisuals > {
 };
 
 
-// service_traits::MD5Sum< ::deepracer_msgs::GetVisualsRequest> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::GetVisuals > 
+// service_traits::MD5Sum< ::deepracer_msgs::GetVisualsRequest> should match
+// service_traits::MD5Sum< ::deepracer_msgs::GetVisuals >
 template<>
 struct MD5Sum< ::deepracer_msgs::GetVisualsRequest>
 {
@@ -72,8 +72,8 @@ struct MD5Sum< ::deepracer_msgs::GetVisualsRequest>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::GetVisualsRequest> should match 
-// service_traits::DataType< ::deepracer_msgs::GetVisuals > 
+// service_traits::DataType< ::deepracer_msgs::GetVisualsRequest> should match
+// service_traits::DataType< ::deepracer_msgs::GetVisuals >
 template<>
 struct DataType< ::deepracer_msgs::GetVisualsRequest>
 {
@@ -87,8 +87,8 @@ struct DataType< ::deepracer_msgs::GetVisualsRequest>
   }
 };
 
-// service_traits::MD5Sum< ::deepracer_msgs::GetVisualsResponse> should match 
-// service_traits::MD5Sum< ::deepracer_msgs::GetVisuals > 
+// service_traits::MD5Sum< ::deepracer_msgs::GetVisualsResponse> should match
+// service_traits::MD5Sum< ::deepracer_msgs::GetVisuals >
 template<>
 struct MD5Sum< ::deepracer_msgs::GetVisualsResponse>
 {
@@ -102,8 +102,8 @@ struct MD5Sum< ::deepracer_msgs::GetVisualsResponse>
   }
 };
 
-// service_traits::DataType< ::deepracer_msgs::GetVisualsResponse> should match 
-// service_traits::DataType< ::deepracer_msgs::GetVisuals > 
+// service_traits::DataType< ::deepracer_msgs::GetVisualsResponse> should match
+// service_traits::DataType< ::deepracer_msgs::GetVisuals >
 template<>
 struct DataType< ::deepracer_msgs::GetVisualsResponse>
 {

@@ -209,16 +209,16 @@
 (setf (get deepracer_msgs::GetModelStatesRequest :md5sum-) "9f134a35b2aed42d29e57ebae260d3d6")
 (setf (get deepracer_msgs::GetModelStatesRequest :datatype-) "deepracer_msgs/GetModelStatesRequest")
 (setf (get deepracer_msgs::GetModelStatesRequest :definition-)
-      "string[] model_names
-string[] relative_entity_names
-
-
-
+      "string[] model_names                 # name of Gazebo Model
+string[] relative_entity_names       # return pose and twist relative to this entity
+                                     # an entity can be a model, body, or geom
+                                     # be sure to use gazebo scoped naming notation (e.g. [model_name::body_name])
+                                     # leave empty or \"world\" will use inertial world frame
 ---
 gazebo_msgs/ModelState[] model_states
-bool success
-string status_message
-int8[] status
+bool success                         # return true if get successful
+string status_message                # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================
@@ -275,16 +275,16 @@ float64 y
 (setf (get deepracer_msgs::GetModelStatesResponse :md5sum-) "9f134a35b2aed42d29e57ebae260d3d6")
 (setf (get deepracer_msgs::GetModelStatesResponse :datatype-) "deepracer_msgs/GetModelStatesResponse")
 (setf (get deepracer_msgs::GetModelStatesResponse :definition-)
-      "string[] model_names
-string[] relative_entity_names
-
-
-
+      "string[] model_names                 # name of Gazebo Model
+string[] relative_entity_names       # return pose and twist relative to this entity
+                                     # an entity can be a model, body, or geom
+                                     # be sure to use gazebo scoped naming notation (e.g. [model_name::body_name])
+                                     # leave empty or \"world\" will use inertial world frame
 ---
 gazebo_msgs/ModelState[] model_states
-bool success
-string status_message
-int8[] status
+bool success                         # return true if get successful
+string status_message                # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================

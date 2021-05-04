@@ -11,11 +11,11 @@ class GetModelStatesRequest(genpy.Message):
   _md5sum = "cbf135e797ae47a2c0be5146ab829cc2"
   _type = "deepracer_msgs/GetModelStatesRequest"
   _has_header = False  # flag to mark the presence of a Header object
-  _full_text = """string[] model_names
-string[] relative_entity_names
-
-
-
+  _full_text = """string[] model_names                 # name of Gazebo Model
+string[] relative_entity_names       # return pose and twist relative to this entity
+                                     # an entity can be a model, body, or geom
+                                     # be sure to use gazebo scoped naming notation (e.g. [model_name::body_name])
+                                     # leave empty or "world" will use inertial world frame
 """
   __slots__ = ['model_names','relative_entity_names']
   _slot_types = ['string[]','string[]']
@@ -81,7 +81,8 @@ string[] relative_entity_names
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end
@@ -151,7 +152,8 @@ string[] relative_entity_names
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       end = 0
       start = end
@@ -208,9 +210,9 @@ class GetModelStatesResponse(genpy.Message):
   _type = "deepracer_msgs/GetModelStatesResponse"
   _has_header = False  # flag to mark the presence of a Header object
   _full_text = """gazebo_msgs/ModelState[] model_states
-bool success
-string status_message
-int8[] status
+bool success                         # return true if get successful
+string status_message                # comments if available
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 
 ================================================================================
@@ -369,7 +371,8 @@ float64 z"""
     unpack serialized message in str into this message instance
     :param str: byte array of serialized message, ``str``
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.model_states is None:
         self.model_states = None
@@ -527,7 +530,8 @@ float64 z"""
     :param str: byte array of serialized message, ``str``
     :param numpy: numpy python module
     """
-    codecs.lookup_error("rosmsg").msg_type = self._type
+    if python3:
+      codecs.lookup_error("rosmsg").msg_type = self._type
     try:
       if self.model_states is None:
         self.model_states = None

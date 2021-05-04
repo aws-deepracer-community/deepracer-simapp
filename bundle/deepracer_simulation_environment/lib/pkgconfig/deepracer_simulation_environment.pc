@@ -1,4 +1,4 @@
-prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_simulation_environment
+prefix=/opt/amazon/build/private/tmp/colcon/install/deepracer_simulation_environment
 
 Name: deepracer_simulation_environment
 Description: Description of deepracer_simulation_environment

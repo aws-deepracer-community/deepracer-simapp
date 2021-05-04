@@ -66,6 +66,21 @@ ros::message_operations::Printer< ::deepracer_msgs::GetLinkStatesRequest_<Contai
 return s;
 }
 
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator==(const ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator2> & rhs)
+{
+  return lhs.link_names == rhs.link_names &&
+    lhs.reference_frames == rhs.reference_frames;
+}
+
+template<typename ContainerAllocator1, typename ContainerAllocator2>
+bool operator!=(const ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator1> & lhs, const ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator2> & rhs)
+{
+  return !(lhs == rhs);
+}
+
+
 } // namespace deepracer_msgs
 
 namespace ros
@@ -73,12 +88,6 @@ namespace ros
 namespace message_traits
 {
 
-
-
-// BOOLTRAITS {'IsFixedSize': False, 'IsMessage': True, 'HasHeader': False}
-// {'gazebo_msgs': ['/opt/ros/kinetic/share/gazebo_msgs/cmake/../msg'], 'geometry_msgs': ['/opt/ros/kinetic/share/geometry_msgs/cmake/../msg'], 'trajectory_msgs': ['/opt/ros/kinetic/share/trajectory_msgs/cmake/../msg'], 'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'sensor_msgs': ['/opt/ros/kinetic/share/sensor_msgs/cmake/../msg']}
-
-// !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
 
 
@@ -143,12 +152,12 @@ struct Definition< ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "string[] link_names\n\
-\n\
-string[] reference_frames\n\
-\n\
-\n\
-";
+    return "string[] link_names          # name of link\n"
+"                             # link names are prefixed by model name, e.g. pr2::base_link\n"
+"string[] reference_frames    # reference frame of returned information, must be a valid link\n"
+"                             # if empty, use inertial (gazebo world) frame\n"
+"                             # reference_frame names are prefixed by model name, e.g. pr2::base_link\n"
+;
   }
 
   static const char* value(const ::deepracer_msgs::GetLinkStatesRequest_<ContainerAllocator>&) { return value(); }

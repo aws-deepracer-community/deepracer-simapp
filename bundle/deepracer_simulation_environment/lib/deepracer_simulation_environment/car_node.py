@@ -105,9 +105,14 @@ class DeepRacer(object):
             self.model_update.set_model_pose(model_name=racecar_name,
                                              model_pose=car_model_pose)
             car_poses.append(car_model_pose)
-            self.update_model_visual(racecar_name,
-                                     self.shell_types[racecar_idx],
-                                     self.car_colors[racecar_idx])
+            visuals = self.model_update.get_model_visuals(racecar_name)
+            if const.F1 in self.shell_types[racecar_idx]:
+                self.model_update.hide_visuals(
+                    visuals=visuals,
+                    ignore_keywords=["f1_body_link"] if "amazon_van" in self.shell_types[racecar_idx].lower()
+                    else ["wheel", "f1_body_link"])
+            else:
+                self.model_update.update_color(visuals, self.car_colors[racecar_idx])
 
         # Let KVS collect a few frames before pausing the physics, so the car
         # will appear on the track
@@ -125,77 +130,6 @@ class DeepRacer(object):
         # Spawn the top camera model
         sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
                                                   "top_camera", "model.sdf"))
-
-    def _update_color(self, visuals, car_color):
-        link_names = []
-        visual_names = []
-        ambients, diffuses, speculars, emissives = [], [], [], []
-
-        for visual_name, link_name in zip(visuals.visual_names, visuals.link_names):
-            if "car_body_link" in visual_name:
-                visual_names.append(visual_name)
-                link_names.append(link_name)
-                ambient = ColorRGBA(const.COLOR_MAP[car_color].r * 0.1,
-                                    const.COLOR_MAP[car_color].g * 0.1,
-                                    const.COLOR_MAP[car_color].b * 0.1,
-                                    const.COLOR_MAP[car_color].a)
-                diffuse = ColorRGBA(const.COLOR_MAP[car_color].r * 0.35,
-                                    const.COLOR_MAP[car_color].g * 0.35,
-                                    const.COLOR_MAP[car_color].b * 0.35,
-                                    const.COLOR_MAP[car_color].a)
-
-                ambients.append(ambient)
-                diffuses.append(diffuse)
-                speculars.append(const.DEFAULT_COLOR)
-                emissives.append(const.DEFAULT_COLOR)
-        if len(visual_names) > 0:
-            req = SetVisualColorsRequest()
-            req.visual_names = visual_names
-            req.link_names = link_names
-            req.ambients = ambients
-            req.diffuses = diffuses
-            req.speculars = speculars
-            req.emissives = emissives
-            self.set_visual_colors(req)
-
-    def _hide_visuals(self, visuals):
-        link_names = []
-        visual_names = []
-
-        for visual_name, link_name in zip(visuals.visual_names, visuals.link_names):
-            if "wheel" not in visual_name \
-                    and "f1_body_link" not in visual_name:
-                visual_names.append(visual_name)
-                link_names.append(link_name)
-
-        req = SetVisualTransparenciesRequest()
-        req.link_names = link_names
-        req.visual_names = visual_names
-        req.transparencies = [1.0] * len(link_names)
-        self.set_visual_transparencies(req)
-
-        req = SetVisualVisiblesRequest()
-        req.link_names = link_names
-        req.visual_names = visual_names
-        req.visibles = [False] * len(link_names)
-        self.set_visual_visibles(req)
-
-    def update_model_visual(self, racecar_name, body_shell_type, car_color):
-        # Get all model's link names
-        body_names = self.get_model_prop(GetModelPropertiesRequest(model_name=racecar_name)) \
-            .body_names
-        link_names = ["%s::%s" % (racecar_name, b) for b in body_names]
-        res = self.get_visual_names(GetVisualNamesRequest(link_names=link_names))
-        get_visuals_req = GetVisualsRequest(link_names=res.link_names,
-                                            visual_names=res.visual_names)
-        visuals = self.get_visuals(get_visuals_req)
-
-        if const.F1 in body_shell_type.lower():
-            self._hide_visuals(visuals=visuals)
-        else:
-            self._update_color(visuals=visuals,
-                               car_color=car_color)
-
 
 if __name__ == '__main__':
     rospy.init_node('car_reset_node', anonymous=True)

@@ -311,10 +311,10 @@
   "f1147e9c73d95b8955fad12bcf7a1ecd")
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql '<SetVisualVisibles-response>)))
   "Returns full string definition for message of type '<SetVisualVisibles-response>"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:message-definition ((type (cl:eql 'SetVisualVisibles-response)))
   "Returns full string definition for message of type 'SetVisualVisibles-response"
-  (cl:format cl:nil "bool success~%string status_message~%int8[] status~%string[] messages~%~%~%"))
+  (cl:format cl:nil "bool success~%string status_message~%int8[] status                        # status of each request: true if succeeded otherwise false~%string[] messages~%~%~%"))
 (cl:defmethod roslisp-msg-protocol:serialization-length ((msg <SetVisualVisibles-response>))
   (cl:+ 0
      1

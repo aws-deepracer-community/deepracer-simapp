@@ -1,4 +1,4 @@
-prefix=/opt/workspace/AwsSilverstoneSimulationApplication/build/private/tmp/colcon/install/deepracer_gazebo_system_plugin
+prefix=/opt/amazon/build/private/tmp/colcon/install/deepracer_gazebo_system_plugin
 
 Name: deepracer_gazebo_system_plugin
 Description: Description of deepracer_gazebo_system_plugin

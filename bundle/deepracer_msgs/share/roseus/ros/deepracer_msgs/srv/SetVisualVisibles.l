@@ -222,7 +222,7 @@ bool block
 ---
 bool success
 string status_message
-int8[] status
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 ")
 
@@ -236,7 +236,7 @@ bool block
 ---
 bool success
 string status_message
-int8[] status
+int8[] status                        # status of each request: true if succeeded otherwise false
 string[] messages
 ")
 

@@ -12,7 +12,7 @@
 
     <rosparam file="$(arg local_yaml_path)" command="load"/>
 
-    <include file="$(find deepracer_simulation_environment)/launch/virtual_event_racetrack_with_racecar.launch">
+    <include file="$(find deepracer_simulation_environment)/launch/virtual_event_racetrack_with_kvs.launch">
         <arg name="world_name" value="$(env WORLD_NAME)" />
         <arg name="publish_to_kinesis_stream" value="true" />
         <arg name="simapp_versions" value="$(arg simapp_versions)" />

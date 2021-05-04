@@ -422,7 +422,7 @@ class GetVisualsResponse {
     geometry_msgs/Pose[] poses
     bool success
     string status_message
-    int8[] status
+    int8[] status                        # status of each request: true if succeeded otherwise false
     string[] messages
     
     ================================================================================
