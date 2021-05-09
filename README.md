@@ -22,7 +22,8 @@ Version 4 is the current development version, and it is receiving both new track
 | -------- | -------------- | -------- | -------- | -------- | 
 | 4.0.0-dev   | Upgrade to Physics 4  |  `4.0.0-dev-cpu-avx` `4.0.0-dev-cpu-gl-avx`  | `4.0.0-dev-cpu-avx2` `4.0.0-dev-cpu-gl-avx` | `4.0.0-dev-gpu` `4.0.0-dev-gpu-gl` |
 | 4.0.1-dev   | April Track  |  `4.0.1-dev-cpu-avx` `4.0.1-dev-cpu-gl-avx`  | `4.0.1-dev-cpu-avx2` `4.0.1-dev-cpu-gl-avx` | `4.0.1-dev-gpu` `4.0.1-dev-gpu-gl` |
-| 4.0.2-dev   | Melodic Upgrade  |  `4.0.2-dev-cpu-avx` `4.0.2-dev-cpu-gl-avx`  | `4.0.2-dev-cpu-avx2` `4.0.2-dev-cpu-gl-avx` | `4.0.2-dev-gpu` `4.0.2-dev-gpu-gl` |
+| 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx` | `4.0.2-gpu` `4.0.2-gpu-gl` |
+| 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx` | `4.0.3-gpu` `4.0.3-gpu-gl` |
 
 ### Version 3
 
@@ -30,16 +31,12 @@ Version 3 is the stable version, and it is receiving new tracks.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 3.0.1   | Upgrade to Simapp 3  |  `3.0.1-cpu-avx` `3.0.1-cpu-gl-avx`  | `3.0.1-cpu-avx2` `3.0.1-cpu-gl-avx` | `3.0.1-gpu` `3.0.1-gpu-gl` |
-| 3.0.2   | September Track  |  `3.0.2-cpu-avx` `3.0.2-cpu-gl-avx`  | `3.0.2-cpu-avx2` `3.0.2-cpu-gl-avx` | `3.0.2-gpu` `3.0.2-gpu-gl` |
-| 3.0.3   | October Track  |  `3.0.3-cpu-avx` `3.0.3-cpu-gl-avx`  | `3.0.3-cpu-avx2` `3.0.3-cpu-gl-avx` | `3.0.3-gpu` `3.0.3-gpu-gl` |
-| 3.0.4   | Code fixes  |  `3.0.4-cpu-avx` `3.0.4-cpu-gl-avx`  | `3.0.4-cpu-avx2` `3.0.4-cpu-gl-avx` | `3.0.4-gpu` `3.0.4-gpu-gl` |
-| 3.0.5   | Reinvent 2020 Tracks  |  `3.0.5-cpu-avx` `3.0.5-cpu-gl-avx`  | `3.0.5-cpu-avx2` `3.0.5-cpu-gl-avx` | `3.0.5-gpu` `3.0.5-gpu-gl` |
 | 3.0.6   | Updated Reinvent 2020 Tracks  |  `3.0.6-cpu-avx` `3.0.6-cpu-gl-avx`  | `3.0.6-cpu-avx2` `3.0.6-cpu-gl-avx` | `3.0.6-gpu` `3.0.6-gpu-gl` |
 | 3.1.0   | December features  |  `3.1.0-cpu-avx` `3.1.0-cpu-gl-avx`  | `3.1.0-cpu-avx2` `3.1.0-cpu-gl-avx` | `3.1.0-gpu` `3.1.0-gpu-gl` |
 | 3.1.1   | January features  |  `3.1.1-cpu-avx` `3.1.1-cpu-gl-avx`  | `3.1.1-cpu-avx2` `3.1.1-cpu-gl-avx` | `3.1.1-gpu` `3.1.1-gpu-gl` |
 | 3.1.2   | March Track  |  `3.1.2-cpu-avx` `3.1.2-cpu-gl-avx`  | `3.1.2-cpu-avx2` `3.1.2-cpu-gl-avx` | `3.1.2-gpu` `3.1.2-gpu-gl` |
 | 3.1.3   | April Track  |  `3.1.3-cpu-avx` `3.1.3-cpu-gl-avx`  | `3.1.3-cpu-avx2` `3.1.3-cpu-gl-avx` | `3.1.3-gpu` `3.1.3-gpu-gl` |
+| 3.1.4   | May Track  |  `3.1.4-cpu-avx` `3.1.4-cpu-gl-avx`  | `3.1.4-cpu-avx2` `3.1.4-cpu-gl-avx` | `3.1.4-gpu` `3.1.4-gpu-gl` |
 
 ### Version 2
 
