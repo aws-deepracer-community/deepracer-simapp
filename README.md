@@ -20,10 +20,9 @@ Version 4 is the current development version, and it is receiving both new track
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 4.0.0-dev   | Upgrade to Physics 4  |  `4.0.0-dev-cpu-avx` `4.0.0-dev-cpu-gl-avx`  | `4.0.0-dev-cpu-avx2` `4.0.0-dev-cpu-gl-avx` | `4.0.0-dev-gpu` `4.0.0-dev-gpu-gl` |
-| 4.0.1-dev   | April Track  |  `4.0.1-dev-cpu-avx` `4.0.1-dev-cpu-gl-avx`  | `4.0.1-dev-cpu-avx2` `4.0.1-dev-cpu-gl-avx` | `4.0.1-dev-gpu` `4.0.1-dev-gpu-gl` |
 | 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx` | `4.0.2-gpu` `4.0.2-gpu-gl` |
 | 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx` | `4.0.3-gpu` `4.0.3-gpu-gl` |
+| 4.0.4       | May Track  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx` | `4.0.4-gpu` `4.0.4-gpu-gl` |
 
 ### Version 3
 
