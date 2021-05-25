@@ -34,6 +34,8 @@ if [ "$1" == "multi" ]; then
 
 fi
 
+export DEEPRACER_JOB_TYPE_ENV="LOCAL"
+
 # Check if we have an RTF_OVERRIDE to change the RTF - change the world file.
 if [[ -n "${RTF_OVERRIDE}" ]]; then
 	echo "Setting RTF to ${RTF_OVERRIDE} for ${WORLD_NAME}"

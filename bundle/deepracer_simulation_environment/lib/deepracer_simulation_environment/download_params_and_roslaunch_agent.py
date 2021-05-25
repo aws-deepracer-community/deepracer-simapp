@@ -7,7 +7,7 @@ Example:
 """
 
 import logging
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import os
 import sys
 import time
@@ -16,10 +16,11 @@ import rospy
 
 from enum import Enum
 from markov.utils import test_internet_connection
-from markov.constants import DEFAULT_COLOR
+from markov.constants import DEFAULT_COLOR, DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
+                                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                                          SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
 from markov.log_handler.exception_handler import log_and_exit
 from markov.boto.s3.files.model_metadata import ModelMetadata
 from markov.boto.s3.files.yaml_file import YamlFile
@@ -27,7 +28,9 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_ME
                                       YAML_LOCAL_PATH_FORMAT,
                                       AgentType, YamlKey, ModelMetadataKeys)
 from markov.boto.s3.utils import get_s3_key
- 
+from markov.log_handler.logger import Logger
+
+LOG = Logger(__name__, logging.INFO).get_logger() 
  
 # Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
 WAIT_FOR_ROBOMAKER_TIME = 10
@@ -144,7 +147,46 @@ def main():
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 
+
+def write_pids_to_file():
+    """ Write pids to files for clean up purpose.
+    """
+    if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
+        pid_list = get_pid_list(["roslaunch", "rosmaster", "roscore"])  # ros processes
+        pid_list.append(str(os.getpid()))
+        # Get the ros processes pids to clean up
+        with open(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH, "w") as fp:
+            for pid in pid_list:
+                fp.write("%s\n" % pid)
+            LOG.info("Writing sim job pid %s to %s", pid_list, SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
+
+
+def get_pid_list(cmd_names):
+    """return a list of pids that has the command given in the command names.
+
+    Args:
+        cmd_names ([str]): list of command names
+
+    Returns:
+        list: list of pids
+    """
+    pid_list = []
+    sub_proc = Popen(['ps', 'aux'], shell=False, stdout=PIPE)
+    # Discard the first line (ps aux header)
+    sub_proc.stdout.readline()
+    for line in sub_proc.stdout:
+        # the separator for splitting is 'variable number of spaces'
+        proc_info = re.split(" *", line, 10)
+        pid = proc_info[1]
+        cmd = proc_info[10]
+        for cmd_name in cmd_names:
+            if cmd_name in cmd:
+                pid_list.append(pid)
+    return pid_list
+
+
 if __name__ == '__main__':
+    write_pids_to_file()
     rospy.init_node('download_params_and_roslaunch_agent_node', anonymous=True)
     main()
     rospy.spin()
