@@ -22,7 +22,8 @@ Version 4 is the current development version, and it is receiving both new track
 | -------- | -------------- | -------- | -------- | -------- | 
 | 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx` | `4.0.2-gpu` `4.0.2-gpu-gl` |
 | 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx` | `4.0.3-gpu` `4.0.3-gpu-gl` |
-| 4.0.4       | May Track  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx` | `4.0.4-gpu` `4.0.4-gpu-gl` |
+| 4.0.4       | May Updates  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx` | `4.0.4-gpu` `4.0.4-gpu-gl` |
+| 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx` | `4.0.5-gpu` `4.0.5-gpu-gl` |
 
 ### Version 3
 
