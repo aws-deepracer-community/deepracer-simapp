@@ -19,7 +19,7 @@
 </include>
 <light type="directional" name="Light 1">
 <pose>50 0 50 0 0.7 0</pose>
-<diffuse>0.35 0.35 .35 0</diffuse>
+<diffuse>0.0875 0.0875 0.0875 0</diffuse>
 <specular>.1 .1 .1 0</specular>
 <attenuation>
 <constant>1</constant>
@@ -32,7 +32,7 @@
 </light>
 <light type="directional" name="Light 2">
 <pose>-50 0 50 0 -0.7 0</pose>
-<diffuse>0.35 0.35 0.35 0</diffuse>
+<diffuse>0.0875 0.0875 0.0875 0</diffuse>
 <specular>.1 .1 .1 0</specular>
 <attenuation>
 <constant>1</constant>
@@ -45,7 +45,7 @@
 </light>
 <light type="directional" name="Light 3">
 <pose>0 50 50 -0.7 0 0</pose>
-<diffuse>0.35 0.35 0.35 0</diffuse>
+<diffuse>0.0875 0.0875 0.0875 0</diffuse>
 <specular>.1 .1 .1 0</specular>
 <attenuation>
 <constant>1</constant>
@@ -58,7 +58,7 @@
 </light>
 <light type="directional" name="Light 4">
 <pose>0 -50 50 0.7 0 0</pose>
-<diffuse>.35 .35 .35 1</diffuse>
+<diffuse>0.0875 0.0875 0.0875 0</diffuse>
 <specular>.1 .1 .1 1</specular>
 <attenuation>
 <constant>1</constant>
@@ -71,7 +71,7 @@
 </light>
 <light type="directional" name="Light 5">
 <pose>4.415930 -0.164192 5.0 0 0 0</pose>
-<diffuse>255 255 255 0</diffuse>
+<diffuse>64 64 64 0</diffuse>
 <specular>0 0 0 0</specular>
 <attenuation>
 <constant>0.5</constant>
