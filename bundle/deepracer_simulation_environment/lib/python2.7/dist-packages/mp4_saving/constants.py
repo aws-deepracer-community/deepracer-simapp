@@ -25,7 +25,7 @@ class Mp4Parameter(Enum):
     Extends:
         Enum
     """
-    FOURCC = cv2.VideoWriter_fourcc(*'mp4v')
+    FOURCC = cv2.VideoWriter_fourcc(*'avc1')
     FPS = 15
     FRAME_SIZE = (640, 480)
 

@@ -106,7 +106,8 @@ def main():
                 simapp_versions.append(str(simapp_version))
                 if Input.STEREO.value in sensors:
                     racecars_with_stereo_cameras.append(racecar_name)
-                if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors:
+                if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors or \
+                        Input.DISCRETIZED_SECTOR_LIDAR.value in sensors:
                     racecars_with_lidars.append(racecar_name)
 
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
@@ -116,7 +117,8 @@ def main():
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
-                            "f1:={}".format(yaml_file.is_f1)))]
+                            "f1:={} ".format(yaml_file.is_f1),
+                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
         else:
             # Note: SimApp Version is default to 4.0: virtual event only have a single body_shell_types
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
@@ -124,7 +126,9 @@ def main():
                             "body_shell_types:={} ".format(yaml_file.body_shell_types),
                             "simapp_versions:={} ".format('4.0'),                            
                             "f1:={} ".format(yaml_file.is_f1),
-                            "kinesis_webrtc_signaling_channel_name:={}".format(yaml_file.kinesis_webrtc_signaling_channel_name)))]
+                            "kinesis_webrtc_signaling_channel_name:={} ".format(
+                                yaml_file.kinesis_webrtc_signaling_channel_name),
+                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
 
         Popen(cmd, shell=True, executable="/bin/bash")
     

@@ -19,7 +19,7 @@
   <arg name="lidar_360_degree_min_angle" default="-2.61799" />
   <arg name="lidar_360_degree_max_angle" default="2.61799" />
   <arg name="lidar_360_degree_min_range" default="0.15" />
-  <arg name="lidar_360_degree_max_range" default="0.5" />
+  <arg name="lidar_360_degree_max_range" default="12.0" />
   <arg name="lidar_360_degree_range_resolution" default="0.01" />
   <arg name="lidar_360_degree_noise_mean" default="0.0" />
   <arg name="lidar_360_degree_noise_stddev" default="0.01" />
@@ -54,7 +54,6 @@
   <include file="$(find deepracer_simulation_environment)/launch/h264_video_encoder.launch" if="$(arg publish_to_kinesis_stream)">
     <arg name="config_file" value="$(find deepracer_simulation_environment)/config/racecar/deepracer_rpi_h264_encoder_config.yaml" />
     <arg name="image_transport" value="raw" />
-    <arg name="make_required" value="$(arg make_required)"/>
     <arg name="racecar_name" value="$(arg racecar_name)" />
   </include>
 
@@ -63,7 +62,6 @@
     <arg name="stream_config_file" value="$(find deepracer_simulation_environment)/config/racecar/deepracer_stream_config.yaml" />
     <arg name="kinesis_video_stream_name" value="$(arg kinesis_video_stream_name)" />
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)" />
-    <arg name="make_required" value="$(arg make_required)"/>
     <arg name="racecar_name" value="$(arg racecar_name)" />
   </include>
 
