@@ -52,7 +52,7 @@
 /* #undef LWS_HAVE_NEW_UV_VERSION_H */
 #define LWS_HAVE_OPENSSL_ECDH_H
 #define LWS_HAVE_PIPE2
-#define LWS_HAVE_EVENTFD
+/* #undef LWS_HAVE_EVENTFD */
 #define LWS_HAVE_PTHREAD_H
 #define LWS_HAVE_RSA_SET0_KEY
 /* #undef LWS_HAVE_RSA_verify_pss_mgf1 */

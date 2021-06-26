@@ -13,19 +13,22 @@ extern "C" {
 ////////////////////////////////////////////////////
 // Public headers
 ////////////////////////////////////////////////////
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
 #include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
 #include <webrtc/com/amazonaws/kinesis/video/common/Include.h>
 #include <webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h>
 #include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h>
-
+#if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
+/////////////////////////////////////////////////////
+/// Session description init related status codes
+/////////////////////////////////////////////////////
 
-/*===========================================================================================*/
-/*=================SESSION DESCRIPTION INIT RELATED STATUS ERROR CODES=== ===================*/
-/*===========================================================================================*/
-/*! \addtogroup SessionDescriptionInit
+/*! \addtogroup SessionDescriptionInitStatusCodes
  * WEBRTC Session Description initialization related codes. Values are derived
  * from STATUS_WEBRTC_BASE (0x55000000)
  *  @{
@@ -43,11 +46,12 @@ extern "C" {
 #define STATUS_SESSION_DESCRIPTION_MAX_MEDIA_COUNT                 STATUS_WEBRTC_BASE + 0x0000000A
 /*!@} */
 
-/*===========================================================================================*/
-/*==================================SDP RELATED STATUS ERROR CODES===========================*/
-/*===========================================================================================*/
-/*! \addtogroup SDP
- * WEBRTC SDP packet related error codes. Values are derived from STATUS_SDP_BASE
+/////////////////////////////////////////////////////
+/// SDP related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup SDPStatusCodes
+ * WEBRTC SDP packet related codes. Values are derived from STATUS_SDP_BASE
  * (0x56000000)
  *  @{
  */
@@ -69,11 +73,12 @@ extern "C" {
 #define STATUS_SDP_ATTRIBUTE_MAX_EXCEEDED       STATUS_SDP_BASE + 0x0000000F
 /*!@} */
 
-/*===========================================================================================*/
-/*=================================STUN RELATED STATUS ERROR CODES===========================*/
-/*===========================================================================================*/
-/*! \addtogroup STUN
- * WEBRTC STUN related error codes. Values are derived from STATUS_STUN_BASE (0x57000000)
+/////////////////////////////////////////////////////
+/// STUN related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup STUNStatusCodes
+ * WEBRTC STUN related codes. Values are derived from STATUS_STUN_BASE (0x57000000)
  *  @{
  */
 #define STATUS_STUN_BASE                                           STATUS_SDP_BASE + 0x01000000
@@ -104,11 +109,12 @@ extern "C" {
 #define STATUS_STUN_INVALID_CHANGE_REQUEST_ATTRIBUTE_LENGTH        STATUS_STUN_BASE + 0x00000019
 /*!@} */
 
-/*===========================================================================================*/
-/*==============================NETWORKING RELATED STATUS ERROR CODES========================*/
-/*===========================================================================================*/
-/*! \addtogroup Networking
- * WEBRTC Networking related error codes. Values are derived from STATUS_NETWORKING_BASE (0x58000000)
+/////////////////////////////////////////////////////
+/// Networking related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup NetworkingStatusCodes
+ * WEBRTC Networking related codes. Values are derived from STATUS_NETWORKING_BASE (0x58000000)
  *  @{
  */
 #define STATUS_NETWORKING_BASE                     STATUS_STUN_BASE + 0x01000000
@@ -128,13 +134,15 @@ extern "C" {
 #define STATUS_SOCKET_SET_SEND_BUFFER_SIZE_FAILED  STATUS_NETWORKING_BASE + 0x00000023
 #define STATUS_GET_SOCKET_FLAG_FAILED              STATUS_NETWORKING_BASE + 0x00000024
 #define STATUS_SET_SOCKET_FLAG_FAILED              STATUS_NETWORKING_BASE + 0x00000025
+#define STATUS_CLOSE_SOCKET_FAILED                 STATUS_NETWORKING_BASE + 0x00000026
 /*!@} */
 
-/*===========================================================================================*/
-/*=================================DTLS RELATED STATUS ERROR CODES===========================*/
-/*===========================================================================================*/
-/*! \addtogroup DTLS
- * WEBRTC DTLS related error codes. Values are derived from STATUS_DTLS_BASE (0x59000000)
+/////////////////////////////////////////////////////
+/// DTLS related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup DTLSStatusCodes
+ * WEBRTC DTLS related codes. Values are derived from STATUS_DTLS_BASE (0x59000000)
  *  @{
  */
 #define STATUS_DTLS_BASE                                  STATUS_NETWORKING_BASE + 0x01000000
@@ -147,11 +155,12 @@ extern "C" {
 
 /*!@} */
 
-/*===========================================================================================*/
-/*===============================ICE/TURN RELATED STATUS ERROR CODES=========================*/
-/*===========================================================================================*/
-/*! \addtogroup ICE
- * WEBRTC ICE related error codes. Values are derived from STATUS_ICE_BASE (0x5a000000)
+/////////////////////////////////////////////////////
+/// ICE/TURN related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup ICEStatusCodes
+ * WEBRTC ICE related codes. Values are derived from STATUS_ICE_BASE (0x5a000000)
  *  @{
  */
 #define STATUS_ICE_BASE                                                    STATUS_DTLS_BASE + 0x01000000
@@ -187,13 +196,15 @@ extern "C" {
 #define STATUS_ICE_NO_AVAILABLE_ICE_CANDIDATE_PAIR                         STATUS_ICE_BASE + 0x00000026
 #define STATUS_TURN_CONNECTION_PEER_NOT_USABLE                             STATUS_ICE_BASE + 0x00000027
 #define STATUS_ICE_SERVER_INDEX_INVALID                                    STATUS_ICE_BASE + 0x00000028
+#define STATUS_ICE_CANDIDATE_STRING_MISSING_TYPE                           STATUS_ICE_BASE + 0x00000029
 /*!@} */
 
-/*===========================================================================================*/
-/*===============================SRTP RELATED STATUS ERROR CODES=============================*/
-/*===========================================================================================*/
-/*! \addtogroup SRTP
- * WEBRTC SRTP related error codes. Values are derived from STATUS_SRTP_BASE (0x5b000000)
+/////////////////////////////////////////////////////
+/// SRTP related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup SRTPStatusCodes
+ * WEBRTC SRTP related codes. Values are derived from STATUS_SRTP_BASE (0x5b000000)
  *  @{
  */
 #define STATUS_SRTP_BASE                             STATUS_ICE_BASE + 0x01000000
@@ -202,13 +213,15 @@ extern "C" {
 #define STATUS_SRTP_TRANSMIT_SESSION_CREATION_FAILED STATUS_SRTP_BASE + 0x00000003
 #define STATUS_SRTP_RECEIVE_SESSION_CREATION_FAILED  STATUS_SRTP_BASE + 0x00000004
 #define STATUS_SRTP_INIT_FAILED                      STATUS_SRTP_BASE + 0x00000005
+#define STATUS_SRTP_NOT_READY_YET                    STATUS_SRTP_BASE + 0x00000006
 /*!@} */
 
-/*===========================================================================================*/
-/*================================RTP RELATED STATUS ERROR CODES=============================*/
-/*===========================================================================================*/
-/*! \addtogroup RTP
- * WEBRTC RTP related error codes. Values are derived from STATUS_RTP_BASE (0x5c000000)
+/////////////////////////////////////////////////////
+/// RTP related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup RTPStatusCodes
+ * WEBRTC RTP related codes. Values are derived from STATUS_RTP_BASE (0x5c000000)
  *  @{
  */
 #define STATUS_RTP_BASE                   STATUS_SRTP_BASE + 0x01000000
@@ -218,11 +231,12 @@ extern "C" {
 #define STATUS_RTP_INVALID_EXTENSION_LEN  STATUS_RTP_BASE + 0x00000004
 /*!@} */
 
-/*===========================================================================================*/
-/*===============================SIGNALING RELATED STATUS ERROR CODES========================*/
-/*===========================================================================================*/
-/*! \addtogroup Signaling
- * WEBRTC Signaling related error codes. Values are derived from STATUS_SIGNALING_BASE (0x5d000000)
+/////////////////////////////////////////////////////
+/// Signaling related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup SignalingStatusCodes
+ * WEBRTC Signaling related codes. Values are derived from STATUS_SIGNALING_BASE (0x5d000000)
  *  @{
  */
 #define STATUS_SIGNALING_BASE                                      STATUS_RTP_BASE + 0x01000000
@@ -276,13 +290,16 @@ extern "C" {
 #define STATUS_SIGNALING_RECONNECT_FAILED                          STATUS_SIGNALING_BASE + 0x00000030
 #define STATUS_SIGNALING_DELETE_CALL_FAILED                        STATUS_SIGNALING_BASE + 0x00000031
 #define STATUS_SIGNALING_INVALID_METRICS_VERSION                   STATUS_SIGNALING_BASE + 0x00000032
+#define STATUS_SIGNALING_INVALID_CLIENT_INFO_CACHE_FILE_PATH_LEN   STATUS_SIGNALING_BASE + 0x00000033
 
 /*!@} */
-/*===========================================================================================*/
-/*=========================PEER CONENCTION RELATED STATUS ERROR CODES========================*/
-/*===========================================================================================*/
-/*! \addtogroup PeerConnection
- * WEBRTC STUN related error codes. Values are derived from STATUS_PEERCONNECTION_BASE
+
+/////////////////////////////////////////////////////
+/// Peer connection related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup PeerConnectionStatusCodes
+ * WEBRTC STUN related codes. Values are derived from STATUS_PEERCONNECTION_BASE
  * (0x5e000000)
  *  @{
  */
@@ -292,11 +309,12 @@ extern "C" {
 #define STATUS_PEERCONNECTION_CODEC_MAX_EXCEEDED                       STATUS_PEERCONNECTION_BASE + 0x00000003
 /*!@} */
 
-/*===========================================================================================*/
-/*=============================SCTP RELATED STATUS ERROR CODES===============================*/
-/*===========================================================================================*/
-/*! \addtogroup SCTP
- * WEBRTC SCTP related error codes. Values are derived from STATUS_STUN_BASE (0x5f000000)
+/////////////////////////////////////////////////////
+/// SCTP related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup SCTPStatusCodes
+ * WEBRTC SCTP related codes. Values are derived from STATUS_STUN_BASE (0x5f000000)
  *  @{
  */
 #define STATUS_SCTP_BASE                 STATUS_PEERCONNECTION_BASE + 0x01000000
@@ -304,11 +322,12 @@ extern "C" {
 #define STATUS_SCTP_INVALID_DCEP_PACKET  STATUS_SCTP_BASE + 0x00000002
 /*!@} */
 
-/*===========================================================================================*/
-/*=================================RTCP RELATED STATUS ERROR CODES===========================*/
-/*===========================================================================================*/
-/*! \addtogroup RTCP
- * WEBRTC RTCP related error codes. Values are derived from STATUS_RTCP_BASE (0x60000000)
+/////////////////////////////////////////////////////
+/// RTCP related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup RTCPStatusCodes
+ * WEBRTC RTCP related codes. Values are derived from STATUS_RTCP_BASE (0x60000000)
  *  @{
  */
 #define STATUS_RTCP_BASE                         STATUS_SCTP_BASE + 0x01000000
@@ -322,11 +341,12 @@ extern "C" {
 #define STATUS_RTCP_INPUT_REMB_INVALID           STATUS_RTCP_BASE + 0x00000008
 /*!@} */
 
-/*===========================================================================================*/
-/*=======================ROLLING BUFFER RELATED STATUS ERROR CODES===========================*/
-/*===========================================================================================*/
-/*! \addtogroup RollingBuffer
- * WEBRTC Rolling Buffer related error codes. Values are derived from STATUS_ROLLING_BUFFER_BASE
+/////////////////////////////////////////////////////
+/// Rolling buffer related status codes
+/////////////////////////////////////////////////////
+
+/*! \addtogroup RollingBufferStatusCodes
+ * WEBRTC Rolling Buffer related codes. Values are derived from STATUS_ROLLING_BUFFER_BASE
  * (0x61000000)
  *  @{
  */
@@ -334,9 +354,10 @@ extern "C" {
 #define STATUS_ROLLING_BUFFER_NOT_IN_RANGE STATUS_ROLLING_BUFFER_BASE + 0x00000001
 /*!@} */
 
-/*===========================================================================================*/
-/*==========================LENGTHS OF DIFFERENT CHARACTER ARRAYS============================*/
-/*===========================================================================================*/
+/////////////////////////////////////////////////////
+/// Lengths of different character arrays
+/////////////////////////////////////////////////////
+
 /*! \addtogroup NameLengths
  * Lengths of some string members of different structures
  *  @{
@@ -354,13 +375,15 @@ extern "C" {
 
 /**
  * Maximum allowed ICE configuration user name length
+ * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_GetIceServerConfig.html#API_AWSAcuitySignalingService_GetIceServerConfig_RequestSyntax
  */
-#define MAX_ICE_CONFIG_USER_NAME_LEN 512
+#define MAX_ICE_CONFIG_USER_NAME_LEN 256
 
 /**
  * Maximum allowed ICE configuration password length
+ * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password
  */
-#define MAX_ICE_CONFIG_CREDENTIAL_LEN 512
+#define MAX_ICE_CONFIG_CREDENTIAL_LEN 256
 
 /**
  * Maximum allowed signaling URI length
@@ -433,9 +456,10 @@ extern "C" {
 #define MAX_SIGNALING_MESSAGE_LEN (10 * 1024)
 /*!@} */
 
-/*===========================================================================================*/
-/*=================================STRUCTURE VERSIONS MACROS=================================*/
-/*===========================================================================================*/
+/////////////////////////////////////////////////////
+/// Structure version macros
+/////////////////////////////////////////////////////
+
 /*! \addtogroup StructureVersions
  * Lengths of some string members of different structures
  *  @{
@@ -453,7 +477,7 @@ extern "C" {
 /**
  * Version of SignalingClientInfo structure
  */
-#define SIGNALING_CLIENT_INFO_CURRENT_VERSION 0
+#define SIGNALING_CLIENT_INFO_CURRENT_VERSION 1
 
 /**
  * Version of SignalingClientCallbacks structure
@@ -497,9 +521,10 @@ extern "C" {
 
 /*!@} */
 
-/*===========================================================================================*/
-/*=======================================COUNT RELATED MACROS================================*/
-/*===========================================================================================*/
+/////////////////////////////////////////////////////
+/// Count related macros
+/////////////////////////////////////////////////////
+
 /*! \addtogroup Counts
  * Counts of different structure members
  *  @{
@@ -522,9 +547,10 @@ extern "C" {
 #define MAX_ICE_SERVERS_COUNT (MAX_ICE_CONFIG_COUNT * MAX_ICE_CONFIG_URI_COUNT + 1)
 /*!@} */
 
-/*===========================================================================================*/
-/*=====================================TIMOUTS RELATED MACROS================================*/
-/*===========================================================================================*/
+/////////////////////////////////////////////////////
+/// Timeouts related macros
+/////////////////////////////////////////////////////
+
 /*! \addtogroup Timeouts
  * Timeouts for different activities in the stack
  *  @{
@@ -538,6 +564,11 @@ extern "C" {
  * Default connect sync API timeout
  */
 #define SIGNALING_CONNECT_STATE_TIMEOUT (15 * HUNDREDS_OF_NANOS_IN_A_SECOND)
+
+/**
+ * Default refresh ICE server config API timeout
+ */
+#define SIGNALING_REFRESH_ICE_CONFIG_STATE_TIMEOUT (15 * HUNDREDS_OF_NANOS_IN_A_SECOND)
 
 /**
  * Default signaling connection establishment timeout
@@ -628,89 +659,14 @@ typedef SIGNALING_CLIENT_HANDLE* PSIGNALING_CLIENT_HANDLE;
 #define IS_VALID_SIGNALING_CLIENT_HANDLE(h) ((h) != INVALID_SIGNALING_CLIENT_HANDLE_VALUE)
 #endif
 
-////////////////////////////////////////////////////
-/// Extra callbacks definitions
-////////////////////////////////////////////////////
-/**
- * @brief RtcOnFrame is fired everytime a frame is received from
- * the remote peer. It is available via the RtpRec
- *
- * NOTE: RtcOnFrame is a KVS specific method
- *
- */
-typedef VOID (*RtcOnFrame)(UINT64, PFrame);
-
-/**
- * @brief RtcOnBandwidthEstimation is fired everytime a bandwidth estimation value
- * is computed. This will be fired for sender or receiver side estimation
- *
- * NOTE: RtcOnBandwidthEstimation is a KVS specific method
- *
- */
-typedef VOID (*RtcOnBandwidthEstimation)(UINT64, DOUBLE);
-
-/**
- * @brief RtcOnPictureLoss is fired everytime a Picture Loss Indication (PLI)
- * feedback message is received. Receiving such message normally indicates that
- * you sent a video frame which receiver could not decode.
- * It may happen either because of packet loss or for any other reason.
- * Generating an intra frame (aka keyframe, aka I-frame) in response to such message is considered a good strategy.
- *
- * See https://tools.ietf.org/html/rfc4585#section-6.3 for more details
- */
-typedef VOID (*RtcOnPictureLoss)(UINT64);
-
-/**
- * @brief RtcDataChannel represents a bi-directional data channel between two peers.
- *
- * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel
- */
-typedef struct __RtcDataChannel {
-    CHAR name[MAX_DATA_CHANNEL_NAME_LEN + 1]; //!< Define name of data channel. Max length is 256 characters
-} RtcDataChannel, *PRtcDataChannel;
-
-/**
- * @brief RtcOnMessage is fired when a message is received for the DataChannel
- *
- * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel-onmessage
- */
-typedef VOID (*RtcOnMessage)(UINT64, PRtcDataChannel, BOOL, PBYTE, UINT32);
-
-/**
- * RtcOnOpen is fired when the DataChannel has opened
- *
- * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel-onopen
- */
-typedef VOID (*RtcOnOpen)(UINT64, PRtcDataChannel);
-
-/**
- * @brief RtcOnDataChannel is fired when the remote PeerConnection
- * creates a new DataChannel
- *
- * Reference: https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-ondatachannel
- */
-typedef VOID (*RtcOnDataChannel)(UINT64, PRtcDataChannel);
-
-/**
- * @brief RtcOnIceCandidate is fired when new iceCandidate is found. if PCHAR is NULL then candidate gathering is done.
- *
- * Reference: https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-ondatachannel
- */
-typedef VOID (*RtcOnIceCandidate)(UINT64, PCHAR);
-
-/**
- * @brief IceSetInterfaceFilterFunc is fired when a callback function to filter network interfaces is assigned.
- * The callback function is expected to check for specific interface names to be whitelisted/blacklisted
- */
-typedef BOOL (*IceSetInterfaceFilterFunc)(UINT64, PCHAR);
-
 ////////////////////////////////////////////////
-/// ENUMS
+/// Public Enums
 ////////////////////////////////////////////////
 
-/**
- * @brief
+/*! \addtogroup PublicEnums
+ * @brief RTC_PEER_CONNECTION_STATE Stats of RTC peer connection
  * Reference: https://www.w3.org/TR/webrtc/#rtcpeerconnectionstate-enum
+ * @{
  */
 typedef enum {
     RTC_PEER_CONNECTION_STATE_NONE = 0,         //!< Starting state of peer connection
@@ -722,13 +678,6 @@ typedef enum {
     RTC_PEER_CONNECTION_STATE_CLOSED = 6,       //!< This state leads to termination of streaming session
     RTC_PEER_CONNECTION_TOTAL_STATE_COUNT = 7,  //!< This state indicates maximum number of Peer connection states
 } RTC_PEER_CONNECTION_STATE;
-
-/**
- * @brief RtcOnConnectionStateChange is fired to report a change in peer connection state.
- *
- * Reference: https://www.w3.org/TR/webrtc/#event-iceconnectionstatechange
- */
-typedef VOID (*RtcOnConnectionStateChange)(UINT64, RTC_PEER_CONNECTION_STATE);
 
 /**
  * The enum specifies the type of SDP being exchanged
@@ -778,6 +727,7 @@ typedef enum {
     RTC_RTP_TRANSCEIVER_DIRECTION_SENDRECV = 1, //!< This indicates that peer can send and receive data
     RTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY = 2, //!< This indicates that the peer can only send information
     RTC_RTP_TRANSCEIVER_DIRECTION_RECVONLY = 3, //!< This indicates that the peer can only receive information
+    RTC_RTP_TRANSCEIVER_DIRECTION_INACTIVE = 4, //!< This indicates that the peer can not send or receive data
 } RTC_RTP_TRANSCEIVER_DIRECTION;
 
 /**
@@ -848,7 +798,7 @@ typedef enum {
 } SIGNALING_CHANNEL_ROLE_TYPE;
 
 /**
- * @brief detected network environment
+ * @brief Detected network environment
  */
 typedef enum {
     NAT_BEHAVIOR_NONE,                 //!< Dummy placeholder
@@ -860,11 +810,129 @@ typedef enum {
 } NAT_BEHAVIOR;
 
 /**
+ * @brief Type of caching implementation to use with the signaling client
+ */
+typedef enum {
+    SIGNALING_API_CALL_CACHE_TYPE_NONE, //!< No caching. The calls to the backend will be made for every API.
+
+    SIGNALING_API_CALL_CACHE_TYPE_DESCRIBE_GETENDPOINT, //!< Cache DeleteSignalingChannel and GetSignalingChannelEndpoint
+                                                        //!< backend API calls.
+                                                        //!< In this mode, the actual backend APIs will be
+                                                        //!< called once and the
+                                                        //!< information will be cached.
+                                                        //!< This mode is the recommended mode for most of the
+                                                        //!< use cases when the
+                                                        //!< signaling channel is not being constantly
+                                                        //!< created/deleted by other entities.
+    SIGNALING_API_CALL_CACHE_TYPE_FILE,                 //!< Cache DeleteSignalingChannel and GetSignalingChannelEndpoint
+                                                        //!< backend API calls.
+                                                        //!< In this mode, the actual backend APIs will be
+                                                        //!< called once and the
+                                                        //!< information will be cached into file
+                                                        //!< which will allow the cache to persist next time the signaling client is created.
+} SIGNALING_API_CALL_CACHE_TYPE;
+/*!@} */
+
+////////////////////////////////////////////////////
+/// Extra callbacks definitions
+////////////////////////////////////////////////////
+
+/*! \addtogroup Callbacks
+ * @brief RtcOnFrame is fired everytime a frame is received from
+ * the remote peer. It is available via the RtpRec
+ *
+ * NOTE: RtcOnFrame is a KVS specific method
+ * @{
+ */
+typedef VOID (*RtcOnFrame)(UINT64, PFrame);
+
+/**
+ * @brief RtcOnBandwidthEstimation is fired everytime a bandwidth estimation value
+ * is computed. This will be fired for sender or receiver side estimation
+ *
+ * NOTE: RtcOnBandwidthEstimation is a KVS specific method
+ *
+ */
+typedef VOID (*RtcOnBandwidthEstimation)(UINT64, DOUBLE);
+
+/**
+ * @brief RtcOnPictureLoss is fired everytime a Picture Loss Indication (PLI)
+ * feedback message is received. Receiving such message normally indicates that
+ * you sent a video frame which receiver could not decode.
+ * It may happen either because of packet loss or for any other reason.
+ * Generating an intra frame (aka keyframe, aka I-frame) in response to such message is considered a good strategy.
+ *
+ * See https://tools.ietf.org/html/rfc4585#section-6.3 for more details
+ */
+typedef VOID (*RtcOnPictureLoss)(UINT64);
+
+/**
+ * @brief RtcDataChannel represents a bi-directional data channel between two peers.
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel
+ */
+typedef struct __RtcDataChannel {
+    CHAR name[MAX_DATA_CHANNEL_NAME_LEN + 1]; //!< Define name of data channel. Max length is 256 characters
+    UINT32 id;                                //!< Read only field. Setting this in the application has no effect. This field is populated with the id
+               //!< set by the peer connection's createDataChannel() call or the channel id is set in createDataChannel()
+               //!< on embedded end.
+} RtcDataChannel, *PRtcDataChannel;
+
+/**
+ * @brief RtcOnMessage is fired when a message is received for the DataChannel
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel-onmessage
+ */
+typedef VOID (*RtcOnMessage)(UINT64, PRtcDataChannel, BOOL, PBYTE, UINT32);
+
+/**
+ * RtcOnOpen is fired when the DataChannel has opened
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#dom-rtcdatachannel-onopen
+ */
+typedef VOID (*RtcOnOpen)(UINT64, PRtcDataChannel);
+
+/**
+ * @brief RtcOnDataChannel is fired when the remote PeerConnection
+ * creates a new DataChannel
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-ondatachannel
+ */
+typedef VOID (*RtcOnDataChannel)(UINT64, PRtcDataChannel);
+
+/**
+ * @brief RtcOnIceCandidate is fired when new iceCandidate is found. if PCHAR is NULL then candidate gathering is done.
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-ondatachannel
+ */
+typedef VOID (*RtcOnIceCandidate)(UINT64, PCHAR);
+
+/**
+ * @brief IceSetInterfaceFilterFunc is fired when a callback function to filter network interfaces is assigned.
+ * The callback function is expected to check for specific interface names to be whitelisted/blacklisted
+ */
+typedef BOOL (*IceSetInterfaceFilterFunc)(UINT64, PCHAR);
+
+/**
+ * @brief RtcOnConnectionStateChange is fired to report a change in peer connection state.
+ *
+ * Reference: https://www.w3.org/TR/webrtc/#event-iceconnectionstatechange
+ */
+typedef VOID (*RtcOnConnectionStateChange)(UINT64, RTC_PEER_CONNECTION_STATE);
+/*!@} */
+
+/////////////////////////////////////////////////////
+/// Structures available for use by applications
+/////////////////////////////////////////////////////
+
+/*! \addtogroup PublicStructures
+ *
  * @brief An RtcPeerConnection instance allows an application to establish peer-to-peer
  * communications with another RtcPeerConnection, or to another endpoint implementing
  * the required protocols
  *
  * Reference: https://www.w3.org/TR/webrtc/#introduction
+ * @{
  */
 typedef struct {
     UINT32 version; //!< Version of peer connection structure
@@ -1019,7 +1087,7 @@ typedef struct {
  * Reference: https://www.w3.org/TR/webrtc/#rtcsessiondescription-class
  */
 typedef struct {
-    SDP_TYPE type;                                      //!< Indicates an offer/anser SDP type
+    SDP_TYPE type;                                      //!< Indicates an offer/answer SDP type
     CHAR sdp[MAX_SESSION_DESCRIPTION_INIT_SDP_LEN + 1]; //!< SDP Data containing media capabilities, transport addresses
                                                         //!< and related metadata in a transport agnostic manner
 } RtcSessionDescriptionInit, *PRtcSessionDescriptionInit;
@@ -1030,7 +1098,7 @@ typedef struct {
  * Reference: https://www.w3.org/TR/webrtc/#rtcicecandidate-interface
  */
 typedef struct {
-    CHAR candidate[MAX_ICE_CANDIDATE_INIT_CANDIDATE_LEN + 1]; //!< Candidate information contaiing details such as protocol
+    CHAR candidate[MAX_ICE_CANDIDATE_INIT_CANDIDATE_LEN + 1]; //!< Candidate information containing details such as protocol
                                                               //!< (udp/tcp), IP Address, priority and port
 } RtcIceCandidateInit, *PRtcIceCandidateInit;
 
@@ -1066,29 +1134,6 @@ typedef struct {
 } ReceivedSignalingMessage, *PReceivedSignalingMessage;
 
 /**
- * @brief Type of caching implementation to use with the signaling client
- */
-typedef enum {
-    SIGNALING_API_CALL_CACHE_TYPE_NONE, //!< No caching. The calls to the backend will be made for every API.
-
-    SIGNALING_API_CALL_CACHE_TYPE_DESCRIBE_GETENDPOINT, //!< Cache DeleteSignalingChannel and GetSignalingChannelEndpoint
-                                                        //!< backend API calls.
-                                                        //!< In this mode, the actual backend APIs will be
-                                                        //!< called once and the
-                                                        //!< information will be cached.
-                                                        //!< This mode is the recommended mode for most of the
-                                                        //!< use cases when the
-                                                        //!< signaling channel is not being constantly
-                                                        //!< created/deleted by other entities.
-    SIGNALING_API_CALL_CACHE_TYPE_FILE,                 //!< Cache DeleteSignalingChannel and GetSignalingChannelEndpoint
-                                                        //!< backend API calls.
-                                                        //!< In this mode, the actual backend APIs will be
-                                                        //!< called once and the
-                                                        //!< information will be cached into file
-                                                        //!< which will allow the cache to persist next time the signaling client is created.
-} SIGNALING_API_CALL_CACHE_TYPE;
-
-/**
  * @brief Populate Signaling client with client ID and application log level
  */
 typedef struct {
@@ -1097,6 +1142,11 @@ typedef struct {
     UINT32 loggingLevel;                            //!< Verbosity level for the logging. One of LOG_LEVEL_XXX
                                                     //!< values or the default verbosity will be assumed. Currently,
                                                     //!< default value is LOG_LEVEL_WARNING
+    PCHAR cacheFilePath;                            //!< File cache path override. The default
+                                                    //!< path is "./.SignalingCache_vN" which might not work for
+                                                    //!< devices which have read only partition where the code is
+                                                    //!< located. For default value or when file caching is not
+                                                    //!< being used this value can be NULL or point to an EMPTY_STRING.
 } SignalingClientInfo, *PSignalingClientInfo;
 
 /**
@@ -1153,8 +1203,10 @@ typedef struct {
 
     SIGNALING_API_CALL_CACHE_TYPE cachingPolicy; //!< Backend API call caching policy
 
-    BOOL asyncIceServerConfig; //!< When creating channel synchronously, do not await for the ICE
-                               //!< server configurations before returning from the call.
+    BOOL asyncIceServerConfig; //!< This parameter has no effect any longer. All ICE config retrieving
+                               //!< is done reactively when needed which will simplify the processing
+                               //!< and will help with issues on a small footprint platforms
+
 } ChannelInfo, *PChannelInfo;
 
 /**
@@ -1173,8 +1225,9 @@ typedef struct {
     CHAR userName[MAX_ICE_CONFIG_USER_NAME_LEN + 1];                 //!< Username for the server
     CHAR password[MAX_ICE_CONFIG_CREDENTIAL_LEN + 1];                //!< Password for the server
 } IceConfigInfo, *PIceConfigInfo;
+/*!@} */
 
-/**
+/*! \addtogroup Callbacks
  * Callback that is fired when Signalling client receives an Offer
  *
  * NOTE: Returning non-success status will terminate the internal event loop and will force
@@ -1184,6 +1237,7 @@ typedef struct {
  * @param - PReceivedSignalingMessage - Pointer to the received message
  *
  * @return - STATUS code of the operation
+ * @{
  */
 typedef STATUS (*SignalingClientMessageReceivedFunc)(UINT64, PReceivedSignalingMessage);
 
@@ -1218,14 +1272,16 @@ typedef STATUS (*SignalingClientErrorReportFunc)(UINT64, STATUS, PCHAR, UINT32);
  * @return - STATUS code of the operation
  */
 typedef STATUS (*SignalingClientStateChangedFunc)(UINT64, SIGNALING_CLIENT_STATE);
+/*!@} */
 
-/**
+/*! \addtogroup PublicStructures
  * @brief Register Signaling client callbacks
+ * @{
  */
 typedef struct {
     UINT32 version;                                       //!< Current version of the structure
     UINT64 customData;                                    //!< Custom data passed by the caller
-    SignalingClientMessageReceivedFunc messageReceivedFn; //!< Callback registeration for received SDP
+    SignalingClientMessageReceivedFunc messageReceivedFn; //!< Callback registration for received SDP
     SignalingClientErrorReportFunc errorReportFn;         //!<  Error reporting function. This is an optional member
     SignalingClientStateChangedFunc stateChangeFn;        //!< Signaling client state change callback
 } SignalingClientCallbacks, *PSignalingClientCallbacks;
@@ -1271,16 +1327,18 @@ typedef struct {
     BOOL negotiated;                                  //!< If set to true, it is up to the application to negotiate the channel and create an
                                                       //!< RTCDataChannel object with the same id as the other peer.
 } RtcDataChannelInit, *PRtcDataChannelInit;
+/*!@} */
 
 /////////////////////////////////////////////////////
 /// Metrics/Stats Related structures
 /////////////////////////////////////////////////////
 
-/**
+/*! \addtogroup StatsStructures
  * @brief Collection of ICE related stats
  * Reference: https://www.w3.org/TR/webrtc-stats/#ice-server-dict*
  * Reference: https://www.w3.org/TR/webrtc-stats/#icecandidate-dict*
  * Reference: https://www.w3.org/TR/webrtc-stats/#candidatepair-dict*
+ * @{
  */
 typedef struct {
     UINT32 version;                                    //!< Structure version
@@ -1321,31 +1379,28 @@ typedef struct {
     RtcStatsObject rtcStatsObject;       //!< Object that is populated by the SDK on request
 } RtcStats, *PRtcStats;
 
-typedef struct {
-    /**
-     * It is the current target bitrate configured for this particular SSRC and is the Transport Independent Application Specific (TIAS) bitrate
-     * [RFC3890]. Typically, the target bitrate is a configuration parameter provided to the codec's encoder and does not count the size of the IP or
-     * other transport layers like TCP or UDP. It is measured in bits per second and the bitrate is calculated over a 1 second window.
-     */
-    UINT32 targetBitrate;
-
-    UINT16 width;    //!< Only valid for video.
-    UINT16 height;   //!< Only valid for video.
-    UINT16 bitDepth; //!< Only valid for video. bits per pixel (24, 30, 36), note it's not per channel but per pixel
-
-    /** milliseconds spent encoding frames since last encoder update */
-    UINT32 encodeTimeMsec;
-
-    BOOL voiceActivity;              //!< Only valid for audio. TRUE if last audio packet contained voice.
-    DOMString encoderImplementation; //!< encoder name eg "libvpx" or "x264"
-
-} RtcEncoderStats, *PRtcEncoderStats;
-
-////////////////////////////////////////////////////
-// Public functions
-////////////////////////////////////////////////////
-
 /**
+ * @brief The stats object is populated by the application to include details about the encoder
+ */
+typedef struct {
+    UINT32 targetBitrate;  //!< It is the current target bitrate configured for this particular SSRC and is the Transport Independent Application
+                           //!< Specific (TIAS) bitrate [RFC3890]. Typically, the target bitrate is a configuration parameter provided to the codec's
+                           //!< encoder and does not count the size of the IP or other transport layers like TCP or UDP. It is measured in bits per
+                           //!< second and the bitrate is calculated over a 1 second window.
+    UINT16 width;          //!< Only valid for video.
+    UINT16 height;         //!< Only valid for video.
+    UINT16 bitDepth;       //!< Only valid for video. bits per pixel (24, 30, 36), note it's not per channel but per pixel
+    UINT32 encodeTimeMsec; //!< milliseconds spent encoding frames since last encoder update
+    BOOL voiceActivity;    //!< Only valid for audio. TRUE if last audio packet contained voice.
+    DOMString encoderImplementation; //!< encoder name eg "libvpx" or "x264"
+} RtcEncoderStats, *PRtcEncoderStats;
+/*!@} */
+
+////////////////////////////////////////////////////
+/// Public functions
+////////////////////////////////////////////////////
+
+/*! \addtogroup PublicMemberFunctions
  * @brief Initialize a RtcPeerConnection with the provided Configuration
  *
  * Reference: https://www.w3.org/TR/webrtc/#constructor
@@ -1354,6 +1409,7 @@ typedef struct {
  * @param[in,out] PRtcPeerConnection Uninitialized RtcPeerConnection
  *
  * @return STATUS code of the execution. STATUS_SUCCESS on success
+ * @{
  */
 PUBLIC_API STATUS createPeerConnection(PRtcConfiguration, PRtcPeerConnection*);
 
@@ -1580,12 +1636,23 @@ PUBLIC_API STATUS transceiverOnFrame(PRtcRtpTransceiver, UINT64, RtcOnFrame);
 PUBLIC_API STATUS transceiverOnBandwidthEstimation(PRtcRtpTransceiver, UINT64, RtcOnBandwidthEstimation);
 
 /**
+ * @brief Set a callback for picture loss packet (PLI)
+ *
+ * @param[in] PRtcRtpTransceiver Populated RtcRtpTransceiver struct
+ * @param[in] UINT64 User customData that will be passed along when RtcOnPictureLoss is called
+ * @param[in] RtcOnPictureLoss User RtcOnPictureLoss callback
+ *
+ * @return STATUS code of the execution. STATUS_SUCCESS on success
+ */
+PUBLIC_API STATUS transceiverOnPictureLoss(PRtcRtpTransceiver, UINT64, RtcOnPictureLoss);
+
+/**
  * @brief Frees the previously created transceiver object
  *
  * This method is currently a no-op as Transceivers are freed when freePeerConnection is called
  * in the future when renegotiation is supported this will be useful to remove Transceivers at anytime
  *
- * @param[in/out/opt] PRtcRtpTransceiver* IN/OUT/OPT RtcRtpTransceiver to be freed
+ * @param[in,out/opt] PRtcRtpTransceiver* in,out/OPT RtcRtpTransceiver to be freed
  *
  * @return STATUS code of the execution. STATUS_SUCCESS on success
  */
@@ -1628,7 +1695,9 @@ PUBLIC_API STATUS addSupportedCodec(PRtcPeerConnection, RTC_CODEC);
 PUBLIC_API STATUS writeFrame(PRtcRtpTransceiver, PFrame);
 
 /** @brief call this function to update stats which depend on external encoder
- * TODO: add better docs
+ *  @param[in] PRtcRtpTransceiver transceiver for which encoder stats will be updated
+ *  @param[in] PRtcEncoderStats populated in the application layer which is then consumed as part
+ *  of outgoingRtpStats
  */
 PUBLIC_API STATUS updateEncoderStats(PRtcRtpTransceiver, PRtcEncoderStats);
 
@@ -1720,7 +1789,7 @@ PUBLIC_API STATUS discoverNatBehavior(PCHAR, NAT_BEHAVIOR*, NAT_BEHAVIOR*, IceSe
 /**
  * @brief Return the string representation for each NAT_BEHAVIOR enum
  *
- * @param[in] NAT_BEHAVIOR the NAT_BEHAVIOR enum
+ * @param[in] natBehavior the NAT_BEHAVIOR enum
  *
  * @return PCHAR string representation for the NAT_BEHAVIOR enum
  *
@@ -1746,7 +1815,7 @@ PUBLIC_API STATUS createSignalingClientSync(PSignalingClientInfo, PChannelInfo, 
  *
  * NOTE: The call is idempotent.
  *
- * @param[in/out/opt] PSIGNALING_CLIENT_HANDLE Signaling client handle to free
+ * @param[in,out/opt] PSIGNALING_CLIENT_HANDLE Signaling client handle to free
  *
  * @return STATUS code of the execution. STATUS_SUCCESS on success
  */
@@ -1812,7 +1881,7 @@ PUBLIC_API STATUS signalingClientConnectSync(SIGNALING_CLIENT_HANDLE);
  */
 PUBLIC_API STATUS signalingClientDisconnectSync(SIGNALING_CLIENT_HANDLE);
 
-/*
+/**
  * @brief Gets the Signaling client current state.
  *
  * @param[in] SIGNALING_CLIENT_HANDLE Signaling client handle
@@ -1822,7 +1891,7 @@ PUBLIC_API STATUS signalingClientDisconnectSync(SIGNALING_CLIENT_HANDLE);
  */
 PUBLIC_API STATUS signalingClientGetCurrentState(SIGNALING_CLIENT_HANDLE, PSIGNALING_CLIENT_STATE);
 
-/*
+/**
  * Gets a literal string representing a Signaling client state.
  *
  * @param[in] SIGNALING_CLIENT_HANDLE Signaling client handle
@@ -1854,7 +1923,7 @@ PUBLIC_API STATUS signalingClientDeleteSync(SIGNALING_CLIENT_HANDLE);
  * @brief Get signaling related metrics
  *
  * @param[in] SIGNALING_CLIENT_HANDLE Signaling client handle
- * @param[in/out] PSignalingClientMetrics Signaling stats
+ * @param[in,out] PSignalingClientMetrics Signaling stats
  */
 PUBLIC_API STATUS signalingClientGetMetrics(SIGNALING_CLIENT_HANDLE, PSignalingClientMetrics);
 
@@ -1871,12 +1940,12 @@ PUBLIC_API STATUS signalingClientGetMetrics(SIGNALING_CLIENT_HANDLE, PSignalingC
  * @param [in] PRtcPeerConnection Peer connection for which the stats need to be collected
  * @param [in] PRtcRtpTransceiver set to desired transceiver for RTP stats, NULL otherwise
  * If set to NULL for RTP stats, the stats for the first transceiver are returned.
- * @param [in/out] PRtcStats The stats object with the RTCStatsType field populated
+ * @param [in,out] PRtcStats The stats object with the RTCStatsType field populated
  *
  * Reference: https://www.w3.org/TR/webrtc/#rtcpeerconnection-interface-extensions-1
  */
 PUBLIC_API STATUS rtcPeerConnectionGetMetrics(PRtcPeerConnection, PRtcRtpTransceiver, PRtcStats);
-
+/*!@} */
 #ifdef __cplusplus
 }
 #endif
