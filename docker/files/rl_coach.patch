@@ -312,3 +312,15 @@ index 531c523..4bde2ad 100644
  
          # Using a placeholder to update the variable during restore to avoid memory leak.
          # Ref: https://github.com/tensorflow/tensorflow/issues/4151
+diff --git a/rl_coach/core_types.py b/rl_coach/core_types.py
+index c173318..58fd0bc 100644
+--- a/rl_coach/core_types.py
++++ b/rl_coach/core_types.py
+@@ -182,6 +182,7 @@ class RunPhase(Enum):
+     TRAIN = "Training"
+     TEST = "Testing"
+     UNDEFINED = "Undefined"
++    WAITING = "Waiting"
+ 
+ 
+ # transitions
