@@ -18,7 +18,7 @@
   </include>
   <light type="point" name="Light 1">
          <pose>0 0 15 0 0 0</pose>
-         <diffuse>.225 .225 .225 1</diffuse>
+         <diffuse>0.225 0.225 0.225 1</diffuse>
          <specular>.1 .1 .1 1</specular>
          <attenuation>
                 <constant>0.4</constant>

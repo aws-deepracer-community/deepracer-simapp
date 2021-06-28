@@ -48,7 +48,7 @@ class AgentsVideoEditor(object):
     _agents_metrics = list()
     _mp4_queue = list()
 
-    def __init__(self, racecar_name, racecars_info):
+    def __init__(self, racecar_name, racecars_info, is_publish_to_kvs_stream):
         #
         # We have no guarantees as to when gazebo will load the model, therefore we need
         # to wait until the model is loaded and markov packages has spawned all the models
@@ -62,6 +62,7 @@ class AgentsVideoEditor(object):
         racecar_index = get_racecar_idx(racecar_name)
         self.racecar_index = racecar_index if racecar_index else 0
         self.agent_name = utils.racecar_name_to_agent_name(racecars_info, racecar_name)
+        self._is_publish_to_kvs_stream = is_publish_to_kvs_stream
 
         # init cv bridge
         self.bridge = CvBridge()
@@ -78,7 +79,6 @@ class AgentsVideoEditor(object):
         # %TODO seperate out the kvs and Mp4 functionality
         #
         self.job_type_image_edit_mp4 = self._get_image_editing_job_type()
-        self.job_type_image_edit_kvs = self._get_image_editing_job_type()
         if self.is_training:
             # String indicating the current phase
             self._current_training_phase = DoubleBuffer(clear_data_on_get=False)
@@ -88,12 +88,6 @@ class AgentsVideoEditor(object):
 
         # Fetching main camera frames, start consumer thread and producer thread for main camera frame
         main_camera_topic = "/{}/{}/zed/rgb/image_rect_color".format(self.racecar_name, "main_camera")
-
-        # All KVS related initialization
-        self._kvs_frame_buffer = DoubleBuffer(clear_data_on_get=False)
-
-        # Publish to KVS stream topic
-        self.kvs_pub = rospy.Publisher('/{}/deepracer/kvs_stream'.format(self.racecar_name), ROSImg, queue_size=1)
 
         # All Mp4 related initialization
         self._mp4_queue.append(Queue.Queue())
@@ -131,9 +125,16 @@ class AgentsVideoEditor(object):
             self.top_camera_mp4_pub = rospy.Publisher('/{}/topcamera/deepracer/mp4_stream'.format(racecar_name),
                                                       ROSImg, queue_size=1)
 
+        self._main_camera_frame_buffer = DoubleBuffer(clear_data_on_get=False)
         rospy.Subscriber(main_camera_topic, ROSImg, self._producer_frame_thread)
         Thread(target=self._consumer_mp4_frame_thread).start()
-        Thread(target=self._kvs_publisher).start()
+
+        # Leaderboard jobs do not require KVS streams
+        if self._is_publish_to_kvs_stream:
+            self.job_type_image_edit_kvs = self._get_image_editing_job_type()
+            # Publish to KVS stream topic
+            self.kvs_pub = rospy.Publisher('/{}/deepracer/kvs_stream'.format(self.racecar_name), ROSImg, queue_size=1)
+            Thread(target=self._kvs_publisher).start()
 
     def subscribe_to_save_mp4(self, req):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -275,6 +276,24 @@ class AgentsVideoEditor(object):
         except CvBridgeError as ex:
             LOG.info("cv2 to ROS image message error: {}".format(ex))
 
+    def get_latest_frame_metric_data(self):
+        """ Get the latest frame, metric information, training phase data from the double buffer.
+
+        Returns:
+            queue_data (dict): Contains information of the frame, agent_metric_info, training_phase
+        """
+        agent_metric_info = [metrics.get() for metrics in self._agents_metrics]
+        queue_data = {
+            FrameQueueData.FRAME.value: {
+                FrameTypes.MAIN_CAMERA_FRAME.value: self._main_camera_frame_buffer.get(),
+                FrameTypes.TOP_CAMERA_FRAME.value: (self._top_camera_frame_buffer.get()
+                                                    if self.top_camera_mp4_pub else [])
+            },
+            FrameQueueData.AGENT_METRIC_INFO.value: agent_metric_info,
+            FrameQueueData.TRAINING_PHASE.value: self._current_training_phase.get() if self.is_training else ''
+        }
+        return queue_data
+
     def _producer_frame_thread(self, frame):
         """ Callback for the main camera frame. Once a new image is received, all the required
         service calls are made to get the video metric information. Then for Mp4 its put into the queue
@@ -287,26 +306,17 @@ class AgentsVideoEditor(object):
             if len(self.racecars_info) != len(self._mp4_queue):
                 pass
             self._update_racers_metrics()
-            # Get frame from main camera & agents metric information
-            agent_metric_info = [metrics.get() for metrics in self._agents_metrics]
-            queue_data = {
-                FrameQueueData.FRAME.value: {
-                    FrameTypes.MAIN_CAMERA_FRAME.value: frame,
-                    FrameTypes.TOP_CAMERA_FRAME.value: (self._top_camera_frame_buffer.get()
-                                                        if self.top_camera_mp4_pub else [])
-                },
-                FrameQueueData.AGENT_METRIC_INFO.value: agent_metric_info,
-                FrameQueueData.TRAINING_PHASE.value: self._current_training_phase.get() if self.is_training else ''
-            }
+            self._main_camera_frame_buffer.put(frame)
 
-            self._kvs_frame_buffer.put(queue_data)
+            # Get frame from main camera & agents metric information
+            frame_metric_data = self.get_latest_frame_metric_data()
 
             if self.is_save_mp4_enabled:
                 if self._mp4_queue[self.racecar_index].qsize() == MAX_FRAMES_IN_QUEUE:
                     LOG.info("Dropping Mp4 frame from the queue")
                     self._mp4_queue[self.racecar_index].get()
                 # Append to the MP4 queue
-                self._mp4_queue[self.racecar_index].put(queue_data)
+                self._mp4_queue[self.racecar_index].put(frame_metric_data)
 
     def _consumer_mp4_frame_thread(self):
         """ Consumes the frame produced by the _producer_frame_thread and edits the image
@@ -335,8 +345,8 @@ class AgentsVideoEditor(object):
         try:
             prev_time = time.time()
             while not rospy.is_shutdown():
-                frame_data = self._kvs_frame_buffer.get()
-                edited_frames = self._edit_camera_images(frame_data, is_mp4=False)
+                frame_metric_data = self.get_latest_frame_metric_data()
+                edited_frames = self._edit_camera_images(frame_metric_data, is_mp4=False)
                 if not rospy.is_shutdown():
                     self.kvs_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
                     cur_time = time.time()
@@ -369,7 +379,7 @@ def get_racecars_info(racecar_names):
     return racecars_info
 
 
-def main(racecar_names):
+def main(racecar_names, is_publish_to_kvs_stream):
     """ Main function for kinesis_video_camera
     Arguments:
         racecar_names (list): racecar_names as a comma seperated string
@@ -378,7 +388,7 @@ def main(racecar_names):
         racecars_info = get_racecars_info(racecar_names)
         for racecar in racecars_info:
             # Instantiate AgentCameraVideoEditor objects for each racecar
-            AgentsVideoEditor(racecar['name'], racecars_info)
+            AgentsVideoEditor(racecar['name'], racecars_info, is_publish_to_kvs_stream)
     except Exception as err_msg:
         log_and_exit("Exception in Kinesis Video camera ros node: {}".format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
@@ -390,5 +400,7 @@ if __name__ == '__main__':
     rospy.init_node('agent_camera_video_editor_node', anonymous=True)
     RACER_NUM = int(sys.argv[1])
     RACECAR_NAMES = get_racecar_names(RACER_NUM)
-    main(RACECAR_NAMES)
+    PUBLISH_TO_KVS_STREAM = False if sys.argv[2] == "False" else True
+    LOG.info("Publishing to KVS stream is enabled: {}".format(str(PUBLISH_TO_KVS_STREAM)))
+    main(RACECAR_NAMES, PUBLISH_TO_KVS_STREAM)
     rospy.spin()

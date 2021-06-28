@@ -109,7 +109,7 @@ class DeepRacer(object):
             if const.F1 in self.shell_types[racecar_idx]:
                 self.model_update.hide_visuals(
                     visuals=visuals,
-                    ignore_keywords=["f1_body_link"] if "amazon_van" in self.shell_types[racecar_idx].lower()
+                    ignore_keywords=["f1_body_link"] if "with_wheel" in self.shell_types[racecar_idx].lower()
                     else ["wheel", "f1_body_link"])
             else:
                 self.model_update.update_color(visuals, self.car_colors[racecar_idx])
