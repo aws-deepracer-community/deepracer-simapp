@@ -9,6 +9,7 @@
     <!-- Pass a comma seperated value for env variable KINESIS_VIDEO_STREAM_NAME for multicar-->
     <arg name="kinesis_video_stream_names" default="$(optenv KINESIS_VIDEO_STREAM_NAME)" />
     <arg name="f1" default="false" />
+    <arg name="publish_to_kinesis_stream" default="true" />
 
     <rosparam file="$(arg local_yaml_path)" command="load"/>
 
@@ -21,6 +22,7 @@
         <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
+        <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
     </include>
 
     <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar_f1.launch" if="$(arg f1)">
@@ -32,6 +34,7 @@
         <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
+        <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
     </include>
 
     <node name="agent" pkg="deepracer_simulation_environment" type="run_evaluation_rl_agent.sh" output="screen" required="true"/>

@@ -276,7 +276,7 @@
   </include>
 
   <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="$(eval len(str(simapp_versions).split(',')))" output="screen" required="$(arg make_required)"></node>
-  <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="$(eval len(str(simapp_versions).split(',')))" output="screen" required="$(arg make_required)">
+  <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="$(eval len(str(simapp_versions).split(','))) $(arg publish_to_kinesis_stream)" output="screen" required="$(arg make_required)">
   </node>
 
   <!-- Saving mp4 for each agent -->
