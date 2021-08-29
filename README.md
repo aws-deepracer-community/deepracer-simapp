@@ -25,10 +25,11 @@ Version 4 is the current development version, and it is receiving both new track
 | 4.0.4       | May Updates  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx` | `4.0.4-gpu` `4.0.4-gpu-gl` |
 | 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx` | `4.0.5-gpu` `4.0.5-gpu-gl` |
 | 4.0.6       | July Track & Updates  |  `4.0.6-cpu-avx` `4.0.6-cpu-gl-avx`  | `4.0.6-cpu-avx2` `4.0.6-cpu-gl-avx` | `4.0.6-gpu` `4.0.6-gpu-gl` |
+| 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx` | `4.0.7-gpu` `4.0.7-gpu-gl` |
 
 ### Version 3
 
-Version 3 is the stable version, and it is receiving new tracks.
+Version 3 is in retired state, and will no longer get updates.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
