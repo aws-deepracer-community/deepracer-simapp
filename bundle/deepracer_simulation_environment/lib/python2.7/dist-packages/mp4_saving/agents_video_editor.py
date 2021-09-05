@@ -27,7 +27,7 @@ from markov.reset.constants import (RaceType)
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
 from deepracer_simulation_environment.srv import VideoMetricsSrvRequest, VideoMetricsSrv
-from mp4_saving.constants import (RaceCarColorToRGB, CameraTypeParams,
+from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
                                   KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes)
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
@@ -328,7 +328,7 @@ class AgentsVideoEditor(object):
                 # Pop from the queue and edit the image
                 frame_data = self._mp4_queue[self.racecar_index].get(timeout=QUEUE_WAIT_TIME)
             except Queue.Empty:
-                LOG.info("AgentsVideoEditor._mp4_queue['{}'] is empty. Retrying...".format(self.racecar_index))
+                LOG.debug("AgentsVideoEditor._mp4_queue['{}'] is empty. Retrying...".format(self.racecar_index))
             if frame_data:
                 edited_frames = self._edit_camera_images(frame_data, is_mp4=True)
                 self.mp4_main_camera_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])

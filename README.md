@@ -26,6 +26,7 @@ Version 4 is the current development version, and it is receiving both new track
 | 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx` | `4.0.5-gpu` `4.0.5-gpu-gl` |
 | 4.0.6       | July Track & Updates  |  `4.0.6-cpu-avx` `4.0.6-cpu-gl-avx`  | `4.0.6-cpu-avx2` `4.0.6-cpu-gl-avx` | `4.0.6-gpu` `4.0.6-gpu-gl` |
 | 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx` | `4.0.7-gpu` `4.0.7-gpu-gl` |
+| 4.0.8       | September Track  |  `4.0.8-cpu-avx` `4.0.8-cpu-gl-avx`  | `4.0.8-cpu-avx2` `4.0.8-cpu-gl-avx` | `4.0.8-gpu` `4.0.8-gpu-gl` |
 
 ### Version 3
 
@@ -33,12 +34,7 @@ Version 3 is in retired state, and will no longer get updates.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 3.0.6   | Updated Reinvent 2020 Tracks  |  `3.0.6-cpu-avx` `3.0.6-cpu-gl-avx`  | `3.0.6-cpu-avx2` `3.0.6-cpu-gl-avx` | `3.0.6-gpu` `3.0.6-gpu-gl` |
-| 3.1.0   | December features  |  `3.1.0-cpu-avx` `3.1.0-cpu-gl-avx`  | `3.1.0-cpu-avx2` `3.1.0-cpu-gl-avx` | `3.1.0-gpu` `3.1.0-gpu-gl` |
-| 3.1.1   | January features  |  `3.1.1-cpu-avx` `3.1.1-cpu-gl-avx`  | `3.1.1-cpu-avx2` `3.1.1-cpu-gl-avx` | `3.1.1-gpu` `3.1.1-gpu-gl` |
-| 3.1.2   | March Track  |  `3.1.2-cpu-avx` `3.1.2-cpu-gl-avx`  | `3.1.2-cpu-avx2` `3.1.2-cpu-gl-avx` | `3.1.2-gpu` `3.1.2-gpu-gl` |
-| 3.1.3   | April Track  |  `3.1.3-cpu-avx` `3.1.3-cpu-gl-avx`  | `3.1.3-cpu-avx2` `3.1.3-cpu-gl-avx` | `3.1.3-gpu` `3.1.3-gpu-gl` |
-| 3.1.4   | May Track  |  `3.1.4-cpu-avx` `3.1.4-cpu-gl-avx`  | `3.1.4-cpu-avx2` `3.1.4-cpu-gl-avx` | `3.1.4-gpu` `3.1.4-gpu-gl` |
+| 3.1.4    | May Track  |  `3.1.4-cpu-avx` `3.1.4-cpu-gl-avx`  | `3.1.4-cpu-avx2` `3.1.4-cpu-gl-avx` | `3.1.4-gpu` `3.1.4-gpu-gl` |
 
 ### Version 2
 
