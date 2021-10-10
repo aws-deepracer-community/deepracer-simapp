@@ -1,0 +1,12 @@
+# This is a sample file that shows how one can easily build docker images
+# inheriting one of the core images. This will upgrade the tensorflow for the gpu or gpu-gl image with one being compatible with RTX30.
+#
+# Build with 'docker build . -t awsdeepracercommunity/deepracer-robomaker:gpu-nv -f docker/Dockerfile.rtx30-tf --build-arg FROM_TAG=gpu'
+#
+ARG FROM_TAG
+FROM awsdeepracercommunity/deepracer-robomaker:${FROM_TAG}
+
+CMD pip install "https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/gpu-nv/tensorflow-1.15.4%2Bnv-cp36-cp36m-linux_x86_64.whl"
+
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["./run.sh run distributed_training.launch"]
