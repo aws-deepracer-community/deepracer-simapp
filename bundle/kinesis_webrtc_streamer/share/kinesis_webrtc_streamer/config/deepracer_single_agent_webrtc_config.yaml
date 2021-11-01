@@ -2,7 +2,7 @@
 webrtc_streamer_configuration:
       # spinner_thread_count: The number of threads we wish to have running for the kinesis_webrtc_streamer
       spinner_thread_count: 1
-      
+
       # stream_count: The number of signaling channels we wish to open
       stream_count: 1
 
@@ -12,28 +12,20 @@ webrtc_streamer_configuration:
 
         # Topic name to subscribe and receive the image/video data from.
         # if blank, does NOT open video channel
+        # video_subscription_topic: /virtual_event/$(arg racecar_name)/b9/kvs/video/encoded
         video_subscription_topic: /virtual_event/b9/kvs/video/encoded
 
         # Topic name to subscribe and receive string data from
         # if blank, does NOT open a data channel
+        # data_subscription_topic: /$(arg racecar_name)/string/raw
         data_subscription_topic: /string/raw
 
         # Topic name to publish and send messages to when receiving message over WebRTC
         # if blank, does NOT open a return data channel
+        # publish_topic: /$(arg racecar_name)/string/raw
         publish_topic: /string/raw
 
         # Video format type
         # 0: H264
         # 1: VP8
         video_format_type: 0
-
-      stream1:
-        signaling_channel_name: "sample_channel_name1"
-
-        video_subscription_topic: /b9/kvs/video/encoded
-
-        data_subscription_topic: /string/raw
-
-        publish_topic: /string/raw
-        video_format_type: 0
-      

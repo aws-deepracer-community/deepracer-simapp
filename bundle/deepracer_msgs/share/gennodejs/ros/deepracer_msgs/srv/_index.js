@@ -1,42 +1,42 @@
 
 "use strict";
 
-let GetVisualNames = require('./GetVisualNames.js')
 let GetVisuals = require('./GetVisuals.js')
-let SetVisualPoses = require('./SetVisualPoses.js')
-let GetModelStates = require('./GetModelStates.js')
-let SetModelStates = require('./SetModelStates.js')
-let SetVisualTransparency = require('./SetVisualTransparency.js')
 let SetVisualMeshes = require('./SetVisualMeshes.js')
-let SetVisualVisibles = require('./SetVisualVisibles.js')
-let SetVisualPose = require('./SetVisualPose.js')
+let SetVisualColors = require('./SetVisualColors.js')
 let GetLightNames = require('./GetLightNames.js')
 let SetVisualVisible = require('./SetVisualVisible.js')
+let GetVisualNames = require('./GetVisualNames.js')
+let GetModelStates = require('./GetModelStates.js')
+let SetVisualVisibles = require('./SetVisualVisibles.js')
+let SetVisualTransparency = require('./SetVisualTransparency.js')
 let SetVisualTransparencies = require('./SetVisualTransparencies.js')
-let GetLinkStates = require('./GetLinkStates.js')
+let SetVisualPose = require('./SetVisualPose.js')
 let SetLinkStates = require('./SetLinkStates.js')
-let SetVisualMesh = require('./SetVisualMesh.js')
+let SetVisualPoses = require('./SetVisualPoses.js')
 let GetVisual = require('./GetVisual.js')
+let SetModelStates = require('./SetModelStates.js')
+let SetVisualMesh = require('./SetVisualMesh.js')
+let GetLinkStates = require('./GetLinkStates.js')
 let SetVisualColor = require('./SetVisualColor.js')
-let SetVisualColors = require('./SetVisualColors.js')
 
 module.exports = {
-  GetVisualNames: GetVisualNames,
   GetVisuals: GetVisuals,
-  SetVisualPoses: SetVisualPoses,
-  GetModelStates: GetModelStates,
-  SetModelStates: SetModelStates,
-  SetVisualTransparency: SetVisualTransparency,
   SetVisualMeshes: SetVisualMeshes,
-  SetVisualVisibles: SetVisualVisibles,
-  SetVisualPose: SetVisualPose,
+  SetVisualColors: SetVisualColors,
   GetLightNames: GetLightNames,
   SetVisualVisible: SetVisualVisible,
+  GetVisualNames: GetVisualNames,
+  GetModelStates: GetModelStates,
+  SetVisualVisibles: SetVisualVisibles,
+  SetVisualTransparency: SetVisualTransparency,
   SetVisualTransparencies: SetVisualTransparencies,
-  GetLinkStates: GetLinkStates,
+  SetVisualPose: SetVisualPose,
   SetLinkStates: SetLinkStates,
-  SetVisualMesh: SetVisualMesh,
+  SetVisualPoses: SetVisualPoses,
   GetVisual: GetVisual,
+  SetModelStates: SetModelStates,
+  SetVisualMesh: SetVisualMesh,
+  GetLinkStates: GetLinkStates,
   SetVisualColor: SetVisualColor,
-  SetVisualColors: SetVisualColors,
 };
