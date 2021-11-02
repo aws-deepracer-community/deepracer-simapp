@@ -28,7 +28,7 @@ Version 4 is the current development version, and it is receiving both new track
 | 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx` | `4.0.7-gpu` `4.0.7-gpu-gl` |
 | 4.0.8       | September Track  |  `4.0.8-cpu-avx` `4.0.8-cpu-gl-avx`  | `4.0.8-cpu-avx2` `4.0.8-cpu-gl-avx` | `4.0.8-gpu` `4.0.8-gpu-gl` |
 | 4.0.9       | October Track  |  `4.0.9-cpu-avx` `4.0.9-cpu-gl-avx`  | `4.0.9-cpu-avx2` `4.0.9-cpu-gl-avx` | `4.0.9-gpu` `4.0.9-gpu-gl` |
-| 4.0.9       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx` | `4.0.10-gpu` `4.0.10-gpu-gl` |
+| 4.0.10       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx` | `4.0.10-gpu` `4.0.10-gpu-gl` |
 
 ### Version 3
 
