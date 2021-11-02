@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.92.0 commit date:2021-02-24, commit time:16:25, hash:02948a2cab44</authoring_tool>
+    </contributor>
+    <created>2021-10-21T16:30:25</created>
+    <modified>2021-10-21T16:30:25</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="palace_building-effect">
+      <profile_COMMON>
+        <newparam sid="Map__15-surface">
+          <surface type="2D">
+            <init_from>Map__15</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Map__15-sampler">
+          <sampler2D>
+            <source>Map__15-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Map__15-sampler" texcoord="UVChannel_1"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="Map__15" name="Map__15">
+      <init_from>textures/Caesars-Palace_sheet1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="palace_building-material" name="palace building">
+      <instance_effect url="#palace_building-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="Mesh_028-mesh" name="Mesh.028">
+      <mesh>
+        <source id="Mesh_028-mesh-positions">
+          <float_array id="Mesh_028-mesh-positions-array" count="60">-15.38634 24.10284 -2.00724e-6 -9.14156 26.88289 -2.12876e-6 -9.14156 29.50694 -2.24346e-6 -15.38634 24.10284 0.7580546 -9.14156 26.88289 0.7580545 -9.14156 29.50694 0.7580544 -21.40899 25.43801 -2.0656e-6 -21.40899 25.43801 0.7580546 -21.40899 29.50694 0.7580544 -15.38634 32.69617 0.7580543 -13.30474 25.02952 -2.04775e-6 -11.22315 25.9562 -2.08826e-6 -13.30474 25.02952 0.7580546 -11.22315 25.9562 0.7580546 -15.38634 29.50694 0.7580544 -19.40144 24.99295 -2.04615e-6 -17.39389 24.5479 -2.0267e-6 -17.39389 24.5479 0.7580546 -19.40144 24.99295 0.7580546 -21.40899 32.69617 0.7580543</float_array>
+          <technique_common>
+            <accessor source="#Mesh_028-mesh-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_028-mesh-normals">
+          <float_array id="Mesh_028-mesh-normals-array" count="96">0 0 1 0 0 1 0 0 1 0.4066988 -0.9135623 0 0.406699 -0.9135622 0 0.4066988 -0.9135623 0 1 0 0 1 0 0 1 1.36825e-7 0 -0.2164367 -0.9762967 -1.23223e-6 -0.2164366 -0.9762968 0 -0.2164367 -0.9762967 -9.55165e-7 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0.406699 -0.9135623 0 0.406699 -0.9135622 0 0.4066988 -0.9135623 0 0.4066991 -0.9135623 0 0.4066989 -0.9135624 0 -0.2164372 -0.9762966 -5.54134e-7 -0.2164372 -0.9762966 0 -0.2164364 -0.9762967 0 -0.2164366 -0.9762967 0 -0.2164365 -0.9762967 0 0 0 1 1 0 0 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#Mesh_028-mesh-normals-array" count="32" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_028-mesh-map-0">
+          <float_array id="Mesh_028-mesh-map-0-array" count="144">0.8234306 0.4125541 0.6828006 0.3301107 0.8601328 0.3301108 0.9976859 0.001543641 0.9233734 0.2492395 0.9233735 0.001543641 0.9225952 0.4963948 0.9982604 0.2274678 0.9982604 0.4963948 0.92197 0.2504534 0.9992185 0.002130389 0.9992185 0.2504534 0.6828006 0.3301107 0.8615809 0.08864575 0.8792079 0.1681566 0.5564885 0.2476674 0.6828006 0.009134829 0.6828006 0.3301107 0.8234306 0.4125541 0.7867286 0.4949973 0.6828006 0.4949973 0.6828006 0.3301107 0.8968348 0.2476674 0.8601328 0.3301108 0.9976859 0.002096593 0.9233735 0.2497925 0.9233735 0.002096593 0.9233734 0.4969353 0.9976859 0.2492395 0.9976859 0.4969353 0.92197 0.4987763 0.9992185 0.2504534 0.9992185 0.4987763 0.9992185 0.002056121 0.92197 0.2503793 0.92197 0.002056121 0.6828006 0.009134829 0.843954 0.009134829 0.8615809 0.08864575 0.8792079 0.1681566 0.8968348 0.2476674 0.6828006 0.3301107 0.8234306 0.4125541 0.6828006 0.4949973 0.6828006 0.3301107 0.9976859 0.001543641 0.9976859 0.2492395 0.9233734 0.2492395 0.9225952 0.4963948 0.9225952 0.2274678 0.9982604 0.2274678 0.92197 0.2504534 0.92197 0.002130389 0.9992185 0.002130389 0.6828006 0.3301107 0.6828006 0.009134829 0.8615809 0.08864575 0.5564885 0.2476674 0.5564885 0.08864569 0.6828006 0.009134829 0.9976859 0.002096593 0.9976859 0.2497925 0.9233735 0.2497925 0.9233734 0.4969353 0.9233734 0.2492395 0.9976859 0.2492395 0.92197 0.4987763 0.92197 0.2504534 0.9992185 0.2504534 0.9992185 0.002056121 0.9992185 0.2503793 0.92197 0.2503793</float_array>
+          <technique_common>
+            <accessor source="#Mesh_028-mesh-map-0-array" count="72" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Mesh_028-mesh-vertices">
+          <input semantic="POSITION" source="#Mesh_028-mesh-positions"/>
+        </vertices>
+        <triangles material="palace_building-material" count="24">
+          <input semantic="VERTEX" source="#Mesh_028-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Mesh_028-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Mesh_028-mesh-map-0" offset="2" set="0"/>
+          <p>13 0 0 14 1 1 12 2 2 13 3 3 10 4 4 11 5 5 1 6 6 5 7 7 4 8 8 15 9 9 17 10 10 18 11 11 14 1 12 18 12 13 17 13 14 9 14 15 8 15 16 14 1 17 13 0 18 4 16 19 5 17 20 14 1 21 3 18 22 12 2 23 4 19 24 11 5 25 1 20 26 0 21 27 12 22 28 3 23 29 6 24 30 18 11 31 7 25 32 3 26 33 16 27 34 0 28 35 8 15 36 7 29 37 18 12 38 17 13 39 3 18 40 14 1 41 13 0 42 5 17 43 14 1 44 13 3 45 12 22 46 10 4 47 1 6 48 2 30 49 5 7 50 15 9 51 16 27 52 17 10 53 14 1 54 8 15 55 18 12 56 9 14 57 19 31 58 8 15 59 4 19 60 13 3 61 11 5 62 0 21 63 10 4 64 12 22 65 6 24 66 15 9 67 18 11 68 3 26 69 17 10 70 16 27 71</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="palace3" name="palace3" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#Mesh_028-mesh" name="palace3">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="palace_building-material" target="#palace_building-material">
+                <bind_vertex_input semantic="UVChannel_1" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

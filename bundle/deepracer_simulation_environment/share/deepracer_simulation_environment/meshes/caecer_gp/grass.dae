@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.92.0 commit date:2021-02-24, commit time:16:25, hash:02948a2cab44</authoring_tool>
+    </contributor>
+    <created>2021-10-21T16:30:25</created>
+    <modified>2021-10-21T16:30:25</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="grass-effect">
+      <profile_COMMON>
+        <newparam sid="Map__24-surface">
+          <surface type="2D">
+            <init_from>Map__24</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Map__24-sampler">
+          <sampler2D>
+            <source>Map__24-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Map__24-sampler" texcoord="UVChannel_1"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="Map__24" name="Map__24">
+      <init_from>textures/grass2.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="grass-material" name="grass">
+      <instance_effect url="#grass-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="Mesh_022-mesh" name="Mesh.022">
+      <mesh>
+        <source id="Mesh_022-mesh-positions">
+          <float_array id="Mesh_022-mesh-positions-array" count="123">-7.999921 -7.814101 3.41565e-7 9.687807 -7.816223 3.41658e-7 -7.205973 8.208245 -3.58794e-7 9.687807 9.18126 -4.01326e-7 -11.45472 -11.05612 4.83278e-7 2.653615 9.18126 -4.01326e-7 9.687807 -11.05612 4.83278e-7 -11.41188 -0.3133516 0 -11.37961 5.60831 -2.45147e-7 1.654097 8.276487 -3.61777e-7 -7.599447 12.03017 -5.25855e-7 9.687807 12.03017 -5.25855e-7 4.018667 12.03017 -5.25855e-7 0.1747478 12.03017 -5.25855e-7 -7.796183 15.11475 -6.60687e-7 9.687807 15.11475 -6.60686e-7 5.042456 15.11475 -6.60686e-7 -0.5649265 15.11475 -6.60686e-7 -7.820775 41.6089 -1.81878e-6 9.687807 41.6089 -1.81878e-6 5.042456 41.6089 -1.81878e-6 -0.6573858 41.6089 -1.81878e-6 32.37353 -7.817284 3.41704e-7 32.37353 9.18126 -4.01326e-7 32.37353 -11.05612 4.83278e-7 32.37353 12.03017 -5.25855e-7 32.37353 15.11475 -6.60686e-7 32.37353 41.6089 -1.81878e-6 -22.15188 -7.818345 3.41751e-7 -22.15188 8.310767 -3.63275e-7 -22.15188 -11.05612 4.83278e-7 -22.15188 0.08360624 0 -22.15188 12.03017 -5.25855e-7 -22.15188 15.11475 -6.60686e-7 -22.15188 41.6089 -1.81878e-6 2.949017 -13.883 6.06845e-7 32.37353 -13.883 6.06845e-7 -30.37421 -13.883 6.06845e-7 32.37353 -40.77626 1.78239e-6 -30.37421 -40.77626 1.78239e-6 2.949017 -40.77626 1.78239e-6</float_array>
+          <technique_common>
+            <accessor source="#Mesh_022-mesh-positions-array" count="41" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_022-mesh-normals">
+          <float_array id="Mesh_022-mesh-normals-array" count="96">0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#Mesh_022-mesh-normals-array" count="32" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_022-mesh-map-0">
+          <float_array id="Mesh_022-mesh-map-0-array" count="222">-2.813111 -4.766501 -4.952543 -4.118946 -4.952543 -4.7665 -2.12215 -4.118098 1.415395 -4.766502 1.415395 -4.118523 -4.952542 -2.538556 -2.798088 -1.433616 -4.952542 -0.8931239 1.415395 -4.766502 5.95254 -4.118736 1.415395 -4.118523 1.415395 -4.118523 5.952541 -0.7190279 1.415395 -0.7190268 -4.952542 -0.8931239 -2.042055 -0.1492435 -4.952542 -0.1492431 -1.96336 -0.9136289 -0.487216 -0.149244 -2.042055 -0.1492435 5.952541 -0.1492455 1.415395 -0.7190268 5.952541 -0.7190279 1.415395 -0.7190268 0.2815678 -0.1492443 0.00855726 -0.7190265 -4.952543 -4.118946 -2.804542 -2.617948 -4.952542 -2.538556 -2.798088 -1.433616 -1.96336 -0.9136289 -4.952542 -0.8931239 0.00855726 -0.7190265 -0.487216 -0.149244 -0.1913464 -0.899981 -2.086319 5.766502 -4.952541 0.4676719 -2.081402 0.4676721 -0.6536414 5.766502 -2.081402 0.4676721 -0.6351507 0.4676709 0.4863269 5.766502 1.415396 0.4676705 1.415397 5.766502 0.4863269 5.766502 -0.6351507 0.4676709 0.4863256 0.4676707 1.415396 0.4676705 5.952542 5.7665 1.415397 5.766502 -0.8116484 -10.84014 3.84557 -7.168786 -0.8116469 -7.168784 -5.468864 -7.168783 -0.8116484 -10.84014 -0.8116469 -7.168784 -2.813111 -4.766501 -2.12215 -4.118098 -4.952543 -4.118946 -2.12215 -4.118098 -2.813111 -4.766501 1.415395 -4.766502 -4.952542 -2.538556 -2.804542 -2.617948 -2.798088 -1.433616 1.415395 -4.766502 5.95254 -4.766503 5.95254 -4.118736 1.415395 -4.118523 5.95254 -4.118736 5.952541 -0.7190279 -4.952542 -0.8931239 -1.96336 -0.9136289 -2.042055 -0.1492435 -1.96336 -0.9136289 -0.1913464 -0.899981 -0.487216 -0.149244 5.952541 -0.1492455 1.415396 -0.1492445 1.415395 -0.7190268 1.415395 -0.7190268 1.415396 -0.1492445 0.2815678 -0.1492443 -4.952543 -4.118946 -2.12215 -4.118098 -2.804542 -2.617948 0.00855726 -0.7190265 0.2815678 -0.1492443 -0.487216 -0.149244 -2.086319 5.766502 -4.95254 5.766503 -4.952541 0.4676719 -0.6536414 5.766502 -2.086319 5.766502 -2.081402 0.4676721 0.4863269 5.766502 0.4863256 0.4676707 1.415396 0.4676705 0.4863269 5.766502 -0.6536414 5.766502 -0.6351507 0.4676709 1.415396 0.4676705 5.952541 0.4676695 5.952542 5.7665 -0.8116484 -10.84014 3.845569 -10.84014 3.84557 -7.168786 -5.468864 -7.168783 -5.468865 -10.84014 -0.8116484 -10.84014</float_array>
+          <technique_common>
+            <accessor source="#Mesh_022-mesh-map-0-array" count="111" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Mesh_022-mesh-vertices">
+          <input semantic="POSITION" source="#Mesh_022-mesh-positions"/>
+        </vertices>
+        <triangles material="grass-material" count="37">
+          <input semantic="VERTEX" source="#Mesh_022-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Mesh_022-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Mesh_022-mesh-map-0" offset="2" set="0"/>
+          <p>4 0 0 28 1 1 30 2 2 0 3 3 6 4 4 1 5 5 31 6 6 8 7 7 29 8 8 6 4 9 22 9 10 1 5 11 1 5 12 23 10 13 3 11 14 29 8 15 10 12 16 32 13 17 2 14 18 13 15 19 10 12 20 25 2 21 3 11 22 23 10 23 3 11 24 12 16 25 5 17 26 28 1 27 7 18 28 31 6 29 8 7 30 2 14 31 29 8 32 5 17 33 13 15 34 9 19 35 18 20 36 33 21 37 14 22 38 21 23 39 14 22 40 17 24 41 20 25 42 15 26 43 19 25 44 20 25 45 17 24 46 16 25 47 15 26 48 27 16 49 19 25 50 40 27 51 36 28 52 35 29 53 37 30 54 40 27 55 35 29 56 4 0 57 0 3 58 28 1 59 0 3 60 4 0 61 6 4 62 31 6 63 7 18 64 8 7 65 6 4 66 24 16 67 22 9 68 1 5 69 22 9 70 23 10 71 29 8 72 2 14 73 10 12 74 2 14 75 9 19 76 13 15 77 25 2 78 11 11 79 3 11 80 3 11 81 11 11 82 12 16 83 28 1 84 0 3 85 7 18 86 5 17 87 12 16 88 13 15 89 18 20 90 34 31 91 33 21 92 21 23 93 18 20 94 14 22 95 20 25 96 16 25 97 15 26 98 20 25 99 21 23 100 17 24 101 15 26 102 26 11 103 27 16 104 40 27 105 38 25 106 36 28 107 37 30 108 39 25 109 40 27 110</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="grass" name="grass" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#Mesh_022-mesh" name="grass">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="grass-material" target="#grass-material">
+                <bind_vertex_input semantic="UVChannel_1" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

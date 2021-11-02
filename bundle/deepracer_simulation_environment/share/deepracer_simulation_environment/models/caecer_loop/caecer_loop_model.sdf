@@ -1,0 +1,333 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+    <model name="caecer_loop_model">
+        <link name="track_dirt">
+            <collision name="collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/track_dirt.dae</uri>
+                </mesh>
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/track_dirt.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="barriers">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/barriers.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="building1">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/building1.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="building2">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/building2.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="building3">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/building3.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="building_sheet_3">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/building_sheet_3.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="center_line">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/center_line.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="deepracer_logo">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/deepracer_logo.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="enviro">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/enviro.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="finishline">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/finishline.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="grass">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/grass.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="ground">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/ground.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="hotel2">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/hotel2.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="imperial_palace">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/imperial_palace.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="palace1">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/palace1.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="palace2">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/palace2.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="palace3">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/palace3.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="palace4">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/palace4.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="roads">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/roads.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="sands_buildings">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/sands_buildings.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="sign2">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/sign2.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="signs1">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/signs1.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="stands">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/stands.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="track">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/track.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="track_edge">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/track_edge.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="track_wall">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/track_wall.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="vegas_sign">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/vegas_sign.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="water">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/water.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <link name="water_tower">
+            <visual name="visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                <mesh>
+                <uri>model://meshes/caecer_loop/water_tower.dae</uri>
+                </mesh>
+                </geometry>
+            </visual>
+        </link>
+
+        <static>1</static>
+    </model>
+</sdf>
