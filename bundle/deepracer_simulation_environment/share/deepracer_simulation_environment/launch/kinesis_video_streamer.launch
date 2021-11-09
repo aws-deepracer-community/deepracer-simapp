@@ -4,7 +4,7 @@
      When loading additional configuration files, make sure to load them into an appropriate namespaces (monotonically increasing kinesis_video/stream<id>).
 
     @param stream_config Configuration for the (first) stream. If provided, rosparam will attempt to load the file into the private namespace
-        of the node. Otherwise, the example configuration file 'sample_configuration.yaml' will be loaded.
+        of the node. Otherwise, the example configuration file 'deepracer_webrtc_config.yaml' will be loaded.
     @param aws_client_configuration/region Defaults to us-west-2.
     @param kinesis_video/stream_count Number of streams to load & transmit. Stream definition should be provided for each stream.
     @param kinesis_video/log4cplus_config Optional path for a log4cplus config which will be used by the Kinesis Video Producer SDK.
