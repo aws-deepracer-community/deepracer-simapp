@@ -20,15 +20,15 @@ Version 4 is the current development version, and it is receiving both new track
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx` | `4.0.2-gpu` `4.0.2-gpu-gl` |
-| 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx` | `4.0.3-gpu` `4.0.3-gpu-gl` |
-| 4.0.4       | May Updates  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx` | `4.0.4-gpu` `4.0.4-gpu-gl` |
-| 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx` | `4.0.5-gpu` `4.0.5-gpu-gl` |
-| 4.0.6       | July Track & Updates  |  `4.0.6-cpu-avx` `4.0.6-cpu-gl-avx`  | `4.0.6-cpu-avx2` `4.0.6-cpu-gl-avx` | `4.0.6-gpu` `4.0.6-gpu-gl` |
-| 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx` | `4.0.7-gpu` `4.0.7-gpu-gl` |
-| 4.0.8       | September Track  |  `4.0.8-cpu-avx` `4.0.8-cpu-gl-avx`  | `4.0.8-cpu-avx2` `4.0.8-cpu-gl-avx` | `4.0.8-gpu` `4.0.8-gpu-gl` |
-| 4.0.9       | October Track  |  `4.0.9-cpu-avx` `4.0.9-cpu-gl-avx`  | `4.0.9-cpu-avx2` `4.0.9-cpu-gl-avx` | `4.0.9-gpu` `4.0.9-gpu-gl` |
-| 4.0.10       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx` | `4.0.10-gpu` `4.0.10-gpu-gl` |
+| 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx2` | `4.0.2-gpu` `4.0.2-gpu-gl` |
+| 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx2` | `4.0.3-gpu` `4.0.3-gpu-gl` |
+| 4.0.4       | May Updates  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx2` | `4.0.4-gpu` `4.0.4-gpu-gl` |
+| 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx2` | `4.0.5-gpu` `4.0.5-gpu-gl` |
+| 4.0.6       | July Track & Updates  |  `4.0.6-cpu-avx` `4.0.6-cpu-gl-avx`  | `4.0.6-cpu-avx2` `4.0.6-cpu-gl-avx2` | `4.0.6-gpu` `4.0.6-gpu-gl` |
+| 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx2` | `4.0.7-gpu` `4.0.7-gpu-gl` |
+| 4.0.8       | September Track  |  `4.0.8-cpu-avx` `4.0.8-cpu-gl-avx`  | `4.0.8-cpu-avx2` `4.0.8-cpu-gl-avx2` | `4.0.8-gpu` `4.0.8-gpu-gl` |
+| 4.0.9       | October Track  |  `4.0.9-cpu-avx` `4.0.9-cpu-gl-avx`  | `4.0.9-cpu-avx2` `4.0.9-cpu-gl-avx2` | `4.0.9-gpu` `4.0.9-gpu-gl` |
+| 4.0.10       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx2` | `4.0.10-gpu` `4.0.10-gpu-gl` |
 
 ### Version 3
 
