@@ -6,7 +6,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/LGSWide/LGSWide.dae</uri>
+<uri>model://meshes/LGSWide/LGSWide_collision.dae</uri>
 </mesh>
 </geometry>
 </collision>
