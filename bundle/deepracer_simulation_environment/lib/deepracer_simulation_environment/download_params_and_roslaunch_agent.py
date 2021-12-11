@@ -15,7 +15,7 @@ import botocore
 import rospy
 
 from enum import Enum
-from markov.utils import test_internet_connection
+from markov.utils import test_internet_connection, str2bool
 from markov.constants import DEFAULT_COLOR, DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
@@ -118,7 +118,7 @@ def main():
                             "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={} ".format(yaml_file.is_f1),
-                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
         else:
             # Note: SimApp Version is default to 4.0: virtual event only have a single body_shell_types
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
@@ -127,7 +127,7 @@ def main():
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
-                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
 
         Popen(cmd, shell=True, executable="/bin/bash")
     
