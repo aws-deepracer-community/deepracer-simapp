@@ -19,7 +19,7 @@
         <arg name="racecars_with_lidars" value="$(arg racecars_with_lidars)" />
         <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
-        <arg name="publish_to_kinesis_stream" value="$(eval bool(arg publish_to_kinesis_stream))" />
+        <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
         <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
