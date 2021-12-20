@@ -26,8 +26,7 @@ from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
 from markov.reset.constants import (RaceType)
 from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
-from markov.virtual_event.constants import (VIRTUAL_EVENT,
-                                            WAIT_DISPLAY_NAME)
+from markov.virtual_event.constants import WAIT_DISPLAY_NAME
 from deepracer_simulation_environment.srv import (VideoMetricsSrvRequest,
                                                   VideoMetricsSrv,
                                                   VirtualEventVideoEditSrv,
@@ -295,9 +294,12 @@ def main():
     """ Main function for virtual event video editor
     """
     try:
-        VirtualEventVideoEditor(
-            racecar_name=VIRTUAL_EVENT,
-            agent_name="agent")
+        racer_num = int(sys.argv[1])
+        racecar_names = get_racecar_names(racer_num)
+        for racecar_name in racecar_names:
+            VirtualEventVideoEditor(
+                racecar_name=racecar_name,
+                agent_name=racecar_name.replace("racecar", "agent"))
     except Exception as err_msg:
         log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,

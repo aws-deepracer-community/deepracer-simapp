@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.92.0 commit date:2021-02-24, commit time:16:25, hash:02948a2cab44</authoring_tool>
+    </contributor>
+    <created>2021-10-21T16:30:25</created>
+    <modified>2021-10-21T16:30:25</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="track_dirt-effect">
+      <profile_COMMON>
+        <newparam sid="Map__9-surface">
+          <surface type="2D">
+            <init_from>Map__9</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="Map__9-sampler">
+          <sampler2D>
+            <source>Map__9-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="Map__9-sampler" texcoord="UVChannel_1"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="Map__9" name="Map__9">
+      <init_from>textures/track_dirt.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="track_dirt-material" name="track dirt">
+      <instance_effect url="#track_dirt-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="Mesh_012-mesh" name="Mesh.012">
+      <mesh>
+        <source id="Mesh_012-mesh-positions">
+          <float_array id="Mesh_012-mesh-positions-array" count="24">9.687807 9.18126 -4.01327e-7 9.687807 -7.814101 3.41566e-7 -7.999921 -7.814101 3.41566e-7 -11.37961 5.60831 -2.45145e-7 1.654097 8.276487 -3.61775e-7 2.641896 9.18126 -4.01327e-7 -7.205973 8.208245 -3.58792e-7 -11.41188 -0.3133516 0</float_array>
+          <technique_common>
+            <accessor source="#Mesh_012-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_012-mesh-normals">
+          <float_array id="Mesh_012-mesh-normals-array" count="24">0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#Mesh_012-mesh-normals-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Mesh_012-mesh-map-0">
+          <float_array id="Mesh_012-mesh-map-0-array" count="36">-1.385123 -1.348227 0.473652 -2.236413 3.861049 0.60595 -0.2632033 2.396485 -2.330536 -0.2089769 3.861049 0.60595 -0.2632033 2.396485 1.129947 3.860751 -0.2194228 2.728495 3.861049 0.60595 -2.330536 -0.2089769 -1.385123 -1.348227 -0.2632033 2.396485 -1.949039 0.9596301 -2.330536 -0.2089769 -0.2632033 2.396485 3.861049 0.60595 1.129947 3.860751</float_array>
+          <technique_common>
+            <accessor source="#Mesh_012-mesh-map-0-array" count="18" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Mesh_012-mesh-vertices">
+          <input semantic="POSITION" source="#Mesh_012-mesh-positions"/>
+        </vertices>
+        <triangles material="track_dirt-material" count="6">
+          <input semantic="VERTEX" source="#Mesh_012-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Mesh_012-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Mesh_012-mesh-map-0" offset="2" set="0"/>
+          <p>7 0 0 2 1 1 1 2 2 4 3 3 3 4 4 1 2 5 4 3 6 0 5 7 5 6 8 1 2 9 3 4 10 7 0 11 4 3 12 6 7 13 3 4 14 4 3 15 1 2 16 0 5 17</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="track_dirt" name="track dirt" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#Mesh_012-mesh" name="track dirt">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="track_dirt-material" target="#track_dirt-material">
+                <bind_vertex_input semantic="UVChannel_1" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>
