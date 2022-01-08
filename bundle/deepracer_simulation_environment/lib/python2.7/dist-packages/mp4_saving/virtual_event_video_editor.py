@@ -15,9 +15,9 @@ import rospy
 from std_srvs.srv import Empty
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
-from std_msgs.msg import String
+from collections import OrderedDict
 
-from markov.utils import DoubleBuffer, force_list, get_video_display_name, get_racecar_names
+from markov.utils import DoubleBuffer, get_racecar_names
 from markov.constants import DEFAULT_COLOR
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
@@ -33,10 +33,13 @@ from deepracer_simulation_environment.srv import (VideoMetricsSrvRequest,
                                                   VirtualEventVideoEditSrvResponse)
 from mp4_saving.constants import (RaceCarColorToRGB, CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
-                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME)
-from mp4_saving.virtual_event_image_editing import VirtualEventImageEditing
+                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME,
+                                  VirtualEventData)
+from mp4_saving.virtual_event_single_agent_image_editing import VirtualEventSingleAgentImageEditing
+from mp4_saving.virtual_event_multi_agent_image_editing import VirtualEventMultiAgentImageEditing
 from mp4_saving import utils
 from mp4_saving.save_to_mp4 import SaveToMp4
+from mp4_saving.virtual_event_video_metrics import VirtualEventVideoMetrics
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -46,6 +49,9 @@ class VirtualEventVideoEditor(object):
     for saving the mp4 and uploading to S3. Both are subscribed to the output of
     the image topic produced by this node.
     """
+    _agents_metrics = list()
+    _virtual_event_video_metrics = VirtualEventVideoMetrics()
+    _racecars_info = list()
 
     def __init__(self, racecar_name, agent_name):
         #
@@ -53,12 +59,12 @@ class VirtualEventVideoEditor(object):
         # to wait until the model is loaded and markov packages has spawned all the models
         #
         rospy.wait_for_service('/robomaker_markov_package_ready')
-
-        self._agents_metrics = DoubleBuffer(clear_data_on_get=False)
+        self._agents_metrics.append(DoubleBuffer(clear_data_on_get=False))
 
         self.racecar_name = racecar_name
         self.agent_name = agent_name
-        self.racecar_index = 0
+        racecar_index = get_racecar_idx(racecar_name)
+        self.racecar_index = racecar_index if racecar_index else 0
 
         # init cv bridge
         self.bridge = CvBridge()
@@ -66,13 +72,12 @@ class VirtualEventVideoEditor(object):
         # hard code because virtual event is eval only.
         self.is_training = False
 
-        # dummy info to initialize job_type_image_edit
-        self.racecars_info = list()
         racecar_dict = dict()
-        racecar_dict['name'] = "racecar"
+        racecar_dict['name'] = racecar_name
         racecar_dict['racecar_color'] = RaceCarColorToRGB[DEFAULT_COLOR].value
         racecar_dict['display_name'] = WAIT_DISPLAY_NAME
-        self.racecars_info.append(racecar_dict)
+        self._racecars_info.append(racecar_dict)
+
         self.job_type_image_edit = self._get_image_editing_job_type()
 
         # Fetching main camera frames, start consumer thread and producer thread for main camera frame
@@ -127,13 +132,9 @@ class VirtualEventVideoEditor(object):
         Return:
             [] - Empty list else ros service throws exception
         """
+        self._virtual_event_video_metrics.reset()
         self.is_save_mp4_enabled = True
-        self.racecars_info = list()
-        racecar_dict = dict()
-        racecar_dict['name'] = "racecar"
-        racecar_dict['racecar_color'] = RaceCarColorToRGB[req.racecar_color].value
-        racecar_dict['display_name'] = req.display_name
-        self.racecars_info.append(racecar_dict)
+        self._racecars_info[self.racecar_index]['display_name'] = req.display_name
         self.job_type_image_edit = self._get_image_editing_job_type()
         self.save_to_mp4_obj.subscribe_to_save_mp4()
         return VirtualEventVideoEditSrvResponse(success=True)
@@ -162,12 +163,15 @@ class VirtualEventVideoEditor(object):
     def _get_image_editing_job_type(self):
         """ This determines what kinding of image editing should be done based on the race type
         Returns:
-            VirtualEventImageEditing: VirtualEventImageEditing instance
+            Union(VirtualEventSingleAgentImageEditing,
+                  VirtualEventMultiAgentImageEditing): VirtualEventSingleAgentImageEditing instance
         """
         race_type = rospy.get_param("RACE_TYPE", RaceType.TIME_TRIAL.value)
         if race_type in [RaceType.TIME_TRIAL.value, RaceType.OBJECT_AVOIDANCE.value,
                          RaceType.HEAD_TO_BOT.value]:
-            return VirtualEventImageEditing("racecar", self.racecars_info, race_type)
+            return VirtualEventSingleAgentImageEditing(self.racecar_name, self._racecars_info, race_type)
+        elif race_type == RaceType.HEAD_TO_MODEL.value:
+            return VirtualEventMultiAgentImageEditing(self.racecar_name, self._racecars_info, race_type)
         else:
             raise Exception("[Virtual Event]: Unknown job type for image editing")
 
@@ -176,7 +180,7 @@ class VirtualEventVideoEditor(object):
         """
         if not rospy.is_shutdown():
             video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrvRequest())
-            self._agents_metrics.put(video_metrics)
+            self._agents_metrics[self.racecar_index].put(video_metrics)
 
     def _edit_camera_images(self, frame_data):
         """ Edit camera image by calling respective job type
@@ -190,6 +194,7 @@ class VirtualEventVideoEditor(object):
         frame = frame_data[FrameQueueData.FRAME.value]
         metric_info = {
             FrameQueueData.AGENT_METRIC_INFO.value: frame_data[FrameQueueData.AGENT_METRIC_INFO.value],
+            FrameQueueData.VIRTUAL_EVENT_INFO.value: frame_data[FrameQueueData.VIRTUAL_EVENT_INFO.value],
             FrameQueueData.TRAINING_PHASE.value: frame_data[FrameQueueData.TRAINING_PHASE.value]
         }
 
@@ -222,11 +227,23 @@ class VirtualEventVideoEditor(object):
         if not rospy.is_shutdown():
             self._update_racers_metrics()
             # Get frame from main camera & agents metric information
-            agent_metric_info = [self._agents_metrics.get()]
+            agent_metric_info = [metrics.get() for metrics in self._agents_metrics]
+
+            racer_metrics = OrderedDict()
+            for idx, metric in enumerate(agent_metric_info):
+                if self._racecars_info[idx]['display_name'] == WAIT_DISPLAY_NAME:
+                    racer_metrics = OrderedDict()
+                    break
+                racer_metrics[self._racecars_info[idx]['display_name']] = metric
+            self._virtual_event_video_metrics.update(racer_metrics)
             queue_data = {
                 FrameQueueData.FRAME.value: frame,
                 FrameQueueData.AGENT_METRIC_INFO.value: agent_metric_info,
-                FrameQueueData.TRAINING_PHASE.value: ''
+                FrameQueueData.TRAINING_PHASE.value: '',
+                FrameQueueData.VIRTUAL_EVENT_INFO.value: {
+                    VirtualEventData.SIM_TIME.value: self._virtual_event_video_metrics.sim_time,
+                    VirtualEventData.TIME_TO_LEADER.value: OrderedDict(self._virtual_event_video_metrics.time_to_leader),
+                    VirtualEventData.LAP.value: self._virtual_event_video_metrics.lap}
             }
 
             self._kvs_frame_buffer.put(queue_data)
@@ -252,6 +269,15 @@ class VirtualEventVideoEditor(object):
                     continue
                 # Pop from the queue and edit the image
                 frame_data = self._mp4_queue.get()
+                if len(self._racecars_info) > len(frame_data[FrameQueueData.AGENT_METRIC_INFO.value]):
+                    # Waiting for all the agents to initialize before editing videos
+                    # There could be condition when racecar_0 starts editing frames before racecar_1 is initialized
+                    time.sleep(KVS_PUBLISH_PERIOD)
+                    continue
+                elif len(self._racecars_info) < len(frame_data[FrameQueueData.AGENT_METRIC_INFO.value]):
+                    log_and_exit("Agents video editing metric cannot be larger than racecar info",
+                                 SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
+                                 SIMAPP_EVENT_ERROR_CODE_500)
                 edited_frame = self._edit_camera_images(frame_data)
                 self._mp4_edited_frame_queue.put(edited_frame)
 
@@ -279,6 +305,15 @@ class VirtualEventVideoEditor(object):
             prev_time = time.time()
             while not rospy.is_shutdown():
                 frame_data = self._kvs_frame_buffer.get()
+                if len(self._racecars_info) > len(frame_data[FrameQueueData.AGENT_METRIC_INFO.value]):
+                    # Waiting for all the agents to initialize before editing videos
+                    # There could be condition when racecar_0 starts editing frames before racecar_1 is initialized
+                    time.sleep(KVS_PUBLISH_PERIOD)
+                    continue
+                elif len(self._racecars_info) < len(frame_data[FrameQueueData.AGENT_METRIC_INFO.value]):
+                    log_and_exit("Agents video editing metric cannot be larger than racecar info",
+                                 SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
+                                 SIMAPP_EVENT_ERROR_CODE_500)
                 edited_frame = self._edit_camera_images(frame_data)
                 if not rospy.is_shutdown():
                     self.kvs_pub.publish(edited_frame)

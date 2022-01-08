@@ -3,7 +3,7 @@ from enum import Enum
 from markov.reset.constants import RaceType
 import cv2
 
-
+PROGRESS_INTERVAL = 1.0
 
 class CameraTypeParams(Enum):
     """ This Enum contains the all the params for each camera topics
@@ -128,11 +128,13 @@ class TrackAssetsIconographicPngs(Enum):
 
 # virtual event png
 class VirtualEventIconographicPngs(Enum):
+    H2H_OVERLAY_PNG = "virtual_event_h2h_overlay"
     OVERLAY_PNG = "virtual_event_overlay"
     SET = "virtual_event_set"
     GO = "virtual_event_go"
     FINISH = "virtual_event_finish"
     FINAL_FADING_IMAGE_50ALPHA = "final_fading_image_50alpha"
+    RACERS_RANK_PNG = ["virtual_event_square1", "virtual_event_square2"]
 
 
 class TrackColors(Enum):
@@ -252,10 +254,35 @@ class VirtualEventXYPixelLoc(Enum):
     CURRENT_LAP_TIME_TEXT = (480, 460)
     BEST_LAP_TIME_DIGIT = (480, 10)
     BEST_LAP_TIME_TEXT = (480, 45)
+    RACER0_NAME = (67, 415)
+    RACER0_BEST_LAP_TIME_DIGIT = (65, 432)
+    RACER0_BEST_LAP_TIME_TEXT = (67, 463)
+    RACER0_SPEED_DIGIT = (229, 432)
+    RACER0_SPEED_TEXT = (231, 463)
+    RACER1_NAME = (356, 415)
+    RACER1_BEST_LAP_TIME_DIGIT = (354, 432)
+    RACER1_BEST_LAP_TIME_TEXT = (356, 463)
+    RACER1_SPEED_DIGIT = (518, 432)
+    RACER1_SPEED_TEXT = (520, 463)
+    LAP_COUNT_TEXT = (505, 10)
+    LAP_COUNT_DIGIT = (550, 10)
+    LEADER_NAME_TEXT = (515, 34)
+    LEADER_RECTANGLE = (505, 42)
+    RUNNER_UP_NAME_TEXT = (515, 58)
+    RUNNER_UP_RECTANGLE = (505, 66)
 
 
 # Race completion flag y-offset
 RACE_COMPLETE_Y_OFFSET = 180
+
+
+class VirtualEventData(Enum):
+    """
+    Virtual Event Data
+    """
+    SIM_TIME = "sim_time"
+    TIME_TO_LEADER = "time_to_leader"
+    LAP = "lap"
 
 
 # Mapping the racetype to the text shown on the video
@@ -265,6 +292,7 @@ class FrameQueueData(Enum):
     FRAME = "frame",
     AGENT_METRIC_INFO = "agent_metric_info",
     TRAINING_PHASE = "training_phase"
+    VIRTUAL_EVENT_INFO = "virtual_event"
 
 
 # Agent Video editor constants

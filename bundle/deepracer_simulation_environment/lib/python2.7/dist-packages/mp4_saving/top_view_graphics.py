@@ -96,10 +96,6 @@ class TopViewGraphics(object):
                                                    IconographicImageSize.BOT_CAR_IMAGE_SIZE.value))
 
         # Adding all agents to the list
-        agents_png = TrackAssetsIconographicPngs.VIRTUAL_EVENT_AGENTS_PNG.value \
-            if self._is_virtual_event else TrackAssetsIconographicPngs.AGENTS_PNG.value
-        agent_size = IconographicImageSize.VIRTUAL_EVENT_AGENTS_IMAGE_SIZE.value \
-            if self._is_virtual_event else IconographicImageSize.AGENTS_IMAGE_SIZE.value
         for i, _ in enumerate(self.racecars_info):
             # If the number of racecars are greater than 2
             if self.is_f1_race_type:
@@ -115,7 +111,7 @@ class TopViewGraphics(object):
                                                       IconographicImageSize.F1_AGENTS_IMAGE_SIZE.value))
             else:
                 agent_imgs.append(utils.get_image(TrackAssetsIconographicPngs.AGENTS_PNG.value[i % 2],
-                                                  IconographicImageSize.AGENTS_IMAGE_SIZE.value))
+                                                  IconographicImageSize.VIRTUAL_EVENT_AGENTS_IMAGE_SIZE.value))
         return {
             ModelImgNames.OBJECT_IMGS.value: object_imgs,
             ModelImgNames.AGENT_IMGS.value: agent_imgs,
