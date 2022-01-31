@@ -12,18 +12,15 @@ webrtc_streamer_configuration:
 
         # Topic name to subscribe and receive the image/video data from.
         # if blank, does NOT open video channel
-        # video_subscription_topic: /virtual_event/$(arg racecar_name)/b9/kvs/video/encoded
-        video_subscription_topic: /virtual_event/b9/kvs/video/encoded
+        video_subscription_topic: /$(arg racecar_name)/b9/kvs/video/encoded
 
         # Topic name to subscribe and receive string data from
         # if blank, does NOT open a data channel
-        # data_subscription_topic: /$(arg racecar_name)/string/raw
-        data_subscription_topic: /string/raw
+        data_subscription_topic: /$(arg racecar_name)/string/raw
 
         # Topic name to publish and send messages to when receiving message over WebRTC
         # if blank, does NOT open a return data channel
-        # publish_topic: /$(arg racecar_name)/string/raw
-        publish_topic: /string/raw
+        publish_topic: /$(arg racecar_name)/string/raw
 
         # Video format type
         # 0: H264

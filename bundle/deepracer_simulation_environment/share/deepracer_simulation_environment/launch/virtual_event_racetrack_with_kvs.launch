@@ -32,6 +32,22 @@
     <arg name="racecar_name" value="racecar"/>
   </include>
 
+  <!-- dual car -->
+  <include file="$(find deepracer_simulation_environment)/launch/virtual_event_kvs_and_control.launch" if="$(arg multicar)" ns="/racecar_0">
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[0])"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval publish_to_kinesis_stream and len(kinesis_video_stream_names) > 0)" />
+    <arg name="make_required" value="$(arg make_required)" />
+    <arg name="racecar_name" value="racecar_0"/>
+  </include>
+  <include file="$(find deepracer_simulation_environment)/launch/virtual_event_kvs_and_control.launch" if="$(arg multicar)" ns="/racecar_1">
+    <arg name="kinesis_video_stream_name" value="$(eval kinesis_video_stream_names.split(',')[1])"/>
+    <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="publish_to_kinesis_stream" value="$(eval publish_to_kinesis_stream and len(kinesis_video_stream_names) > 1)" />
+    <arg name="make_required" value="$(arg make_required)" />
+    <arg name="racecar_name" value="racecar_1"/>
+  </include>
+
   <!-- single car -->
   <include file="$(find kinesis_webrtc_streamer)/launch/virtual_event_single_agent_webrtc.launch" unless="$(arg multicar)">
     <arg name="kinesis_webrtc_stream_region" value="$(arg kinesis_video_stream_region)"/>
@@ -40,8 +56,24 @@
     <arg name="racecar_name" value="racecar" />
   </include>
 
+  <!-- dual car -->
+  <include file="$(find kinesis_webrtc_streamer)/launch/virtual_event_dual_agent_webrtc.launch" if="$(arg multicar)">
+    <arg name="kinesis_webrtc_stream_region" value="$(arg kinesis_video_stream_region)"/>
+    <arg name="kinesis_webrtc_signaling_channel_name0" value="$(eval kinesis_webrtc_signaling_channel_names.split(',')[0])" />
+    <arg name="kinesis_webrtc_signaling_channel_name1" value="$(eval kinesis_webrtc_signaling_channel_names.split(',')[1])" />
+    <arg name="make_required" value="$(arg make_required)"/>
+    <arg name="racecar_name0" value="racecar_0" />
+    <arg name="racecar_name1" value="racecar_1" />
+  </include>
+
   <!-- launch virtual event video editor node for stream and mp4 -->
+  <!-- Args:
+            racer_num (int): number of racer-->
   <node pkg="deepracer_simulation_environment" type="virtual_event_video_editor.py" name="virtual_event_video_editor_node" output="screen" required="$(arg make_required)" args="1" unless="$(arg multicar)">
   </node>
+
+  <node pkg="deepracer_simulation_environment" type="virtual_event_video_editor.py" name="virtual_event_video_editor_node" output="screen" required="$(arg make_required)" args="2" if="$(arg multicar)">
+  </node>
+
 
 </launch>

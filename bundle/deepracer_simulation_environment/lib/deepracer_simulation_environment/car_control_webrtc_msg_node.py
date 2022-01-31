@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """ Ros module for processing the incoming car control message. """
+import sys
 import logging
 import json
 from collections import OrderedDict
-from datetime import datetime
 import rospy
 from std_msgs.msg import String
 from markov.log_handler.logger import Logger
@@ -11,30 +11,30 @@ from markov.log_handler.deepracer_exceptions import GenericNonFatalException
 from markov.virtual_event.constants import (WEBRTC_DATA_PUB_TOPIC,
                                             WEBRTC_CAR_CTRL_FORMAT)
 from markov.virtual_event.utils import process_car_control_msg
-from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
-                                          SIMAPP_EVENT_USER_ERROR,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
-                                          SIMAPP_EVENT_ERROR_CODE_500)
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
-class CarControlWebRTCMessageProcessor(object):
-    """Ros node for processing incoming webrtc message
-       and publishing car control to the appropriate topic.
+class VirtualEventCarControl(object):
     """
-    def __init__(self, webrtc_topic):
-        """Initialize a CarControlWebRTCMessageProcessor.
+    VirtualEventCarControl class
+    """
+    def __init__(self, racecar_name):
+        """
+        VirtualEventCarControl constructor
 
         Args:
-            webrtc_topic (str): the webrtc topic to subscribe to.
+            racecar_name (str): racecar name
         """
-        self.webrtc_topic = webrtc_topic
+        self._racecar_name = racecar_name
         self._control_publisher_dict = OrderedDict()
-        rospy.Subscriber(webrtc_topic, String, self._msg_process)
+        rospy.Subscriber(WEBRTC_DATA_PUB_TOPIC.format(self._racecar_name),
+                         String,
+                         self._subscriber_callback)
 
-    def _msg_process(self, message):
-        """ processes the WebRTC ros incoming message from the webrtc_topic.
+    def _subscriber_callback(self, message):
+        """
+        subscriber callback to parse car control message and publish
 
         Args:
             message (std_msgs.msg.String): The WebRTC incoming message in String format.
@@ -43,15 +43,15 @@ class CarControlWebRTCMessageProcessor(object):
             topic, payload = process_car_control_msg(message.data)
             LOG.info("[webrtc msg process] Processed message, topic: %s payload: %s", topic, payload)
             if topic not in self._control_publisher_dict:
-                self._control_publisher_dict[topic] = rospy.Publisher(WEBRTC_CAR_CTRL_FORMAT.format(topic),
+                self._control_publisher_dict[topic] = rospy.Publisher(WEBRTC_CAR_CTRL_FORMAT.format(self._racecar_name, topic),
                                                                       String, queue_size=1)
             self._control_publisher_dict[topic].publish(json.dumps(payload))
-            LOG.info('[webrtc msg process] published to topic %s', WEBRTC_CAR_CTRL_FORMAT.format(topic))
+            LOG.info('[webrtc msg process] published to topic %s', WEBRTC_CAR_CTRL_FORMAT.format(self._racecar_name, topic))
         except GenericNonFatalException as ex:
             ex.log_except_and_continue()
 
 
 if __name__ == '__main__':
     rospy.init_node('car_control_webrtc_node', anonymous=True)
-    CarControlWebRTCMessageProcessor(WEBRTC_DATA_PUB_TOPIC)
+    VirtualEventCarControl(racecar_name=sys.argv[1])
     rospy.spin()

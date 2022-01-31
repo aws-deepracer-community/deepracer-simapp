@@ -345,6 +345,15 @@ class AgentsVideoEditor(object):
         try:
             prev_time = time.time()
             while not rospy.is_shutdown():
+                if len(self.racecars_info) > len(self._agents_metrics):
+                    # Waiting for all the agents to initialize before editing videos
+                    # There could be condition when racecar_0 starts editing frames before racecar_1 is initialized
+                    time.sleep(KVS_PUBLISH_PERIOD)
+                    continue
+                elif len(self.racecars_info) < len(self._agents_metrics):
+                    log_and_exit("Agents video editing metric cannot be larger than racecar info",
+                                 SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
+                                 SIMAPP_EVENT_ERROR_CODE_500)
                 frame_metric_data = self.get_latest_frame_metric_data()
                 edited_frames = self._edit_camera_images(frame_metric_data, is_mp4=False)
                 if not rospy.is_shutdown():
