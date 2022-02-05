@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- include macros -->
+  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/macros.xacro" />
+
+  <!-- name and bitmask -->
+  <xacro:arg name="racecar_name" default="racecar" />
+  <xacro:arg name="racecar_bitmask" default="0x01" />
+
+  <!-- sensor configuration -->
+  <xacro:arg name="include_second_camera" default="false" />
+  <xacro:arg name="include_lidar_sensor" default="false" />
+
+  <!-- lidar 360 degree - settings -->
+  <xacro:arg name="lidar_360_degree_sample" default="61" />
+  <xacro:arg name="lidar_360_degree_horizontal_resolution" default="1" />
+  <xacro:arg name="lidar_360_degree_min_angle" default="-3.14" />
+  <xacro:arg name="lidar_360_degree_max_angle" default="3.14" />
+  <xacro:arg name="lidar_360_degree_min_range" default="0.1" />
+  <xacro:arg name="lidar_360_degree_max_range" default="6.0" />
+  <xacro:arg name="lidar_360_degree_range_resolution" default="0.01" />
+  <xacro:arg name="lidar_360_degree_noise_mean" default="0.0" />
+  <xacro:arg name="lidar_360_degree_noise_stddev" default="0.01" />
+
+  <!-- racecar body -->
+  <xacro:arg name="disable_gazebo_sensors" default="false" />
+  <xacro:arg name="body_shell_type" default="deepracer" />
+  <xacro:property name="body_shell_type_val" value="$(arg body_shell_type)" />
+
+  <!-- racecar URDF -->
+  <xacro:if value="$(arg include_second_camera)">
+    <xacro:if value="$(arg include_lidar_sensor)">
+      <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/deepracer_stereo_cam_lidar.urdf" />
+    </xacro:if>
+    <xacro:unless value="$(arg include_lidar_sensor)">
+      <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/deepracer_stereo_cam.urdf" />
+    </xacro:unless>
+  </xacro:if>
+  <xacro:unless value="$(arg include_second_camera)">
+    <xacro:if value="$(arg include_lidar_sensor)">
+      <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/deepracer_single_cam_lidar.urdf" />
+    </xacro:if>
+    <xacro:unless value="$(arg include_lidar_sensor)">
+      <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/deepracer_single_cam.urdf" />
+    </xacro:unless>
+  </xacro:unless>
+
+  <!-- config f1 shell  -->
+  <xacro:if value="${'f1' in body_shell_type_val}">
+    <link name="f1_body_link">
+      <visual>
+        <xacro:f1_geometry body_shell_type="$(arg body_shell_type)"/>
+      </visual>
+    </link>
+    <joint
+      name="f1_body_joint"
+      type="fixed">
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <parent
+        link="chassis" />
+      <child
+        link="f1_body_link" />
+      <axis
+        xyz="0 0 0" />
+    </joint>
+  </xacro:if>
+
+  <!-- add transmission -->
+  <xacro:wheel_transmission name="left_rear_wheel" />
+  <xacro:wheel_transmission name="right_rear_wheel" />
+  <xacro:wheel_transmission name="left_front_wheel" />
+  <xacro:wheel_transmission name="right_front_wheel" />
+  <xacro:steering_hinge_transmission name="left_steering_hinge" />
+  <xacro:steering_hinge_transmission name="right_steering_hinge" />
+
+  <!-- add bit mask -->
+  <xacro:configure_collide_bitmask link_name="left_rear_wheel" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="right_rear_wheel" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="left_front_wheel" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="right_front_wheel" bitmask="$(arg racecar_bitmask)" />
+  <xacro:configure_collide_bitmask link_name="car_body_link_v3" bitmask="$(arg racecar_bitmask)" />
+  <xacro:if value="$(arg include_lidar_sensor)">
+    <xacro:configure_collide_bitmask link_name="laser" bitmask="$(arg racecar_bitmask)" />
+  </xacro:if>
+
+  <!-- add the remaining xacros -->
+  <xacro:unless value="$(arg disable_gazebo_sensors)">
+    <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/racecar.gazebo" />
+  </xacro:unless>
+
+</robot>

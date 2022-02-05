@@ -3,7 +3,7 @@
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="deepracer_stereo_cam_lidar">
+  name="deepracer_stereo_cam_lidar" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <link 
     name="base_link" />
   <link
@@ -53,15 +53,17 @@
         iyz="0"
         izz="0.00026046" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/left_rear_wheel.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/left_rear_wheel.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
@@ -104,15 +106,17 @@
         iyz="0"
         izz="0.00026046" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/right_rear_wheel.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/right_rear_wheel.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
@@ -155,15 +159,17 @@
         iyz="0"
         izz="4E-06" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/left_steering_hinge.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/left_steering_hinge.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
   </link>
   <joint
     name="left_steering_hinge_joint"
@@ -199,15 +205,17 @@
         iyz="0"
         izz="0.00026046" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/left_front_wheel.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/left_front_wheel.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
@@ -250,15 +258,17 @@
         iyz="0"
         izz="4E-06" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/right_steering_hinge.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/right_steering_hinge.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
   </link>
   <joint
     name="right_steering_hinge_joint"
@@ -294,15 +304,17 @@
         iyz="0"
         izz="0.00026046" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/right_front_wheel.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'with_wheel' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/right_front_wheel.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
@@ -345,15 +357,17 @@
         iyz="0"
         izz="1e-6" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_leftcam.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'f1' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_leftcam.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
   </link>
   <joint
     name="zed_camera_joint_leftcam"
@@ -423,15 +437,17 @@
         iyz="0"
         izz="1e-6" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_rightcam.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'f1' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_rightcam.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
   </link>
   <joint
     name="zed_camera_joint_rightcam"
@@ -501,15 +517,17 @@
         iyz="0"
         izz="1e-6" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/laser.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'f1' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/laser.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
@@ -549,15 +567,17 @@
         iyz="0"
         izz="0" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://deepracer_simulation_environment/meshes/deepracer/car_body_link_lidar_v3.STL" />
-      </geometry>
-    </visual>
+    <xacro:unless value="${'f1' in body_shell_type_val}">
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://deepracer_simulation_environment/meshes/deepracer/car_body_link_lidar_v3.STL" />
+        </geometry>
+      </visual>
+    </xacro:unless>
     <collision>
       <origin
         xyz="0 0 0"
