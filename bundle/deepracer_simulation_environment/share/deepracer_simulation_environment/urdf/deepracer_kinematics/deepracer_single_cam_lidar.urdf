@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="deepracer_single_cam_lidar">
+  <link 
+    name="base_link" />
+  <link
+    name="chassis">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="5.0" />
+      <inertia
+        ixx="0.010609"
+        ixy="0"
+        ixz="0"
+        iyy="0.050409"
+        iyz="0"
+        izz="0.05865" />
+    </inertial>
+<!--     <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/chassis.STL" />
+      </geometry>
+    </visual> -->
+  </link>
+  <joint name="base_link_joint" type="fixed">
+    <origin xyz="0 0 0.023249" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="chassis" />
+  </joint>
+  <link
+    name="left_rear_wheel">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.34055" />
+      <inertia
+        ixx="0.00026046"
+        ixy="0"
+        ixz="0"
+        iyy="0.00041226"
+        iyz="0"
+        izz="0.00026046" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/left_rear_wheel.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/left_rear_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_rear_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.081663 0.08105 0.01575"
+      rpy="0 0 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="left_rear_wheel" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="right_rear_wheel">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.34055" />
+      <inertia
+        ixx="0.00026046"
+        ixy="0"
+        ixz="0"
+        iyy="0.00041226"
+        iyz="0"
+        izz="0.00026046" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/right_rear_wheel.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/right_rear_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_rear_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.081663 -0.08105 0.01575"
+      rpy="0 0 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="right_rear_wheel" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="left_steering_hinge">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.1" />
+      <inertia
+        ixx="4E-06"
+        ixy="0"
+        ixz="0"
+        iyy="4E-06"
+        iyz="0"
+        izz="4E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/left_steering_hinge.STL" />
+      </geometry>
+    </visual>
+  </link>
+  <joint
+    name="left_steering_hinge_joint"
+    type="continuous">
+    <origin
+      xyz="0.082311 0.079601 0.011759"
+      rpy="0 0 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="left_steering_hinge" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1"
+      upper="1"
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="left_front_wheel">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.34055" />
+      <inertia
+        ixx="0.00026046"
+        ixy="0"
+        ixz="0"
+        iyy="0.00041226"
+        iyz="0"
+        izz="0.00026046" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/left_front_wheel.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/left_front_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="left_front_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0.0022537" />
+    <parent
+      link="left_steering_hinge" />
+    <child
+      link="left_front_wheel" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="right_steering_hinge">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.1" />
+      <inertia
+        ixx="4E-06"
+        ixy="0"
+        ixz="0"
+        iyy="4E-06"
+        iyz="0"
+        izz="4E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/right_steering_hinge.STL" />
+      </geometry>
+    </visual>
+  </link>
+  <joint
+    name="right_steering_hinge_joint"
+    type="continuous">
+    <origin
+      xyz="0.082311 -0.079601 0.011759"
+      rpy="0 0 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="right_steering_hinge" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1"
+      upper="1"
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="right_front_wheel">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.34055" />
+      <inertia
+        ixx="0.00026046"
+        ixy="0"
+        ixz="0"
+        iyy="0.00041226"
+        iyz="0"
+        izz="0.00026046" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/right_front_wheel.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/right_front_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="right_front_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0.0065592" />
+    <parent
+      link="right_steering_hinge" />
+    <child
+      link="right_front_wheel" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="10"
+      velocity="100" />
+  </joint>
+  <link
+    name="zed_camera_link">
+    <inertial>
+      <origin
+        xyz="0.019881 0 0.034966"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1E-06"
+        ixy="0"
+        ixz="0"
+        iyy="1E-06"
+        iyz="0"
+        izz="1E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link.STL" />
+      </geometry>
+    </visual>
+  </link>
+  <joint
+    name="zed_camera_joint"
+    type="fixed">
+    <origin
+      xyz="0.091711 0 0.080023"
+      rpy="0 0.2618 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="zed_camera_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="camera_link">
+    <inertial>
+      <origin
+        xyz="0.0005 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1E-06"
+        ixy="0"
+        ixz="0"
+        iyy="1E-06"
+        iyz="0"
+        izz="1E-06" />
+    </inertial>
+<!--     <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/camera_link.STL" />
+      </geometry>
+    </visual> -->
+  </link>
+  <joint
+    name="camera_joint"
+    type="fixed">
+    <origin
+      xyz="0.044755 0 0.04"
+      rpy="0 0 0" />
+    <parent
+      link="zed_camera_link" />
+    <child
+      link="camera_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="laser">
+    <inertial>
+      <origin
+        xyz="0.006099 0.00028423 -0.012654"
+        rpy="0 0 0" />
+      <mass
+        value="1E-05" />
+      <inertia
+        ixx="1E-06"
+        ixy="0"
+        ixz="0"
+        iyy="1E-06"
+        iyz="0"
+        izz="1E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/laser.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/laser.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="hokuyo_joint"
+    type="fixed">
+    <origin
+      xyz="0.02913 0 0.16145" 
+      rpy="0 0 3.1416" />
+    <parent
+      link="chassis" />
+    <child
+      link="laser" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="car_body_link_v3">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/car_body_link_lidar_v3.STL" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://deepracer_simulation_environment/meshes/deepracer/car_body_link_lidar_v3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="car_body_joint"
+    type="fixed">
+    <origin
+      xyz="-0.0762 0 2E-05"
+      rpy="0 0 0" />
+    <parent
+      link="chassis" />
+    <child
+      link="car_body_link_v3" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

@@ -31,8 +31,7 @@ def main():
             virtual_event.finish()
 
     LOG.info("[VirtualEventWorker] virtual event end.")
-    utils.cancel_simulation_job(os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN'),
-                                rospy.get_param('AWS_REGION'))
+    utils.cancel_simulation_job()
 
 
 if __name__ == '__main__':
