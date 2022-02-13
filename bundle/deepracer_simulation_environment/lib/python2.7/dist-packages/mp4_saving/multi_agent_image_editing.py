@@ -159,7 +159,6 @@ class MultiAgentImageEditing(ImageEditingInterface):
         if agent_done:
             # When the cv2 text is written, it automatically drops the alpha value of the image
             rel_y_offset = XYPixelLoc.TRACK_IMG_WITH_OFFSET_LOC.value[1] if self.is_league_leaderboard else 0
-            major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
             racecomplete_image = utils.get_image(TrackAssetsIconographicPngs.RACE_COMPLETE_OVERLAY_PNG.value,
                                                  IconographicImageSize.RACE_COMPLETE_IMAGE_SIZE.value)
             x_offset = major_cv_image.shape[1] - racecomplete_image.shape[1]//2

@@ -2,7 +2,6 @@
 """
 
 import os
-import time
 import datetime
 import logging
 import rospy
@@ -10,25 +9,18 @@ import cv2
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
-from markov.metrics.constants import EpisodeStatus
 from mp4_saving import utils
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   IconographicImageSize,
-                                  TrackAssetsIconographicPngs, RACE_COMPLETE_Y_OFFSET,
-                                  RACE_TYPE_TO_VIDEO_TEXT_MAPPING, XYPixelLoc, AWS_DEEPRACER_WATER_MARK,
                                   SCALE_RATIO, FrameQueueData,
                                   VirtualEventMP4Params,
                                   VirtualEventIconographicPngs,
-                                  VirtualEventXYPixelLoc, VirtualEventFader)
+                                  VirtualEventXYPixelLoc, VirtualEventFader,
+                                  VirtualEventData)
 from mp4_saving.image_editing_interface import ImageEditingInterface
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.fader import Fader
-from markov.virtual_event.constants import (WAIT_DISPLAY_NAME,
-                                            WAIT_CURRENT_LAP,
-                                            WAIT_TOTAL_EVAL_SECONDS,
-                                            WAIT_RESET_COUNTER,
-                                            WAIT_SPEED,
-                                            DEFAULT_RACE_DURATION)
+from markov.virtual_event.constants import DEFAULT_RACE_DURATION
 from mp4_saving.states.virtual_event_wait_state import VirtualEventWaitState
 from markov.state_machine.fsm import FSM
 from markov.boto.s3.files.virtual_event_best_sector_time import VirtualEventBestSectorTime
@@ -42,7 +34,7 @@ from markov.boto.s3.utils import get_s3_key
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
-class VirtualEventImageEditing(ImageEditingInterface):
+class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
     """ Image editing class for virtual event
     """
     def __init__(self, racecar_name, racecar_info, race_type):
@@ -159,7 +151,6 @@ class VirtualEventImageEditing(ImageEditingInterface):
         self._last_eval_time = 0
         self._curr_progress = 0
         self._last_progress = 0
-        self._current_lap = 1
 
         # Initializing the fader behaviour to pre-compute the gradient values
         final_fading_image = utils.get_image(VirtualEventIconographicPngs.FINAL_FADING_IMAGE_50ALPHA.value,
@@ -169,11 +160,11 @@ class VirtualEventImageEditing(ImageEditingInterface):
                                 fading_max_percent=VirtualEventFader.FADING_MAX_PERCENT.value,
                                 num_frames=VirtualEventFader.NUM_FRAMES.value)
 
-    def _edit_major_cv_image(self, major_cv_image, mp4_video_metrics_info):
+    def _edit_major_cv_image(self, major_cv_image, metric_info):
         """ Apply all the editing for the Major 45degree camera image
         Args:
             major_cv_image (Image): Image straight from the camera
-            mp4_video_metrics_info (dict): rest image editting info
+            metric_info (dict): rest image editting info
         Returns:
             Image: Edited main camera image
         """
@@ -182,9 +173,9 @@ class VirtualEventImageEditing(ImageEditingInterface):
         #########################
         # update display params #
         #########################
+        mp4_video_metrics_info = metric_info[FrameQueueData.AGENT_METRIC_INFO.value]
+        virtual_event_info = metric_info[FrameQueueData.VIRTUAL_EVENT_INFO.value]
         episode_status = mp4_video_metrics_info[self.racecar_index].episode_status
-        # Display name (Racer name/Model name)
-        display_name = self.racecar_info[self.racecar_index]['display_name']
         # total_evaluation_time (Race time)
         total_eval_milli_seconds = mp4_video_metrics_info[self.racecar_index].total_evaluation_time
         # Reset counter
@@ -196,7 +187,7 @@ class VirtualEventImageEditing(ImageEditingInterface):
         # Prepare a dict for finite state machine on event call
         info_dict = {VirtualEventMP4Params.COUNTDOWN_TIMER.value: mp4_video_metrics_info[self.racecar_index].pause_duration,
                      VirtualEventMP4Params.MAJOR_CV_IMAGE.value: major_cv_image,
-                     VirtualEventMP4Params.CURRENT_LAP.value: self._current_lap,
+                     VirtualEventMP4Params.CURRENT_LAP.value: virtual_event_info[VirtualEventData.LAP.value] + 1,
                      VirtualEventMP4Params.TOTAL_EVAL_SECONDS.value: total_eval_milli_seconds,
                      VirtualEventMP4Params.RESET_COUNTER.value: reset_counter,
                      VirtualEventMP4Params.SPEED.value: speed,
@@ -223,7 +214,6 @@ class VirtualEventImageEditing(ImageEditingInterface):
         total_eval_milli_seconds = info_dict[VirtualEventMP4Params.TOTAL_EVAL_SECONDS.value]
         reset_counter = info_dict[VirtualEventMP4Params.RESET_COUNTER.value]
         speed = info_dict[VirtualEventMP4Params.SPEED.value]
-        self._current_lap = info_dict[VirtualEventMP4Params.CURRENT_LAP.value]
         self._last_eval_time = info_dict[VirtualEventMP4Params.LAST_EVAL_SECONDS.value]
         self._sector_times = info_dict[VirtualEventMP4Params.SECTOR_TIMES.value]
         self._curr_lap_time = info_dict[VirtualEventMP4Params.CURR_LAP_TIME.value]
@@ -330,7 +320,10 @@ class VirtualEventImageEditing(ImageEditingInterface):
             major_cv_image, agents_loc, objects_loc, self.track_start_loc)
 
     def edit_image(self, major_cv_image, metric_info):
-        mp4_video_metrics_info = metric_info[FrameQueueData.AGENT_METRIC_INFO.value]
-        major_cv_image = self._edit_major_cv_image(major_cv_image, mp4_video_metrics_info)
-        major_cv_image = self._plot_agents_on_major_cv_image(major_cv_image, mp4_video_metrics_info)
+        major_cv_image = self._edit_major_cv_image(
+            major_cv_image,
+            metric_info)
+        major_cv_image = self._plot_agents_on_major_cv_image(
+            major_cv_image,
+            metric_info[FrameQueueData.AGENT_METRIC_INFO.value])
         return cv2.cvtColor(major_cv_image, cv2.COLOR_BGRA2RGB)

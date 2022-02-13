@@ -1,4 +1,5 @@
-<!--   
+<?xml version="1.0"?>
+<!--
     This is an example launch file to use when you want to launch a Kinesis WebRTC Streamer node.
     By default it starts up with a single stream, but the stream_count parameter can be adjusted and additional stream configuration files can be loaded using the deepracer_webrtc_config.yaml provided along with the package.
 
@@ -15,9 +16,7 @@
          LOG_LEVEL_ERROR 5
          LOG_LEVEL_FATAL 6
          LOG_LEVEL_SILENT 7
-
 -->
-
 <launch>
     <!-- If a node_name argument is provided by the caller then we will set the node's name to that value -->
     <arg name="node_name" default="kinesis_webrtc_streamer" />

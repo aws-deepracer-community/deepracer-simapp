@@ -2,7 +2,6 @@
 
 import os
 import json
-import time
 import logging
 import rospy
 import cv2
@@ -14,14 +13,7 @@ from markov.log_handler.constants import (SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                           SIMAPP_EVENT_ERROR_CODE_500)
 from markov.metrics.constants import EpisodeStatus
 from markov.state_machine.abs_fsm_state import AbsFSMState
-from markov.virtual_event.constants import (PAUSE_TIME_BEFORE_START,
-                                            WAIT_TOTAL_EVAL_SECONDS,
-                                            WAIT_SPEED,
-                                            PAUSE_TIME_AFTER_FINISH,
-                                            WAIT_DISPLAY_NAME,
-                                            WAIT_CURRENT_LAP,
-                                            WAIT_RESET_COUNTER,
-                                            DEFAULT_RACE_DURATION)
+from markov.virtual_event.constants import DEFAULT_RACE_DURATION
 from markov.boto.s3.files.virtual_event_best_sector_time import VirtualEventBestSectorTime
 from markov.boto.s3.utils import get_s3_key
 from markov.boto.s3.constants import (SECTOR_TIME_LOCAL_PATH,
@@ -31,15 +23,9 @@ from markov.boto.s3.constants import (SECTOR_TIME_LOCAL_PATH,
                                       SECTOR_TIME_FORMAT_DICT)
 from markov.utils import get_s3_kms_extra_args
 from mp4_saving import utils
-from mp4_saving.constants import (IconographicImageSize,
-                                  TrackAssetsIconographicPngs, RACE_COMPLETE_Y_OFFSET,
-                                  XYPixelLoc,
-                                  VirtualEventMP4Params,
+from mp4_saving.constants import (VirtualEventMP4Params,
                                   VirtualEventXYPixelLoc,
-                                  VirtualEventIconographicPngs,
-                                  SECTOR_COLORS_DICT,
-                                  TrackSectorColors,
-                                  TrackColors)
+                                  VirtualEventIconographicPngs)
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -140,8 +126,20 @@ class VirtualEventRunState(AbsFSMState):
 
         # race time over event or episode complete: move to FINISH state
         if event == EpisodeStatus.TIME_UP.value:
+            LOG.info("[virtual event]: video edit state {} -> Finish with time up\
+                ".format(SECTOR_X_FORMAT.format(self._current_sector + 1)))
             from mp4_saving.states.virtual_event_finish_state import VirtualEventFinishState
-            return VirtualEventFinishState(total_sectors=self._total_sectors), info_dict
+            return VirtualEventFinishState(total_sectors=self._current_sector), info_dict
+        # racer finish all laps: move to FINISH state
+        elif info_dict[VirtualEventMP4Params.CURRENT_LAP.value] > self._total_laps:
+            LOG.info("[virtual event]: video edit state {} -> Finish with lap completion\
+                ".format(SECTOR_X_FORMAT.format(self._current_sector + 1)))
+            from mp4_saving.states.virtual_event_finish_state import VirtualEventFinishState
+            if (self._current_sector + 1) == self._total_sectors and \
+                    (curr_progress == 100.00 or 0 <= curr_progress <= 100.00 / self._total_sectors):
+                info_dict = self._update_sector_times(info_dict, self._current_sector)
+                return VirtualEventFinishState(total_sectors=self._current_sector + 1), info_dict
+            return VirtualEventFinishState(total_sectors=self._current_sector), info_dict
 
         #############################################################################################
         # need to handle lap complete 100 target progress specifically. Sometime, we have seen 100. #
@@ -189,29 +187,16 @@ class VirtualEventRunState(AbsFSMState):
         Returns:
             tuple(AbsFSMState, dict): specific AbsFSMState class instance and info dict tuple
         """
-        # increment lap counter
-        info_dict[VirtualEventMP4Params.CURRENT_LAP.value] += 1
-        current_lap = info_dict[VirtualEventMP4Params.CURRENT_LAP.value]
-
         # update current personal, personal best, and sector best times
         info_dict = self._update_sector_times(info_dict, self._current_sector)
 
-        # finish all laps
-        if current_lap > self._total_laps:
-            LOG.info("[virtual event]: video edit state {} -> Finish with progress {}\
-                ".format(SECTOR_X_FORMAT.format(self._total_sectors),
-                         curr_progress))
+        LOG.info("[virtual event]: video edit state {} -> sector1 with progress {}\
+            ".format(SECTOR_X_FORMAT.format(self._total_sectors),
+                     curr_progress))
 
-            from mp4_saving.states.virtual_event_finish_state import VirtualEventFinishState
-            return VirtualEventFinishState(total_sectors=self._total_sectors), info_dict
-        else:
-            LOG.info("[virtual event]: video edit state {} -> sector1 with progress {}\
-                ".format(SECTOR_X_FORMAT.format(self._total_sectors),
-                         curr_progress))
-
-            # (self._current_sector + 1) % self._total_sectors) should always be index 0 here
-            return VirtualEventRunState(
-                current_sector=(self._current_sector + 1) % self._total_sectors), info_dict
+        # (self._current_sector + 1) % self._total_sectors) should always be index 0 here
+        return VirtualEventRunState(
+            current_sector=(self._current_sector + 1) % self._total_sectors), info_dict
 
     def _on_exit_first_sector_state(self, info_dict, curr_progress):
         """handle transition out of first sector specifically
@@ -344,8 +329,9 @@ class VirtualEventRunState(AbsFSMState):
                 # in a new thread
                 Thread(target=self._virtual_event_best_sector_time.persist,
                        args=(json.dumps({SECTOR_X_FORMAT.format(idx + 1):
-                                        sector_time_dict[self._best_session_format.format(SECTOR_X_FORMAT.format(idx + 1))]
-                                        for idx in range(self._total_sectors)}),
+                                         sector_time_dict[self._best_session_format.format(
+                                             SECTOR_X_FORMAT.format(idx + 1))]
+                                         for idx in range(self._total_sectors)}),
                              get_s3_kms_extra_args())).start()
 
         # update sector_time_dict to the latest
