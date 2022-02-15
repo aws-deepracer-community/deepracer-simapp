@@ -121,15 +121,19 @@ class DeepRacer(object):
         logger.info("Pausing physics after initializing the cars")
         pause_physics(EmptyRequest())
 
-        for racecar_name, car_pose in zip(racecar_names, car_poses):
-            main_cameras[racecar_name].spawn_model(car_pose,
-                                                   os.path.join(deepracer_path, "models",
-                                                                "camera", "model.sdf"))
+        disable_main_camera = utils.str2bool(rospy.get_param("DISABLE_MAIN_CAMERA", False))
+        if not disable_main_camera:
+            for racecar_name, car_pose in zip(racecar_names, car_poses):
+                main_cameras[racecar_name].spawn_model(car_pose,
+                                                    os.path.join(deepracer_path, "models",
+                                                                    "camera", "model.sdf"))
 
-        logger.info("Spawning sub camera model")
-        # Spawn the top camera model
-        sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
-                                                  "top_camera", "model.sdf"))
+        disable_sub_camera = utils.str2bool(rospy.get_param("DISABLE_SUB_CAMERA", False))
+        if not disable_sub_camera:
+            logger.info("Spawning sub camera model")
+            # Spawn the top camera model
+            sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
+                                                    "top_camera", "model.sdf"))
 
 if __name__ == '__main__':
     rospy.init_node('car_reset_node', anonymous=True)
