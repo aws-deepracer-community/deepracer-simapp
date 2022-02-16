@@ -67,7 +67,7 @@ class DeepRacer(object):
         self.shell_types = force_list(rospy.get_param(const.YamlKey.BODY_SHELL_TYPE.value,
                                                       [const.BodyShellType.DEFAULT.value] * len(racecar_names)))
         # Gazebo service that allows us to position the car
-        self.model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState)
+        self.model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState, persistent=True)
 
         self.get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value,
                                                   GetModelProperties)
@@ -83,9 +83,20 @@ class DeepRacer(object):
 
         # Place the car at the starting point facing the forward direction
         # Instantiate cameras
-        main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
-        [camera.detach() for camera in main_cameras.values()]
-        sub_camera.detach()
+        disable_main_camera = False
+        disable_sub_camera = False
+
+        disable_cameras = rospy.get_param("DISABLE_CAMERAS", "None")
+        if disable_cameras == "MAIN_SUB":
+            disable_main_camera = True
+            disable_sub_camera = True
+        elif disable_cameras == "SUB":
+            disable_sub_camera = True
+
+        if not disable_main_camera:
+            main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
+            [camera.detach() for camera in main_cameras.values()]
+            sub_camera.detach()
         # Get the root directory of the ros package, this will contain the models
         deepracer_path = rospkg.RosPack().get_path("deepracer_simulation_environment")
         # Grab the track data
@@ -121,14 +132,12 @@ class DeepRacer(object):
         logger.info("Pausing physics after initializing the cars")
         pause_physics(EmptyRequest())
 
-        disable_main_camera = utils.str2bool(rospy.get_param("DISABLE_MAIN_CAMERA", False))
         if not disable_main_camera:
             for racecar_name, car_pose in zip(racecar_names, car_poses):
                 main_cameras[racecar_name].spawn_model(car_pose,
                                                     os.path.join(deepracer_path, "models",
                                                                     "camera", "model.sdf"))
 
-        disable_sub_camera = utils.str2bool(rospy.get_param("DISABLE_SUB_CAMERA", False))
         if not disable_sub_camera:
             logger.info("Spawning sub camera model")
             # Spawn the top camera model
