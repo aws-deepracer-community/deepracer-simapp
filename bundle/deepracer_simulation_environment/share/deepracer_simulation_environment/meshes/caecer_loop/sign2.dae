@@ -41,7 +41,7 @@
   </library_effects>
   <library_images>
     <image id="Map__31" name="Map__31">
-      <init_from>textures/Textures/signs2.png</init_from>
+      <init_from>textures/signs2.png</init_from>
     </image>
   </library_images>
   <library_materials>
