@@ -2,7 +2,7 @@
 <robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- include macros -->
-  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer/macros.xacro" />
+  <xacro:include filename="$(find deepracer_simulation_environment)/urdf/deepracer_kinematics/macros.xacro" />
 
   <!-- name and bitmask -->
   <xacro:arg name="racecar_name" default="racecar" />
