@@ -31,6 +31,7 @@ Version 4 is the current development version, and it is receiving both new track
 | 4.0.10       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx2` | `4.0.10-gpu` `4.0.10-gpu-gl` |
 | 4.0.11       | Minor fixes  |  `4.0.11-cpu-avx` `4.0.11-cpu-gl-avx`  | `4.0.11-cpu-avx2` `4.0.11-cpu-gl-avx` | `4.0.11-gpu` `4.0.11-gpu-gl` |
 | 4.0.12       | 2022 Summit Track  |  `4.0.12-cpu-avx` `4.0.12-cpu-gl-avx`  | `4.0.12-cpu-avx2` `4.0.12-cpu-gl-avx` | `4.0.12-gpu` `4.0.12-gpu-gl` |
+| 4.0.13       | 2022 March Track  |  `4.0.13-cpu-avx` `4.0.13-cpu-gl-avx`  | `4.0.13-cpu-avx2` `4.0.13-cpu-gl-avx` | `4.0.13-gpu` `4.0.13-gpu-gl` |
 
 ### Version 3
 
