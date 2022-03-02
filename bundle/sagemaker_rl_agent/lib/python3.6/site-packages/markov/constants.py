@@ -2,6 +2,7 @@
 from enum import Enum
 
 # SimApp Version
+SIMAPP_VERSION_5 = 5.0
 SIMAPP_VERSION_4 = 4.0
 SIMAPP_VERSION_3 = 3.0
 SIMAPP_VERSION_2 = 2.0
