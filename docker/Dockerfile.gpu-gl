@@ -23,6 +23,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
     apt-get install ros-melodic-ros-base python-rosdep python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
+    apt-get install -y ros-melodic-media-export ros-melodic-web-video-server ros-melodic-rosmsg ros-melodic-h264-video-encoder python-matplotlib --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -69,7 +70,6 @@ RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3'
 COPY bundle /opt/install
 WORKDIR /opt/install
 RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
-    apt-get install -y ros-melodic-media-export ros-melodic-web-video-server ros-melodic-rosmsg python-matplotlib --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"
