@@ -1,0 +1,3 @@
+<launch>
+    <test test-name="test_h264_video_encoder" pkg="h264_video_encoder" type="test_h264_video_encoder"/>
+</launch>
