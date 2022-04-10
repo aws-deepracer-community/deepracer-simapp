@@ -20,7 +20,9 @@ Version 4 is the current development version, and it is receiving both new track
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 5.0.0       | Initial release  |  `5.0.0-cpu-avx` `5.0.0-cpu-gl-avx`  | `5.0.0-cpu-avx2` `5.0.0-cpu-gl-avx2` | `5.0.0-gpu` `5.0.0--gpu-gl` |
+| 5.0.0       | Initial release  |  `5.0.0-cpu-avx` `5.0.0-cpu-gl-avx`  | `5.0.0-cpu-avx2` `5.0.0-cpu-gl-avx2` | `5.0.0-gpu` `5.0.0-gpu-gl` |
+| 5.0.1       | April Track  |  `5.0.1-cpu-avx` `5.0.1-cpu-gl-avx`  | `5.0.1-cpu-avx2` `5.0.1-cpu-gl-avx2` | `5.0.1-gpu` `5.0.1-gpu-gl` |
+
 
 ### Version 4
 

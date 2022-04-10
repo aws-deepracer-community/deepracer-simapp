@@ -1,8 +1,0 @@
-prefix=/opt/amazon/build/private/tmp/colcon/install/kinesis_webrtc_streamer
-
-Name: kinesis_webrtc_streamer
-Description: Description of kinesis_webrtc_streamer
-Version: 0.0.1
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
