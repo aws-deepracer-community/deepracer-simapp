@@ -11,6 +11,7 @@
 
   <arg name="include_second_camera" default="false" />
   <arg name="include_lidar_sensor" default="false" />
+  <arg name="include_imu_sensor" default="false" />
 
   <!-- Lidar 360 degree - settings -->
   <arg name="lidar_360_degree_sample" default="64" />
@@ -31,7 +32,7 @@
       racecar_bitmask:=$(arg racecar_bitmask)
       include_second_camera:=$(arg include_second_camera)
       include_lidar_sensor:=$(arg include_lidar_sensor)
-
+      include_imu_sensor:=$(arg include_imu_sensor)
       lidar_360_degree_sample:=$(arg lidar_360_degree_sample)
       lidar_360_degree_horizontal_resolution:=$(arg lidar_360_degree_horizontal_resolution)
       lidar_360_degree_min_angle:=$(arg lidar_360_degree_min_angle)
