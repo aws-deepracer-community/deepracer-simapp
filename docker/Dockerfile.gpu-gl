@@ -7,6 +7,7 @@ LABEL com.nvidia.cudnn.version="8.2.4.15"
 
 RUN distribution=$(. /etc/os-release;echo $ID$VERSION_ID | sed 's/\.//') && \
 	apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/3bf863cc.pub && \
+    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/$distribution/x86_64/7fa2af80.pub && \
     apt-get update && \ 
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libcudnn8=8.2.4.15-1+cuda11.4 \
     && rm -rf /var/lib/apt/lists/*
