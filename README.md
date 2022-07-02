@@ -24,6 +24,7 @@ Version 4 is the current development version, and it is receiving both new track
 | 5.0.1       | April Track  |  `5.0.1-cpu-avx` `5.0.1-cpu-gl-avx`  | `5.0.1-cpu-avx2` `5.0.1-cpu-gl-avx2` | `5.0.1-gpu` `5.0.1-gpu-gl` |
 | 5.0.2       | May Track  |  `5.0.2-cpu-avx` `5.0.2-cpu-gl-avx`  | `5.0.2-cpu-avx2` `5.0.2-cpu-gl-avx2` | `5.0.2-gpu` `5.0.2-gpu-gl` |
 | 5.0.3      | June Track  |  `5.0.3-cpu-avx` `5.0.3-cpu-gl-avx`  | `5.0.3-cpu-avx2` `5.0.3-cpu-gl-avx2` | `5.0.3-gpu` `5.0.3-gpu-gl` |
+| 5.0.4      | July Track  |  `5.0.4-cpu-avx` `5.0.4-cpu-gl-avx`  | `5.0.4-cpu-avx2` `5.0.4-cpu-gl-avx2` | `5.0.4-gpu` `5.0.4-gpu-gl` |
 
 
 ### Version 4
