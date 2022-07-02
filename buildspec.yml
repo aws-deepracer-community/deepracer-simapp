@@ -3,6 +3,7 @@ phases:
   pre_build:
     commands:
         - docker login --username ${DOCKER_HUB_USER} --password ${DOCKER_HUB_KEY} 
+        - rm /etc/apt/sources.list.d/google-chrome.list
         - apt-get update && apt-get install gawk
   build:
     commands:
