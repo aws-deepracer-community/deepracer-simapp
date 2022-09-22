@@ -12,11 +12,13 @@ In most cases it will be sufficient to use one of our pre-built images which use
 * AVX-512 was available on newer Xeon and Core i7-X processors. Due to convergence issues it has been removed.
 * GPU uses Tensorflow-GPU instead of CPU. It is not compiled with special instruction sets for the CPU.
 
+Built images are available via `docker pull awsdeepracercommunity/deepracer-robomaker:<tag>`. 
+
 Available tags are:
 
 ### Version 5
 
-Version 4 is the current development version, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
+Version 5 is the current development version for 2022, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
@@ -26,7 +28,7 @@ Version 4 is the current development version, and it is receiving both new track
 | 5.0.3      | June Track  |  `5.0.3-cpu-avx` `5.0.3-cpu-gl-avx`  | `5.0.3-cpu-avx2` `5.0.3-cpu-gl-avx2` | `5.0.3-gpu` `5.0.3-gpu-gl` |
 | 5.0.4      | July Track  |  `5.0.4-cpu-avx` `5.0.4-cpu-gl-avx`  | `5.0.4-cpu-avx2` `5.0.4-cpu-gl-avx2` | `5.0.4-gpu` `5.0.4-gpu-gl` |
 | 5.0.5      | August Track  |  `5.0.5-cpu-avx` `5.0.5-cpu-gl-avx`  | `5.0.5-cpu-avx2` `5.0.5-cpu-gl-avx2` | `5.0.5-gpu` `5.0.5-gpu-gl` |
-
+| 5.0.6      | September Track  |  `5.0.6-cpu-avx` `5.0.6-cpu-gl-avx`  | `5.0.6-cpu-avx2` `5.0.6-cpu-gl-avx2` | `5.0.6-gpu` `5.0.6-gpu-gl` |
 
 ### Version 4
 
@@ -34,20 +36,7 @@ Version 4 is retired.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 4.0.2       | Melodic Upgrade  |  `4.0.2-cpu-avx` `4.0.2-cpu-gl-avx`  | `4.0.2-cpu-avx2` `4.0.2-cpu-gl-avx2` | `4.0.2-gpu` `4.0.2-gpu-gl` |
-| 4.0.3       | May Track  |  `4.0.3-cpu-avx` `4.0.3-cpu-gl-avx`  | `4.0.3-cpu-avx2` `4.0.3-cpu-gl-avx2` | `4.0.3-gpu` `4.0.3-gpu-gl` |
-| 4.0.4       | May Updates  |  `4.0.4-cpu-avx` `4.0.4-cpu-gl-avx`  | `4.0.4-cpu-avx2` `4.0.4-cpu-gl-avx2` | `4.0.4-gpu` `4.0.4-gpu-gl` |
-| 4.0.5       | June Track  |  `4.0.5-cpu-avx` `4.0.5-cpu-gl-avx`  | `4.0.5-cpu-avx2` `4.0.5-cpu-gl-avx2` | `4.0.5-gpu` `4.0.5-gpu-gl` |
-| 4.0.6       | July Track & Updates  |  `4.0.6-cpu-avx` `4.0.6-cpu-gl-avx`  | `4.0.6-cpu-avx2` `4.0.6-cpu-gl-avx2` | `4.0.6-gpu` `4.0.6-gpu-gl` |
-| 4.0.7       | August Track  |  `4.0.7-cpu-avx` `4.0.7-cpu-gl-avx`  | `4.0.7-cpu-avx2` `4.0.7-cpu-gl-avx2` | `4.0.7-gpu` `4.0.7-gpu-gl` |
-| 4.0.8       | September Track  |  `4.0.8-cpu-avx` `4.0.8-cpu-gl-avx`  | `4.0.8-cpu-avx2` `4.0.8-cpu-gl-avx2` | `4.0.8-gpu` `4.0.8-gpu-gl` |
-| 4.0.9       | October Track  |  `4.0.9-cpu-avx` `4.0.9-cpu-gl-avx`  | `4.0.9-cpu-avx2` `4.0.9-cpu-gl-avx2` | `4.0.9-gpu` `4.0.9-gpu-gl` |
-| 4.0.10       | ReInvent Track  |  `4.0.10-cpu-avx` `4.0.10-cpu-gl-avx`  | `4.0.10-cpu-avx2` `4.0.10-cpu-gl-avx2` | `4.0.10-gpu` `4.0.10-gpu-gl` |
-| 4.0.11       | Minor fixes  |  `4.0.11-cpu-avx` `4.0.11-cpu-gl-avx`  | `4.0.11-cpu-avx2` `4.0.11-cpu-gl-avx` | `4.0.11-gpu` `4.0.11-gpu-gl` |
-| 4.0.12       | 2022 Summit Track  |  `4.0.12-cpu-avx` `4.0.12-cpu-gl-avx`  | `4.0.12-cpu-avx2` `4.0.12-cpu-gl-avx` | `4.0.12-gpu` `4.0.12-gpu-gl` |
 | 4.0.13       | 2022 March Track  |  `4.0.13-cpu-avx` `4.0.13-cpu-gl-avx`  | `4.0.13-cpu-avx2` `4.0.13-cpu-gl-avx` | `4.0.13-gpu` `4.0.13-gpu-gl` |
-
-The built image is available via `docker pull awsdeepracercommunity/deepracer-robomaker:cpu`. For other images replace `cpu` with the tag of your choice from the above table.
 
 ## Building the image
 
