@@ -1,12 +1,12 @@
 
 "use strict";
 
+let VideoMetricsSrv = require('./VideoMetricsSrv.js')
 let VirtualEventVideoEditSrv = require('./VirtualEventVideoEditSrv.js')
 let TopCamDataSrv = require('./TopCamDataSrv.js')
-let VideoMetricsSrv = require('./VideoMetricsSrv.js')
 
 module.exports = {
+  VideoMetricsSrv: VideoMetricsSrv,
   VirtualEventVideoEditSrv: VirtualEventVideoEditSrv,
   TopCamDataSrv: TopCamDataSrv,
-  VideoMetricsSrv: VideoMetricsSrv,
 };
