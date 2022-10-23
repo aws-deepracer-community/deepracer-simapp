@@ -20,10 +20,17 @@
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <scale>0.4 0.3 0.25</scale>
+            <scale>0.36 0.265 0.24</scale>
             <uri>model://meshes/deepracer_box_obstacle/deepracer_box_obstacle.dae</uri>
           </mesh>
         </geometry>
+        <surface>
+        <contact>
+          <!-- Make sure the collision between botcar and any of the obstacles is not considered -->
+          <!-- https://classic.gazebosim.org/tutorials?tut=collide_bitmask&cat=physics -->
+          <collide_bitmask>0x7FFF</collide_bitmask>
+        </contact>
+        </surface>
       </collision>
       <pose frame="">0 0 0 0 0 0</pose>
 
@@ -31,7 +38,7 @@
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <scale>0.4 0.3 0.25</scale>
+            <scale>0.36 0.265 0.24</scale>
             <uri>model://meshes/deepracer_box_obstacle/deepracer_box_obstacle.dae</uri>
           </mesh>
         </geometry>

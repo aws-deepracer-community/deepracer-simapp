@@ -6,8 +6,8 @@
       <comments />
       <source_data>2022_reinvent_champ</source_data>
     </contributor>
-    <created>2022-09-06T11:47:51.588456</created>
-    <modified>2022-09-06T11:47:51.588483</modified>
+    <created>2022-10-04T13:39:41.506031</created>
+    <modified>2022-10-04T13:39:41.506057</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -68,7 +68,7 @@
     <geometry id="fieldmesh0" name="fieldShape-mesh">
       <mesh>
         <source id="field-verts">
-          <float_array count="12" id="field-verts-array">-5.419414 -5.41314 0 5.410254 -5.41314 0 -5.419414 5.416142 0 5.410254 5.416142 0</float_array>
+          <float_array count="12" id="field-verts-array">-5.164676 -5.160285 0 5.162652 -5.160285 0 -5.164676 5.164024 0 5.162652 5.164024 0</float_array>
           <technique_common>
             <accessor count="4" source="#field-verts-array" stride="3">
               <param name="X" type="float" />
@@ -88,7 +88,7 @@
           </technique_common>
         </source>
         <source id="field-texcoords">
-          <float_array count="8" id="field-texcoords-array">-5.419414 -5.41314 5.410254 -5.41314 -5.419414 5.416142 5.410254 5.416142</float_array>
+          <float_array count="8" id="field-texcoords-array">-5.164676 -5.160285 5.162652 -5.160285 -5.164676 5.164024 5.162652 5.164024</float_array>
           <technique_common>
             <accessor count="4" source="#field-texcoords-array" stride="2">
               <param name="S" type="float" />

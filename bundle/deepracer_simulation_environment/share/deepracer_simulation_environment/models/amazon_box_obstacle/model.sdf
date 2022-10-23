@@ -24,6 +24,13 @@
             <uri>model://meshes/amazon_box_obstacle/amazon_box_obstacle.dae</uri>
           </mesh>
         </geometry>
+        <surface>
+        <contact>
+          <!-- Make sure the collision between botcar and any of the obstacles is not considered -->
+          <!-- https://classic.gazebosim.org/tutorials?tut=collide_bitmask&cat=physics -->
+          <collide_bitmask>0x7FFF</collide_bitmask>
+        </contact>
+        </surface>
       </collision>
       <pose frame="">0 0 0 0 0 0</pose>
 
