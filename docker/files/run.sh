@@ -92,5 +92,17 @@ fi
 
 sleep 1
 
+if [ -n "$MULTI_CONFIG" ]; then
+	if [ -f /scripts/alter_environment_$ROLLOUT_IDX.sh ]; then
+		echo "Altering environment"
+		bash /scripts/alter_environment_$ROLLOUT_IDX.sh &
+	fi
+else
+	if [ -f /scripts/alter_environment.sh ]; then
+		echo "Altering environment"
+		bash /scripts/alter_environment.sh &
+	fi
+fi
+
 echo "IP: $(hostname -I) ($(hostname))"
 wait
