@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <memory>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -88,10 +88,10 @@ struct VideoMetricsSrvResponse_
    typedef float _y_type;
   _y_type y;
 
-   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _object_locations_type;
+   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename std::allocator_traits<ContainerAllocator>::template rebind_alloc< ::geometry_msgs::Point32_<ContainerAllocator> >> _object_locations_type;
   _object_locations_type object_locations;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _episode_status_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>> _episode_status_type;
   _episode_status_type episode_status;
 
    typedef float _pause_duration_type;
@@ -324,7 +324,7 @@ struct Printer< ::deepracer_simulation_environment::VideoMetricsSrvResponse_<Con
       Printer< ::geometry_msgs::Point32_<ContainerAllocator> >::stream(s, indent + "    ", v.object_locations[i]);
     }
     s << indent << "episode_status: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.episode_status);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.episode_status);
     s << indent << "pause_duration: ";
     Printer<float>::stream(s, indent + "  ", v.pause_duration);
   }
