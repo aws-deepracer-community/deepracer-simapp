@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <memory>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -42,19 +42,19 @@ struct GetModelStatesResponse_
 
 
 
-   typedef std::vector< ::gazebo_msgs::ModelState_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::gazebo_msgs::ModelState_<ContainerAllocator> >::other >  _model_states_type;
+   typedef std::vector< ::gazebo_msgs::ModelState_<ContainerAllocator> , typename std::allocator_traits<ContainerAllocator>::template rebind_alloc< ::gazebo_msgs::ModelState_<ContainerAllocator> >> _model_states_type;
   _model_states_type model_states;
 
    typedef uint8_t _success_type;
   _success_type success;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _status_message_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>> _status_message_type;
   _status_message_type status_message;
 
-   typedef std::vector<int8_t, typename ContainerAllocator::template rebind<int8_t>::other >  _status_type;
+   typedef std::vector<int8_t, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<int8_t>> _status_type;
   _status_type status;
 
-   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > , typename ContainerAllocator::template rebind<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::other >  _messages_type;
+   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>> _messages_type;
   _messages_type messages;
 
 
@@ -279,7 +279,7 @@ struct Printer< ::deepracer_msgs::GetModelStatesResponse_<ContainerAllocator> >
     s << indent << "success: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.success);
     s << indent << "status_message: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.status_message);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.status_message);
     s << indent << "status[]" << std::endl;
     for (size_t i = 0; i < v.status.size(); ++i)
     {
@@ -290,7 +290,7 @@ struct Printer< ::deepracer_msgs::GetModelStatesResponse_<ContainerAllocator> >
     for (size_t i = 0; i < v.messages.size(); ++i)
     {
       s << indent << "  messages[" << i << "]: ";
-      Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.messages[i]);
+      Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.messages[i]);
     }
   }
 };
