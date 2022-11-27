@@ -49,7 +49,7 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
     minio==4.0.5 \
     rl-coach-slim==1.0.0 \
     PyYAML==3.13 \
-    rospkg>=1.1 \
+    rospkg\>=1.1 \
     shapely==1.6.4 \
     $TENSORFLOW_VER \
     redis==3.2.1 \
