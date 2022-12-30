@@ -31,6 +31,7 @@ Version 5 is the current development version for 2022, and it is receiving both 
 | 5.0.6      | September Track  |  `5.0.6-cpu-avx` `5.0.6-cpu-gl-avx`  | `5.0.6-cpu-avx2` `5.0.6-cpu-gl-avx2` | `5.0.6-gpu` `5.0.6-gpu-gl` |
 | 5.0.7      | October & Reinvent 2022 Tracks  |  `5.0.7-cpu-avx` `5.0.7-cpu-gl-avx`  | `5.0.7-cpu-avx2` `5.0.7-cpu-gl-avx2` | `5.0.7-gpu` `5.0.7-gpu-gl` |
 | 5.0.8      | Updates to Reinvent 2022 Tracks  |  `5.0.8-cpu-avx` `5.0.8-cpu-gl-avx`  | `5.0.8-cpu-avx2` `5.0.8-cpu-gl-avx2` | `5.0.8-gpu` `5.0.8-gpu-gl` |
+| 5.0.9      | Minor updates and fixes  |  `5.0.9-cpu-avx` `5.0.9-cpu-gl-avx`  | `5.0.9-cpu-avx2` `5.0.9-cpu-gl-avx2` | `5.0.9-gpu` `5.0.9-gpu-gl` |
 
 ### Version 4
 
