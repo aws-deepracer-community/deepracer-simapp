@@ -120,10 +120,10 @@ def main():
                             "f1:={} ".format(yaml_file.is_f1),
                             "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
         else:
-            # Note: SimApp Version is default to 4.0: virtual event only have a single body_shell_types
+            # Note: SimApp Version is default to 5.0: virtual event only have a single body_shell_types
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
-                            "simapp_versions:={} ".format('4.0'),                            
+                            "simapp_versions:={} ".format('5.0'),                            
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),

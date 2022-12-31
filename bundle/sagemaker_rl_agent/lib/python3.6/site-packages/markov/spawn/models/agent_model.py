@@ -35,7 +35,7 @@ class AgentModel(AbsModel):
         self._agent_file_path = os.path.join(
             self._rospack.get_path(DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT),
             "urdf",
-            "deepracer",
+            "deepracer_kinematics",
             "racecar.xacro")
         self._control_nodes = ["/{}/controller_manager", "/{}/robot_state_publisher"]
 
@@ -55,7 +55,7 @@ class AgentModel(AbsModel):
         rospy.set_param("/{}/robot_description".format(self._model_name), model_urdf)
 
         # roslaunch controller_manager and robot_state_publisher
-        Popen("roslaunch deepracer_simulation_environment racecar_control.launch \
+        Popen("roslaunch deepracer_simulation_environment racecar_control_kinematics.launch \
             racecar_name:={} make_required:={} __ns:={}".format(self._model_name,
                                                                 "false",
                                                                 self._model_name),

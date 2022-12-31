@@ -32,7 +32,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
 
 from markov.domain_randomizations.constants import GazeboServiceName
-from markov.track_geom.constants import SET_MODEL_STATE
+from markov.track_geom.constants import SET_MODEL_STATE, START_POS_OFFSET, MIN_START_POS_OFFSET, MAX_START_POS_OFFSET
 from gazebo_msgs.srv import GetModelProperties, GetModelPropertiesRequest
 from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
                                 GetVisuals, GetVisualsRequest, GetVisualsResponse,
@@ -66,6 +66,8 @@ class DeepRacer(object):
                                                      [const.CarColorType.BLACK.value] * len(racecar_names)))
         self.shell_types = force_list(rospy.get_param(const.YamlKey.BODY_SHELL_TYPE.value,
                                                       [const.BodyShellType.DEFAULT.value] * len(racecar_names)))
+        start_pos_offset = max(min(float(rospy.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
+                               MIN_START_POS_OFFSET)
         # Gazebo service that allows us to position the car
         self.model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState, persistent=True)
 
@@ -102,7 +104,7 @@ class DeepRacer(object):
         # Grab the track data
         self.track_data = TrackData.get_instance()
         # Set all racers start position in track data
-        self.start_positions = get_start_positions(self.racer_num)
+        self.start_positions = get_start_positions(self.racer_num, start_pos_offset)
         # get model update instance
         self.model_update = ModelUpdater.get_instance()
         car_poses = []

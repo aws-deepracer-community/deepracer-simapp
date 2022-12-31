@@ -23,6 +23,7 @@
   <arg name="lidar_360_degree_range_resolution" default="0.01" />
   <arg name="lidar_360_degree_noise_mean" default="0.0" />
   <arg name="lidar_360_degree_noise_stddev" default="0.01" />
+  <arg name="simapp_version" />
 
   <!-- urdf xml robot description loaded on the Parameter Server, converting the xacro into a proper urdf file-->
   <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find deepracer_simulation_environment)/urdf/$(arg racecar_xacro_file)/racecar.xacro'
@@ -46,7 +47,12 @@
   <node name="racecar_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="-urdf -param /$(arg racecar_name)/robot_description -model $(arg racecar_name) -z 0.05" />
 
   <!-- ros_control racecar launch file -->
-  <include file="$(find deepracer_simulation_environment)/launch/racecar_control.launch">
+  <include file="$(find deepracer_simulation_environment)/launch/racecar_control.launch" if="$(eval float(simapp_version) &lt; 5.0)">
+    <arg name="racecar_name" value="$(arg racecar_name)"/>
+    <arg name="make_required" value="$(arg make_required)"/>
+  </include>
+
+  <include file="$(find deepracer_simulation_environment)/launch/racecar_control_kinematics.launch" if="$(eval float(simapp_version) &gt;= 5.0)">
     <arg name="racecar_name" value="$(arg racecar_name)"/>
     <arg name="make_required" value="$(arg make_required)"/>
   </include>

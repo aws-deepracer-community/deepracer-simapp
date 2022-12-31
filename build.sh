@@ -47,7 +47,8 @@ for a in $ARCH; do
     elif [ -n "$(echo $a | gawk '/gpu/')" ]; then 
         arch_primary=$a
         arch_tag=$a
-        tf="tensorflow-gpu==1.13.1"
+        tf="https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/gpu-nv/tensorflow-1.15.4%2Bnv-cp36-cp36m-linux_x86_64.whl"
+        # tf="tensorflow==1.15.4"
 
     else
         echo "Architecture $a unknown."

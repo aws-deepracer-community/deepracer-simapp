@@ -9,6 +9,7 @@ FROM awsdeepracercommunity/deepracer-robomaker:${FROM_TAG}
 
 COPY bundle /opt/install
 COPY ./docker/files/run.sh run.sh
+COPY ./docker/files/devel.sh devel.sh
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["./run.sh run distributed_training.launch"]

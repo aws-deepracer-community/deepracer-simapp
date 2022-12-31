@@ -16,7 +16,7 @@ from markov.log_handler.deepracer_exceptions import GenericRolloutException
 from markov.multi_agent_coach.action_space_configs import (ClippedPPOActionSpaceConfig,
                                                            SACActionSpaceConfig)
 from scipy.spatial.transform import Rotation
-from markov.constants import SIMAPP_VERSION_1, SIMAPP_VERSION_2, SIMAPP_VERSION_3, SIMAPP_VERSION_4
+from markov.constants import SIMAPP_VERSION_1, SIMAPP_VERSION_2, SIMAPP_VERSION_3
 from markov.boto.s3.constants import ModelMetadataKeys, ActionSpaceTypes, TrainingAlgorithm
 from markov.track_geom.utils import apply_orientation
 
