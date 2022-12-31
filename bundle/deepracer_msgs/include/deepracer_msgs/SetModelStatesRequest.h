@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <memory>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -34,7 +34,7 @@ struct SetModelStatesRequest_
 
 
 
-   typedef std::vector< ::gazebo_msgs::ModelState_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::gazebo_msgs::ModelState_<ContainerAllocator> >::other >  _model_states_type;
+   typedef std::vector< ::gazebo_msgs::ModelState_<ContainerAllocator> , typename std::allocator_traits<ContainerAllocator>::template rebind_alloc< ::gazebo_msgs::ModelState_<ContainerAllocator> >> _model_states_type;
   _model_states_type model_states;
 
 

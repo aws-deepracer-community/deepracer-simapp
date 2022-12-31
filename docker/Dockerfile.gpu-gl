@@ -26,7 +26,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt-get update -y && \
     apt-get install ros-melodic-ros-base python-rosdep python-rosinstall python-rosinstall-generator python-wstool -y --allow-unauthenticated --no-install-recommends && \
-    apt-get install -y ros-melodic-media-export ros-melodic-web-video-server ros-melodic-rosmsg python-matplotlib ros-melodic-h264-encoder-core --no-install-recommends && \
+    apt-get install -y ros-melodic-media-export ros-melodic-rqt-common-plugins ros-melodic-web-video-server ros-melodic-rosmsg python-matplotlib ros-melodic-h264-video-encoder ros-melodic-kinesis-video-streamer --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -61,7 +61,7 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
     minio==4.0.5 \
     rl-coach-slim==1.0.0 \
     PyYAML==3.13 \
-    rospkg>=1.1 \
+    'rospkg>=1.1' \
     shapely==1.6.4 \
     $TENSORFLOW_VER \
     redis==3.2.1 \
@@ -72,7 +72,7 @@ RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3'
 
 COPY bundle /opt/install
 WORKDIR /opt/install
-RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment h264_video_encoder && \
+RUN apt-get update -y && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV COLCON_CURRENT_PREFIX="/opt/install"

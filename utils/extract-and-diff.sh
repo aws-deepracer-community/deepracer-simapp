@@ -2,7 +2,7 @@
 cd bundle-src
 aws s3 cp s3://deepracer-melodic-managed-resources-us-east-1/deepracer-simapp.tar.gz .
 tar xvf deepracer-simapp.tar.gz bundle.tar
-CUR_DATE="2022-okt-23"
+CUR_DATE="2022-nov-19"
 PREV_DATE="2022-okt-01"
 mkdir "bundle-$CUR_DATE" && cd "bundle-$CUR_DATE"
 tar xvf ../bundle.tar opt/install

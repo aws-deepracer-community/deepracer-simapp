@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <memory>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -46,7 +46,7 @@ struct AgentRewardData_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _agent_name_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>> _agent_name_type;
   _agent_name_type agent_name;
 
    typedef int8_t _action_type;
@@ -58,10 +58,10 @@ struct AgentRewardData_
    typedef int8_t _action_space_len_type;
   _action_space_len_type action_space_len;
 
-   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > , typename ContainerAllocator::template rebind<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::other >  _speed_list_type;
+   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>> _speed_list_type;
   _speed_list_type speed_list;
 
-   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > , typename ContainerAllocator::template rebind<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::other >  _steering_angle_list_type;
+   typedef std::vector<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>> _steering_angle_list_type;
   _steering_angle_list_type steering_angle_list;
 
    typedef  ::sensor_msgs::Image_<ContainerAllocator>  _image_type;
@@ -280,7 +280,7 @@ struct Printer< ::deepracer_simulation_environment::AgentRewardData_<ContainerAl
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::deepracer_simulation_environment::AgentRewardData_<ContainerAllocator>& v)
   {
     s << indent << "agent_name: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.agent_name);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.agent_name);
     s << indent << "action: ";
     Printer<int8_t>::stream(s, indent + "  ", v.action);
     s << indent << "reward: ";
@@ -291,13 +291,13 @@ struct Printer< ::deepracer_simulation_environment::AgentRewardData_<ContainerAl
     for (size_t i = 0; i < v.speed_list.size(); ++i)
     {
       s << indent << "  speed_list[" << i << "]: ";
-      Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.speed_list[i]);
+      Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.speed_list[i]);
     }
     s << indent << "steering_angle_list[]" << std::endl;
     for (size_t i = 0; i < v.steering_angle_list.size(); ++i)
     {
       s << indent << "  steering_angle_list[" << i << "]: ";
-      Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.steering_angle_list[i]);
+      Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>>::stream(s, indent + "  ", v.steering_angle_list[i]);
     }
     s << indent << "image: ";
     s << std::endl;
