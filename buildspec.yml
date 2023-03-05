@@ -4,6 +4,7 @@ phases:
     commands:
         - docker login --username ${DOCKER_HUB_USER} --password ${DOCKER_HUB_KEY} 
         - rm /etc/apt/sources.list.d/google*
+        - rm /etc/apt/sources.list.d/yarn*
         - apt-get update && apt-get install gawk
   build:
     commands:
