@@ -29,6 +29,9 @@ done
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 VERSION=$(cat $DIR/VERSION)
 
+echo "Preparing bundle distribution"
+docker build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-bundle:latest -f docker/Dockerfile.bundle .
+
 echo "Preparing docker images for [$ARCH]"
 
 for a in $ARCH; do 
