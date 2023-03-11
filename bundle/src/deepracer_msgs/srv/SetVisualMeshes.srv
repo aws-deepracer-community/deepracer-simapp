@@ -1,0 +1,10 @@
+string[] link_names
+string[] visual_names
+string[] filenames
+geometry_msgs/Vector3[] scales
+bool block
+---
+bool success
+string status_message
+int8[] status                        # status of each request: true if succeeded otherwise false
+string[] messages
