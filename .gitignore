@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 bundle-src/
+bundle/install/
+bundle/log/
+bundle/build/
