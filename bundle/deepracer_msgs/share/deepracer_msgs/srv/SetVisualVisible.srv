@@ -1,7 +1,0 @@
-string link_name
-string visual_name
-bool visible
-bool block
----
-bool success
-string status_message

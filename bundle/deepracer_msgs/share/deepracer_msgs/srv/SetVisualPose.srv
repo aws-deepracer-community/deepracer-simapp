@@ -1,7 +1,0 @@
-string link_name
-string visual_name
-geometry_msgs/Pose pose
-bool block
----
-bool success
-string status_message

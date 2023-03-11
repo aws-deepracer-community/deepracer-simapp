@@ -1,8 +1,0 @@
-string link_name
-string visual_name
-string filename
-geometry_msgs/Vector3 scale
-bool block
----
-bool success
-string status_message
