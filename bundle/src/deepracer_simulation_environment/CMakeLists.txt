@@ -69,19 +69,19 @@ install(DIRECTORY launch/
 install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
-install(DIRECTORY /opt/amazon/meshes/
+install(DIRECTORY ../../meshes/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/meshes
 )
-install(DIRECTORY /opt/amazon/models/
+install(DIRECTORY ../../models/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/models
 )
-install(DIRECTORY /opt/amazon/urdf/
+install(DIRECTORY ../../urdf/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/urdf
 )
-install(DIRECTORY /opt/amazon/worlds/
+install(DIRECTORY ../../worlds/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/worlds
 )
-install(DIRECTORY /opt/amazon/routes/
+install(DIRECTORY ../../routes/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/routes
 )
 install(DIRECTORY fonts/
@@ -90,7 +90,7 @@ install(DIRECTORY fonts/
 install(DIRECTORY track_iconography/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/track_iconography
 )
-install(DIRECTORY /opt/amazon/track_iconography/
+install(DIRECTORY ../../track_iconography/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/track_iconography
 )
 install(DIRECTORY tests/
