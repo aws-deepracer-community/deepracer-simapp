@@ -119,6 +119,12 @@ class AgentType(Enum):
     VIRTUAL_EVENT = "virtual_event"
 
 
+class WorldNameSuffix(Enum):
+    '''World name suffix based on track orientation'''
+    CLOCKWISE = "_cw"
+    COUNTER_CLOCKWISE = "_ccw"
+
+
 class YamlKey(Enum):
     '''yaml key for all types of workers'''
     RACE_TYPE_YAML_KEY = "RACE_TYPE"
@@ -143,6 +149,8 @@ class YamlKey(Enum):
     SAGEMAKER_SHARED_S3_PREFIX_YAML_KEY = "SAGEMAKER_SHARED_S3_PREFIX"
     SQS_QUEUE_URL_YAML_KEY = "SQS_QUEUE_URL"
     KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME = "KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME"
+    WORLD_NAME = "WORLD_NAME"
+    TRACK_DIRECTION_CLOCKWISE = "TRACK_DIRECTION_CLOCKWISE"
 
 
 EVAL_MANDATORY_YAML_KEY = [YamlKey.MODEL_S3_BUCKET_YAML_KEY.value,

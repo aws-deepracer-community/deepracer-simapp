@@ -5,7 +5,7 @@ import logging
 import yaml
 import botocore
 
-from markov.utils import force_list, str2bool
+from markov.utils import force_list
 from markov.rollout_constants import BodyShellType
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
@@ -21,8 +21,7 @@ from markov.boto.s3.constants import (MODEL_METADATA_S3_POSTFIX,
                                       TOUR_MANDATORY_YAML_KEY,
                                       VIRUTAL_EVENT_MANDATORY_YAML_KEY,
                                       F1_SHELL_USERS_LIST,
-                                      F1_RACE_TYPE,
-                                      WorldNameSuffix)
+                                      F1_RACE_TYPE)
 from markov.rollout_constants import CarColorType
 
 LOG = Logger(__name__, logging.INFO).get_logger()
@@ -149,8 +148,6 @@ class YamlFile():
             self._download()
             # parse yaml file into yaml values
             self._load_yaml_values()
-            # Update world name based on track direction (if passed).
-            self._update_world_name()
             # No need to any of these check for virtual event as they will be passed in dynamically
             # TODO: THIS CHECK IS VERY UGLY
             # Consider refactor Yaml class separately to reduce these kinds of if checks
@@ -202,27 +199,6 @@ class YamlFile():
                 log_and_exit("yaml read error: {}".format(exc),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
                              SIMAPP_EVENT_ERROR_CODE_500)
-
-    def _update_world_name(self):
-        '''Configure the world name to be updated based on track direction.
-        '''
-        world_name = str(self._yaml_values.get(YamlKey.WORLD_NAME.value))
-        LOG.info("World name passed in YAML: {}".format(world_name))
-        if YamlKey.TRACK_DIRECTION_CLOCKWISE.value in self._yaml_values:
-            LOG.info("Track direction passed in YAML: {}".
-                        format(self._yaml_values.get(YamlKey.TRACK_DIRECTION_CLOCKWISE.value)))
-            is_clockwise = str2bool(self._yaml_values.get(YamlKey.TRACK_DIRECTION_CLOCKWISE.value))
-            if is_clockwise:
-                world_name = world_name + WorldNameSuffix.CLOCKWISE.value
-            else:
-                world_name = world_name + WorldNameSuffix.COUNTER_CLOCKWISE.value
-            self._yaml_values[YamlKey.WORLD_NAME.value] = world_name
-            LOG.info("Updating world name based on track direction YAML parameter: {}".
-                        format(self._yaml_values.get(YamlKey.WORLD_NAME.value)))
-            os.environ["WORLD_NAME"] = world_name
-            # override local yaml file with updated WORLD_NAME
-            self._overwrite_local_yaml_file()
-
 
     def _postprocess_yaml_values(self):
         '''postprocess yaml values
