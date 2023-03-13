@@ -4,6 +4,7 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     TZ="America/New_York" DEBIAN_FRONTEND="noninteractive" apt-get install --no-install-recommends -y \
     build-essential \
+    curl \
     cmake \
     gnupg  \
     jq \
