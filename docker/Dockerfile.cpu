@@ -1,6 +1,7 @@
 FROM ubuntu:18.04
 
-RUN apt-get update && \ 
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \ 
     apt-get upgrade -y && \
     TZ="America/New_York" DEBIAN_FRONTEND="noninteractive" apt-get install --no-install-recommends -y \
     build-essential \
@@ -19,9 +20,30 @@ RUN apt-get update && \
     x11-xserver-utils \
     x11vnc \
     xmlstarlet \
-    xvfb && \ 
+    xvfb \ 
+    mesa-utils \
+    libgl1-mesa-glx \
+    libglu1-mesa \    
+    libglvnd0 libglvnd0:i386 \
+    libgl1 libgl1:i386 \
+    libglx0 libglx0:i386 \
+    libegl1 libegl1:i386 \
+    libgles2 libgles2:i386 \
+    libxau6 libxau6:i386 \
+    libxdmcp6 libxdmcp6:i386 \
+    libxcb1 libxcb1:i386 \
+    libxext6 libxext6:i386 \
+    libx11-6 libx11-6:i386 && \    
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# nvidia-container-runtime
+ENV NVIDIA_VISIBLE_DEVICES \
+        ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+        ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics,compat32,utility
+
+COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
 # Install ROS Melodic and Gazebo9
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
