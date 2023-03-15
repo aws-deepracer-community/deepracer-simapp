@@ -6,8 +6,8 @@
       <comments />
       <source_data>arctic_pro_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:07:21.490234</created>
-    <modified>2023-02-08T17:07:21.490237</modified>
+    <created>2023-03-14T23:23:13.301932</created>
+    <modified>2023-03-14T23:23:13.301939</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">-0.569733304230463 -0.8218296429617508 0 6.748522813516898 0.8218296429617508 -0.569733304230463 0 3.675946543021824 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">-0.5705327693961412 -0.821274837703658 0 6.824226140975952 0.821274837703658 -0.5705327693961412 0 3.6669174432754517 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>

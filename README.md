@@ -42,7 +42,9 @@ Version 5 is the release version for 2022. It will only receive track fixes.
 | 5.0.7      | October & Reinvent 2022 Tracks  |  `5.0.7-cpu-avx` `5.0.7-cpu-gl-avx`  | `5.0.7-cpu-avx2` `5.0.7-cpu-gl-avx2` | `5.0.7-gpu` `5.0.7-gpu-gl` |
 | 5.0.8      | Updates to Reinvent 2022 Tracks  |  `5.0.8-cpu-avx` `5.0.8-cpu-gl-avx`  | `5.0.8-cpu-avx2` `5.0.8-cpu-gl-avx2` | `5.0.8-gpu` `5.0.8-gpu-gl` |
 | 5.0.9      | Minor updates and fixes  |  `5.0.9-cpu-avx` `5.0.9-cpu-gl-avx`  | `5.0.9-cpu-avx2` `5.0.9-cpu-gl-avx2` | `5.0.9-gpu` `5.0.9-gpu-gl` |
-| 5.0.10      | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
+| 5.0.10 (*)     | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
+
+(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks.
 
 ## Building the image
 
