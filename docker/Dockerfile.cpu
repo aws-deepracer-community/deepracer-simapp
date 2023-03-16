@@ -1,9 +1,12 @@
 FROM ubuntu:18.04
 
+ENV TZ="America/New_York" 
+ENV DEBIAN_FRONTEND="noninteractive" 
 RUN dpkg --add-architecture i386 && \
     apt-get update && \ 
     apt-get upgrade -y && \
-    TZ="America/New_York" DEBIAN_FRONTEND="noninteractive" apt-get install --no-install-recommends -y \
+    apt-get install --no-install-recommends -y \
+    apt-utils \
     build-essential \
     curl \
     cmake \
@@ -12,6 +15,7 @@ RUN dpkg --add-architecture i386 && \
     jwm \
     lsb-core \
     net-tools \
+    pkg-config \
     python-boto3 \
     python-pip \
     python3-dev \
@@ -99,7 +103,8 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
     $TENSORFLOW_VER \
     redis==3.2.1 \
     opencv-python==4.1.1.26 \
-    'tokenize-rt>=3,<4' 
+    'tokenize-rt>=3,<4' \
+    netifaces
 
 RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 
 
