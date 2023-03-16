@@ -51,8 +51,6 @@ setup_args = {
     "packages": find_packages(where=".", exclude="test"),
     "package_dir": {"": "."},
     "description": "Open source library to communicate with remote DeepRacer environment.",
-    "long_description": read("README.md"),
-    "long_description_content_type": 'text/markdown',
     "author": "Amazon Web Services",
     "url": "https://github.com/aws-deepracer/node_monitor",
     "license": "Apache License 2.0",
