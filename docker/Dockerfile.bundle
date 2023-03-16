@@ -3,11 +3,13 @@ FROM ros:melodic-ros-base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
-    wget 
+    wget \
+    apt-utils
 
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
 RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
 
+ENV DEBIAN_FRONTEND="noninteractive" 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     python3-pip \
