@@ -1,0 +1,8 @@
+*/car_control_webrtc_node
+/download_params_and_roslaunch_agent_node
+/gazebo
+*/h264_video_encoder
+*/kinesis_video_streamer
+/kinesis_webrtc_streamer
+/racecar*/controller_manager
+/racecar*/robot_state_publisher
