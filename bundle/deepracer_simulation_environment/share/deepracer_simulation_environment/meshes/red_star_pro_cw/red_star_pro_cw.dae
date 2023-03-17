@@ -6,8 +6,8 @@
       <comments />
       <source_data>red_star_pro_cw</source_data>
     </contributor>
-    <created>2023-02-08T17:13:17.026902</created>
-    <modified>2023-02-08T17:13:17.026909</modified>
+    <created>2023-03-15T04:16:15.881975</created>
+    <modified>2023-03-15T04:16:15.881979</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">0.7971201634007498 -0.6038207060874626 0 6.949526822719977 0.6038207060874626 0.7971201634007498 0 -2.0535677920584052 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">0.8023176762424526 -0.5968972661931958 0 6.940316915512085 0.5968972661931958 0.8023176762424526 0 -2.132599949836731 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>

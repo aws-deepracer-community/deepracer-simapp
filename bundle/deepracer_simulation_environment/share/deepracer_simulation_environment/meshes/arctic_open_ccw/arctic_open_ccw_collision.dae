@@ -6,8 +6,8 @@
       <comments />
       <source_data>arctic_open_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:06:40.268631</created>
-    <modified>2023-02-08T17:06:40.268639</modified>
+    <created>2023-03-15T04:07:47.927856</created>
+    <modified>2023-03-15T04:07:47.927860</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>

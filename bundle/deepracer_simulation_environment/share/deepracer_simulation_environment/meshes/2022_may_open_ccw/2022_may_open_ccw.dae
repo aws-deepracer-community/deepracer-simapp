@@ -6,8 +6,8 @@
       <comments />
       <source_data>2022_may_open_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:01:49.905964</created>
-    <modified>2023-02-08T17:01:49.905968</modified>
+    <created>2023-03-15T04:01:34.063134</created>
+    <modified>2023-03-15T04:01:34.063137</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">0.7546592791288652 -0.6561168892999947 0 5.051501085927033 0.6561168892999947 0.7546592791288652 0 0.9935410364624527 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">0.7546680876477064 -0.656106757689748 0 5.04770565032959 0.656106757689748 0.7546680876477064 0 0.8638535439968109 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>
