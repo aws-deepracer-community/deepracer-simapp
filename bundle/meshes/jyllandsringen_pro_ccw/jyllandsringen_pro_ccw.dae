@@ -6,8 +6,8 @@
       <comments />
       <source_data>jyllandsringen_pro_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:09:27.031269</created>
-    <modified>2023-02-08T17:09:27.031272</modified>
+    <created>2023-03-14T23:25:05.089148</created>
+    <modified>2023-03-14T23:25:05.089152</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">0.6401315198440735 0.7682653430307244 0 5.472667410705455 -0.7682653430307244 0.6401315198440735 0 -6.357621811932015 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">0.6475965280556388 0.7619834229497924 0 5.341705083847046 -0.7619834229497924 0.6475965280556388 0 -6.351996183395386 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>

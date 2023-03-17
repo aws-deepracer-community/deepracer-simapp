@@ -6,8 +6,8 @@
       <comments />
       <source_data>reInvent2019_track_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:11:34.065181</created>
-    <modified>2023-02-08T17:11:34.065185</modified>
+    <created>2023-03-15T04:13:40.947363</created>
+    <modified>2023-03-15T04:13:40.947367</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">-0.7120898282012197 0.70208836806513 0 -4.02016 -0.70208836806513 -0.7120898282012197 0 -0.27359 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">-0.7870695310280783 0.6168642908511084 0 -4.021977543830872 -0.6168642908511084 -0.7870695310280783 0 -0.1444098949432373 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>
