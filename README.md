@@ -18,7 +18,7 @@ Available tags are:
 
 ### Version 5
 
-Version 5 is the current development version for 2022, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
+Version 5 was the current development version for 2022.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
@@ -34,7 +34,7 @@ Version 5 is the current development version for 2022, and it is receiving both 
 | 5.0.9      | Minor updates and fixes  |  `5.0.9-cpu-avx` `5.0.9-cpu-gl-avx`  | `5.0.9-cpu-avx2` `5.0.9-cpu-gl-avx2` | `5.0.9-gpu` `5.0.9-gpu-gl` |
 | 5.0.10 (*)     | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
 
-(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks.
+(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks, and on 17-MAR-2023 with an update on all `_cw` and `_ccw` tracks.
 
 ### Version 4
 
