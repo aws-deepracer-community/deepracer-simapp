@@ -6,8 +6,8 @@
       <comments />
       <source_data>thunder_hill_pro_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:13:37.892431</created>
-    <modified>2023-02-08T17:13:37.892435</modified>
+    <created>2023-03-15T04:16:43.980512</created>
+    <modified>2023-03-15T04:16:43.980516</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">0.667728823383229 0.744404606664446 0 2.453441244470799 -0.744404606664446 0.667728823383229 0 0.3718207226352054 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">0.6677058217401624 0.7444252384318352 0 2.3226730823516846 -0.7444252384318352 0.6677058217401624 0 0.3696620836853981 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>

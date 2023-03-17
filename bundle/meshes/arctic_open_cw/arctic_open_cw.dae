@@ -6,8 +6,8 @@
       <comments />
       <source_data>arctic_open_cw</source_data>
     </contributor>
-    <created>2023-02-08T17:07:00.852432</created>
-    <modified>2023-02-08T17:07:00.852438</modified>
+    <created>2023-03-15T04:08:11.189247</created>
+    <modified>2023-03-15T04:08:11.189251</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">-0.5702346655393843 -0.8214818477709575 0 6.709468344453479 0.8214818477709575 -0.5702346655393843 0 2.9108356048000203 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">-0.5701944525525156 -0.821509760306192 0 6.636735439300539 0.821509760306192 -0.5701944525525156 0 2.917999029159546 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>
