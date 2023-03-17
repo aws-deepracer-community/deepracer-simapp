@@ -27,7 +27,6 @@ class VirtualEventBestSectorTime():
     """virtual event best sector time upload and download
     """
     def __init__(self, bucket, s3_key, region_name='us-east-1',
-                 s3_endpoint_url=None,
                  local_path="./custom_files/best_sector_time.json",
                  max_retry_attempts=5, backoff_time_sec=1.0):
         """virtual event best sector time upload and download
@@ -51,7 +50,6 @@ class VirtualEventBestSectorTime():
         self._s3_key = s3_key
         self._local_path = local_path
         self._s3_client = S3Client(region_name,
-                                   s3_endpoint_url, 
                                    max_retry_attempts,
                                    backoff_time_sec)
         self._best_sector_time = dict()

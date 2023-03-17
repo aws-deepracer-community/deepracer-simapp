@@ -17,9 +17,7 @@ class S3Client(DeepRacerBotoClient):
     """S3 Boto Client"""
     name = BotoClientNames.S3.value
 
-    def __init__(self, region_name="us-east-1",
-                 s3_endpoint_url=None,
-                 max_retry_attempts=5,
+    def __init__(self, region_name="us-east-1", max_retry_attempts=5,
                  backoff_time_sec=1.0, session=None,
                  log_and_cont=False):
         """S3 client
@@ -34,7 +32,6 @@ class S3Client(DeepRacerBotoClient):
                                            Defaults to False.
         """
         super(S3Client, self).__init__(region_name=region_name,
-                                       s3_endpoint_url=s3_endpoint_url,
                                        max_retry_attempts=max_retry_attempts,
                                        backoff_time_sec=backoff_time_sec,
                                        boto_client_name=self.name,

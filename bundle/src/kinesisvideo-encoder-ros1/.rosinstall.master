@@ -1,0 +1,12 @@
+- git:
+    uri: https://github.com/aws-robotics/utils-common.git
+    local-name: utils-common
+    version: master
+- git:
+    uri: https://github.com/aws-robotics/utils-ros1.git
+    local-name: utils-ros1
+    version: master
+- git:
+    uri: https://github.com/aws-robotics/kinesisvideo-encoder-common.git
+    local-name: kinesisvideo-encoder-common
+    version: master

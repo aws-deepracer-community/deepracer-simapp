@@ -1,0 +1,40 @@
+<!--
+    This is an example launch file to use when you want to launch a Kinesis WebRTC Streamer node.
+    By default it starts up with a single stream, but the stream_count parameter can be adjusted and additional stream configuration files can be loaded using the deepracer_webrtc_config.yaml provided along with the package.
+
+    @param config Configuration for the streams. Rosparam will attempt to load the file into the private namespace of the node.
+    @param aws_client_configuration/region Defaults to us-east-1.
+    @param aws_client_configuration/connect_timeout_ms Value that determine the length of time, in milliseconds, to wait before timing out a connect request.
+    @param aws_client_configuration/request_timeout_ms Value that determine the length of time, in milliseconds, to wait before timing out a request.
+    @param aws_client_configuration/max_retries The maximum number of allowed connections to a single server for your HTTP communications.
+    @env AWS_KVS_LOG_LEVEL sets the KVS WebRTC C SDK logging level
+         LOG_LEVEL_VERBOSE 1
+         LOG_LEVEL_DEBUG 2
+         LOG_LEVEL_INFO 3
+         LOG_LEVEL_WARN 4
+         LOG_LEVEL_ERROR 5
+         LOG_LEVEL_FATAL 6
+         LOG_LEVEL_SILENT 7
+-->
+
+<launch>
+    <!-- If a node_name argument is provided by the caller then we will set the node's name to that value -->
+    <arg name="node_name" default="kinesis_webrtc_streamer" />
+    <arg name="config_file" default="" />
+    <arg name="stream_name"/>
+    <arg name="stream_region" default="us-east-1"/>
+    <arg name="topic" />
+    <arg name="connect_timeout_ms" default="5000" />
+    <arg name="request_timeout_ms" default="5000"/>
+    <arg name="max_retries" default="10"/>
+    <arg name="make_required" default="true" />
+    <node name="$(arg node_name)" pkg="kinesis_webrtc_streamer" type="kinesis_webrtc_streamer">
+        <!-- If the caller specified a config file then load it here. -->
+        <rosparam if="$(eval config_file!='')" command="load" file="$(arg config_file)" subst_value="true" />
+        <param name="aws_client_configuration/region" value="$(arg stream_region)" />
+        <param name="aws_client_configuration/connect_timeout_ms" value="$(arg connect_timeout_ms)" />
+        <param name="aws_client_configuration/request_timeout_ms" value="$(arg request_timeout_ms)" />
+        <param name="aws_client_configuration/max_retries" value="$(arg max_retries)" />
+        <env name="AWS_KVS_LOG_LEVEL" value="1" />
+    </node>
+</launch>

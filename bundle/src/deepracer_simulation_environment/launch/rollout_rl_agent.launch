@@ -20,7 +20,6 @@
         <arg name="body_shell_types" value="$(arg body_shell_types)"/>
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
-        <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
     <node name="agent" pkg="deepracer_simulation_environment" type="run_rollout_rl_agent.sh" args="$(optenv ROLLOUT_IDX 0)" output="screen" required="true"/>

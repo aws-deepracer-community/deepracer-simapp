@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>kinesis_video_streamer</name>
+  <version>2.0.2</version>
+  <description>Kinesis Video Streams producer node</description>
+  <url>http://wiki.ros.org/kinesis_video_streamer</url>
+
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>aws_common</depend>
+  <depend>aws_ros1_common</depend>
+  <depend>kinesis_manager</depend>
+  <depend>roscpp</depend>
+  <depend>kinesis_video_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend>gtest</test_depend>
+  <test_depend>google-mock</test_depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>rostopic</test_depend>
+</package>

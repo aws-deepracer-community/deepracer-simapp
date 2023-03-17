@@ -9,7 +9,7 @@
   <arg name="body_shell_types" />
   <arg name="simapp_versions" />
   <arg name="multicar" default="false" />
-  <arg name="publish_to_kinesis_stream" default="false" />
+  <arg name="publish_to_kinesis_stream" default="true" />
   <arg name="make_required" default="true" />
 
   <include file="$(find deepracer_simulation_environment)/launch/racecar.launch" unless="$(arg multicar)" ns="/racecar">
@@ -82,8 +82,4 @@
   </node>
   <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="2 $(arg publish_to_kinesis_stream)" output="screen" required="$(arg make_required)" if="$(arg multicar)">
   </node>
-
-  <!-- Enable local web server for video streaming -->
-  <node name="web_video_server" pkg="web_video_server" type="web_video_server" output="screen" required="false"></node>
-
 </launch>

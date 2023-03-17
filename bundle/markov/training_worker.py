@@ -5,9 +5,6 @@ import json
 import logging
 import math
 import botocore
-import warnings  
-warnings.filterwarnings("ignore",category=FutureWarning)
-
 import numpy as np
 
 from rl_coach.base_parameters import TaskParameters, DistributedCoachSynchronizationType, RunType
@@ -37,14 +34,14 @@ from markov.boto.s3.files.ip_config import IpConfig
 from markov.boto.s3.files.checkpoint import Checkpoint
 from markov.boto.s3.utils import get_s3_key
 from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
-                                 MODEL_METADATA_S3_POSTFIX,
-                                 HYPERPARAMETER_S3_POSTFIX,
-                                 FROZEN_HEAD_OUTPUT_GRAPH_FORMAT_MAPPING,
-                                 ModelMetadataKeys)
+                                      MODEL_METADATA_S3_POSTFIX,
+                                      HYPERPARAMETER_S3_POSTFIX,
+                                      FROZEN_HEAD_OUTPUT_GRAPH_FORMAT_MAPPING,
+                                      ModelMetadataKeys)
 from markov.boto.s3.s3_client import S3Client
 
 import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
+tf.logging.set_verbosity(tf.logging.DEBUG)
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -205,10 +202,6 @@ def main():
                         help='(string) S3 prefix',
                         type=str,
                         default='sagemaker')
-    parser.add_argument('--s3_endpoint_url',
-                        help='(string) S3 endpoint URL',
-                        type=str,
-                        default=os.environ.get("S3_ENDPOINT_URL", None))                            
     parser.add_argument('--framework',
                         help='(string) tensorflow or mxnet',
                         type=str,
@@ -220,35 +213,21 @@ def main():
                         help='(string) S3 prefix for pre-trained model',
                         type=str,
                         default='sagemaker')
-    parser.add_argument('--pretrained_checkpoint',
-                        help='(string) Choose which checkpoint to use (best | last)',
-                        type=str,
-                        default="best")
     parser.add_argument('--aws_region',
                         help='(string) AWS region',
                         type=str,
                         default=os.environ.get("AWS_REGION", "us-east-1"))
-    parser.add_argument('--cuda_visible_devices',
-                        help='(string) Cuda Visible Devices',
-                        type=str,
-                        default=None)
 
     args, _ = parser.parse_known_args()
     logger.info("Training Worker Args: %s" % args)
-    logger.info("S3 bucket: %s \n S3 prefix: %s \n S3 endpoint URL: %s", args.s3_bucket, args.s3_prefix, args.s3_endpoint_url)
 
-    if args.cuda_visible_devices is not None:
-        logger.info("Setting CUDA visible device to {}".format(args.cuda_visible_devices))
-        os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_visible_devices
-
-    s3_client = S3Client(region_name=args.aws_region, s3_endpoint_url=args.s3_endpoint_url, max_retry_attempts=0)
+    s3_client = S3Client(region_name=args.aws_region, max_retry_attempts=0)
 
     # download model metadata
     # TODO: replace 'agent' with name of each agent
     model_metadata_download = ModelMetadata(bucket=args.s3_bucket,
                                             s3_key=args.model_metadata_s3_key,
                                             region_name=args.aws_region,
-                                            s3_endpoint_url=args.s3_endpoint_url,
                                             local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format('agent'))
     model_metadata_info = model_metadata_download.get_model_metadata_info()
     network_type = model_metadata_info[ModelMetadataKeys.NEURAL_NETWORK.value]
@@ -258,7 +237,6 @@ def main():
     model_metadata_upload = ModelMetadata(bucket=args.s3_bucket,
                                           s3_key=get_s3_key(args.s3_prefix, MODEL_METADATA_S3_POSTFIX),
                                           region_name=args.aws_region,
-                                          s3_endpoint_url=args.s3_endpoint_url,
                                           local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format('agent'))
     model_metadata_upload.persist(s3_kms_extra_args=utils.get_s3_kms_extra_args())
 
@@ -316,8 +294,7 @@ def main():
         # Upload hyperparameters to SageMaker shared s3 bucket
         hyperparameters = Hyperparameters(bucket=args.s3_bucket,
                                           s3_key=get_s3_key(args.s3_prefix, HYPERPARAMETER_S3_POSTFIX),
-                                          region_name=args.aws_region,
-                                          s3_endpoint_url=args.s3_endpoint_url)
+                                          region_name=args.aws_region)
         hyperparameters.persist(hyperparams_json=robomaker_hyperparams_json,
                                 s3_kms_extra_args=utils.get_s3_kms_extra_args())
 
@@ -327,7 +304,6 @@ def main():
             sample_collector = SampleCollector(bucket=args.s3_bucket,
                                                s3_prefix=args.s3_prefix,
                                                region_name=args.aws_region,
-                                               s3_endpoint_url=args.s3_endpoint_url,
                                                max_sample_count=max_sample_count,
                                                sampling_frequency=int(sm_hyperparams_dict.get("sampling_frequency", 1)))
             graph_manager.sample_collector = sample_collector
@@ -335,8 +311,7 @@ def main():
     # persist IP config from sagemaker to s3
     ip_config = IpConfig(bucket=args.s3_bucket,
                          s3_prefix=args.s3_prefix,
-                         region_name=args.aws_region,
-                         s3_endpoint_url=args.s3_endpoint_url)
+                         region_name=args.aws_region)
     ip_config.persist(s3_kms_extra_args=utils.get_s3_kms_extra_args())
 
     training_algorithm = model_metadata_download.training_algorithm
@@ -350,22 +325,14 @@ def main():
         checkpoint = Checkpoint(bucket=args.pretrained_s3_bucket,
                                 s3_prefix=args.pretrained_s3_prefix,
                                 region_name=args.aws_region,
-                                s3_endpoint_url=args.s3_endpoint_url,
                                 agent_name='agent',
                                 checkpoint_dir=args.pretrained_checkpoint_dir,
                                 output_head_format=output_head_format)
         # make coach checkpoint compatible
         if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
             checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
-
-        # Get the correct pre-trained checkpoint
-        if args.pretrained_checkpoint.lower() == "best":
-            # get best model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
-        else:
-            # get the last model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_last_checkpoint()
-
+        # get best model checkpoint string
+        model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
         # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
         checkpoint.rl_coach_checkpoint.update(
             model_checkpoint_name=model_checkpoint_name,
@@ -389,7 +356,6 @@ def main():
     checkpoint = Checkpoint(bucket=args.s3_bucket,
                             s3_prefix=args.s3_prefix,
                             region_name=args.aws_region,
-                            s3_endpoint_url=args.s3_endpoint_url,
                             agent_name='agent',
                             checkpoint_dir=args.checkpoint_dir,
                             output_head_format=output_head_format)

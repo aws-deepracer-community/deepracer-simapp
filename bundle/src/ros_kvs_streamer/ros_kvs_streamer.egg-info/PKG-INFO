@@ -1,0 +1,11 @@
+Metadata-Version: 1.2
+Name: ros-kvs-streamer
+Version: 0.0.0
+Summary: This package contains ROS kvs streamer
+Home-page: UNKNOWN
+Author: 
+Maintainer: AWS DeepRacer
+Maintainer-email: aws-deepracer@amazon.com
+License: TODO: License declaration
+Description: UNKNOWN
+Platform: UNKNOWN

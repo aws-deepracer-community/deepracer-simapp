@@ -13,9 +13,9 @@ REQUIRES_PYTHON = '>=3.6.0'
 setup(
     name=NAME,
     version='0.0.1',
-    packages=find_packages('../..', include=['markov.*']),
-    package_dir={'': '../..'},
-    package_data={'': ['../../markov/**']},
+    packages=find_packages('/opt/amazon', include=['markov.*']),
+    package_dir={'': '/opt/amazon'},
+    package_data={'': ['/opt/amazon/markov/**']},
     python_requires=REQUIRES_PYTHON,
     install_requires=[
         'annoy==1.8.3',

@@ -13,8 +13,8 @@ METRICS_VERSION = 2.0
 
 DEFAULT_COLOR = "Black"
 # The robomaker team has asked us to wait 5 minutes to let their workflow cancel
-# the simulation job - change to 5 seconds in local.
-ROBOMAKER_CANCEL_JOB_WAIT_TIME = 5
+# the simulation job
+ROBOMAKER_CANCEL_JOB_WAIT_TIME = 60 * 5
 # The number of times to retry a failed boto call
 NUM_RETRIES = 5
 # The time in seconds till a timeout exception is thrown when attempting to make a connection

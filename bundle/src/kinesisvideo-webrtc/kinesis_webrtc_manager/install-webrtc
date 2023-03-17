@@ -1,0 +1,17 @@
+#!/bin/bash
+INSTALL_PREFIX=$1
+mkdir -p $INSTALL_PREFIX/lib
+mkdir -p $INSTALL_PREFIX/include
+
+cp -rn $INSTALL_PREFIX/src/src/source/*.h $INSTALL_PREFIX/include/
+cp -rn $INSTALL_PREFIX/src/src/include/* $INSTALL_PREFIX/include/
+
+cp -rn $INSTALL_PREFIX/src/open-source/include/* $INSTALL_PREFIX/include
+
+cp -rn $INSTALL_PREFIX/src/open-source/lib/*.so $INSTALL_PREFIX/lib
+cp -n $INSTALL_PREFIX/src/open-source/lib/*.so.1 $INSTALL_PREFIX/lib
+cp -n $INSTALL_PREFIX/src/open-source/lib/*.so.15 $INSTALL_PREFIX/lib
+cp -n $INSTALL_PREFIX/src/open-source/lib/*.a $INSTALL_PREFIX/lib
+
+cp -n $INSTALL_PREFIX/build/*.so $INSTALL_PREFIX/lib
+echo "[CMake Build] install-webrtc script executed"

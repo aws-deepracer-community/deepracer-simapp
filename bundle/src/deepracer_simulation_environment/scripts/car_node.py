@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 ##############################################################
 #                                                            #
 #   Copyright 2019 Amazon.com, Inc. or its affiliates.       #
@@ -26,7 +26,7 @@ from markov.rospy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
 import markov.rollout_constants as const
 from markov import utils
-from markov.utils import force_list, str2bool
+from markov.utils import force_list
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
@@ -85,14 +85,9 @@ class DeepRacer(object):
 
         # Place the car at the starting point facing the forward direction
         # Instantiate cameras
-        camera_main_enable = str2bool(rospy.get_param("CAMERA_MAIN_ENABLE", "True"))
-        camera_sub_enable = str2bool(rospy.get_param("CAMERA_SUB_ENABLE", "True"))
-
-        if camera_main_enable or camera_sub_enable:
-            main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
-            [camera.detach() for camera in main_cameras.values()]
-            sub_camera.detach()
-
+        main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
+        [camera.detach() for camera in main_cameras.values()]
+        sub_camera.detach()
         # Get the root directory of the ros package, this will contain the models
         deepracer_path = rospkg.RosPack().get_path("deepracer_simulation_environment")
         # Grab the track data
@@ -128,17 +123,15 @@ class DeepRacer(object):
         logger.info("Pausing physics after initializing the cars")
         pause_physics(EmptyRequest())
 
-        if camera_main_enable:
-            for racecar_name, car_pose in zip(racecar_names, car_poses):
-                main_cameras[racecar_name].spawn_model(car_pose,
-                                                    os.path.join(deepracer_path, "models",
-                                                                    "camera", "model.sdf"))
+        for racecar_name, car_pose in zip(racecar_names, car_poses):
+            main_cameras[racecar_name].spawn_model(car_pose,
+                                                   os.path.join(deepracer_path, "models",
+                                                                "camera", "model.sdf"))
 
-        if camera_sub_enable:
-            logger.info("Spawning sub camera model")
-            # Spawn the top camera model
-            sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
-                                                    "top_camera", "model.sdf"))
+        logger.info("Spawning sub camera model")
+        # Spawn the top camera model
+        sub_camera.spawn_model(None, os.path.join(deepracer_path, "models",
+                                                  "top_camera", "model.sdf"))
 
 if __name__ == '__main__':
     rospy.init_node('car_reset_node', anonymous=True)

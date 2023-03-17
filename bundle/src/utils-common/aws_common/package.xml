@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>aws_common</name>
+  <version>2.2.0</version>
+  <description>Common AWS SDK utilities, intended for use by ROS packages using the AWS SDK</description>
+  <url>http://wiki.ros.org/aws_common</url>
+
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+<!--   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</buildtool_depend> -->
+  
+  <build_depend>ros_environment</build_depend>
+
+  <depend>zlib</depend>
+  <depend>uuid</depend>
+  <depend>curl</depend>
+  <depend>libssl-dev</depend>
+
+<!--   <test_depend condition="$ROS_VERSION == 1">gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 1">google-mock</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</test_depend>
+ -->
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>

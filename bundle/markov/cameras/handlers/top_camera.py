@@ -85,7 +85,7 @@ class TopCamera(AbstractCamera):
 
         Returns:
             str: an encoded string containing the XML data
-        """        
+        """
         tree = ET.parse(camera_sdf_path)
         root = tree.getroot()
         for fov in root.iter('horizontal_fov'):

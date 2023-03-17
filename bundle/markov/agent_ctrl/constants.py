@@ -8,7 +8,7 @@ MAX_STEPS = 10000
 RELATIVE_POSITION_OF_FRONT_OF_CAR = [0.14, 0, 0]
 
 # Normalized track distance to move with each reset
-# now config ROUND_ROBIN_ADVANCE_DIST = 0.05
+ROUND_ROBIN_ADVANCE_DIST = 0.05
 
 # Reward to give the car when it paused and parked
 ZERO_REWARD = 0.0
@@ -71,12 +71,10 @@ class ConfigParams(Enum):
     COLLISION_PENALTY = 'collision_penalty'
     OFF_TRACK_PENALTY = 'off_track_penalty'
     IMMOBILIZED_PENALTY = 'immobilized_penalty'
-    REVERSE_PENALTY = 'reverse_penalty'    
+    REVERSE_PENALTY = 'reverse_penalty'
     START_POSITION = 'start_position'
     PARK_POSITIONS = 'park_positions'
     DONE_CONDITION = 'done_condition'
-    ROUND_ROBIN_ADVANCE_DIST = 'round_robin_advance_dist'
-    START_POSITION_OFFSET = 'start_position_offset'
     IS_VIRTUAL_EVENT = 'is_virtual_event'
     RACE_DURATION = 'race_duration'
 

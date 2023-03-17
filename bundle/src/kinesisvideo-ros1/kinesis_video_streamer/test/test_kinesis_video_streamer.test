@@ -1,0 +1,3 @@
+<launch>
+    <test test-name="test_kinesis_video_streamer" pkg="kinesis_video_streamer" type="test_kinesis_video_streamer"/>
+</launch>

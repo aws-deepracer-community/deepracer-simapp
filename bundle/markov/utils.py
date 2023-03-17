@@ -62,7 +62,7 @@ def get_boto_config():
 def cancel_simulation_job():
     """
     Cancel running simulation job
-     """
+    """
     import rospy
     logger.info("Cancelling the current running simulation job")
     simulation_job_arn = os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN')
@@ -75,7 +75,6 @@ def cancel_simulation_job():
         logger.info("Successfully cancelled the simulation job")
     else:
         logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set. Failed cancellation.")
- 
 
 def str2bool(flag):
     """ bool: convert flag to boolean if it is string and return it else return its initial bool value """

@@ -80,7 +80,10 @@ class TrackerManager(object):
                     for tracker in copy_trackers:
                         tracker.update_tracker(delta_time, sim_time)
             except Exception as e:
-                logger.info("TrackerManager: failed _update_sim_time call")
+                log_and_exit("Tracker raised Exception: {}"
+                             .format(e),
+                             SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                             SIMAPP_EVENT_ERROR_CODE_500)
             finally:
                 self.lock.release()
         else:

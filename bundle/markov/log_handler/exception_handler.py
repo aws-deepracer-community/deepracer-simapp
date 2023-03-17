@@ -193,8 +193,8 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
         # TODO: refactor this when we migrate entirely to python 3
         from markov import utils
         utils.cancel_simulation_job()
-    else:
-        kill_by_pid(1)
+
+
 
 # the global variable for upload_to_s3
 is_upload_to_s3_called = False
@@ -216,9 +216,8 @@ def upload_to_s3(json_log, s3_crash_status_file_name):
             # TODO: refactor this when we migrate entirely to python 3
             from markov import utils
             from markov.boto.s3.s3_client import S3Client
-            s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
             LOG.info("simapp_exit_gracefully - first time upload_to_s3 called.")
-            s3_client = S3Client(s3_endpoint_url=s3_endpoint_url)
+            s3_client = S3Client()
             s3_key = os.path.normpath(os.path.join(os.environ.get("YAML_S3_PREFIX", ''),
                                                    s3_crash_status_file_name))
             s3_client.upload_fileobj(bucket=os.environ.get("YAML_S3_BUCKET", ''),

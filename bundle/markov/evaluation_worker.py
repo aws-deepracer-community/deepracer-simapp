@@ -53,7 +53,7 @@ from std_srvs.srv import Empty, EmptyRequest
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
-MIN_RESET_COUNT = 2 #Reduced reset limit to avoid eval without box of doom
+MIN_RESET_COUNT = 10000 #TODO: change when console passes float("inf")
 
 IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = get_robomaker_profiler_env()
 
@@ -154,10 +154,6 @@ def main():
                         type=str,
                         nargs='+',
                         default=rospy.get_param("MODEL_S3_PREFIX", ["sagemaker"]))
-    parser.add_argument('--s3_endpoint_url',
-                        help='(string) S3 endpoint URL',
-                        type=str,
-                        default=rospy.get_param("S3_ENDPOINT_URL", None))                        
     parser.add_argument('--aws_region',
                         help='(string) AWS region',
                         type=str,
@@ -199,23 +195,11 @@ def main():
                         help='(float) collision penalty second',
                         type=float,
                         default=float(rospy.get_param("COLLISION_PENALTY", 5.0)))
-    parser.add_argument('--round_robin_advance_dist',
-                        help='(float) round robin distance 0-1',
-                        type=float,
-                        default=float(rospy.get_param("ROUND_ROBIN_ADVANCE_DIST", 0.05)))
-    parser.add_argument('--start_position_offset',
-                        help='(float) offset start 0-1',
-                        type=float,
-                        default=float(rospy.get_param("START_POSITION_OFFSET", 0.0)))
-    parser.add_argument('--eval_checkpoint',
-                        help='(string) Choose which checkpoint to use (best | last)',
-                        type=str,
-                        default=rospy.get_param("EVAL_CHECKPOINT", "best"))
 
     args = parser.parse_args()
     arg_s3_bucket = args.s3_bucket
     arg_s3_prefix = args.s3_prefix
-    logger.info("S3 bucket: %s \n S3 prefix: %s \n S3 endpoint URL: %s", args.s3_bucket, args.s3_prefix, args.s3_endpoint_url)
+    logger.info("S3 bucket: %s \n S3 prefix: %s", arg_s3_bucket, arg_s3_prefix)
 
     metrics_s3_buckets = rospy.get_param('METRICS_S3_BUCKET')
     metrics_s3_object_keys = rospy.get_param('METRICS_S3_OBJECT_KEY')
@@ -250,15 +234,11 @@ def main():
         raise GenericRolloutException("number of resets is less than {}".format(MIN_RESET_COUNT))
 
     # Instantiate Cameras
-    camera_main_enable = utils.str2bool(rospy.get_param("CAMERA_MAIN_ENABLE", "True"))
-    camera_sub_enable = utils.str2bool(rospy.get_param("CAMERA_SUB_ENABLE", "True"))
-
-    if camera_main_enable:
-        if len(arg_s3_bucket) == 1:
-            configure_camera(namespaces=['racecar'])
-        else:
-            configure_camera(namespaces=[
-                'racecar_{}'.format(str(agent_index)) for agent_index in range(len(arg_s3_bucket))])
+    if len(arg_s3_bucket) == 1:
+        configure_camera(namespaces=['racecar'])
+    else:
+        configure_camera(namespaces=[
+            'racecar_{}'.format(str(agent_index)) for agent_index in range(len(arg_s3_bucket))])
 
     agent_list = list()
     s3_bucket_dict = dict()
@@ -281,31 +261,21 @@ def main():
         model_metadata = ModelMetadata(bucket=arg_s3_bucket[agent_index],
                                        s3_key=get_s3_key(arg_s3_prefix[agent_index], MODEL_METADATA_S3_POSTFIX),
                                        region_name=args.aws_region,
-                                       s3_endpoint_url=args.s3_endpoint_url,
                                        local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(agent_name))
         model_metadata_info = model_metadata.get_model_metadata_info()
         version = model_metadata_info[ModelMetadataKeys.VERSION.value]
-
 
         # checkpoint s3 instance
         checkpoint = Checkpoint(bucket=arg_s3_bucket[agent_index],
                                 s3_prefix=arg_s3_prefix[agent_index],
                                 region_name=args.aws_region,
-                                s3_endpoint_url=args.s3_endpoint_url,
                                 agent_name=agent_name,
                                 checkpoint_dir=args.local_model_directory)
         # make coach checkpoint compatible
         if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
             checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
-
-        # Get the correct checkpoint
-        if args.eval_checkpoint.lower() == "best":
-            # get best model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
-        else:
-            # get the last model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_last_checkpoint()
-
+        # get best model checkpoint string
+        model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
         # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
         checkpoint.rl_coach_checkpoint.update(
             model_checkpoint_name=model_checkpoint_name,
@@ -336,13 +306,10 @@ def main():
                 ConfigParams.COLLISION_PENALTY.value: args.collision_penalty,
                 ConfigParams.OFF_TRACK_PENALTY.value: args.off_track_penalty,
                 ConfigParams.START_POSITION.value: start_positions[agent_index],
-                ConfigParams.DONE_CONDITION.value: done_condition,
-                ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: args.round_robin_advance_dist,
-                ConfigParams.START_POSITION_OFFSET.value: args.start_position_offset}}
+                ConfigParams.DONE_CONDITION.value: done_condition}}
 
         metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: metrics_s3_buckets[agent_index],
                              MetricsS3Keys.METRICS_KEY.value: metrics_s3_object_keys[agent_index],
-                             MetricsS3Keys.ENDPOINT_URL.value: rospy.get_param('S3_ENDPOINT_URL', None),
                              # Replaced rospy.get_param('AWS_REGION') to be equal to the argument being passed
                              # or default argument set
                              MetricsS3Keys.REGION.value: args.aws_region}
@@ -354,7 +321,6 @@ def main():
                               bucket=simtrace_s3_bucket[agent_index],
                               s3_prefix=simtrace_s3_object_prefix[agent_index],
                               region_name=aws_region,
-                              s3_endpoint_url=args.s3_endpoint_url,
                               local_path=SIMTRACE_EVAL_LOCAL_PATH_FORMAT.format(agent_name)))
         if mp4_s3_bucket:
             simtrace_video_s3_writers.extend([
@@ -362,19 +328,16 @@ def main():
                               bucket=mp4_s3_bucket[agent_index],
                               s3_prefix=mp4_s3_object_prefix[agent_index],
                               region_name=aws_region,
-                              s3_endpoint_url=args.s3_endpoint_url,
                               local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format(agent_name)),
                 SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
                               bucket=mp4_s3_bucket[agent_index],
                               s3_prefix=mp4_s3_object_prefix[agent_index],
                               region_name=aws_region,
-                              s3_endpoint_url=args.s3_endpoint_url,
                               local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format(agent_name)),
                 SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
                               bucket=mp4_s3_bucket[agent_index],
                               s3_prefix=mp4_s3_object_prefix[agent_index],
                               region_name=aws_region,
-                              s3_endpoint_url=args.s3_endpoint_url,
                               local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format(agent_name))])
 
         run_phase_subject = RunPhaseSubject()

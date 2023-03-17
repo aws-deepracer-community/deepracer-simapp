@@ -309,6 +309,4 @@
   <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="$(eval len(str(simapp_versions).split(','))) $(arg publish_to_kinesis_stream)" output="screen" required="$(arg make_required)">
   </node>
 
-  <!-- Saving mp4 for each agent -->
-  <node pkg="deepracer_simulation_environment" type="save_to_mp4.py" name="save_to_mp4" args="$(eval len(str(simapp_versions).split(',')))" required="$(arg make_required)" output="screen"></node>
 </launch>

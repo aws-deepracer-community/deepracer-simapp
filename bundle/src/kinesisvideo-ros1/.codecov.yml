@@ -1,0 +1,12 @@
+coverage:
+  ignore:
+    - "**/test/*"
+  status:
+    # doc: https://docs.codecov.io/docs/commit-status
+    project:
+      default:
+        # will use the coverage from the base commit (pull request base or parent commit) coverage to compare against.
+        target: auto
+        threshold: null
+        # will use the pull request base if the commit is on a pull request. If not, the parent commit will be used.
+        base: auto

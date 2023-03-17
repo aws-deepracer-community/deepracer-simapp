@@ -13,6 +13,9 @@ from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
+from markov.boto.s3.constants import (CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
+                                      CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
+                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT)
 from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
                                   IconographicImageSize, SCALE_RATIO,
                                   TrackColors,
@@ -20,14 +23,6 @@ from mp4_saving.constants import (RACECAR_CIRCLE_RADIUS, CameraTypeParams,
 from deepracer_simulation_environment.srv import TopCamDataSrvRequest, TopCamDataSrv
 
 LOG = Logger(__name__, logging.INFO).get_logger()
-
-CUSTOM_FILES_PATH = "./custom_files"
-CAMERA_PIP_MP4_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
-                                                "iteration_data/{}/camera-pip/video.mp4")
-CAMERA_45DEGREE_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
-                                                 "iteration_data/{}/camera-45degree/video.mp4")
-CAMERA_TOPVIEW_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
-                                                "iteration_data/{}/camera-topview/video.mp4")
 
 IMAGE_CACHE = dict()
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """script to download yaml param from S3 bucket to local directory and start training/eval ROS launch
 
@@ -13,9 +13,10 @@ import sys
 import time
 import botocore
 import rospy
+import re
 
 from enum import Enum
-from markov.utils import test_internet_connection, str2bool
+from markov.utils import test_internet_connection
 from markov.constants import DEFAULT_COLOR, DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
@@ -30,33 +31,22 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_ME
 from markov.boto.s3.utils import get_s3_key
 from markov.log_handler.logger import Logger
 
-LOG = Logger(__name__, logging.INFO).get_logger() 
- 
-# Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
-WAIT_FOR_ROBOMAKER_TIME = 10
- 
-# User alias for F1 shell
-F1_SHELL_USERS_LIST = ["TataCalde", "RIC3", "SheBangsTheDrums1989"]
+LOG = Logger(__name__, logging.INFO).get_logger()
+
 
 def main():
     """ Main function for downloading yaml params """
-
     # parse argument
     s3_region = sys.argv[1]
     s3_bucket = sys.argv[2]
     s3_prefix = sys.argv[3]
     s3_yaml_name = sys.argv[4]
     launch_name = sys.argv[5]
-    yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
 
+    # TODO: If there are issues with vpc or iam roles, it's ISE
+    # Delete this method
+    # test_internet_connection(s3_region)
     try:
-
-        s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
-        
-        if s3_endpoint_url is not None:
-            logging.info('Endpoint URL {}'.format(s3_endpoint_url))
-            rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
-
         if AgentType.ROLLOUT.value in launch_name:
             # For rollout, launch_name is "rollout_rl_agent.launch"
             agent_type = AgentType.ROLLOUT.value
@@ -65,7 +55,7 @@ def main():
             agent_type = AgentType.EVALUATION.value
         elif AgentType.VIRTUAL_EVENT.value in launch_name:
             # For virtual event, launch_name is "virtual_event_rl_agent.launch"
-            agent_type = AgentType.VIRTUAL_EVENT.value            
+            agent_type = AgentType.VIRTUAL_EVENT.value
         else:
             log_and_exit("Unknown agent type in launch file: {}".format(launch_name),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -77,7 +67,6 @@ def main():
                              bucket=s3_bucket,
                              s3_key=yaml_key,
                              region_name=s3_region,
-                             s3_endpoint_url=s3_endpoint_url,
                              local_path=YAML_LOCAL_PATH_FORMAT.format(s3_yaml_name))
         yaml_file.get_yaml_values()
 
@@ -97,7 +86,6 @@ def main():
                 model_metadata = ModelMetadata(bucket=model_s3_bucket,
                                                s3_key=json_key,
                                                region_name=s3_region,
-                                               s3_endpoint_url=s3_endpoint_url,
                                                local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(racecar_name))
                 model_metadata_info = model_metadata.get_model_metadata_info()
                 sensors = model_metadata_info[ModelMetadataKeys.SENSOR.value]
@@ -118,22 +106,20 @@ def main():
                             "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={} ".format(yaml_file.is_f1),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
+                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
         else:
             # Note: SimApp Version is default to 5.0: virtual event only have a single body_shell_types
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
-                            "simapp_versions:={} ".format('5.0'),                            
+                            "simapp_versions:={} ".format('5.0'),
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
-
+                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
         Popen(cmd, shell=True, executable="/bin/bash")
-    
     except botocore.exceptions.ClientError as ex:
         log_and_exit("Download params and launch of agent node S3 ClientError: s3_bucket: {}, yaml_key: {}, {}"
-                         .format(s3_bucket, yaml_key, ex), 
+                         .format(s3_bucket, yaml_key, ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     except botocore.exceptions.EndpointConnectionError:
@@ -146,7 +132,7 @@ def main():
                      SIMAPP_EVENT_ERROR_CODE_500)
     except Exception as ex:
         log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
-                         .format(s3_bucket, yaml_key, ex), 
+                         .format(s3_bucket, yaml_key, ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 

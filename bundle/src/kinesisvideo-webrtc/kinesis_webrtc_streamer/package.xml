@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>kinesis_webrtc_streamer</name>
+  <version>0.0.1</version>
+  <description>ros streamer node</description>
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>aws_common</depend>
+  <depend>aws_ros1_common</depend>
+  <depend>geometry_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>kinesis_video_msgs</depend>
+  <depend>kinesis_webrtc_manager</depend>
+  <depend>std_msgs</depend>
+
+  <test_depend>gtest</test_depend>
+  <test_depend>google-mock</test_depend>
+  <test_depend>rostest</test_depend>
+  <test_depend>rostopic</test_depend>
+</package>
