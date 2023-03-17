@@ -6,8 +6,8 @@
       <comments />
       <source_data>2022_summit_speedway_ccw</source_data>
     </contributor>
-    <created>2023-02-08T17:05:59.718455</created>
-    <modified>2023-02-08T17:05:59.718459</modified>
+    <created>2023-03-15T04:07:01.523175</created>
+    <modified>2023-03-15T04:07:01.523179</modified>
     <unit meter="1" name="meter" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -750,7 +750,7 @@
         </instance_geometry>
       </node>
     <node id="StartLine" name="StartLine" type="NODE">
-      <matrix sid="transform">-0.6639728771836778 -0.7477566571849619 0 3.38522 0.7477566571849619 -0.6639728771836778 0 1.47502 0 0 1 0.0025 0 0 0 1</matrix>
+      <matrix sid="transform">-0.6628168674642143 -0.7487815437128016 0 3.2783164978027344 0.7487815437128016 -0.6628168674642143 0 1.4712452590465546 0 0 1 0.0025 0 0 0 1</matrix>
       <instance_geometry name="StartLine" url="#Plane-mesh">
         <bind_material>
           <technique_common>
