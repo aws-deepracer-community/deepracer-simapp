@@ -16,9 +16,19 @@ Built images are available via `docker pull awsdeepracercommunity/deepracer-robo
 
 Available tags are:
 
+### Version 5.1
+
+Version 5.1 is the current development version for 2023, and it is receiving both new tracks as well as functionality updates as they are released by AWS.
+
+New in 2023 is that the OpenGL images are no longer needed; the required drivers are included in the CPU and GPU images.
+
+| Version  | Comment         | AVX      | AVX2     | GPU      |
+| -------- | -------------- | -------- | -------- | -------- | 
+| 5.1.0       | Initial release  |  `5.1.0-cpu-avx` | `5.1.0-cpu-avx2` | `5.1.0-gpu` |
+
 ### Version 5
 
-Version 5 was the current development version for 2022.
+Version 5 is the release version for 2022. It will only receive track fixes.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
@@ -34,15 +44,7 @@ Version 5 was the current development version for 2022.
 | 5.0.9      | Minor updates and fixes  |  `5.0.9-cpu-avx` `5.0.9-cpu-gl-avx`  | `5.0.9-cpu-avx2` `5.0.9-cpu-gl-avx2` | `5.0.9-gpu` `5.0.9-gpu-gl` |
 | 5.0.10 (*)     | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
 
-(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks, and on 17-MAR-2023 with an update on all `_cw` and `_ccw` tracks.
-
-### Version 4
-
-Version 4 is retired.
-
-| Version  | Comment         | AVX      | AVX2     | GPU      |
-| -------- | -------------- | -------- | -------- | -------- | 
-| 4.0.13       | 2022 March Track  |  `4.0.13-cpu-avx` `4.0.13-cpu-gl-avx`  | `4.0.13-cpu-avx2` `4.0.13-cpu-gl-avx` | `4.0.13-gpu` `4.0.13-gpu-gl` |
+(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks.
 
 ## Building the image
 
