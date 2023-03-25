@@ -121,6 +121,9 @@ COPY ./bundle/rl_coach.patch /opt/rl_coach.patch
 RUN patch -p1 -N --directory=/usr/local/lib/python3.6/dist-packages/ < /opt/rl_coach.patch
 COPY ./docker/files/run.sh run.sh
 COPY ./docker/files/debug-reward.diff debug-reward.diff
+COPY ./docker/files/shutdown.sh shutdown.sh
+COPY ./bundle/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
+COPY ./bundle/src/deepracer_node_monitor/config/deepracer_evaluation_node_monitor_list.txt deepracer_evaluation_node_monitor_list.txt
 
 COPY VERSION .
 ARG IMG_VERSION
