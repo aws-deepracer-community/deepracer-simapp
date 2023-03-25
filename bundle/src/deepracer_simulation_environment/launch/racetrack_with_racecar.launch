@@ -84,6 +84,6 @@
   </node>
 
   <!-- Enable local web server for video streaming -->
-  <node name="web_video_server" pkg="web_video_server" type="web_video_server" output="screen" required="false"></node>
+  <node pkg="web_video_server" type="web_video_server" name="web_video_server" output="screen" required="false" respawn="false"></node>
 
 </launch>

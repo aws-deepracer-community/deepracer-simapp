@@ -2,6 +2,7 @@ import threading
 import json
 import logging
 import os
+import subprocess
 import io
 import re
 import signal
@@ -74,8 +75,10 @@ def cancel_simulation_job():
         robomaker_client.cancel_simulation_job(job=simulation_job_arn)
         logger.info("Successfully cancelled the simulation job")
     else:
-        logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set. Failed cancellation.")
- 
+        logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set - assume local docker container")
+        subprocess.run(["/opt/install/shutdown.sh"])
+        logger.info("Shutdown initiated")
+        exit(0)
 
 def str2bool(flag):
     """ bool: convert flag to boolean if it is string and return it else return its initial bool value """
