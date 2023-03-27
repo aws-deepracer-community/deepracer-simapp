@@ -39,7 +39,7 @@ setup(
         'h5py==2.10.0',
         'protobuf==3.19.4',
         'tensorflow==1.11',
-        'redis==3.2.1',
+        'redis==4.5.3',
         'opencv-python==4.1.1.26',
         'python-dateutil==2.5.3',
         'pytest==4.6.9',
