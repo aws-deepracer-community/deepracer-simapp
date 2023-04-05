@@ -1,8 +1,0 @@
-source;share/sagemaker_rl_agent/hook/path.ps1
-source;share/sagemaker_rl_agent/hook/path.dsv
-source;share/sagemaker_rl_agent/hook/path.py
-source;share/sagemaker_rl_agent/hook/path.sh
-source;share/sagemaker_rl_agent/hook/pythonpath.ps1
-source;share/sagemaker_rl_agent/hook/pythonpath.dsv
-source;share/sagemaker_rl_agent/hook/pythonpath.py
-source;share/sagemaker_rl_agent/hook/pythonpath.sh
