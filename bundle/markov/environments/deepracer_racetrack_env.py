@@ -47,7 +47,7 @@ class DeepRacerRacetrackEnvParameters(MultiAgentEnvironmentParameters):
 
 class DeepRacerRacetrackEnv(MultiAgentEnvironment):
     '''This class defines the mechanics of how a DeepRacer agent interacts
-       with the enviroment
+       with the environment
     '''
     def __init__(self, level: LevelSelection, seed: int, frame_skip: int,
                  custom_reward_threshold: Union[int, float],

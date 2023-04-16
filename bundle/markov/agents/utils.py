@@ -37,7 +37,7 @@ def construct_sensor(racecar_name, observation_list, factory, model_metadata_inf
 def get_network_settings(sensor, network):
     '''Returns a dictionary containing the network information for the agent based on the
        sensor configuration
-       netwirk - Sting of desired network topology shallow, deep, deep-deep
+       network - Sting of desired network topology shallow, deep, deep-deep
     '''
     try:
         is_deep = network == NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_DEEP.value
