@@ -44,7 +44,7 @@ setup(
         'python-dateutil==2.5.3',
         'pytest==4.6.9',
         'docutils==0.15.2',
-        'cryptography==3.2.1',
+        'cryptography==41.0.0',
         'importlib-metadata==0.23',
         'jsonschema==3.2.0',
         'pytz==2020.1',
