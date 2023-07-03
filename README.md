@@ -48,11 +48,7 @@ Version 5 is the release version for 2022. It will only receive track fixes.
 
 ## Building the image
 
-To build the CPU image run `docker build -t awsdeepracercommunity/deepracer-robomaker:cpu -f docker/Dockerfile.cpu . --build-arg TENSORFLOW_VER='tensorflow==1.11.0`
-
-To build the GPU image run `docker build -t awsdeepracercommunity/deepracer-robomaker:gpu -f docker/Dockerfile.gpu . `
-
-To add a custom tensorflow library run `docker build -t awsdeepracercommunity/deepracer-robomaker:cpu -f docker/Dockerfile.cpu . --build-arg TENSORFLOW_VER=<http-url-to-file>`
+A build script is available as `build.sh`. By default all three images will be built (`cpu-avx` `cpu-avx2` and `gpu` for version `5.1`). Use the `-a` switch to limit number of images.
 
 ### Tensorflow build
 

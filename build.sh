@@ -7,7 +7,7 @@ function ctrl_c() {
 }
 
 PREFIX="awsdeepracercommunity"
-ARCH="cpu-avx cpu-avx2 cpu-gl-avx cpu-gl-avx2 gpu gpu-gl"
+ARCH="cpu-avx cpu-avx2 gpu"
 TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_secondary}/tensorflow-1.12.3-cp36-cp36m-linux_x86_64.whl'
 
 while getopts ":a:fp:t:" opt; do
