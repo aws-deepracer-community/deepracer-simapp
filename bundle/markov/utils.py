@@ -61,20 +61,31 @@ def get_boto_config():
 
 def cancel_simulation_job():
     """
-    Cancel running simulation job
+    Identifies and cancels the running simulation job. Handles both RoboMaker and Sage-Only simulations.
     """
-    import rospy
     logger.info("Cancelling the current running simulation job")
-    simulation_job_arn = os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN')
     aws_region = os.environ.get('APP_REGION')
-    if simulation_job_arn:
-        logger.info("Found simulation job arn, cancelling the job")
-        session = boto3.session.Session()
-        robomaker_client = session.client('robomaker', region_name=aws_region)
-        robomaker_client.cancel_simulation_job(job=simulation_job_arn)
-        logger.info("Successfully cancelled the simulation job")
+    if check_is_sageonly():
+        sagemaker_job_name = os.environ.get('TRAINING_JOB_NAME')
+        if sagemaker_job_name:
+            logger.info("Found SageMaker simulation job name, cancelling the job")
+            session = boto3.session.Session()
+            sagemaker_client = session.client('sagemaker', region_name=aws_region)
+            sagemaker_client.stop_training_job(TrainingJobName=sagemaker_job_name)
+            logger.info("Successfully cancelled the simulation job")
+        else:
+            logger.info("TRAINING_JOB_NAME environment variable not set. Failed cancellation of SageMaker job.")
     else:
-        logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set. Failed cancellation.")
+        simulation_job_arn = os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN')
+        if simulation_job_arn:
+            logger.info("Found RoboMaker simulation job arn, cancelling the job")
+            session = boto3.session.Session()
+            robomaker_client = session.client('robomaker', region_name=aws_region)
+            robomaker_client.cancel_simulation_job(job=simulation_job_arn)
+            logger.info("Successfully cancelled the simulation job")
+        else:
+            logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set. Failed cancellation of RoboMaker job.")
+
 
 def str2bool(flag):
     """ bool: convert flag to boolean if it is string and return it else return its initial bool value """
@@ -114,8 +125,8 @@ def get_ip_from_host(timeout=100):
     if counter == timeout and not ip_address:
         error_string = "Environment Error: Could not retrieve IP address \
         for %s in past %s seconds." % (host_name, timeout)
-        log_and_exit(error_string, 
-                     SIMAPP_ENVIRONMENT_EXCEPTION, 
+        log_and_exit(error_string,
+                     SIMAPP_ENVIRONMENT_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     return ip_address
 
@@ -140,7 +151,7 @@ def get_video_display_name():
     """
     #
     # The import rospy statement is here because the util is used by the sagemaker and it fails because ROS is not installed.
-    # Also the rollout_utils.py fails because its PhaseObserver is python3 compatable and not python2.7 because of 
+    # Also the rollout_utils.py fails because its PhaseObserver is python3 compatable and not python2.7 because of
     # def __init__(self, topic: str, sink: RunPhaseSubject) -> None:
     #
     import rospy
@@ -186,8 +197,8 @@ def get_s3_extra_args(s3_kms_cmk_arn=None):
     """Generate the s3 extra arg dict with the s3 kms cmk arn passed in.
 
     Args:
-        s3_kms_cmk_arn (str, optional): The kms arn to use for contructing 
-                                        the s3 extra arguments. 
+        s3_kms_cmk_arn (str, optional): The kms arn to use for contructing
+                                        the s3 extra arguments.
                                         Defaults to None.
 
     Returns:
