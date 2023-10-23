@@ -14,14 +14,12 @@ import random
 from itertools import count
 from markov.log_handler.constants import (SIMAPP_ENVIRONMENT_EXCEPTION,
                                           SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
-                                          SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_DONE_EXIT)
+                                          SIMAPP_SIMULATION_WORKER_EXCEPTION, SIMAPP_DONE_EXIT,
+                                          STOP_ROS_NODE_MONITOR_SYNC_FILE)
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit, simapp_exit_gracefully
 from markov.log_handler.deepracer_exceptions import GenericException
-from markov.constants import (ROBOMAKER_CANCEL_JOB_WAIT_TIME,
-                              NUM_RETRIES, CONNECT_TIMEOUT, BEST_CHECKPOINT, LAST_CHECKPOINT,
+from markov.constants import (NUM_RETRIES, CONNECT_TIMEOUT,
                               SAGEMAKER_S3_KMS_CMK_ARN, ROBOMAKER_S3_KMS_CMK_ARN,
                               S3_KMS_CMK_ARN_ENV, HYPERPARAMETERS, SAGEMAKER_IS_PROFILER_ON,
                               SAGEMAKER_PROFILER_S3_BUCKET, SAGEMAKER_PROFILER_S3_PREFIX,
@@ -29,7 +27,6 @@ from markov.constants import (ROBOMAKER_CANCEL_JOB_WAIT_TIME,
                               DeepRacerJobType)
 import boto3
 import botocore
-import shutil
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -95,6 +92,20 @@ def str2bool(flag):
         elif flag.lower() == 'true':
             flag = True
     return flag
+
+# stops the execution of ROS Node monitor
+def stop_ros_node_monitor():
+    try:
+        with open(STOP_ROS_NODE_MONITOR_SYNC_FILE, 'w') as f:
+            srm = dict()
+            srm["stop_ros_node_monitor"] = "True"
+            f.write(json.dumps(srm))
+        logger.info("[markov_utils] Stored variable for stopping ros node monitor")
+    except Exception as ex:
+        logger.info("[markov_utils] Not able to store variable for stopping ros node monitor: {}".format(str(ex)))
+    
+    # Wait for monitoring to close the job
+    time.sleep(5)
 
 def str_to_done_condition(done_condition):
     if done_condition == any or done_condition == all:
@@ -451,7 +462,7 @@ class Profiler(object):
             log_and_exit("Unable to upload profiler data: {}, {}".format(self.s3_prefix,
                                                                          ex.response['Error']['Code']),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Unable to upload profiler data: {}".format(ex),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,

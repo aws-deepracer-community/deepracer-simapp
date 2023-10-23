@@ -23,7 +23,6 @@ from markov.constants import SIMAPP_VERSION_2
 from markov.log_handler.deepracer_exceptions import GenericNonFatalException
 from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
                                           SIMAPP_EVENT_USER_ERROR,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_EVENT_ERROR_CODE_500)
 from markov.virtual_event.constants import (MAX_NUM_OF_SQS_MESSAGE,
                                             SQS_WAIT_TIME_SEC,
@@ -186,7 +185,7 @@ class VirtualEventAgentData():
                                                                    model_metadata_s3_key,
                                                                    err)
                 raise GenericNonFatalException(error_msg=error_msg,
-                                               error_code=SIMAPP_EVENT_ERROR_CODE_400,
+                                               error_code=SIMAPP_EVENT_ERROR_CODE_500,
                                                error_name=SIMAPP_EVENT_USER_ERROR)
             except Exception as err:
                 error_msg = "[s3] System Error: Failed to download model_metadata file: \

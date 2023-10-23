@@ -474,7 +474,7 @@ def main():
         err_msg_format += "(rollout_idx[{}] >= num_workers[{}] or num_episodes_between_training[{}])"
         logger.info(err_msg_format.format(args.rollout_idx, args.num_workers, episode_steps_per_rollout))
         # Close the down the job
-        utils.cancel_simulation_job()
+        utils.stop_ros_node_monitor()
 
     memory_backend_params = DeepRacerRedisPubSubMemoryBackendParameters(redis_address=redis_ip,
                                                                         redis_port=6379,

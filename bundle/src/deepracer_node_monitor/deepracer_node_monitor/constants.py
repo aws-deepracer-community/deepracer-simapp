@@ -23,6 +23,7 @@ class JobStatus(object):
     INITIALIZING = "INITIALIZING"
     RUNNING = "RUNNING"
     FAILED = "FAILED"
+    CLOSED = "CLOSED"
 
 
 class JobStatusMsg(object):
@@ -32,6 +33,7 @@ class JobStatusMsg(object):
     INITIALIZING = "ROS nodes are initializing"
     RUNNING = "All ROS nodes started running"
     FAILED = "ROS node has failed"
+    CLOSED = "Job has been closed"
 
 
 class JobStatusMetricDimension(object):
@@ -39,5 +41,5 @@ class JobStatusMetricDimension(object):
     JobStatus metric dimensions
     """
     JOB_STATUS = "JobStatus"
-    OWNER_ID = "OwnerId"
     SIM_APP_ID = "SimAppId"
+    WORKFLOW = "Workflow"

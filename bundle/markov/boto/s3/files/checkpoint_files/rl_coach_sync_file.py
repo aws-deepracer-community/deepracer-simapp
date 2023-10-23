@@ -8,7 +8,6 @@ import logging
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION)
 from markov.boto.s3.s3_client import S3Client
@@ -90,7 +89,7 @@ class RlCoachSyncFile():
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to upload {} file".format(self._syncfile_type),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in uploading {} file {}".format(self._syncfile_type, ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,

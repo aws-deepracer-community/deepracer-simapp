@@ -10,7 +10,6 @@ from markov.utils import get_s3_kms_extra_args
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 from markov.boto.s3.s3_client import S3Client
 from markov.boto.s3.constants import (COACH_CHECKPOINT_POSTFIX,
@@ -167,7 +166,7 @@ class RLCoachCheckpoint():
             log_and_exit("Unable to upload checkpoint: {}, {}"
                          .format(self._bucket, err.response['Error']['Code']),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in uploading checkpoint: {}".format(ex),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -189,7 +188,7 @@ class RLCoachCheckpoint():
                 # Customer deleted checkpoint file.
                 log_and_exit("No objects found: {}".format(self._bucket),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_400)
+                             SIMAPP_EVENT_ERROR_CODE_500)
 
             return any(list(map(lambda obj: os.path.split(obj['Key'])[1] == coach_checkpoint_filename,
                                 response['Contents'])))
@@ -197,7 +196,7 @@ class RLCoachCheckpoint():
             log_and_exit("No objects found: {}, {}"
                          .format(self._bucket, e.response['Error']['Code']),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as e:
             log_and_exit("Exception in checking for current checkpoint key: {}".format(e),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -220,7 +219,7 @@ class RLCoachCheckpoint():
             if len(coach_checkpoint_value) != 1:
                 log_and_exit("No checkpoint file found",
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_400)
+                             SIMAPP_EVENT_ERROR_CODE_500)
             # remove old local coach checkpoint
             os.remove(self._old_local_path)
             # Upload ready file so that the system can gab the checkpoints
@@ -236,7 +235,7 @@ class RLCoachCheckpoint():
             log_and_exit("Unable to make model compatible: {}, {}".
                          format(self._bucket, e.response['Error']['Code']),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as e:
             log_and_exit("Exception in making model compatible: {}".format(e),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,

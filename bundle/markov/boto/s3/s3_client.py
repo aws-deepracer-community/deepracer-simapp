@@ -7,7 +7,6 @@ from markov.log_handler.deepracer_exceptions import GenericNonFatalException
 from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
                                           SIMAPP_EVENT_USER_ERROR,
                                           SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION)
 from markov.boto.constants import BotoClientNames
 from markov.boto.deepracer_boto_client import DeepRacerBotoClient
@@ -61,7 +60,7 @@ class S3Client(DeepRacerBotoClient):
                 error_msg = "[s3] ClientError: Unable to download file from \
                             bucket {} with key {}. {}".format(bucket, s3_key, ex)
                 raise GenericNonFatalException(error_msg=error_msg,
-                                               error_code=SIMAPP_EVENT_ERROR_CODE_400,
+                                               error_code=SIMAPP_EVENT_ERROR_CODE_500,
                                                error_name=SIMAPP_EVENT_USER_ERROR)
             raise err
         except botocore.exceptions.ConnectTimeoutError as ex:
@@ -69,12 +68,12 @@ class S3Client(DeepRacerBotoClient):
                 error_msg = "[s3] ConnectTimeoutError: Unable to download file from \
                             bucket {} with key {}. {}".format(bucket, s3_key, ex)
                 raise GenericNonFatalException(error_msg=error_msg,
-                                               error_code=SIMAPP_EVENT_ERROR_CODE_400,
+                                               error_code=SIMAPP_EVENT_ERROR_CODE_500,
                                                error_name=SIMAPP_EVENT_USER_ERROR)
             log_and_exit("Issue with your current VPC stack and IAM roles.\
                           You might need to reset your account resources: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             if self._log_and_cont:
                 error_msg = "[s3] SystemError: Unable to download file from \
@@ -159,7 +158,7 @@ class S3Client(DeepRacerBotoClient):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to list objects",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in listing objects: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -208,7 +207,7 @@ class S3Client(DeepRacerBotoClient):
             log_and_exit("Unable to delete object from s3: bucket: {}, error: {}"
                          .format(bucket, err.response['Error']['Code']),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Unable to delete object from s3, exception: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -235,7 +234,7 @@ class S3Client(DeepRacerBotoClient):
             log_and_exit("Unable to paginate from s3, error: {}"
                          .format(err.response['Error']['Code']),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Unable to paginate from s3, exception: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,

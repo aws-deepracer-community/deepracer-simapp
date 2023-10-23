@@ -17,14 +17,24 @@
 import fnmatch
 import logging
 import time
+import os
 
 import rosnode
 
 from typing import Optional, Set, List, TypeVar
 from threading import RLock
+import json
+from markov.log_handler.constants import (EXCEPTION_HANDLER_SYNC_FILE,
+                                          STOP_ROS_NODE_MONITOR_SYNC_FILE,
+                                          SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_ROS_NODE_MONITOR_EXCEPTION,
+                                          CLOUDWATCH_LOG_WORKER_SLEEP_TIME)
+
+from markov.log_handler.exception_handler import log_and_exit, kill_sagemaker_simapp_jobs_by_pid
+from markov.utils import cancel_simulation_job
+from markov.constants import DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 
 NodeMonitorObserverInterface = TypeVar('NodeMonitorObserverInterface')
-
 
 class NodeMonitor(object):
     """
@@ -32,8 +42,7 @@ class NodeMonitor(object):
     """
 
     def __init__(self, monitor_nodes: Optional[List[str]] = None,
-                 update_rate_hz: float = 0.2,
-                 update_observers_on_no_status_change: bool = False) -> None:
+                 update_rate_hz: float = 2) -> None:
         """
         Initialize NodeMonitor.
 
@@ -41,7 +50,6 @@ class NodeMonitor(object):
             monitor_nodes (Optional[List[str]]): List of nodes to be monitored.
                 If None, then all running nodes will be monitored (default: None)
             update_rate_hz (float): Rate at which nodes status is monitored (default: 0.2)
-            update_observers_on_no_status_change (bool): If no status change update the subscribers (default: False)
         """
         self._monitor_nodes = monitor_nodes
         self._update_rate_hz = update_rate_hz
@@ -55,7 +63,6 @@ class NodeMonitor(object):
         self._observers = set()
         self._seen_nodes = set()
         self._is_monitoring = False
-        self._is_update_observers_on_no_status_change = update_observers_on_no_status_change
 
     def register(self, observer: NodeMonitorObserverInterface) -> None:
         """
@@ -111,11 +118,10 @@ class NodeMonitor(object):
         """
         with self._running_node_lock:
             try:
-                (ping_nodes, _) = rosnode.rosnode_ping_all()
-            except Exception:
-                logging.error("[NodeMonitor]: Rosnode threw exception. Master node could be dead")
-                ping_nodes = list()
-
+                (ping_nodes, _) = rosnode.rosnode_ping_all()      
+            except Exception as ex:
+                ping_nodes = []
+                logging.warn("[NodeMonitor] Unable to use rosnode ping: {}".format(str(ex)))  
             # Since the monitor node is empty, defaulting to monitoring all nodes
             if not self._monitor_nodes:
                 self._seen_nodes = set(ping_nodes)
@@ -153,27 +159,61 @@ class NodeMonitor(object):
         self._is_monitoring = True
         try:
             while self._is_monitoring:
+                if(self.checkIfROSNodeMonitorShouldStop()):
+                    for observers in self._observers:
+                        observers.on_job_successful_completion(self)
+                    self.stopSimulationJob()
+                    break
                 is_status_changed = False
-                start_time = time.time()
                 prev_running_nodes = self._running_nodes.copy()
                 prev_dead_nodes = self._dead_nodes.copy()
                 self._update_running_nodes()
                 self._update_dead_nodes()
-                if prev_running_nodes != self._running_nodes:
-                    is_status_changed = True
-                    for observers in self._observers:
-                        observers.on_running_node_update(self, self._running_nodes)
                 if prev_dead_nodes != self._dead_nodes:
                     is_status_changed = True
                     for observers in self._observers:
                         observers.on_dead_node_update(self, self._dead_nodes)
-                if self._is_update_observers_on_no_status_change and not is_status_changed:
+                    self.stopSimulationJob()
+                if prev_running_nodes != self._running_nodes:
+                    is_status_changed = True
                     for observers in self._observers:
-                        observers.on_no_status_change(self)
-                time.sleep((time.time() - start_time) + (1 / self.update_rate_hz))
+                        observers.on_running_node_update(self, self._running_nodes)
+                # unit testing infinite loops can be a pain. Having a time.sleep makes
+                # it easier to write tests
+                time.sleep(1.0 / self._update_rate_hz)
         except Exception as ex:
             logging.error("[NodeMonitor]: NodeMonitor start method threw exception: {}".format(str(ex)))
+            # Stop the simapp job when ros node monitor throws an exception
+            log_and_exit("[NodeMonitor]: NodeMonitor start method threw exception: ",
+                     SIMAPP_ROS_NODE_MONITOR_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500, stopRosNodeMonitor=False)
+            self.stopSimulationJob()
+        finally:
+            logging.info("[NodeMonitor] Node monitoring closed")
 
+    def stopSimulationJob(self) -> None:
+        # The sleep time is for logs to get uploaded to cloudwatch
+        time.sleep(CLOUDWATCH_LOG_WORKER_SLEEP_TIME)
+        logging.info("[NodeMonitor] Cancelling sim job")
+        if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
+            logging.info("simapp_exit_gracefully - Job type is SageOnly. Killing SimApp and Training jobs by PID")
+            kill_sagemaker_simapp_jobs_by_pid()
+        cancel_simulation_job()
+        self.stop()
+    
+    def checkIfROSNodeMonitorShouldStop(self) -> bool:
+        if (os.path.isfile(STOP_ROS_NODE_MONITOR_SYNC_FILE)):
+            try:
+                with open(STOP_ROS_NODE_MONITOR_SYNC_FILE, 'r') as f:
+                    STOP_NODE_MONITOR = json.loads(f.read())
+                if(STOP_NODE_MONITOR["stop_ros_node_monitor"] == "True"):
+                    logging.info("[NodeMonitor] Stopping ROS node monitor")
+                    return True
+                logging.info("[NodeMonitor] Uncertain value for STOP_NODE_MONITOR: {}".format(STOP_NODE_MONITOR))
+            except Exception as ex:
+                logging.error("[NodeMonitor] Exception when reading file for STOP_NODE_MONITOR: {}".format(str(ex)))
+        return False
+    
     def stop(self) -> None:
         """
         Stop node monitoring.
@@ -182,6 +222,7 @@ class NodeMonitor(object):
             observer (NodeMonitorObserverInterface): Instance of the NodeMonitorObserverInterface class,
                 which wants to stop node monitoring ROS nodes
         """
+        logging.info("[NodeMonitor] Stopping Node monitoring")
         for observers in self._observers:
             observers.on_stop(self)
         self._is_monitoring = False

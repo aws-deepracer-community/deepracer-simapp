@@ -56,8 +56,7 @@ def main() -> None:
     node_monitor_list = get_node_monitor_list(args.node_monitor_file_path)
     deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=node_monitor_list)
     node_monitor = NodeMonitor(monitor_nodes=node_monitor_list,
-                               update_rate_hz=1,
-                               update_observers_on_no_status_change=True)
+                               update_rate_hz=1)
     node_monitor.register(deepracer_node_monitor)
     node_monitor.start()
 
