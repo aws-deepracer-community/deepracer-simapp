@@ -31,7 +31,7 @@ def main():
             virtual_event.finish()
 
     LOG.info("[VirtualEventWorker] virtual event end.")
-    utils.cancel_simulation_job()
+    utils.stop_ros_node_monitor()
 
 
 if __name__ == '__main__':

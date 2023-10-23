@@ -61,9 +61,9 @@ class NodeMonitorObserverInterface(object):
         """
         pass
 
-    def on_no_status_change(self, node_monitor: NodeMonitor) -> None:
+    def on_job_successful_completion(self, node_monitor: NodeMonitor) -> None:
         """
-        Callback function when node monitoring did not see any status change
+        Callback function when job successfully completes and node monitor closes
 
         Args:
             node_monitor (NodeMonitor): Instance of NodeMonitor class

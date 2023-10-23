@@ -16,7 +16,6 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.deepracer_exceptions import GenericNonFatalException
 from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
                                           SIMAPP_EVENT_USER_ERROR,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
@@ -86,7 +85,7 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to upload checkpoint",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in uploading checkpoint: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -108,7 +107,7 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to upload .ready",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in uploading .ready file: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -131,7 +130,7 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to upload .finished",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in uploading .finished file: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -181,7 +180,7 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to download checkpoint",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in downloading checkpoint: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -211,11 +210,11 @@ class S3BotoDataStore(DataStore):
             if self._log_and_cont:
                 error_msg = "[s3] ClientError: Unable to download checkpoint. {}".format(ex)
                 raise GenericNonFatalException(error_msg=error_msg,
-                                               error_code=SIMAPP_EVENT_ERROR_CODE_400,
+                                               error_code=SIMAPP_EVENT_ERROR_CODE_500,
                                                error_name=SIMAPP_EVENT_USER_ERROR)
             log_and_exit("Unable to download checkpoint",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             if self._log_and_cont:
                 error_msg = "[s3] SystemError: Unable to download checkpoint. {}".format(ex)
@@ -234,7 +233,7 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to download .ready",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except Exception as ex:
             log_and_exit("Exception in downloading .ready: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
@@ -277,7 +276,7 @@ class S3BotoDataStore(DataStore):
                 if self.ignore_lock:
                     log_and_exit("Checkpoint not found",
                                  SIMAPP_S3_DATA_STORE_EXCEPTION,
-                                 SIMAPP_EVENT_ERROR_CODE_400)
+                                 SIMAPP_EVENT_ERROR_CODE_500)
                 time.sleep(SLEEP_TIME_WHILE_WAITING_FOR_DATA_FROM_TRAINER_IN_SECOND)
                 return False
             except Exception:

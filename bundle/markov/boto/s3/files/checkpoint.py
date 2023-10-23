@@ -14,8 +14,7 @@ from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                                          SIMAPP_EVENT_ERROR_CODE_400)
+                                          SIMAPP_S3_DATA_STORE_EXCEPTION)
 from markov.boto.s3.constants import (CHECKPOINT_POSTFIX_DIR,
                                       COACH_CHECKPOINT_POSTFIX,
                                       DEEPRACER_CHECKPOINT_KEY_POSTFIX,

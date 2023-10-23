@@ -59,7 +59,7 @@ class GenericTrainerError(Exception):
         log_and_exit("Training worker failed: {}"
                          .format(self.msg),
                      SIMAPP_TRAINING_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 class GenericRolloutException(Exception):
     '''This exception is a generic exception for the rollout worker'''
@@ -91,7 +91,7 @@ class GenericRolloutError(Exception):
         log_and_exit("Rollout worker failed: {}"
                          .format(self.msg),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 class GenericValidatorException(Exception):
     '''This exception is a generic exception for the validation worker'''
@@ -123,7 +123,7 @@ class GenericValidatorError(Exception):
         log_and_exit("Validation worker failed: {}"
                          .format(self.msg),
                      SIMAPP_VALIDATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 class GenericException(Exception):
     '''This exception is a generic exception'''
@@ -159,7 +159,7 @@ class GenericError(Exception):
         log_and_exit("Validation worker failed: {}"
                          .format(self.msg),
                      worker, 
-                     SIMAPP_EVENT_ERROR_CODE_400)
+                     SIMAPP_EVENT_ERROR_CODE_500)
 
 
 class GenericNonFatalException(Exception):

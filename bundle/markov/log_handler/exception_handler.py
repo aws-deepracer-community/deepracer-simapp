@@ -18,14 +18,14 @@ from markov.log_handler.constants import (SIMAPP_ERROR_HANDLER_EXCEPTION, SIMAPP
                                           SAGEONLY_SIMAPP_JOB_PID_FILE_PATH, SAGEONLY_TRAINING_JOB_PID_FILE_PATH,
                                           SAGEONLY_PID_FILE_NOT_PRESENT_TIME_OUT,
                                           SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME, CONDA_ENV_NAME,
-                                          CLOUDWATCH_LOG_WORKER_SLEEP_TIME, CONDA_DEFAULT_ENV)
+                                          CLOUDWATCH_LOG_WORKER_SLEEP_TIME, CONDA_DEFAULT_ENV, STOP_ROS_NODE_MONITOR_SYNC_FILE)
 from markov.log_handler.logger import Logger
 from markov.constants import DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
-def log_and_exit(msg, error_source, error_code):
+def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
     '''Helper method that logs an exception and exits the application.
     In case of multiple exceptions due to nodes failing, only the first exception will be logged
     using logic to check if the sync file ERROR.txt exists in the environment.
@@ -34,6 +34,9 @@ def log_and_exit(msg, error_source, error_code):
         msg (String): The message to be logged
         error_source (String): The source of the error, training worker, rolloutworker, etc
         error_code (String): 4xx or 5xx error
+        stopRosNodeMonitor(bool): Should stop ros node monitor. This arg prevents the cyclic 
+        dependancy between node monitor and markov as node monitor wants to call log_and_exit when 
+        it itself throws an exception.
 
     Returns:
         JSON string data format: Consists of the error log dumped (if sync file not present)
@@ -41,9 +44,10 @@ def log_and_exit(msg, error_source, error_code):
     try:
         s3_crash_status_file_name = os.environ.get("CRASH_STATUS_FILE_NAME", None)
         #TODO: Find an atomic way to check if file is present else create
-        # If the sync file is already present, skip logging
-        if os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE):
-            simapp_exit_gracefully()
+        # If the sync file is already present, skip log and exit
+        # if stop ros node monitor file is already present, skip because we are in post job completion stage
+        if os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE) or os.path.isfile(STOP_ROS_NODE_MONITOR_SYNC_FILE):
+            return
         else:
             # Create a sync file ERROR.txt in the environment and log the exception
             with open(EXCEPTION_HANDLER_SYNC_FILE, 'w') as sync_file:
@@ -71,7 +75,9 @@ def log_and_exit(msg, error_source, error_code):
                 # Temporary fault code log
                 LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
             simapp_exit_gracefully(json_log=json_log,
-                                   s3_crash_status_file_name=s3_crash_status_file_name)
+                                   s3_crash_status_file_name=s3_crash_status_file_name,
+                                   hasSimAppExceptionOccured=True,
+                                   stopRosNodeMonitor=stopRosNodeMonitor)
 
     except Exception as ex:
         msg = "Exception thrown in logger - log_and_exit: {}".format(ex)
@@ -84,16 +90,21 @@ def log_and_exit(msg, error_source, error_code):
         dict_obj["exceptionType"] = SIMAPP_ERROR_HANDLER_EXCEPTION
         dict_obj["eventType"] = SIMAPP_EVENT_SYSTEM_ERROR
         dict_obj["errorCode"] = SIMAPP_EVENT_ERROR_CODE_500
-        #TODO: Include fault_code in the json schema to track faults - pending cloud team assistance
-        #dict_obj["faultCode"] = fault_code
-        json_format_log["simapp_exception"] = dict_obj
+        """
+        Check if we already wrote simapp_exception. If yes, we do not want
+        to write it again. Since we do not want to lose the information
+        the best way would be to switch up the second exception name.
+        """
+        if(os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE)):
+            json_format_log["log_and_exit_exception"] = dict_obj
+        else:
+            json_format_log["simapp_exception"] = dict_obj
         json_log = json.dumps(json_format_log)
         LOG.error(json_log)
         # Temporary fault code log
         LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
-        simapp_exit_gracefully(json_log=json_log,
-                               s3_crash_status_file_name=s3_crash_status_file_name)
-
+        from markov.utils import stop_ros_node_monitor
+        stop_ros_node_monitor()
 
 def read_pids_from_file(file_path):
     """Read pids from file path
@@ -139,9 +150,6 @@ def kill_sagemaker_simapp_jobs_by_pid():
     training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
     LOG.info("simapp_exit_gracefully - SimApp pids=%s, Training pids=%s.", simapp_pids, training_pids)
 
-    # The sleep time is for logs to get uploaded to cloudwatch
-    time.sleep(CLOUDWATCH_LOG_WORKER_SLEEP_TIME)
-
     pids_to_kill = []
     if os.environ.get(CONDA_DEFAULT_ENV) == CONDA_ENV_NAME:
         pids_to_kill = simapp_pids
@@ -168,9 +176,9 @@ def kill_by_pid(pid):
     except Exception as ex:
         LOG.error("simapp_exit_gracefully - Process %s already died =%s", pid, ex)
 
-
 def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
-                           s3_crash_status_file_name=None):
+                           s3_crash_status_file_name=None, hasSimAppExceptionOccured=False,
+                           stopRosNodeMonitor=True):
     # simapp exception leading to exiting the system
     # - close the running processes
     # - upload simtrace data to S3
@@ -182,19 +190,21 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
     LOG.info("simapp_exit_gracefully - exception trace={}".format(exception_trace))
     upload_to_s3(json_log=json_log,
                  s3_crash_status_file_name=s3_crash_status_file_name)
-    if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
-        LOG.info("simapp_exit_gracefully - Job type is SageOnly. Killing SimApp and Training jobs by PID")
-        kill_sagemaker_simapp_jobs_by_pid()
+
     if simapp_exit == SIMAPP_ERROR_EXIT:
         LOG.info("Calling cancel_simulation_job because of failure.")
-        # I know this dynamic import can be considered as bad code design
-        # however, it's needed to playaround the circular import issue
-        # without large scale code change in all places that import log_and_exit
-        # TODO: refactor this when we migrate entirely to python 3
-        from markov import utils
-        utils.cancel_simulation_job()
-    else:
-        kill_by_pid(1)
+        if(hasSimAppExceptionOccured):
+            #directly importing rospy doesn't work
+            from rospy import get_name, signal_shutdown
+            err_msg = "Killing rosnode and cancelling job because of failure: {}".format(get_name())
+            LOG.error(err_msg)
+            signal_shutdown(err_msg)
+            # wait for monitoring to detect the dead node
+            time.sleep(5)
+        # for non exception and live races, just normally stop
+        if(stopRosNodeMonitor):
+            from markov.utils import stop_ros_node_monitor
+            stop_ros_node_monitor()
 
 # the global variable for upload_to_s3
 is_upload_to_s3_called = False
