@@ -1,0 +1,32 @@
+FROM ros:melodic-ros-base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sudo \
+    curl \
+    wget \
+    apt-utils
+
+RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
+RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
+
+ENV DEBIAN_FRONTEND="noninteractive" 
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev \
+    python3-pip \
+    python-pip \
+    python3-colcon-common-extensions \
+    rviz \
+    x264 \
+    libx264-dev \
+    libignition-math2 \
+    libignition-math2-dev \
+    gazebo9 \
+    libgazebo9-dev \
+    ros-melodic-aws-common
+
+# Link AWS CPP libraries
+RUN ln -s /opt/ros/melodic/lib/libaws* /usr/local/lib/ && \
+    ln -s /opt/ros/melodic/include/aws /usr/local/include/ 
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
