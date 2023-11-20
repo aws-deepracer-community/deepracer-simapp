@@ -31,7 +31,7 @@ RUN ln -s /opt/ros/melodic/lib/libaws* /usr/local/lib/ && \
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle
 
-RUN rosdep update && rosdep install --from-paths src --ignore-src -r -y 
+RUN rosdep update --include-eol-distros && rosdep install --from-paths src --ignore-src -r -y 
 RUN bash -c "source /opt/ros/melodic/setup.bash && colcon build"
 
 ENTRYPOINT ["/bin/bash", "source /opt/ros/melodic/setup.bash"]

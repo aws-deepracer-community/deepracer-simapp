@@ -103,7 +103,10 @@ def set_reward_and_metrics(reward_params, step_metrics, agent_name, pos_dict, tr
             float(json_actions[ModelMetadataKeys.SPEED.value])
         step_metrics[StepMetrics.WHEELS_TRACK.value] = \
             reward_params[RewardParam.WHEELS_ON_TRACK.value[0]] = all(wheel_on_track)
-        step_metrics[StepMetrics.ACTION.value] = action
+        if(isinstance(action, np.ndarray) or isinstance(action, list)): # convert arrays to string for continuous action space
+            step_metrics[StepMetrics.ACTION.value] = "[{} {}]".format(action[0], action[1])
+        else: # keep the index for discrete action space
+            step_metrics[StepMetrics.ACTION.value] = action
         # set extra reward param for obstacle
         model_heading = reward_params[RewardParam.HEADING.value[0]]
         obstacle_reward_params = track_data.get_object_reward_params(agent_name,
