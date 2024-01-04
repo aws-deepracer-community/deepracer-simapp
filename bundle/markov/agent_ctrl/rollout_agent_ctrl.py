@@ -500,8 +500,30 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             steering_angle = max(min(const.MAX_ANGLE, steering_angle), const.MIN_ANGLE)
             steering_angle = steering_angle * math.pi / 180.0
             action_speed = self._update_speed(action)
-            send_action(self._velocity_pub_dict_, self._steering_pub_dict_,
-                        steering_angle, action_speed)
+
+            if steering_angle != 0.0:
+                L = 0.165
+                W = 0.17
+                r = L/math.tan(steering_angle)
+
+                left_speed = ((r + W / 2) / r) * action_speed
+                right_speed = ((r - W / 2) / r) * action_speed
+
+                left_steering = math.atan(L / (r - W / 2))
+                right_steering = math.atan(L / (r + W / 2))
+
+                self._velocity_pub_dict_['/racecar/left_rear_wheel_velocity_controller/command'].publish(left_speed)
+                self._velocity_pub_dict_['/racecar/left_front_wheel_velocity_controller/command'].publish(left_speed)
+                self._velocity_pub_dict_['/racecar/right_rear_wheel_velocity_controller/command'].publish(right_speed)
+                self._velocity_pub_dict_['/racecar/right_front_wheel_velocity_controller/command'].publish(right_speed)
+
+                self._steering_pub_dict_['left_steering_hinge_position_controller'].publish(left_steering)
+                self._steering_pub_dict_['right_steering_hinge_position_controller'].publish(right_steering)
+            
+            else:
+                send_action(self._velocity_pub_dict_, self._steering_pub_dict_,
+                    steering_angle, action_speed)
+            
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] in ZERO_SPEED_AGENT_PHASES:
             send_action(self._velocity_pub_dict_, self._steering_pub_dict_, 0.0, 0.0)
         else:
