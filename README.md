@@ -52,7 +52,7 @@ A build script is available as `build.sh`. By default all three images will be b
 
 ## Development build
 
-To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. It will create a `bundle/install` directory that can be mounted. Use it with `-c` to create the initial build container, then execute it without to re-run the build (after you have changed a file, before you start Robomaker again).
+To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. Through using a build container it will create a `bundle/install` directory that can be mounted in Robomaker. Use it with `-c` to create the initial build image (a Docker image with ROS and all required pre-requisite packages installed), as well as to execute the build. To speed up subsequent builds then execute it without `-c` to avoid rebuilding the image if only minor changes have been made to the code.
 
 ### Tensorflow build
 
