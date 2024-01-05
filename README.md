@@ -50,6 +50,10 @@ Version 5 is the release version for 2022. It will only receive track fixes.
 
 A build script is available as `build.sh`. By default all three images will be built (`cpu-avx` `cpu-avx2` and `gpu` for version `5.1`). Use the `-a` switch to limit number of images.
 
+## Development build
+
+To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. It will create a `bundle/install` directory that can be mounted. Use it with `-c` to create the initial build container, then execute it without to re-run the build (after you have changed a file, before you start Robomaker again).
+
 ### Tensorflow build
 
 Tensorflow has been built with the following parameters:
