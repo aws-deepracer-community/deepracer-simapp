@@ -517,8 +517,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                 self._velocity_pub_dict_['/racecar/right_rear_wheel_velocity_controller/command'].publish(right_speed)
                 self._velocity_pub_dict_['/racecar/right_front_wheel_velocity_controller/command'].publish(right_speed)
 
-                self._steering_pub_dict_['left_steering_hinge_position_controller'].publish(left_steering)
-                self._steering_pub_dict_['right_steering_hinge_position_controller'].publish(right_steering)
+                self._steering_pub_dict_['/racecar/left_steering_hinge_position_controller/command'].publish(left_steering)
+                self._steering_pub_dict_['/racecar/right_steering_hinge_position_controller/command'].publish(right_steering)
             
             else:
                 send_action(self._velocity_pub_dict_, self._steering_pub_dict_,
