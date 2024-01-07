@@ -25,6 +25,7 @@ New in 2023 is that the OpenGL images are no longer needed; the required drivers
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
 | 5.1.0       | Initial release  |  `5.1.0-cpu-avx` | `5.1.0-cpu-avx2` | `5.1.0-gpu` |
+| 5.1.1       | CUDA 11.4.4 + Misc  |  `5.1.1-cpu-avx` | `5.1.1-cpu-avx2` | `5.1.1-gpu` |
 
 ### Version 5
 
