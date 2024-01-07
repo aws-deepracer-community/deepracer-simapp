@@ -1,15 +1,15 @@
 FROM ros:melodic-ros-base
 
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
     wget \
     apt-utils
 
+RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
+RUN curl -s http://packages.osrfoundation.org/gazebo.key | apt-key add -
 
 ENV DEBIAN_FRONTEND="noninteractive" 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
