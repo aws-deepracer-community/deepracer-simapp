@@ -35,7 +35,7 @@
   <exec_depend>python-shapely</exec_depend>
   <exec_depend>python-scipy</exec_depend>
   <exec_depend>python-numpy</exec_depend>
-  <exec_depend>python-boto3-pip</exec_depend>
+  <exec_depend>python3-boto3</exec_depend>
   <exec_depend>python-imaging</exec_depend>
   <exec_depend>python-jsonschema</exec_depend>
 
