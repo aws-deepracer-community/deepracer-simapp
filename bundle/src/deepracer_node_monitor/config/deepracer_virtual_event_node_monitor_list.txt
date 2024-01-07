@@ -4,5 +4,5 @@
 */h264_video_encoder
 */kinesis_video_streamer
 /kinesis_webrtc_streamer
-/racecar*/controller_manager
-/racecar*/robot_state_publisher
+/virtual_event_manager*
+/virtual_event_video_editor_node

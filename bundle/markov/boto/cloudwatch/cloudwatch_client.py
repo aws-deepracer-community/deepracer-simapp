@@ -7,7 +7,6 @@ import logging
 from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
                                           SIMAPP_EVENT_USER_ERROR,
                                           SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION)
 from markov.boto.constants import BotoClientNames
 from markov.boto.deepracer_boto_client import DeepRacerBotoClient

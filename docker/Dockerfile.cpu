@@ -129,7 +129,7 @@ COPY ./docker/files/run.sh run.sh
 COPY ./docker/files/debug-reward.diff debug-reward.diff
 COPY ./docker/files/shutdown.sh shutdown.sh
 COPY ./bundle/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
-COPY ./bundle/src/deepracer_node_monitor/config/deepracer_evaluation_node_monitor_list.txt deepracer_evaluation_node_monitor_list.txt
+COPY ./bundle/src/deepracer_node_monitor/config/*.txt .
 
 COPY VERSION .
 ARG IMG_VERSION

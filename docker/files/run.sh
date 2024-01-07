@@ -106,6 +106,6 @@ fi
 
 echo "IP: $(hostname -I) ($(hostname))"
 
-python3 start_deepracer_node_monitor.py --node_monitor_file_path=deepracer_evaluation_node_monitor_list.txt
+# python3 start_deepracer_node_monitor.py --node_monitor_file_path=deepracer_evaluation_node_monitor_list.txt
 
 wait
