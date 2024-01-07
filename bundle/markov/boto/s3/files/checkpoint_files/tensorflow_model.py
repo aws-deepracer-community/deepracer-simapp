@@ -12,7 +12,6 @@ from markov import utils
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION)
 from markov.boto.s3.constants import (CHECKPOINT_LOCAL_DIR_FORMAT,
@@ -147,7 +146,7 @@ class TensorflowModel():
             else:
                 log_and_exit("No checkpoint files",
                              SIMAPP_S3_DATA_STORE_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_400)
+                             SIMAPP_EVENT_ERROR_CODE_500)
 
         # download the desired checkpoint file
         for page in self._s3_client.paginate(bucket=self._bucket, prefix=self._s3_key_dir):
@@ -244,24 +243,24 @@ class TensorflowModel():
         except tf.errors.NotFoundError as err:
             log_and_exit("No checkpoint found: {}".format(err),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         # Thrown when user modifies model, checkpoints get corrupted/truncated
         except tf.errors.DataLossError as err:
             log_and_exit("User modified ckpt, unrecoverable dataloss or corruption: {}"
                          .format(err),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except tf.errors.OutOfRangeError as err:
             log_and_exit("User modified ckpt: {}"
                          .format(err),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
         except ValueError as err:
             if utils.is_user_error(err):
                 log_and_exit("Couldn't find 'checkpoint' file or checkpoints in given \
                                 directory ./checkpoint: {}".format(err),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_400)
+                             SIMAPP_EVENT_ERROR_CODE_500)
             else:
                 log_and_exit("ValueError in rename checkpoint: {}".format(err),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -368,7 +367,7 @@ class TensorflowModel():
         except FileNotFoundError as err:
             log_and_exit("No such file or directory: {}".format(err),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_400)
+                         SIMAPP_EVENT_ERROR_CODE_500)
 
     def write_frozen_graph(self, sess, agent_name, iteration_id):
         """Write the frozen graph to the temporary folder with a name model_{}.pb for the iteration_id passed

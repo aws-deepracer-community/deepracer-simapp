@@ -132,9 +132,10 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
             s3_writer.persist(utils.get_s3_kms_extra_args())
         time.sleep(1)
         pause_physics(EmptyRequest())
+    handle_job_completion()
 
-    utils.cancel_simulation_job()
-
+def handle_job_completion():
+    utils.stop_ros_node_monitor()
 
 def main():
     """ Main function for evaluation worker """

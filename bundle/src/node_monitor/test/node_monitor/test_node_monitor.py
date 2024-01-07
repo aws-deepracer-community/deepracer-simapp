@@ -21,6 +21,10 @@ from unittest.mock import patch, MagicMock
 # https://stackoverflow.com/questions/8658043/how-to-mock-an-import
 import sys
 sys.modules['rosnode'] = MagicMock()
+sys.modules['markov.log_handler.constants'] = MagicMock()
+sys.modules['markov.log_handler.exception_handler'] = MagicMock()
+sys.modules['markov.utils'] = MagicMock()
+sys.modules['markov.constants'] = MagicMock()
 
 from node_monitor import NodeMonitor
 
@@ -115,14 +119,6 @@ class NodeMonitorTest(TestCase):
             self.assertEqual(node_monitor._seen_nodes, set())
             self.assertEqual(node_monitor.running_nodes, set())
 
-    @patch("node_monitor.node_monitor.rosnode")
-    def test_update_running_nodes_failed_master_node_specific_exception(self, rosnode_mock, rlock_mock):
-        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
-        rosnode_mock.rosnode_ping_all.side_effect = Exception()
-        node_monitor._update_running_nodes()
-        self.assertEqual(node_monitor._seen_nodes, set())
-        self.assertEqual(node_monitor.running_nodes, set())
-
     def test_update_dead_nodes_success(self, rlock_mock):
         node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
         node_monitor._seen_nodes = set({'/gazebo', '/deepracer'})
@@ -148,6 +144,9 @@ class NodeMonitorTest(TestCase):
         node_monitor._observers = set({observer1, observer2})
         node_monitor._update_running_nodes = MagicMock()
         node_monitor._update_dead_nodes = MagicMock()
+        node_monitor.checkIfROSNodeMonitorShouldStop = MagicMock()
+        node_monitor.checkIfROSNodeMonitorShouldStop.return_value = False
+        node_monitor.stopSimulationJob = MagicMock()
         node_monitor.start()
         observer1.on_start.assert_called_once()
         observer2.on_start.assert_called_once()
@@ -172,6 +171,9 @@ class NodeMonitorTest(TestCase):
         node_monitor._dead_nodes = MagicMock()
         node_monitor._running_nodes.copy.return_value = set({'/gazebo'})
         node_monitor._dead_nodes.copy.return_value = set({'/gazebo'})
+        node_monitor.checkIfROSNodeMonitorShouldStop = MagicMock()
+        node_monitor.checkIfROSNodeMonitorShouldStop.return_value = False
+        node_monitor.stopSimulationJob = MagicMock()
         node_monitor.start()
         observer1.on_start.assert_called_once()
         observer2.on_start.assert_called_once()
@@ -181,35 +183,6 @@ class NodeMonitorTest(TestCase):
         observer2.on_running_node_update.assert_called_once()
         observer1.on_dead_node_update.assert_called_once()
         observer2.on_dead_node_update.assert_called_once()
-        self.assertTrue(node_monitor._is_monitoring)
-
-    @patch("time.sleep", side_effect=InterruptedError)
-    def test_start_no_status_change_update(self, sleep_mock, rlock_mock):
-        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
-        node_monitor._is_update_observers_on_no_status_change = True
-        observer1, observer2 = MagicMock(), MagicMock()
-        observer1.on_start = MagicMock()
-        observer2.on_start = MagicMock()
-        observer1.on_running_node_update = MagicMock()
-        observer2.on_running_node_update = MagicMock()
-        observer1.on_dead_node_update = MagicMock()
-        observer2.on_dead_node_update = MagicMock()
-        observer1.on_no_status_change = MagicMock()
-        observer2.on_no_status_change = MagicMock()
-        node_monitor._observers = set({observer1, observer2})
-        node_monitor._update_running_nodes = MagicMock()
-        node_monitor._update_dead_nodes = MagicMock()
-        node_monitor._running_nodes = set({'/gazebo'})
-        node_monitor._dead_nodes = set()
-        node_monitor.start()
-        observer1.on_start.assert_called_once()
-        observer2.on_start.assert_called_once()
-        node_monitor._update_running_nodes.assert_called_once()
-        node_monitor._update_dead_nodes.assert_called_once()
-        observer1.on_running_node_update.assert_not_called()
-        observer2.on_running_node_update.assert_not_called()
-        observer1.on_no_status_change.assert_called_once()
-        observer2.on_no_status_change.assert_called_once()
         self.assertTrue(node_monitor._is_monitoring)
 
     def test_stop(self, rlock_mock):

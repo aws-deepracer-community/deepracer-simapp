@@ -1,3 +1,6 @@
+ARG BUNDLE_PREFIX=awsdeepracercommunity
+FROM ${BUNDLE_PREFIX}/deepracer-robomaker-bundle:latest AS bundle
+
 FROM nvidia/cuda:11.4.3-cudnn8-runtime-ubuntu18.04
 
 ENV TZ="America/New_York" 
@@ -51,10 +54,10 @@ COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
 # Install ROS Melodic and Gazebo9
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
-RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-keys 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA
+RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+
 RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -
+RUN curl -s http://packages.osrfoundation.org/gazebo.key | apt-key add -
 
 RUN apt-get update -y && \
     apt-get install -y --allow-unauthenticated --no-install-recommends \
@@ -110,8 +113,10 @@ RUN python3 -m pip install -U 'pip<20' 'setuptools<50' && python3 -m pip install
 
 RUN python2 -m pip install --no-cache-dir 'opencv-python>=4.2,<4.3' 
 
-COPY --from=awsdeepracercommunity/deepracer-robomaker-bundle:latest  /opt/bundle/install /opt/install
+
+COPY --from=bundle  /opt/bundle/install /opt/install
 WORKDIR /opt/install
+
 RUN apt-get update -y && rosdep init && rosdep update --include-eol-distros && rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment sagemaker_rl_agent && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -125,7 +130,7 @@ COPY ./docker/files/run.sh run.sh
 COPY ./docker/files/debug-reward.diff debug-reward.diff
 COPY ./docker/files/shutdown.sh shutdown.sh
 COPY ./bundle/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
-COPY ./bundle/src/deepracer_node_monitor/config/deepracer_evaluation_node_monitor_list.txt deepracer_evaluation_node_monitor_list.txt
+COPY ./bundle/src/deepracer_node_monitor/config/*.txt .
 
 COPY VERSION .
 ARG IMG_VERSION

@@ -6,6 +6,8 @@ function ctrl_c() {
         exit 1
 }
 
+set -e
+
 PREFIX="awsdeepracercommunity"
 ARCH="cpu-avx cpu-avx2 gpu"
 TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_secondary}/tensorflow-1.12.3-cp36-cp36m-linux_x86_64.whl'
@@ -29,8 +31,11 @@ done
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 VERSION=$(cat $DIR/VERSION)
 
-echo "Preparing bundle distribution"
-docker build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-bundle:latest -f docker/Dockerfile.bundle .
+echo "Preparing core builder image..."
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-core:latest -f docker/Dockerfile.core . 
+
+echo "Preparing bundle distribution..."
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-bundle:latest -f docker/Dockerfile.bundle --build-arg BUILDER_PREFIX=${PREFIX} .
 
 echo "Preparing docker images for [$ARCH]"
 
@@ -58,7 +63,7 @@ for a in $ARCH; do
     fi
 
     set -x
-    docker build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
     set +x
 
 done

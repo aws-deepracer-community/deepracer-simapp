@@ -23,13 +23,15 @@ import sys
 sys.modules['rosnode'] = MagicMock()
 sys.modules['botocore'] = MagicMock()
 sys.modules['boto3'] = MagicMock()
+sys.modules['markov.log_handler.constants'] = MagicMock()
+sys.modules['markov.log_handler.exception_handler'] = MagicMock()
 
 from deepracer_node_monitor.aws_utils.boto3_factory import Boto3Factory
 from deepracer_node_monitor.aws_utils.constants import (
     BOTO_MAX_RETRY_ATTEMPTS, BOTO_RETRY_CONNECT_TIMEOUT)
 
 
-@patch("deepracer_node_monitor.aws_utils.boto3_factory.RoboMakerUtils.get_aws_region")
+@patch("deepracer_node_monitor.aws_utils.boto3_factory.JobUtils.get_aws_region")
 @patch("deepracer_node_monitor.aws_utils.boto3_factory.boto3")
 @patch("deepracer_node_monitor.aws_utils.boto3_factory.botocore")
 class Boto3FactoryTest(TestCase):

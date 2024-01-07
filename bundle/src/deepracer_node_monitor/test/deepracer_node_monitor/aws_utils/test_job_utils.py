@@ -26,30 +26,24 @@ sys.modules['boto3'] = MagicMock()
 sys.modules['markov.log_handler.constants'] = MagicMock()
 sys.modules['markov.log_handler.exception_handler'] = MagicMock()
 
-from deepracer_node_monitor.aws_utils.s3_utils import S3Utils
+from deepracer_node_monitor.aws_utils.job_utils import JobUtils
 
 
-@patch("deepracer_node_monitor.aws_utils.s3_utils.os")
-class S3UtilsTest(TestCase):
-    def test_get_s3_heartbeat_location_path(self, os_mock):
-        os_mock.environ.get.return_value = "JOB_STATUS_S3_LOCATION"
-        self.assertEqual("JOB_STATUS_S3_LOCATION", S3Utils.get_s3_heartbeat_location_path())
+@patch("deepracer_node_monitor.aws_utils.job_utils.os")
+class JobUtilsTest(TestCase):
+    def test_get_simulation_arn(self, os_mock):
+        os_mock.environ.get.return_value = "ROBOMAKER_ARN"
+        self.assertEqual("ROBOMAKER_ARN", JobUtils.get_simulation_arn())
 
-    def test_get_s3_job_location_path_empty(self, os_mock):
+    def test_get_simulation_arn_empty(self, os_mock):
         os_mock.environ.get.return_value = ''
-        self.assertEqual("", S3Utils.get_s3_heartbeat_location_path())
+        self.assertEqual("", JobUtils.get_simulation_arn())
 
-    @patch("deepracer_node_monitor.aws_utils.s3_utils.S3Utils.get_s3_heartbeat_location_path")
-    def test_get_heartbeat_s3_info(self, get_s3_heartbeat_location_path_mock, os_mock):
-        get_s3_heartbeat_location_path_mock.return_value = "s3://aws-deepracer-bba2e912-6ef0-4c3c-a072-ce17e254bcf2/node_monitor/job_status.txt"
-        bucket = "aws-deepracer-bba2e912-6ef0-4c3c-a072-ce17e254bcf2"
-        key = "node_monitor/job_status.txt"
-        self.assertEqual((bucket, key), S3Utils.get_heartbeat_s3_info())
+    @patch("deepracer_node_monitor.aws_utils.job_utils.JobUtils.get_simulation_arn")
+    def test_get_job_id(self, get_simulation_arn_mock, os_mock):
+        get_simulation_arn_mock.return_value = "arn:aws:robomaker:us-east-1:687392285187:simulation-job/sim-n3vp4ydpwkx8"
+        self.assertEqual("sim-n3vp4ydpwkx8", JobUtils.get_job_id())
 
-    @patch("deepracer_node_monitor.aws_utils.s3_utils.json")
-    def test_get_s3_heartbeat_file_content(self, json_mock, os_mock):
-        json_mock.dumps = MagicMock()
-        json_mock.dumps.return_value = "hello"
-        json_data = S3Utils.get_s3_heartbeat_file_content("SUCCESS", "SUCCESS_MSG")
-        json_mock.dumps.assert_called_once()
-        self.assertEqual(json_data, "hello")
+    def test_get_aws_region(self, os_mock):
+        os_mock.environ.get.return_value = "us-east-1"
+        self.assertEqual("us-east-1", JobUtils.get_aws_region())

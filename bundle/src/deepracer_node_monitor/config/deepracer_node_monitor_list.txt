@@ -1,0 +1,9 @@
+/agents_video_editor
+/car_reset_node
+/download_params_and_roslaunch_agent_node
+/gazebo
+/racecar*/controller_manager
+*/h264_video_encoder
+*/kinesis_video_streamer
+/racecar*/robot_state_publisher
+/rl_coach*
