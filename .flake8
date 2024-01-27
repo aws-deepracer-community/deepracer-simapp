@@ -1,0 +1,12 @@
+[flake8]
+max-line-length = 130
+extend-ignore = E203, E302, E402
+exclude =
+    # No need to traverse our git directory
+    .git,
+    # There's no value in checking cache directories
+    __pycache__,
+    # This contains our built documentation
+    bundle/logs,
+    bundle/install,
+    bundle/build
