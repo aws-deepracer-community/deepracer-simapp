@@ -1,4 +1,5 @@
 from threading import Thread, Event, Lock
+import os
 import pickle
 import queue
 import logging
@@ -194,9 +195,15 @@ class DeepRacerTrainerBackEnd(MemoryBackend):
         # Pubsub object that will allow us to subscribe to the data channel and request data
         self.data_pubsubs = dict()
         self.request_events = dict()
-        self.max_step = MAX_MEMORY_STEPS_SHALLOW \
-            if self.params.network_type == NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_SHALLOW.value \
-            else MAX_MEMORY_STEPS
+
+        max_steps = os.environ.get("MAX_MEMORY_STEPS", "")
+        if max_steps.isdigit() and (int(max_steps) > 0):
+            self.max_step = int(max_steps)
+            LOG.info("Capping iteration steps at: %i", int(max_steps))
+        else:
+            self.max_step = MAX_MEMORY_STEPS_SHALLOW \
+                if self.params.network_type == NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_SHALLOW.value \
+                else MAX_MEMORY_STEPS
 
         for agent_param in agents_params:
             self.rollout_steps[agent_param.name] = 0
