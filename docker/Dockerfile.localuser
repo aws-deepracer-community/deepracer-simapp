@@ -1,5 +1,5 @@
-ARG CORE_PREFIX=awsdeepracercommunity
-FROM $CORE_PREFIX/deepracer-robomaker-core:latest
+ARG FROM_IMG=awsdeepracercommunity/deepracer-robomaker-build-core:latest
+FROM ${FROM_IMG}
 
 ARG USERNAME=user-name-goes-here
 ARG USER_UID=1000
@@ -10,8 +10,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
-
-VOLUME /opt/bundle
 
 USER $USERNAME
 ENTRYPOINT ["/ros_entrypoint.sh"]

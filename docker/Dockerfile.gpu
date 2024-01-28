@@ -1,5 +1,5 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
-FROM ${BUNDLE_PREFIX}/deepracer-robomaker-bundle:latest AS bundle
+FROM ${BUNDLE_PREFIX}/deepracer-robomaker-build-bundle:latest AS bundle
 
 FROM nvidia/cuda:11.4.3-cudnn8-runtime-ubuntu18.04
 
@@ -46,9 +46,9 @@ RUN dpkg --add-architecture i386 && \
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES \
-        ${NVIDIA_VISIBLE_DEVICES:-all}
+    ${NVIDIA_VISIBLE_DEVICES:-all}
 ENV NVIDIA_DRIVER_CAPABILITIES \
-        ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics,compat32,utility
+    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics,compat32,utility
 
 COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
