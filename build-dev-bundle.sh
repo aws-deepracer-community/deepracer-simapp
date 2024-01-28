@@ -8,11 +8,8 @@ function ctrl_c() {
 
 PREFIX="awsdeepracercommunity"
 
-while getopts ":cgfp:" opt; do
+while getopts ":gfp:" opt; do
     case $opt in
-    c)
-        OPT_CORE="core"
-        ;;
     p)
         PREFIX="$OPTARG"
         ;;
@@ -32,9 +29,11 @@ done
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 VERSION=$(cat $DIR/VERSION)
 
-if [ -n "${OPT_CORE}" ]; then
-    echo "Preparing core builder image..."
+if [ "$(docker images -q ${PREFIX}/deepracer-robomaker-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
+    echo "Preparing core builder image ${PREFIX}/deepracer-robomaker-build-core:latest..."
     docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-core:latest -f docker/Dockerfile.build-core .
+else
+    echo "Core builder image ${PREFIX}/deepracer-robomaker-build-core:latest already exists."
 fi
 
 echo "Preparing devel image for user $(id -u)..."
