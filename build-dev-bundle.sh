@@ -38,10 +38,13 @@ if [ -n "${OPT_CORE}" ]; then
 fi
 
 echo "Preparing devel image for user $(id -u)..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-devel:latest -f docker/Dockerfile.localuser --build-arg FROM_IMG=${PREFIX}/deepracer-robomaker-build-core:latest --build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) .
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-devel:latest -f docker/Dockerfile.localuser \
+    --build-arg FROM_IMG=${PREFIX}/deepracer-robomaker-build-core:latest --build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) .
 
 echo "Building development build of bundle into $(pwd)/bundle..."
-docker run --rm -ti -v $(pwd)/bundle:/opt/bundle ${PREFIX}/deepracer-robomaker-build-devel:latest bash -c 'colcon build'
+mkdir -p $(pwd)/install $(pwd)/build $(pwd)/log
+docker run --rm -ti -v $(pwd)/bundle:/opt/bundle -v $(pwd)/log:/opt/log -v $(pwd)/install:/opt/install -v $(pwd)/build:/opt/build \
+    ${PREFIX}/deepracer-robomaker-build-devel:latest bash -c 'colcon --log-base /opt/log build --install-base /opt/install --build-base /opt/build'
 
 if [ -n "${OPT_GAZEBO}" ]; then
     if [ -z "${DR_ROBOMAKER_IMAGE}" ]; then
@@ -55,5 +58,5 @@ if [ -n "${OPT_GAZEBO}" ]; then
     fi
 
     echo "Starting Gazebo using awsdeepracercommunity/deepracer-robomaker:${DR_ROBOMAKER_IMAGE} with world ${DR_WORLD_NAME}."
-    USER_UID=$(id -u) USER_GID=$(id -g) docker compose -f docker/docker-compose-development.yml up --build
+    USER_UID=$(id -u) USER_GID=$(id -g) docker compose -f docker/docker-compose-development.yml up
 fi

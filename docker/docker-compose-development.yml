@@ -28,6 +28,6 @@ services:
       - XDG_RUNTIME_DIR=/tmp/runtime-$USER
     volumes:
       - '../docker/files:/opt/files'
-      - '../bundle/install:/opt/install'
+      - '../install:/opt/install'
       - '/tmp/.X11-unix/:/tmp/.X11-unix'
       - '${XAUTHORITY}:$HOME/.Xauthority'
