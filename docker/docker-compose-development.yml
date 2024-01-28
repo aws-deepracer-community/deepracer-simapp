@@ -7,18 +7,27 @@ networks:
 
 services:
   robomaker:
-    image: awsdeepracercommunity/deepracer-robomaker:${DR_ROBOMAKER_IMAGE}
-    command: ["/opt/files/devel.sh"]
+    build:
+      context: .
+      dockerfile: Dockerfile.localuser
+      args:
+        FROM_IMG: awsdeepracercommunity/deepracer-robomaker:${DR_ROBOMAKER_IMAGE}
+        USERNAME: $USER
+        USER_UID: $USER_UID
+        USER_GID: $USER_GID
+    entrypoint: [ "/bin/bash", "-c" ]
+    command: [ "/opt/files/devel.sh" ]
     ports:
-       - "5900:5900"
+      - "5900:5900"
     environment:
       - DISPLAY
       - DR_WORLD_NAME
-      - XAUTHORITY=/root/.Xauthority
+      - XAUTHORITY=$HOME/.Xauthority
       - QT_X11_NO_MITSHM=1
       - CUDA_VISIBLE_DEVICES
+      - XDG_RUNTIME_DIR=/tmp/runtime-$USER
     volumes:
       - '../docker/files:/opt/files'
-      - '../bundle:/opt/install'
+      - '../install:/opt/install'
       - '/tmp/.X11-unix/:/tmp/.X11-unix'
-      - '${XAUTHORITY}:/root/.Xauthority'
+      - '${XAUTHORITY}:$HOME/.Xauthority'

@@ -1,5 +1,5 @@
 ARG CORE_PREFIX=awsdeepracercommunity
-FROM $CORE_PREFIX/deepracer-robomaker-core:latest
+FROM $CORE_PREFIX/deepracer-robomaker-build-core:latest
 
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Create directory
+mkdir -p $XDG_RUNTIME_DIR ~/.gazebo
+touch ~/.gazebo/gui.ini
+
 # Initialize ROS & the Bundle
 export IGN_IP=127.0.0.1
 source /opt/ros/${ROS_DISTRO}/setup.bash

@@ -2,8 +2,7 @@
 .venv/
 __pycache__/
 *.py[cod]
-bundle-src/
-bundle/install/
-bundle/log/
-bundle/build/
+install/
+build/
+log/
 bundle/meshes/Singapore/textures/Singapore_Track_Pre-Production.psd
