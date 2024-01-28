@@ -28,11 +28,11 @@ VERSION=$(cat $DIR/VERSION)
 if [ -n "${OPT_CORE}" ];
 then
         echo "Preparing core builder image..."
-        docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-core:latest -f docker/Dockerfile.core . 
+        docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-core:latest -f docker/Dockerfile.build-core . 
 fi
 
-echo "Preparing devel image..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-devel:latest -f docker/Dockerfile.devel --build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) . 
+echo "Preparing devel image for user $(id -u)..."
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-devel:latest -f docker/Dockerfile.localuser --build-arg FROM_IMG=${PREFIX}/deepracer-robomaker-build-core:latest --build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) . 
 
 echo "Building development build of bundle into $(pwd)/bundle..."
 docker run --rm -ti -v $(pwd)/bundle:/opt/bundle ${PREFIX}/deepracer-robomaker-devel:latest bash -c 'colcon build'

@@ -7,7 +7,7 @@
 ARG FROM_TAG
 FROM awsdeepracercommunity/deepracer-robomaker:${FROM_TAG}
 
-COPY bundle /opt/install
+COPY bundle/install /opt/install
 COPY ./docker/files/run.sh run.sh
 COPY ./docker/files/devel.sh devel.sh
 

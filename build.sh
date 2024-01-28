@@ -32,10 +32,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 VERSION=$(cat $DIR/VERSION)
 
 echo "Preparing core builder image..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-core:latest -f docker/Dockerfile.core . 
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-core:latest -f docker/Dockerfile.build-core . 
 
 echo "Preparing bundle distribution..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-bundle:latest -f docker/Dockerfile.bundle --build-arg BUILDER_PREFIX=${PREFIX} .
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-bundle:latest -f docker/Dockerfile.build-bundle --build-arg BUILDER_PREFIX=${PREFIX} .
 
 echo "Preparing docker images for [$ARCH]"
 
