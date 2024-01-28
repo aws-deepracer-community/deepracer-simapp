@@ -48,5 +48,5 @@ Tensorflow has been built with the following parameters:
 
 ## Development build
 
-To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. Through using a build container it will create a `./install` directory that can be mounted in Robomaker. Use it with `-c` to create the initial build image (a Docker image with ROS and all required pre-requisite packages installed), as well as to execute the build. To speed up subsequent builds then execute it without `-c` to avoid rebuilding the image if only minor changes have been made to the code.
+To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `build-dev-bundle.sh` script. Through using a build container it will create a `./install` directory that can be mounted in Robomaker. Use it with `-c` to create the initial build image (a Docker image with ROS and all required pre-requisite packages installed), as well as to execute the build. To speed up subsequent builds then execute it without `-c` to avoid rebuilding the image if only minor changes have been made to the code.
 
