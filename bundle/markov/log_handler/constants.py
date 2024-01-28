@@ -1,5 +1,9 @@
 '''This module houses the constants for the log_handler package'''
 
+# Useful for syncing between Node monitor and markov variables
+from os.path import expanduser
+home = expanduser("~")
+
 # Names of the exceptions, errors generated
 SIMAPP_SIMULATION_WORKER_EXCEPTION = "simulation_worker.exceptions"
 SIMAPP_TRAINING_WORKER_EXCEPTION = "training_worker.exceptions"
@@ -14,6 +18,7 @@ SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION = "kinesis_video_camera.excepti
 SIMAPP_ERROR_HANDLER_EXCEPTION = "error_handler.exceptions"
 SIMAPP_CAR_NODE_EXCEPTION = "car_node.exceptions"
 SIMAPP_VIRTUAL_EVENT_RACE_EXCEPTION = "virtual_event_race.exceptions"
+SIMAPP_ROS_NODE_MONITOR_EXCEPTION = "node_monitor.exceptions"
 
 # Type of errors
 SIMAPP_EVENT_SYSTEM_ERROR = "system_error"
@@ -135,7 +140,8 @@ UNCLASSIFIED_FAULT_CODE = "0"
 ERROR_HANDLER_EXCEPTION_FAULT_CODE = "1"
 
 # Synchronization file used in exception_handler.py
-EXCEPTION_HANDLER_SYNC_FILE = "EXCEPTION_HANDLER_SYNC_FILE"
+EXCEPTION_HANDLER_SYNC_FILE = home + "EXCEPTION_HANDLER_SYNC_FILE"
+STOP_ROS_NODE_MONITOR_SYNC_FILE = home + "STOP_NODE_MONITOR_FILE"
 
 # SageOnly jobs PID files
 SAGEONLY_SIMAPP_JOB_PID_FILE_PATH = "/opt/ml/simapp-job.pid"

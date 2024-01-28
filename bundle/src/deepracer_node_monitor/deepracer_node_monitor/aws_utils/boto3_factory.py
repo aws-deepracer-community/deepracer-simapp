@@ -20,7 +20,7 @@ import boto3
 
 from deepracer_node_monitor.aws_utils.constants import (
     BOTO_MAX_RETRY_ATTEMPTS, BOTO_RETRY_CONNECT_TIMEOUT)
-from deepracer_node_monitor.aws_utils.robomaker_utils import RoboMakerUtils
+from deepracer_node_monitor.aws_utils.job_utils import JobUtils
 
 
 class Boto3Factory(object):
@@ -45,6 +45,6 @@ class Boto3Factory(object):
         # aws-cli/1.18.69 does not have mode="standard" option for retries
         # TODO - when awscli is upgraded to 2.0, make sure to add the mode="standard"
         return boto3.Session().client(client_name,
-                                      region_name=RoboMakerUtils.get_aws_region(),
+                                      region_name=JobUtils.get_aws_region(),
                                       config=botocore.config.Config(retries=dict(max_attempts=BOTO_MAX_RETRY_ATTEMPTS),
                                                                     connect_timeout=BOTO_RETRY_CONNECT_TIMEOUT))

@@ -228,6 +228,10 @@ def main():
                         help='(string) AWS region',
                         type=str,
                         default=os.environ.get("AWS_REGION", "us-east-1"))
+    parser.add_argument('--max_memory_steps',
+                        help='(int) Max steps per iteration',
+                        type=int,
+                        default=0)
     parser.add_argument('--cuda_visible_devices',
                         help='(string) Cuda Visible Devices',
                         type=str,
@@ -236,6 +240,10 @@ def main():
     args, _ = parser.parse_known_args()
     logger.info("Training Worker Args: %s" % args)
     logger.info("S3 bucket: %s \n S3 prefix: %s \n S3 endpoint URL: %s", args.s3_bucket, args.s3_prefix, args.s3_endpoint_url)
+
+    if args.max_memory_steps > 0:
+        logger.info("Setting max memory steps to %i" % args.max_memory_steps)
+        os.environ['MAX_MEMORY_STEPS'] = str(args.max_memory_steps)
 
     if args.cuda_visible_devices is not None:
         logger.info("Setting CUDA visible device to {}".format(args.cuda_visible_devices))

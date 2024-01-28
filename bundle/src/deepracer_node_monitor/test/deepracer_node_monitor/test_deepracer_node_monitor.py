@@ -23,7 +23,10 @@ import sys
 sys.modules['rosnode'] = MagicMock()
 sys.modules['botocore.config'] = MagicMock()
 sys.modules['boto3'] = MagicMock()
-
+sys.modules['markov.log_handler.constants'] = MagicMock()
+sys.modules['markov.log_handler.exception_handler'] = MagicMock()
+sys.modules['markov.utils'] = MagicMock()
+sys.modules['markov.constants'] = MagicMock()
 
 from deepracer_node_monitor import DeepRacerNodeMonitor
 from deepracer_node_monitor.constants import (
@@ -118,16 +121,14 @@ class DeepRacerNodeMonitorTest(TestCase):
         Boto3Factory_mock.create_boto3_client.assert_not_called()
         Boto3Factory_mock.create_boto3_client(Boto3Client.S3).put_object.assert_not_called()
 
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
+    @patch("deepracer_node_monitor.deepracer_node_monitor.JobUtils.get_job_id")
     @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
     def test_write_cw_metrics(self, CloudWatchJobStatusMetricDimensionData_mock,
-                              get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
+                              get_job_id_mock,
                               Boto3Factory_mock, rlock_mock):
         deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
         deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = True
-        get_deepracer_owner_id_mock.return_value = "test_owner_id"
-        get_robomaker_simapp_id_mock.return_value = "test_simapp_id"
+        get_job_id_mock.return_value = "test_simapp_id"
         Boto3Factory_mock.create_boto3_client = MagicMock()
         Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data = MagicMock()
         CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
@@ -140,37 +141,14 @@ class DeepRacerNodeMonitorTest(TestCase):
             call(Namespace=CW_METRIC_NAMESPACE, MetricData=[{"cw_metric_data_jobstatus_owner_simapp_id_mock": "hello"}])
         ])
 
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
-    def test_write_cw_metrics_empty_owner_id(self, CloudWatchJobStatusMetricDimensionData_mock,
-                                             get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
-                                             Boto3Factory_mock, rlock_mock):
-        deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
-        deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = True
-        get_deepracer_owner_id_mock.return_value = ""
-        get_robomaker_simapp_id_mock.return_value = "test_simapp_id"
-        CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
-            {"cw_metric_data_jobstatus": "hi"},
-            {"cw_metric_data_jobstatus_owner_simapp_id_mock": "hello"}
-        ]
-        Boto3Factory_mock.create_boto3_client = MagicMock()
-        Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data = MagicMock()
-        deepracer_node_monitor._write_cw_metrics("SUCCESS")
-        Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data.assert_has_calls([
-            call(Namespace=CW_METRIC_NAMESPACE, MetricData=[{"cw_metric_data_jobstatus": "hi"}])
-        ])
-
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
+    @patch("deepracer_node_monitor.deepracer_node_monitor.JobUtils.get_job_id")
     @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
     def test_write_cw_metrics_empty_simapp_id(self, CloudWatchJobStatusMetricDimensionData_mock,
-                                              get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
+                                              get_job_id_mock,
                                               Boto3Factory_mock, rlock_mock):
         deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
         deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = True
-        get_deepracer_owner_id_mock.return_value = "test_owner_id"
-        get_robomaker_simapp_id_mock.return_value = ""
+        get_job_id_mock.return_value = ""
         CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
             {"cw_metric_data_jobstatus": "hi"},
             {"cw_metric_data_jobstatus_owner_simapp_id_mock": "hello"}
@@ -182,37 +160,14 @@ class DeepRacerNodeMonitorTest(TestCase):
             call(Namespace=CW_METRIC_NAMESPACE, MetricData=[{"cw_metric_data_jobstatus": "hi"}])
         ])
 
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
-    def test_write_cw_metrics_empty_owner_simapp_id(self, CloudWatchJobStatusMetricDimensionData_mock,
-                                                    get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
-                                                    Boto3Factory_mock, rlock_mock):
-        deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
-        deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = True
-        get_deepracer_owner_id_mock.return_value = ""
-        get_robomaker_simapp_id_mock.return_value = ""
-        CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
-            {"cw_metric_data_jobstatus": "hi"},
-            {"cw_metric_data_jobstatus_owner_simapp_id_mock": "hello"}
-        ]
-        Boto3Factory_mock.create_boto3_client = MagicMock()
-        Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data = MagicMock()
-        deepracer_node_monitor._write_cw_metrics("SUCCESS")
-        Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data.assert_has_calls([
-            call(Namespace=CW_METRIC_NAMESPACE, MetricData=[{"cw_metric_data_jobstatus": "hi"}])
-        ])
-
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
+    @patch("deepracer_node_monitor.deepracer_node_monitor.JobUtils.get_job_id")
     @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
     def test_write_cw_metrics_empty_all(self, CloudWatchJobStatusMetricDimensionData_mock,
-                                        get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
+                                        get_job_id_mock,
                                         Boto3Factory_mock, rlock_mock):
         deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
         deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = True
-        get_deepracer_owner_id_mock.return_value = ""
-        get_robomaker_simapp_id_mock.return_value = ""
+        get_job_id_mock.return_value = ""
         CloudWatchJobStatusMetricDimensionData_mock = MagicMock()
         CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
             {"cw_metric_data_jobstatus": "hi"},
@@ -223,16 +178,14 @@ class DeepRacerNodeMonitorTest(TestCase):
         deepracer_node_monitor._write_cw_metrics("")
         Boto3Factory_mock.create_boto3_client(Boto3Client.CLOUDWATCH).put_metric_data.assert_not_called()
 
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_deepracer_owner_id")
-    @patch("deepracer_node_monitor.deepracer_node_monitor.RoboMakerUtils.get_robomaker_simapp_id")
+    @patch("deepracer_node_monitor.deepracer_node_monitor.JobUtils.get_job_id")
     @patch("deepracer_node_monitor.deepracer_node_monitor.CloudWatchJobStatusMetricDimensionData")
     def test_write_cw_metrics_heartbeat_disabled(self, CloudWatchJobStatusMetricDimensionData_mock,
-                                                 get_robomaker_simapp_id_mock, get_deepracer_owner_id_mock,
+                                                 get_job_id_mock,
                                                  Boto3Factory_mock, rlock_mock):
         deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
         deepracer_node_monitor._is_heartbeat_cw_publisher_enabled = False
-        get_deepracer_owner_id_mock.return_value = ""
-        get_robomaker_simapp_id_mock.return_value = ""
+        get_job_id_mock.return_value = ""
         CloudWatchJobStatusMetricDimensionData_mock = MagicMock()
         CloudWatchJobStatusMetricDimensionData_mock().to_cloudwatch_dict.side_effect = [
             {"cw_metric_data_jobstatus": "hi"},
@@ -251,7 +204,7 @@ class DeepRacerNodeMonitorTest(TestCase):
         deepracer_node_monitor._write_cw_metrics = MagicMock()
         deepracer_node_monitor.on_dead_node_update(node_monitor_mock, set({"dead_node"}))
         deepracer_node_monitor._upload_s3_job_status.assert_called_once_with(
-            JobStatus.FAILED, JobStatusMsg.FAILED)
+            JobStatus.FAILED, JobStatusMsg.FAILED + " Dead nodes are: {\'dead_node\'}")
         deepracer_node_monitor._write_cw_metrics.assert_called_once_with(JobStatus.FAILED)
 
     @patch("deepracer_node_monitor.deepracer_node_monitor.NodeMonitor")
@@ -316,33 +269,6 @@ class DeepRacerNodeMonitorTest(TestCase):
     def test_monitor_nodes_Property(self, Boto3Factory_mock, rlock_mock):
         deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
         self.assertEqual(deepracer_node_monitor.monitor_nodes, self.monitor_nodes)
-
-    @patch("deepracer_node_monitor.deepracer_node_monitor.NodeMonitor")
-    def test_on_no_status_change(self, node_monitor_mock,
-                                 Boto3Factory_mock, rlock_mock):
-        deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
-        deepracer_node_monitor._upload_s3_job_status = MagicMock()
-        deepracer_node_monitor._write_cw_metrics = MagicMock()
-        deepracer_node_monitor._is_dead_node_detected = False
-        deepracer_node_monitor._job_status = JobStatus.RUNNING
-        deepracer_node_monitor._job_status_msg = JobStatusMsg.RUNNING
-        deepracer_node_monitor.on_no_status_change(node_monitor_mock)
-        deepracer_node_monitor._upload_s3_job_status.assert_called_once_with(
-            JobStatus.RUNNING, JobStatusMsg.RUNNING)
-        deepracer_node_monitor._write_cw_metrics.assert_called_once_with(JobStatus.RUNNING)
-
-    @patch("deepracer_node_monitor.deepracer_node_monitor.NodeMonitor")
-    def test_on_no_status_change_dead_node(self, node_monitor_mock,
-                                           Boto3Factory_mock, rlock_mock):
-        deepracer_node_monitor = DeepRacerNodeMonitor(monitor_nodes=self.monitor_nodes)
-        deepracer_node_monitor._upload_s3_job_status = MagicMock()
-        deepracer_node_monitor._write_cw_metrics = MagicMock()
-        deepracer_node_monitor._is_dead_node_detected = True
-        deepracer_node_monitor._job_status = JobStatus.RUNNING
-        deepracer_node_monitor._job_status_msg = JobStatusMsg.RUNNING
-        deepracer_node_monitor.on_no_status_change(node_monitor_mock)
-        deepracer_node_monitor._upload_s3_job_status.assert_not_called()
-        deepracer_node_monitor._write_cw_metrics.assert_not_called()
 
     @patch("deepracer_node_monitor.deepracer_node_monitor.NodeMonitor")
     def test_check_all_monitor_nodes_running(self, node_monitor_mock,

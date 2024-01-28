@@ -13,25 +13,45 @@
 #   See the License for the specific language governing permissions and         #
 #   limitations under the License.                                              #
 #################################################################################
-""" Constant module """
-
-# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/retries.html for more retries info
-# retry attempts with default 5 for legacy and 3 for standard
-BOTO_MAX_RETRY_ATTEMPTS = 5
-# retry connect timeout with default as 60
-BOTO_RETRY_CONNECT_TIMEOUT = 60
+""" Utils for the RoboMaker/Sagemaker functions"""
+import os
 
 
-class Boto3Client(object):
+class JobUtils(object):
     """
-    Boto3Clients like s3, cloudwatch
+    Static class for robomaker/sagemaker utils
     """
-    S3 = "s3"
-    CLOUDWATCH = "cloudwatch"
+    @staticmethod
+    def get_simulation_arn() -> str:
+        """
+        Returns the RoboMaker/Sagemaker simulation arn set as environment variable when simulation is started
 
+        Returns
+            str: Environment variable set for AWS_ROBOMAKER_SIMULATION_JOB_ARN/AWS_SAGEMAKER_TRAINING_JOB_ARN
+        """
+        
+        return os.environ.get('AWS_ROBOMAKER_SIMULATION_JOB_ARN', '')
 
-CW_METRIC_NAMESPACE = "AwsSilverstoneSimApp"
+    @staticmethod
+    def get_job_id() -> str:
+        """
+        Parse the simulation id from the RoboMaker/Sagemaker ARN
 
-CW_TRAINING_METRIC_NAME = "TRAINING_START"
-CW_EVALUATION_METRIC_NAME = "EVALUATION_START"
-CW_LEADERBOARD_METRIC_NAME = "LEADERBOARD_SUBMISSION_START"
+        Returns
+            str: Simulation ID for the RoboMaker/Sagemaker job
+        """
+        if(os.environ.get('SERVICE_TYPE','') == 'SAGEMAKER'):
+            return os.environ.get('TRAINING_JOB_NAME', '')
+        
+        simulation_arn = JobUtils.get_simulation_arn()
+        return simulation_arn.split("/")[-1]
+
+    @staticmethod
+    def get_aws_region() -> str:
+        """
+        Returns aws region from ACM_REGION env
+
+        Returns
+            str: returns aws_region from ACM_REGION env
+        """
+        return os.environ.get('ACM_REGION', 'us-east-1')
