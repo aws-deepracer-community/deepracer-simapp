@@ -30,23 +30,11 @@ New in 2023 is that the OpenGL images are no longer needed; the required drivers
 
 ### Version 5
 
-Version 5 is the release version for 2022. It will only receive track fixes.
+Version 5 was the release version for 2022, it is now deprecated.
 
 | Version  | Comment         | AVX      | AVX2     | GPU      |
 | -------- | -------------- | -------- | -------- | -------- | 
-| 5.0.0       | Initial release  |  `5.0.0-cpu-avx` `5.0.0-cpu-gl-avx`  | `5.0.0-cpu-avx2` `5.0.0-cpu-gl-avx2` | `5.0.0-gpu` `5.0.0-gpu-gl` |
-| 5.0.1       | April Track  |  `5.0.1-cpu-avx` `5.0.1-cpu-gl-avx`  | `5.0.1-cpu-avx2` `5.0.1-cpu-gl-avx2` | `5.0.1-gpu` `5.0.1-gpu-gl` |
-| 5.0.2       | May Track  |  `5.0.2-cpu-avx` `5.0.2-cpu-gl-avx`  | `5.0.2-cpu-avx2` `5.0.2-cpu-gl-avx2` | `5.0.2-gpu` `5.0.2-gpu-gl` |
-| 5.0.3      | June Track  |  `5.0.3-cpu-avx` `5.0.3-cpu-gl-avx`  | `5.0.3-cpu-avx2` `5.0.3-cpu-gl-avx2` | `5.0.3-gpu` `5.0.3-gpu-gl` |
-| 5.0.4      | July Track  |  `5.0.4-cpu-avx` `5.0.4-cpu-gl-avx`  | `5.0.4-cpu-avx2` `5.0.4-cpu-gl-avx2` | `5.0.4-gpu` `5.0.4-gpu-gl` |
-| 5.0.5      | August Track  |  `5.0.5-cpu-avx` `5.0.5-cpu-gl-avx`  | `5.0.5-cpu-avx2` `5.0.5-cpu-gl-avx2` | `5.0.5-gpu` `5.0.5-gpu-gl` |
-| 5.0.6      | September Track  |  `5.0.6-cpu-avx` `5.0.6-cpu-gl-avx`  | `5.0.6-cpu-avx2` `5.0.6-cpu-gl-avx2` | `5.0.6-gpu` `5.0.6-gpu-gl` |
-| 5.0.7      | October & Reinvent 2022 Tracks  |  `5.0.7-cpu-avx` `5.0.7-cpu-gl-avx`  | `5.0.7-cpu-avx2` `5.0.7-cpu-gl-avx2` | `5.0.7-gpu` `5.0.7-gpu-gl` |
-| 5.0.8      | Updates to Reinvent 2022 Tracks  |  `5.0.8-cpu-avx` `5.0.8-cpu-gl-avx`  | `5.0.8-cpu-avx2` `5.0.8-cpu-gl-avx2` | `5.0.8-gpu` `5.0.8-gpu-gl` |
-| 5.0.9      | Minor updates and fixes  |  `5.0.9-cpu-avx` `5.0.9-cpu-gl-avx`  | `5.0.9-cpu-avx2` `5.0.9-cpu-gl-avx2` | `5.0.9-gpu` `5.0.9-gpu-gl` |
-| 5.0.10 (*)     | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
-
-(*) 5.0.10 received a patch on 15-MAR-2023 due to a correction of the `arctic_pro_ccw` and `arctic_pro_cw` tracks.
+| 5.0.10     | Tracks expanded with CW and CCW tracks  |  `5.0.10-cpu-avx` `5.0.10-cpu-gl-avx`  | `5.0.10-cpu-avx2` `5.0.10-cpu-gl-avx2` | `5.0.10-gpu` `5.0.10-gpu-gl` |
 
 ## Building the image
 
@@ -54,7 +42,7 @@ A build script is available as `build.sh`. By default all three images will be b
 
 ## Development build
 
-To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. Through using a build container it will create a `bundle/install` directory that can be mounted in Robomaker. Use it with `-c` to create the initial build image (a Docker image with ROS and all required pre-requisite packages installed), as well as to execute the build. To speed up subsequent builds then execute it without `-c` to avoid rebuilding the image if only minor changes have been made to the code.
+To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `bundle-dev-build.sh` script. Through using a build container it will create a `./install` directory that can be mounted in Robomaker. Use it with `-c` to create the initial build image (a Docker image with ROS and all required pre-requisite packages installed), as well as to execute the build. To speed up subsequent builds then execute it without `-c` to avoid rebuilding the image if only minor changes have been made to the code.
 
 ### Tensorflow build
 
