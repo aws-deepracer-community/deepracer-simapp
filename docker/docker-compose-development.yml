@@ -7,7 +7,7 @@ networks:
 
 services:
   robomaker:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.localuser
       args:
@@ -15,10 +15,10 @@ services:
         USERNAME: $USER
         USER_UID: $USER_UID
         USER_GID: $USER_GID
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["/opt/files/devel.sh"]
+    entrypoint: [ "/bin/bash", "-c" ]
+    command: [ "/opt/files/devel.sh" ]
     ports:
-       - "5900:5900"
+      - "5900:5900"
     environment:
       - DISPLAY
       - DR_WORLD_NAME
