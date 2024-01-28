@@ -36,8 +36,12 @@ done
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 VERSION=$(cat $DIR/VERSION)
 
-echo "Preparing core builder image..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-core:latest -f docker/Dockerfile.build-core .
+if [ "$(docker images -q ${PREFIX}/deepracer-robomaker-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
+    echo "Preparing core builder image ${PREFIX}/deepracer-robomaker-build-core:latest..."
+    docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-core:latest -f docker/Dockerfile.build-core .
+else
+    echo "Core builder image ${PREFIX}/deepracer-robomaker-build-core:latest already exists."
+fi
 
 echo "Preparing bundle distribution..."
 docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-bundle:latest -f docker/Dockerfile.build-bundle --build-arg BUILDER_PREFIX=${PREFIX} .
