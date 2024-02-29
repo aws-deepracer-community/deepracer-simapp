@@ -15,6 +15,7 @@
 #
 
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from rl_coach.architectures.tensorflow_components.layers import Dense
 from rl_coach.architectures.tensorflow_components.heads.head import Head
@@ -24,6 +25,7 @@ from rl_coach.spaces import SpacesDefinition
 from rl_coach.utils import eps
 import numpy as np
 
+tf.compat.v1.disable_eager_execution()
 
 class SACPolicyHead(Head):
     def __init__(self, agent_parameters: AgentParameters, spaces: SpacesDefinition, network_name: str,
@@ -42,7 +44,7 @@ class SACPolicyHead(Head):
 
     def _build_module(self, input_layer):
         # DH TODO: check shape of self.num_actions. It should be int
-        self.given_raw_actions = tf.placeholder(tf.float32, [None, self.num_actions], name="actions")
+        self.given_raw_actions = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions[0]], name="actions")
         self.input = [self.given_raw_actions]
         self.output = []
 
@@ -60,8 +62,7 @@ class SACPolicyHead(Head):
 
         # define the distributions for the policy
         # Tensorflow's multivariate normal distribution supports reparameterization
-        tfd = tf.contrib.distributions
-        self.policy_distribution = tfd.MultivariateNormalDiag(loc=self.policy_mean,
+        self.policy_distribution = tfp.distributions.MultivariateNormalDiag(loc=self.policy_mean,
                                                               scale_diag=tf.exp(self.policy_log_std))
 
         # define network outputs
@@ -82,13 +83,13 @@ class SACPolicyHead(Head):
             # adjust raw_mean to mean by tanh and scale; apply scale to actions; squash trick on prob. with scale
             # NOTE: self.action used to compute sampled_actions_logprob is tanh(self.raw_action)
             self.sampled_actions_logprob = self.policy_distribution.log_prob(self.raw_actions) - \
-                                           tf.reduce_sum(tf.log(tf.clip_by_value((self.action_scale * (1 - self.actions ** 2) + eps), 1e-10, 1.0)),
+                                           tf.reduce_sum(tf.math.log(tf.clip_by_value((self.action_scale * (1 - self.actions ** 2) + eps), 1e-10, 1.0)),
                                                          axis=1)
             self.policy_mean = self.action_scale * tf.tanh(self.policy_mean) + self.action_bias
             self.actions = self.action_scale * self.actions + self.action_bias
         else:
             self.sampled_actions_logprob = self.policy_distribution.log_prob(self.raw_actions) - \
-                                   tf.reduce_sum(tf.log(tf.clip_by_value((1 - self.actions ** 2) + eps), 1e-10, 1.0), axis=1)
+                                   tf.reduce_sum(tf.math.log(tf.clip_by_value((1 - self.actions ** 2) + eps), 1e-10, 1.0), axis=1)
             self.policy_mean = tf.tanh(self.policy_mean)
         # ---------------------------------------------------------------------------------------------------------
         self.sampled_actions_logprob_mean = tf.reduce_mean(self.sampled_actions_logprob)

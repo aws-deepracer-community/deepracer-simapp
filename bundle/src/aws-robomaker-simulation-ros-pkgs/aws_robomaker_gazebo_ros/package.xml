@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>aws_robomaker_gazebo_ros</name>
+  <version>1.0.0</version>
+  <description>
+    AWS RoboMaker package containing launch files that facilitate using Gazebo with RoboMaker runtime capabilities.
+  </description>
+  <license>Apache 2.0</license>
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo</exec_depend>
+
+  <export>
+    <build_type>catkin</build_type>
+  </export>
+</package>
