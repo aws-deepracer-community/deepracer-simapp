@@ -19,10 +19,10 @@ class Attention(object):
            is_training - This is to adhere to rl_coach's expected function signature, it is
                          not used in this layer.
         '''
-        score_weights = tf.layers.dense(input_layer, self.units, name="Score_{}".format(name),
+        score_weights = tf.compat.v1.layers.dense(input_layer, self.units, name="Score_{}".format(name),
                                         kernel_initializer=kernel_initializer, activation=None)
         score_activation = tf.nn.tanh(score_weights)
-        attention_weights = tf.layers.dense(score_activation, 1, name="Attention_{}".format(name),
+        attention_weights = tf.compat.v1.layers.dense(score_activation, 1, name="Attention_{}".format(name),
                                             kernel_initializer=kernel_initializer, activation=None)
         attention_weights_activation = tf.nn.softmax(attention_weights)
         context_vector = tf.multiply(attention_weights_activation, input_layer)

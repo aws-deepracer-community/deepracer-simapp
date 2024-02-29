@@ -88,7 +88,7 @@ class Conv2dWithAttention(object):
         #input_layer = tf.reshape(tensor=input_layer, shape=(-1,64,4,2))
         #print (input_layer.shape)
 
-        conv = tf.layers.conv2d(input_layer, filters=self.num_filters, kernel_size=self.kernel_size,strides=self.strides, data_format='channels_last', name=name)
+        conv = tf.compat.v1.layers.conv2d(input_layer, filters=self.num_filters, kernel_size=self.kernel_size,strides=self.strides, data_format='channels_last', name=name)
         W1 = Dense(self.units)
         V = Dense(1)
         score = tf.nn.tanh(W1(conv)) 

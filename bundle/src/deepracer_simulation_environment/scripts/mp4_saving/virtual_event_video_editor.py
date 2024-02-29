@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ##############################################################
 #                                                            #
 #   Copyright 2019 Amazon.com, Inc. or its affiliates.       #
@@ -9,7 +9,7 @@ import sys
 import time
 import logging
 from threading import Thread, Condition
-from Queue import Queue
+from queue import Queue
 import cv2
 import rospy
 from std_srvs.srv import Empty

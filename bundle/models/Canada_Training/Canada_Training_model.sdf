@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.4">
+<sdf version="1.7">
 <model name="Canada_Training_model">
 <link name="Canada_track_building_city_01Link">
 <collision name="collision">

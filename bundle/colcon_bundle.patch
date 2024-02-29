@@ -1,0 +1,13 @@
+diff --git a/colcon_bundle/installer/base_pip_installer.py b/colcon_bundle/installer/base_pip_installer.py
+index 77f7bdd..4ca8fb1 100644
+--- a/colcon_bundle/installer/base_pip_installer.py
++++ b/colcon_bundle/installer/base_pip_installer.py
+@@ -84,7 +84,7 @@ class BasePipInstallerExtensionPoint(BundleInstallerExtensionPoint):
+         python_pip_args = [self._python_path, '-m', 'pip']
+         pip_install_args = python_pip_args + ['install']
+         subprocess.check_call(
+-            pip_install_args + ['-U', 'pip', 'setuptools==44.0.0'])
++            pip_install_args + ['setuptools==44.0.0'])
+ 
+         with open(requirements_file, 'w') as req:
+             for name in self._packages:

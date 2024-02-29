@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.4">
+<sdf version="1.7">
 <model name="New_YorkAlt_Track_model">
 <link name="bldg_city_01Link">
 <collision name="collision">
