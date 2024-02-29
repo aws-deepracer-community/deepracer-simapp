@@ -66,6 +66,10 @@ from std_srvs.srv import Empty, EmptyRequest
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
+## Suppress unnecessary logs from these modules
+logging.getLogger('rl_coach').setLevel(logging.ERROR)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
 MIN_EVAL_TRIALS = 5
 
 CUSTOM_FILES_PATH = "./custom_files"

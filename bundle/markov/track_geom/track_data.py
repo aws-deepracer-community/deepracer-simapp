@@ -30,7 +30,6 @@ class TrackLine(object):
         self.line = line
         self.ndists = [self.line.project(Point(p), normalized=True)
                        for p in self.line.coords[:-1]] + [1.0]
-
     def __getattr__(self, name):
         return getattr(self.line, name)
 

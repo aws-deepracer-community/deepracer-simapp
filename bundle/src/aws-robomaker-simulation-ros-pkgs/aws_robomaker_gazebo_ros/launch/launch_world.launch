@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="gui" default="$(arg gui)"/>
+  <arg name="world_name" default="$(arg world_name)"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="extra_gazebo_args" default=""/>
+  <arg name="recording" default="false"/>
+  <arg name="physics" default="ode"/>
+  <arg name="verbose" default="false"/>
+  <arg name="output" default="screen"/>
+  <arg name="respawn_gazebo" default="false"/>
+  <arg name="use_clock_frequency" default="false"/>
+  <arg name="pub_clock_frequency" default="100"/>
+  <arg name="server_required" default="false"/>
+
+  <!-- set use_sim_time flag -->
+  <param name="/use_sim_time" value="$(arg use_sim_time)"/>
+
+  <!-- set command arguments -->
+  <arg unless="$(arg gui)" name="gazebo_name" value="gzserver"/>
+  <arg     if="$(arg gui)" name="gazebo_name" value="gazebo"/>
+  <arg unless="$(arg paused)" name="paused_arg" value=""/>
+  <arg     if="$(arg paused)" name="paused_arg" value="-u"/>
+  <arg unless="$(arg recording)" name="recording_arg" value=""/>
+  <arg     if="$(arg recording)" name="recording_arg" value="-r"/>
+  <arg unless="$(arg verbose)" name="verbose_arg" value=""/>
+  <arg     if="$(arg verbose)" name="verbose_arg" value="--verbose"/>
+
+  <group if="$(arg use_clock_frequency)">
+    <param name="gazebo/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
+  </group>
+
+  <!-- start gazebo server-->
+  <node name="gazebo" pkg="aws_robomaker_gazebo_ros" type="robomaker_gazebo_wrapper.bash" respawn="$(arg respawn_gazebo)" output="$(arg output)"
+    args="$(arg gazebo_name) $(arg world_name) $(arg paused_arg) $(arg recording_arg) $(arg verbose_arg) -e $(arg physics) $(arg extra_gazebo_args)"
+    required="$(arg server_required)" />
+</launch>

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """script to download yaml param from S3 bucket to local directory and start training/eval ROS launch
 
@@ -165,7 +165,7 @@ def get_pid_list(cmd_names):
     sub_proc.stdout.readline()
     for line in sub_proc.stdout:
         # the separator for splitting is 'variable number of spaces'
-        proc_info = re.split(" *", line, 10)
+        proc_info = re.split("\s+", line.decode('utf-8'), 10)
         pid = proc_info[1]
         cmd = proc_info[10]
         for cmd_name in cmd_names:

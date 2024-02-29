@@ -53,6 +53,10 @@ from std_srvs.srv import Empty, EmptyRequest
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
+## Suppress unnecessary logs from these modules
+logging.getLogger('rl_coach').setLevel(logging.ERROR)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
 MIN_RESET_COUNT = 10000 #TODO: change when console passes float("inf")
 
 IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = get_robomaker_profiler_env()
@@ -135,6 +139,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
     handle_job_completion()
 
 def handle_job_completion():
+    logger.info("Evaluation job complete")
     utils.stop_ros_node_monitor()
 
 def main():

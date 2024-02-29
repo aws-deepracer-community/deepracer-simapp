@@ -208,18 +208,18 @@ class TensorflowModel():
             with open(tf_checkpoint_file, "w") as outfile:
                 outfile.write("model_checkpoint_path: \"{}\"".format(checkpoint_name))
 
-            with tf.Session() as sess:
-                for var_name, _ in tf.contrib.framework.list_variables(self._local_dir):
+            with tf.compat.v1.Session() as sess:
+                for var_name, _ in tf.train.list_variables(self._local_dir):
                     # Load the variable
-                    var = tf.contrib.framework.load_variable(self._local_dir, var_name)
+                    var = tf.train.load_variable(self._local_dir, var_name)
                     new_name = var_name
                     # Set the new name
                     # Replace agent/ or agent_#/ with {agent_name}/
                     new_name = re.sub('agent/|agent_\d+/', '{}/'.format(agent_name), new_name)
                     # Rename the variable
                     var = tf.Variable(var, name=new_name)
-                saver = tf.train.Saver()
-                sess.run(tf.global_variables_initializer())
+                saver = tf.compat.v1.train.Saver()
+                sess.run(tf.compat.v1.global_variables_initializer())
                 renamed_checkpoint_path = os.path.join(TEMP_RENAME_FOLDER, checkpoint_name)
                 LOG.info('Saving updated checkpoint to {}'.format(renamed_checkpoint_path))
                 saver.save(sess, renamed_checkpoint_path)
@@ -236,7 +236,7 @@ class TensorflowModel():
                     shutil.copy(full_file_name, self._local_dir)
             # Remove files from temp_rename_folder
             shutil.rmtree(TEMP_RENAME_FOLDER)
-            tf.reset_default_graph()
+            tf.compat.v1.reset_default_graph()
         # If either of the checkpoint files (index, meta or data) not found
         except tf.errors.NotFoundError as err:
             log_and_exit("No checkpoint found: {}".format(err),
@@ -380,10 +380,10 @@ class TensorflowModel():
         if not os.path.exists(os.path.join(SM_MODEL_OUTPUT_DIR, agent_name)):
             os.makedirs(os.path.join(SM_MODEL_OUTPUT_DIR, agent_name))
         output_head = [self.output_head_format.format(agent_name)]
-        frozen = tf.graph_util.convert_variables_to_constants(sess[agent_name],
+        frozen = tf.compat.v1.graph_util.convert_variables_to_constants(sess[agent_name],
                                                               sess[agent_name].graph_def,
                                                               output_head)
-        tf.train.write_graph(frozen, os.path.join(SM_MODEL_PB_TEMP_FOLDER, agent_name),
+        tf.io.write_graph(frozen, os.path.join(SM_MODEL_PB_TEMP_FOLDER, agent_name),
                              'model_{}.pb'.format(iteration_id), as_text=False)
 
     def delete(self, coach_checkpoint_state_file, best_checkpoint):

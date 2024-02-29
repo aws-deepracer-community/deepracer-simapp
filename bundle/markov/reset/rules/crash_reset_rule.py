@@ -24,6 +24,6 @@ class CrashResetRule(AbstractResetRule):
         '''
         crashed_object_name = self._track_data.get_collided_object_name(
             self._agent_name)
-        self._done = crashed_object_name is not ''
+        self._done = crashed_object_name != ''
         return {AgentInfo.CRASHED_OBJECT_NAME.value: crashed_object_name,
                 AgentInfo.START_NDIST.value: agent_status[AgentCtrlStatus.START_NDIST.value]}

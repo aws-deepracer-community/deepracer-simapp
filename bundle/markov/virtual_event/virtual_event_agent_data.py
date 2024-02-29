@@ -157,7 +157,7 @@ class VirtualEventAgentData():
         for root, _, files in os.walk(LOCAL_MODEL_DIR):
             for f in files:
                 os.remove(os.path.join(root, f))
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
 
     def _download_model_metadata(self):
         """

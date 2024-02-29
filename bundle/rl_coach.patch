@@ -1,154 +1,3 @@
-diff --git a/rl_coach/agents/clipped_ppo_agent.py b/rl_coach/agents/clipped_ppo_agent.py
-index cc29f33..4f1a7d9 100644
---- a/rl_coach/agents/clipped_ppo_agent.py
-+++ b/rl_coach/agents/clipped_ppo_agent.py
-@@ -182,7 +182,7 @@ class ClippedPPOAgent(ActorCriticAgent):
-             screen.warning("WARNING: The requested policy gradient rescaler is not available")
- 
-         # standardize
--        advantages = (advantages - np.mean(advantages)) / np.std(advantages)
-+        advantages = (advantages - np.mean(advantages)) / (np.std(advantages) + 1e-8)
- 
-         for transition, advantage, value_target in zip(batch.transitions, advantages, value_targets):
-             transition.info['advantage'] = advantage
-diff --git a/rl_coach/architectures/architecture.py b/rl_coach/architectures/architecture.py
-index 90dbd6e..8d457a9 100644
---- a/rl_coach/architectures/architecture.py
-+++ b/rl_coach/architectures/architecture.py
-@@ -46,8 +46,9 @@ class Architecture(object):
-         """
-         self.spaces = spaces
-         self.name = name
--        self.network_wrapper_name = self.name.split('/')[0]  # e.g. 'main/online' --> 'main'
--        self.full_name = "{}/{}".format(agent_parameters.full_name_id, name)
-+        self.network_wrapper_name = self.name.split('/')[1]  # e.g. 'main/online' --> 'main'
-+        self.full_name = "{}/{}".format(agent_parameters.full_name_id, '/'.join(name.split('/')[1:]))
-+        # self.full_name = "{}/{}".format(agent_parameters.full_name_id, name)
-         self.network_parameters = agent_parameters.network_wrappers[self.network_wrapper_name]
-         self.batch_size = self.network_parameters.batch_size
-         self.learning_rate = self.network_parameters.learning_rate
-diff --git a/rl_coach/architectures/network_wrapper.py b/rl_coach/architectures/network_wrapper.py
-index dfefc41..a31dbf4 100644
---- a/rl_coach/architectures/network_wrapper.py
-+++ b/rl_coach/architectures/network_wrapper.py
-@@ -68,7 +68,7 @@ class NetworkWrapper(object):
-             self.global_network = general_network(variable_scope=variable_scope,
-                                                   devices=force_list(replicated_device),
-                                                   agent_parameters=agent_parameters,
--                                                  name='{}/global'.format(name),
-+                                                  name='{}/{}/global'.format(agent_parameters.name, name),
-                                                   global_network=None,
-                                                   network_is_local=False,
-                                                   spaces=spaces,
-@@ -79,7 +79,7 @@ class NetworkWrapper(object):
-         self.online_network = general_network(variable_scope=variable_scope,
-                                               devices=force_list(worker_device),
-                                               agent_parameters=agent_parameters,
--                                              name='{}/online'.format(name),
-+                                              name='{}/{}/online'.format(agent_parameters.name,name),
-                                               global_network=self.global_network,
-                                               network_is_local=True,
-                                               spaces=spaces,
-@@ -91,7 +91,7 @@ class NetworkWrapper(object):
-             self.target_network = general_network(variable_scope=variable_scope,
-                                                   devices=force_list(worker_device),
-                                                   agent_parameters=agent_parameters,
--                                                  name='{}/target'.format(name),
-+                                                  name='{}/{}/target'.format(agent_parameters.name, name),
-                                                   global_network=self.global_network,
-                                                   network_is_local=True,
-                                                   spaces=spaces,
-diff --git a/rl_coach/architectures/tensorflow_components/architecture.py b/rl_coach/architectures/tensorflow_components/architecture.py
-index 68420fe..1fcb912 100644
---- a/rl_coach/architectures/tensorflow_components/architecture.py
-+++ b/rl_coach/architectures/tensorflow_components/architecture.py
-@@ -97,7 +97,7 @@ class TensorFlowArchitecture(Architecture):
-         self.optimizer_type = self.network_parameters.optimizer_type
-         if self.ap.task_parameters.seed is not None:
-             tf.set_random_seed(self.ap.task_parameters.seed)
--        with tf.variable_scope("/".join(self.name.split("/")[1:]), initializer=tf.contrib.layers.xavier_initializer(),
-+        with tf.variable_scope("/".join(self.name.split("/")[2:]), initializer=tf.contrib.layers.xavier_initializer(),
-                                custom_getter=local_getter if network_is_local and global_network else None):
-             self.global_step = tf.train.get_or_create_global_step()
- 
-diff --git a/rl_coach/architectures/tensorflow_components/general_network.py b/rl_coach/architectures/tensorflow_components/general_network.py
-index 8821ac6..fc0b3ac 100644
---- a/rl_coach/architectures/tensorflow_components/general_network.py
-+++ b/rl_coach/architectures/tensorflow_components/general_network.py
-@@ -105,7 +105,7 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
-         """
-         self.global_network = global_network
-         self.network_is_local = network_is_local
--        self.network_wrapper_name = name.split('/')[0]
-+        self.network_wrapper_name = name.split('/')[1]
-         self.network_parameters = agent_parameters.network_wrappers[self.network_wrapper_name]
-         self.num_heads_per_network = 1 if self.network_parameters.use_separate_networks_per_head else \
-             len(self.network_parameters.heads_parameters)
-diff --git a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
-index 63f95a3..d476c10 100644
---- a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
-+++ b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
-@@ -25,6 +25,11 @@ from rl_coach.spaces import BoxActionSpace, DiscreteActionSpace
- from rl_coach.spaces import SpacesDefinition
- from rl_coach.utils import eps
- 
-+# Since we are using log prob it is possible to encounter a 0 log 0 condition
-+# which will tank the training by producing NaN's therefore it is necessary
-+# to add a zero offset to all networks with discreete distributions to prevent
-+# this isssue
-+ZERO_OFFSET = 1e-8
- 
- class PPOHead(Head):
-     def __init__(self, agent_parameters: AgentParameters, spaces: SpacesDefinition, network_name: str,
-@@ -107,7 +112,8 @@ class PPOHead(Head):
-         # Policy Head
-         self.input = [self.actions, self.old_policy_mean]
-         policy_values = self.dense_layer(num_actions)(input_layer, name='policy_fc')
--        self.policy_mean = tf.nn.softmax(policy_values, name="policy")
-+        # Prevent distributions with 0 values
-+        self.policy_mean = tf.maximum(tf.nn.softmax(policy_values, name="policy"), ZERO_OFFSET)
- 
-         # define the distributions for the policy and the old policy
-         self.policy_distribution = tf.contrib.distributions.Categorical(probs=self.policy_mean)
-@@ -123,9 +129,8 @@ class PPOHead(Head):
-         self.old_policy_std = tf.placeholder(tf.float32, [None, num_actions], "old_policy_std")
- 
-         self.input = [self.actions, self.old_policy_mean, self.old_policy_std]
--        self.policy_mean = self.dense_layer(num_actions)(input_layer, name='policy_mean',
--                                           kernel_initializer=normalized_columns_initializer(0.01))
--
-+        self.policy_mean = tf.identity(self.dense_layer(num_actions)(input_layer, name='policy_mean',
-+                                           kernel_initializer=normalized_columns_initializer(0.01)), name="policy")
-         # for local networks in distributed settings, we need to move variables we create manually to the
-         # tf.GraphKeys.LOCAL_VARIABLES collection, since the variable scope custom getter which is set in
-         # Architecture does not apply to them
-@@ -135,7 +140,7 @@ class PPOHead(Head):
-         else:
-             self.policy_logstd = tf.Variable(np.zeros((1, num_actions)), dtype='float32', name="policy_log_std")
- 
--        self.policy_std = tf.tile(tf.exp(self.policy_logstd), [tf.shape(input_layer)[0], 1], name='policy_std')
-+        self.policy_std = tf.tile(tf.exp(tf.clip_by_value(self.policy_logstd, -20.0, 3.0)), [tf.shape(input_layer)[0], 1], name='policy_std')
- 
-         # define the distributions for the policy and the old policy
-         self.policy_distribution = tf.contrib.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std + eps)
-diff --git a/rl_coach/architectures/tensorflow_components/savers.py b/rl_coach/architectures/tensorflow_components/savers.py
-index 531c523..4bde2ad 100644
---- a/rl_coach/architectures/tensorflow_components/savers.py
-+++ b/rl_coach/architectures/tensorflow_components/savers.py
-@@ -28,11 +28,11 @@ class GlobalVariableSaver(Saver):
-         self._names = [name]
-         # if graph is finalized, savers must have already already been added. This happens
-         # in the case of a MonitoredSession
--        self._variables = tf.global_variables()
-+        self._variables = tf.trainable_variables()
- 
-         # target network is never saved or restored directly from checkpoint, so we are removing all its variables from the list
-         # the target network would be synched back from the online network in graph_manager.improve(...), at the beginning of the run flow.
--        self._variables = [v for v in self._variables if "/target" not in v.name]
-+        self._variables = [v for v in self._variables if ('/target' not in v.name and name.split('/')[0]+'/'  in v.name)]
- 
-         # Using a placeholder to update the variable during restore to avoid memory leak.
-         # Ref: https://github.com/tensorflow/tensorflow/issues/4151
 diff --git a/rl_coach/agents/actor_critic_agent.py b/rl_coach/agents/actor_critic_agent.py
 index 35c8bf9..4f3ce60 100644
 --- a/rl_coach/agents/actor_critic_agent.py
@@ -312,6 +161,1428 @@ index 866fe8a..cf0873a 100644
                      and not self.ap.algorithm.store_transitions_only_when_episodes_are_terminated:
                  self.call_memory('store', transition)
  
+diff --git a/rl_coach/agents/clipped_ppo_agent.py b/rl_coach/agents/clipped_ppo_agent.py
+index cc29f33..4f1a7d9 100644
+--- a/rl_coach/agents/clipped_ppo_agent.py
++++ b/rl_coach/agents/clipped_ppo_agent.py
+@@ -182,7 +182,7 @@ class ClippedPPOAgent(ActorCriticAgent):
+             screen.warning("WARNING: The requested policy gradient rescaler is not available")
+ 
+         # standardize
+-        advantages = (advantages - np.mean(advantages)) / np.std(advantages)
++        advantages = (advantages - np.mean(advantages)) / (np.std(advantages) + 1e-8)
+ 
+         for transition, advantage, value_target in zip(batch.transitions, advantages, value_targets):
+             transition.info['advantage'] = advantage
+diff --git a/rl_coach/architectures/architecture.py b/rl_coach/architectures/architecture.py
+index 90dbd6e..8d457a9 100644
+--- a/rl_coach/architectures/architecture.py
++++ b/rl_coach/architectures/architecture.py
+@@ -46,8 +46,9 @@ class Architecture(object):
+         """
+         self.spaces = spaces
+         self.name = name
+-        self.network_wrapper_name = self.name.split('/')[0]  # e.g. 'main/online' --> 'main'
+-        self.full_name = "{}/{}".format(agent_parameters.full_name_id, name)
++        self.network_wrapper_name = self.name.split('/')[1]  # e.g. 'main/online' --> 'main'
++        self.full_name = "{}/{}".format(agent_parameters.full_name_id, '/'.join(name.split('/')[1:]))
++        # self.full_name = "{}/{}".format(agent_parameters.full_name_id, name)
+         self.network_parameters = agent_parameters.network_wrappers[self.network_wrapper_name]
+         self.batch_size = self.network_parameters.batch_size
+         self.learning_rate = self.network_parameters.learning_rate
+diff --git a/rl_coach/architectures/network_wrapper.py b/rl_coach/architectures/network_wrapper.py
+index dfefc41..a31dbf4 100644
+--- a/rl_coach/architectures/network_wrapper.py
++++ b/rl_coach/architectures/network_wrapper.py
+@@ -68,7 +68,7 @@ class NetworkWrapper(object):
+             self.global_network = general_network(variable_scope=variable_scope,
+                                                   devices=force_list(replicated_device),
+                                                   agent_parameters=agent_parameters,
+-                                                  name='{}/global'.format(name),
++                                                  name='{}/{}/global'.format(agent_parameters.name, name),
+                                                   global_network=None,
+                                                   network_is_local=False,
+                                                   spaces=spaces,
+@@ -79,7 +79,7 @@ class NetworkWrapper(object):
+         self.online_network = general_network(variable_scope=variable_scope,
+                                               devices=force_list(worker_device),
+                                               agent_parameters=agent_parameters,
+-                                              name='{}/online'.format(name),
++                                              name='{}/{}/online'.format(agent_parameters.name,name),
+                                               global_network=self.global_network,
+                                               network_is_local=True,
+                                               spaces=spaces,
+@@ -91,7 +91,7 @@ class NetworkWrapper(object):
+             self.target_network = general_network(variable_scope=variable_scope,
+                                                   devices=force_list(worker_device),
+                                                   agent_parameters=agent_parameters,
+-                                                  name='{}/target'.format(name),
++                                                  name='{}/{}/target'.format(agent_parameters.name, name),
+                                                   global_network=self.global_network,
+                                                   network_is_local=True,
+                                                   spaces=spaces,
+diff --git a/rl_coach/architectures/tensorflow_components/architecture.py b/rl_coach/architectures/tensorflow_components/architecture.py
+index 68420fe..f847d8a 100644
+--- a/rl_coach/architectures/tensorflow_components/architecture.py
++++ b/rl_coach/architectures/tensorflow_components/architecture.py
+@@ -28,21 +28,21 @@ from rl_coach.saver import SaverCollection
+ from rl_coach.spaces import SpacesDefinition
+ from rl_coach.utils import force_list, squeeze_list, start_shell_command_and_wait
+ 
+-
++tf.compat.v1.disable_resource_variables()
+ def variable_summaries(var):
+     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+-    with tf.name_scope('summaries'):
++    with tf.compat.v1.name_scope('summaries'):
+         layer_weight_name = '_'.join(var.name.split('/')[-3:])[:-2]
+ 
+-        with tf.name_scope(layer_weight_name):
++        with tf.compat.v1.name_scope(layer_weight_name):
+             mean = tf.reduce_mean(var)
+-            tf.summary.scalar('mean', mean)
+-            with tf.name_scope('stddev'):
++            tf.compat.v1.summary.scalar('mean', mean)
++            with tf.compat.v1.name_scope('stddev'):
+                 stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+-            tf.summary.scalar('stddev', stddev)
+-            tf.summary.scalar('max', tf.reduce_max(var))
+-            tf.summary.scalar('min', tf.reduce_min(var))
+-            tf.summary.histogram('histogram', var)
++            tf.compat.v1.summary.scalar('stddev', stddev)
++            tf.compat.v1.summary.scalar('max', tf.reduce_max(var))
++            tf.compat.v1.summary.scalar('min', tf.reduce_min(var))
++            tf.compat.v1.summary.histogram('histogram', var)
+ 
+ 
+ def local_getter(getter, name, *args, **kwargs):
+@@ -52,7 +52,7 @@ def local_getter(getter, name, *args, **kwargs):
+     between workers. these variables are also assumed to be non-trainable (the optimizer does not apply gradients to
+     these variables), but we can calculate the gradients wrt these variables, and we can update their content.
+     """
+-    kwargs['collections'] = [tf.GraphKeys.LOCAL_VARIABLES]
++    kwargs['collections'] = [tf.compat.v1.GraphKeys.LOCAL_VARIABLES]
+     return getter(name, *args, **kwargs)
+ 
+ 
+@@ -96,17 +96,17 @@ class TensorFlowArchitecture(Architecture):
+ 
+         self.optimizer_type = self.network_parameters.optimizer_type
+         if self.ap.task_parameters.seed is not None:
+-            tf.set_random_seed(self.ap.task_parameters.seed)
+-        with tf.variable_scope("/".join(self.name.split("/")[1:]), initializer=tf.contrib.layers.xavier_initializer(),
++            tf.compat.v1.set_random_seed(self.ap.task_parameters.seed)
++        with tf.compat.v1.variable_scope("/".join(self.name.split("/")[2:]), initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform"),
+                                custom_getter=local_getter if network_is_local and global_network else None):
+-            self.global_step = tf.train.get_or_create_global_step()
++            self.global_step = tf.compat.v1.train.get_or_create_global_step()
+ 
+             # build the network
+             self.weights = self.get_model()
+ 
+             # create the placeholder for the assigning gradients and some tensorboard summaries for the weights
+             for idx, var in enumerate(self.weights):
+-                placeholder = tf.placeholder(tf.float32, shape=var.get_shape(), name=str(idx) + '_holder')
++                placeholder = tf.compat.v1.placeholder(tf.float32, shape=var.get_shape(), name=str(idx) + '_holder')
+                 self.weights_placeholders.append(placeholder)
+                 if self.ap.visualization.tensorboard:
+                     variable_summaries(var)
+@@ -128,14 +128,14 @@ class TensorFlowArchitecture(Architecture):
+             self.reset_internal_memory()
+ 
+             if self.ap.visualization.tensorboard:
+-                current_scope_summaries = tf.get_collection(tf.GraphKeys.SUMMARIES,
+-                                                            scope=tf.contrib.framework.get_name_scope())
+-                self.merged = tf.summary.merge(current_scope_summaries)
++                current_scope_summaries = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SUMMARIES,
++                                                            scope=tf.get_current_name_scope())
++                self.merged = tf.compat.v1.summary.merge(current_scope_summaries)
+ 
+             # initialize or restore model
+             self.init_op = tf.group(
+-                tf.global_variables_initializer(),
+-                tf.local_variables_initializer()
++                tf.compat.v1.global_variables_initializer(),
++                tf.compat.v1.local_variables_initializer()
+             )
+ 
+             # set the fetches for training
+@@ -171,14 +171,14 @@ class TensorFlowArchitecture(Architecture):
+         Create locks for synchronizing the different workers during training
+         :return: None
+         """
+-        self.lock_counter = tf.get_variable("lock_counter", [], tf.int32,
+-                                            initializer=tf.constant_initializer(0, dtype=tf.int32),
++        self.lock_counter = tf.compat.v1.get_variable("lock_counter", [], tf.int32,
++                                            initializer=tf.compat.v1.constant_initializer(0, dtype=tf.int32),
+                                             trainable=False)
+         self.lock = self.lock_counter.assign_add(1, use_locking=True)
+         self.lock_init = self.lock_counter.assign(0)
+ 
+-        self.release_counter = tf.get_variable("release_counter", [], tf.int32,
+-                                               initializer=tf.constant_initializer(0, dtype=tf.int32),
++        self.release_counter = tf.compat.v1.get_variable("release_counter", [], tf.int32,
++                                               initializer=tf.compat.v1.constant_initializer(0, dtype=tf.int32),
+                                                trainable=False)
+         self.release = self.release_counter.assign_add(1, use_locking=True)
+         self.release_decrement = self.release_counter.assign_add(-1, use_locking=True)
+@@ -191,7 +191,7 @@ class TensorFlowArchitecture(Architecture):
+         """
+ 
+         self.tensor_gradients = tf.gradients(self.total_loss, self.weights)
+-        self.gradients_norm = tf.global_norm(self.tensor_gradients)
++        self.gradients_norm = tf.linalg.global_norm(self.tensor_gradients)
+ 
+         # gradient clipping
+         if self.network_parameters.clip_gradients is not None and self.network_parameters.clip_gradients != 0:
+@@ -205,7 +205,7 @@ class TensorFlowArchitecture(Architecture):
+         # gradients of the outputs w.r.t. the inputs
+         self.gradients_wrt_inputs = [{name: tf.gradients(output, input_ph) for name, input_ph in
+                                       self.inputs.items()} for output in self.outputs]
+-        self.gradients_weights_ph = [tf.placeholder('float32', self.outputs[i].shape, 'output_gradient_weights')
++        self.gradients_weights_ph = [tf.compat.v1.placeholder('float32', self.outputs[i].shape, 'output_gradient_weights')
+                                      for i in range(len(self.outputs))]
+         self.weighted_gradients = []
+         for i in range(len(self.outputs)):
+@@ -270,7 +270,7 @@ class TensorFlowArchitecture(Architecture):
+         elif self.network_is_trainable:
+             # not any of the above but is trainable? -> create an operation for applying the gradients to
+             # this network weights
+-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.full_name)
++            update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS, scope=self.full_name)
+ 
+             with tf.control_dependencies(update_ops):
+                 self.update_weights_from_batch_gradients = self.optimizer.apply_gradients(
+@@ -288,10 +288,10 @@ class TensorFlowArchitecture(Architecture):
+         if self.ap.visualization.tensorboard:
+             # Write the merged summaries to the current experiment directory
+             if not task_is_distributed:
+-                self.train_writer = tf.summary.FileWriter(self.ap.task_parameters.experiment_path + '/tensorboard')
++                self.train_writer = tf.compat.v1.summary.FileWriter(self.ap.task_parameters.experiment_path + '/tensorboard')
+                 self.train_writer.add_graph(self.sess.graph)
+             elif self.network_is_local:
+-                self.train_writer = tf.summary.FileWriter(self.ap.task_parameters.experiment_path +
++                self.train_writer = tf.compat.v1.summary.FileWriter(self.ap.task_parameters.experiment_path +
+                                                           '/tensorboard/worker{}'.format(self.ap.task_parameters.task_index))
+                 self.train_writer.add_graph(self.sess.graph)
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/distributed_tf_utils.py b/rl_coach/architectures/tensorflow_components/distributed_tf_utils.py
+index bbbbc0f..39403a6 100644
+--- a/rl_coach/architectures/tensorflow_components/distributed_tf_utils.py
++++ b/rl_coach/architectures/tensorflow_components/distributed_tf_utils.py
+@@ -36,7 +36,7 @@ def create_cluster_spec(parameters_server: str, workers: str) -> tf.train.Cluste
+     return cluster_spec
+ 
+ 
+-def create_and_start_parameters_server(cluster_spec: tf.train.ClusterSpec, config: tf.ConfigProto=None) -> None:
++def create_and_start_parameters_server(cluster_spec: tf.train.ClusterSpec, config: tf.compat.v1.ConfigProto=None) -> None:
+     """
+     Create and start a parameter server
+     :param cluster_spec: the ClusterSpec object representing the cluster
+@@ -44,14 +44,14 @@ def create_and_start_parameters_server(cluster_spec: tf.train.ClusterSpec, confi
+     :return: None
+     """
+     # create a server object for the parameter server
+-    server = tf.train.Server(cluster_spec, job_name="ps", task_index=0, config=config)
++    server = tf.distribute.Server(cluster_spec, job_name="ps", task_index=0, config=config)
+ 
+     # wait for the server to finish
+     server.join()
+ 
+ 
+ def create_worker_server_and_device(cluster_spec: tf.train.ClusterSpec, task_index: int,
+-                                    use_cpu: bool=True, config: tf.ConfigProto=None) -> Tuple[str, tf.device]:
++                                    use_cpu: bool=True, config: tf.compat.v1.ConfigProto=None) -> Tuple[str, tf.device]:
+     """
+     Creates a worker server and a device setter used to assign the workers operations to
+     :param cluster_spec: a ClusterSpec object representing the cluster
+@@ -61,7 +61,7 @@ def create_worker_server_and_device(cluster_spec: tf.train.ClusterSpec, task_ind
+     :return: the target string for the tf.Session and the worker device setter object
+     """
+     # Create and start a worker
+-    server = tf.train.Server(cluster_spec, job_name="worker", task_index=task_index, config=config)
++    server = tf.distribute.Server(cluster_spec, job_name="worker", task_index=task_index, config=config)
+ 
+     # Assign ops to the local worker
+     worker_device = "/job:worker/task:{}".format(task_index)
+@@ -69,13 +69,13 @@ def create_worker_server_and_device(cluster_spec: tf.train.ClusterSpec, task_ind
+         worker_device += "/cpu:0"
+     else:
+         worker_device += "/device:GPU:0"
+-    device = tf.train.replica_device_setter(worker_device=worker_device, cluster=cluster_spec)
++    device = tf.compat.v1.train.replica_device_setter(worker_device=worker_device, cluster=cluster_spec)
+ 
+     return server.target, device
+ 
+ 
+-def create_monitored_session(target: tf.train.Server, task_index: int,
+-                             checkpoint_dir: str, checkpoint_save_secs: int, config: tf.ConfigProto=None) -> tf.Session:
++def create_monitored_session(target: tf.distribute.Server, task_index: int,
++                             checkpoint_dir: str, checkpoint_save_secs: int, config: tf.compat.v1.ConfigProto=None) -> tf.compat.v1.Session:
+     """
+     Create a monitored session for the worker
+     :param target: the target string for the tf.Session
+@@ -89,7 +89,7 @@ def create_monitored_session(target: tf.train.Server, task_index: int,
+     is_chief = task_index == 0
+ 
+     # Create the monitored session
+-    sess = tf.train.MonitoredTrainingSession(
++    sess = tf.compat.v1.train.MonitoredTrainingSession(
+         master=target,
+         is_chief=is_chief,
+         hooks=[],
+diff --git a/rl_coach/architectures/tensorflow_components/embedders/embedder.py b/rl_coach/architectures/tensorflow_components/embedders/embedder.py
+index 13544c9..97dca64 100644
+--- a/rl_coach/architectures/tensorflow_components/embedders/embedder.py
++++ b/rl_coach/architectures/tensorflow_components/embedders/embedder.py
+@@ -75,15 +75,15 @@ class InputEmbedder(object):
+                                                                      activation_function=self.activation_function,
+                                                                      dropout_rate=self.dropout_rate))
+ 
+-    def __call__(self, prev_input_placeholder: tf.placeholder=None) -> Tuple[tf.Tensor, tf.Tensor]:
++    def __call__(self, prev_input_placeholder: tf.compat.v1.placeholder=None) -> Tuple[tf.Tensor, tf.Tensor]:
+         """
+         Wrapper for building the module graph including scoping and loss creation
+         :param prev_input_placeholder: the input to the graph
+         :return: the input placeholder and the output of the last layer
+         """
+-        with tf.variable_scope(self.get_name()):
++        with tf.compat.v1.variable_scope(self.get_name()):
+             if prev_input_placeholder is None:
+-                self.input = tf.placeholder("float", shape=[None] + self.input_size, name=self.get_name())
++                self.input = tf.compat.v1.placeholder("float", shape=[None] + self.input_size, name=self.get_name())
+             else:
+                 self.input = prev_input_placeholder
+             self._build_module()
+@@ -116,8 +116,8 @@ class InputEmbedder(object):
+                              is_training=self.is_training)
+             ))
+ 
+-        self.output = tf.contrib.layers.flatten(self.layers[-1])
+-
++        self.output = tf.keras.layers.Flatten()(self.layers[-1])
++        
+     @property
+     def input_size(self) -> List[int]:
+         return self._input_size
+diff --git a/rl_coach/architectures/tensorflow_components/general_network.py b/rl_coach/architectures/tensorflow_components/general_network.py
+index 8821ac6..61b9472 100644
+--- a/rl_coach/architectures/tensorflow_components/general_network.py
++++ b/rl_coach/architectures/tensorflow_components/general_network.py
+@@ -32,7 +32,8 @@ from rl_coach.logger import screen
+ from rl_coach.spaces import SpacesDefinition, PlanarMapsObservationSpace, TensorObservationSpace
+ from rl_coach.utils import get_all_subclasses, dynamic_import_and_instantiate_module_from_params, indent_string
+ 
+-
++tf.compat.v1.disable_resource_variables()
++tf.compat.v1.disable_eager_execution()
+ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+     """
+     A generalized version of all possible networks implemented using tensorflow.
+@@ -64,11 +65,11 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+         # variable_scope() call and also recover the name space using name_scope
+         if variable_scope in GeneralTensorFlowNetwork.variable_scopes_dict:
+             variable_scope = GeneralTensorFlowNetwork.variable_scopes_dict[variable_scope]
+-            with tf.variable_scope(variable_scope, auxiliary_name_scope=False) as vs:
+-                with tf.name_scope(vs.original_name_scope):
++            with tf.compat.v1.variable_scope(variable_scope, auxiliary_name_scope=False) as vs:
++                with tf.compat.v1.name_scope(vs.original_name_scope):
+                     return construct_on_device()
+         else:
+-            with tf.variable_scope(variable_scope, auxiliary_name_scope=True) as vs:
++            with tf.compat.v1.variable_scope(variable_scope, auxiliary_name_scope=True) as vs:
+                 # Add variable_scope object to dictionary for next call to construct
+                 GeneralTensorFlowNetwork.variable_scopes_dict[variable_scope] = vs
+                 return construct_on_device()
+@@ -105,7 +106,7 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+         """
+         self.global_network = global_network
+         self.network_is_local = network_is_local
+-        self.network_wrapper_name = name.split('/')[0]
++        self.network_wrapper_name = name.split('/')[1]
+         self.network_parameters = agent_parameters.network_wrappers[self.network_wrapper_name]
+         self.num_heads_per_network = 1 if self.network_parameters.use_separate_networks_per_head else \
+             len(self.network_parameters.heads_parameters)
+@@ -237,12 +238,12 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+             raise ValueError("Exactly one middleware type should be defined")
+ 
+         # ops for defining the training / testing phase
+-        self.is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+-        self.is_training_placeholder = tf.placeholder("bool")
+-        self.assign_is_training = tf.assign(self.is_training, self.is_training_placeholder)
++        self.is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
++        self.is_training_placeholder = tf.compat.v1.placeholder("bool")
++        self.assign_is_training = tf.compat.v1.assign(self.is_training, self.is_training_placeholder)
+ 
+         for network_idx in range(self.num_networks):
+-            with tf.variable_scope('network_{}'.format(network_idx)):
++            with tf.compat.v1.variable_scope('network_{}'.format(network_idx)):
+ 
+                 ####################
+                 # Input Embeddings #
+@@ -310,12 +311,12 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+ 
+                         # rescale the gradients from the head
+                         self.gradients_from_head_rescalers.append(
+-                            tf.get_variable('gradients_from_head_{}-{}_rescalers'.format(head_idx, head_copy_idx),
++                            tf.compat.v1.get_variable('gradients_from_head_{}-{}_rescalers'.format(head_idx, head_copy_idx),
+                                             initializer=float(head_params.rescale_gradient_from_head_by_factor),
+                                             dtype=tf.float32))
+ 
+                         self.gradients_from_head_rescalers_placeholders.append(
+-                            tf.placeholder('float',
++                            tf.compat.v1.placeholder('float',
+                                            name='gradients_from_head_{}-{}_rescalers'.format(head_type_idx, head_copy_idx)))
+ 
+                         self.update_head_rescaler_value_ops.append(self.gradients_from_head_rescalers[head_count].assign(
+@@ -343,13 +344,13 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+ 
+         # model weights
+         if not self.distributed_training or self.network_is_global:
+-            self.weights = [var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.full_name) if
+-                            'global_step' not in var.name]
++            self.weights = [var for var in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=self.full_name) if
++                            'global_step' not in var.name and 'Variable:0' not in var.name]
+         else:
+-            self.weights = [var for var in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.full_name)]
++            self.weights = [var for var in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, scope=self.full_name)]
+ 
+         # Losses
+-        self.losses = tf.losses.get_losses(self.full_name)
++        self.losses = tf.compat.v1.losses.get_losses(self.full_name)
+ 
+         # L2 regularization
+         if self.network_parameters.l2_regularization != 0:
+@@ -363,7 +364,7 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+         # Learning rate
+         if self.network_parameters.learning_rate_decay_rate != 0:
+             self.adaptive_learning_rate_scheme = \
+-                tf.train.exponential_decay(
++                tf.compat.v1.train.exponential_decay(
+                     self.network_parameters.learning_rate,
+                     self.global_step,
+                     decay_steps=self.network_parameters.learning_rate_decay_steps,
+@@ -388,17 +389,14 @@ class GeneralTensorFlowNetwork(TensorFlowArchitecture):
+             # -> create an optimizer
+ 
+             if self.network_parameters.optimizer_type == 'Adam':
+-                self.optimizer = tf.train.AdamOptimizer(learning_rate=self.current_learning_rate,
++                self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=self.current_learning_rate,
+                                                         beta1=self.network_parameters.adam_optimizer_beta1,
+                                                         beta2=self.network_parameters.adam_optimizer_beta2,
+                                                         epsilon=self.network_parameters.optimizer_epsilon)
+             elif self.network_parameters.optimizer_type == 'RMSProp':
+-                self.optimizer = tf.train.RMSPropOptimizer(self.current_learning_rate,
++                self.optimizer = tf.compat.v1.train.RMSPropOptimizer(self.current_learning_rate,
+                                                            decay=self.network_parameters.rms_prop_optimizer_decay,
+                                                            epsilon=self.network_parameters.optimizer_epsilon)
+-            elif self.network_parameters.optimizer_type == 'LBFGS':
+-                self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.total_loss, method='L-BFGS-B',
+-                                                                        options={'maxiter': 25})
+             else:
+                 raise Exception("{} is not a valid optimizer type".format(self.network_parameters.optimizer_type))
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/acer_policy_head.py b/rl_coach/architectures/tensorflow_components/heads/acer_policy_head.py
+index d31fa3d..eebfa3f 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/acer_policy_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/acer_policy_head.py
+@@ -40,9 +40,9 @@ class ACERPolicyHead(Head):
+         if hasattr(agent_parameters.algorithm, 'beta_entropy'):
+             # we set the beta value as a tf variable so it can be updated later if needed
+             self.beta = tf.Variable(float(agent_parameters.algorithm.beta_entropy),
+-                                    trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+-            self.beta_placeholder = tf.placeholder('float')
+-            self.set_beta = tf.assign(self.beta, self.beta_placeholder)
++                                    trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
++            self.beta_placeholder = tf.compat.v1.placeholder('float')
++            self.set_beta = tf.compat.v1.assign(self.beta, self.beta_placeholder)
+ 
+     def _build_module(self, input_layer):
+         if isinstance(self.spaces.action, DiscreteActionSpace):
+@@ -58,18 +58,18 @@ class ACERPolicyHead(Head):
+                 self.regularizations += [-tf.multiply(self.beta, self.entropy, name='entropy_regularization')]
+ 
+             # Truncated importance sampling with bias corrections
+-            importance_sampling_weight = tf.placeholder(tf.float32, [None, self.num_actions],
++            importance_sampling_weight = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions],
+                                                         name='{}_importance_sampling_weight'.format(self.get_name()))
+             self.input.append(importance_sampling_weight)
+-            importance_sampling_weight_i = tf.placeholder(tf.float32, [None],
++            importance_sampling_weight_i = tf.compat.v1.placeholder(tf.float32, [None],
+                                                           name='{}_importance_sampling_weight_i'.format(self.get_name()))
+             self.input.append(importance_sampling_weight_i)
+ 
+-            V_values = tf.placeholder(tf.float32, [None], name='{}_V_values'.format(self.get_name()))
++            V_values = tf.compat.v1.placeholder(tf.float32, [None], name='{}_V_values'.format(self.get_name()))
+             self.target.append(V_values)
+-            Q_values = tf.placeholder(tf.float32, [None, self.num_actions], name='{}_Q_values'.format(self.get_name()))
++            Q_values = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions], name='{}_Q_values'.format(self.get_name()))
+             self.input.append(Q_values)
+-            Q_retrace = tf.placeholder(tf.float32, [None], name='{}_Q_retrace'.format(self.get_name()))
++            Q_retrace = tf.compat.v1.placeholder(tf.float32, [None], name='{}_Q_retrace'.format(self.get_name()))
+             self.input.append(Q_retrace)
+ 
+             action_log_probs_wrt_policy = self.policy_distribution.log_prob(self.actions)
+@@ -78,7 +78,7 @@ class ACERPolicyHead(Head):
+                                                     * tf.minimum(self.ap.algorithm.importance_weight_truncation,
+                                                                  importance_sampling_weight_i))
+ 
+-            log_probs_wrt_policy = tf.log(self.policy_probs + eps)
++            log_probs_wrt_policy = tf.math.log(self.policy_probs + eps)
+             bias_correction_gain = tf.reduce_sum(log_probs_wrt_policy
+                                                  * (Q_values - tf.expand_dims(V_values, 1))
+                                                  * tf.nn.relu(1.0 - (self.ap.algorithm.importance_weight_truncation
+@@ -88,15 +88,15 @@ class ACERPolicyHead(Head):
+             self.bias_correction_loss = -tf.reduce_mean(bias_correction_gain)
+ 
+             self.loss = self.probability_loss + self.bias_correction_loss
+-            tf.losses.add_loss(self.loss)
++            tf.compat.v1.losses.add_loss(self.loss)
+ 
+             # Trust region
+-            batch_size = tf.to_float(tf.shape(input_layer)[0])
+-            average_policy = tf.placeholder(tf.float32, [None, self.num_actions],
++            batch_size = tf.cast(tf.shape(input_layer)[0], dtype=tf.float32)
++            average_policy = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions],
+                                             name='{}_average_policy'.format(self.get_name()))
+             self.input.append(average_policy)
+-            average_policy_distribution = tf.contrib.distributions.Categorical(probs=(average_policy + eps))
+-            self.kl_divergence = tf.reduce_mean(tf.distributions.kl_divergence(average_policy_distribution,
++            average_policy_distribution = tf.compat.v1.distributions.Categorical(probs=(average_policy + eps))
++            self.kl_divergence = tf.reduce_mean(tf.compat.v1.distributions.kl_divergence(average_policy_distribution,
+                                                                                self.policy_distribution))
+             if self.ap.algorithm.use_trust_region_optimization:
+                 @tf.custom_gradient
+@@ -114,12 +114,12 @@ class ACERPolicyHead(Head):
+ 
+     def _build_discrete_net(self, input_layer, action_space):
+         self.num_actions = len(action_space.actions)
+-        self.actions = tf.placeholder(tf.int32, [None], name='{}_actions'.format(self.get_name()))
++        self.actions = tf.compat.v1.placeholder(tf.int32, [None], name='{}_actions'.format(self.get_name()))
+         self.input.append(self.actions)
+ 
+         policy_values = self.dense_layer(self.num_actions)(input_layer, name='fc')
+         self.policy_probs = tf.nn.softmax(policy_values, name='{}_policy'.format(self.get_name()))
+ 
+         # (the + eps is to prevent probability 0 which will cause the log later on to be -inf)
+-        self.policy_distribution = tf.contrib.distributions.Categorical(probs=(self.policy_probs + eps))
++        self.policy_distribution = tf.compat.v1.distributions.Categorical(probs=(self.policy_probs + eps))
+         self.output = self.policy_probs
+diff --git a/rl_coach/architectures/tensorflow_components/heads/categorical_q_head.py b/rl_coach/architectures/tensorflow_components/heads/categorical_q_head.py
+index b573fe5..ee44176 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/categorical_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/categorical_q_head.py
+@@ -45,11 +45,11 @@ class CategoricalQHead(QHead):
+         self.output = tf.nn.softmax(values_distribution)
+ 
+         # calculate cross entropy loss
+-        self.distributions = tf.placeholder(tf.float32, shape=(None, self.num_actions, self.num_atoms),
++        self.distributions = tf.compat.v1.placeholder(tf.float32, shape=(None, self.num_actions, self.num_atoms),
+                                             name="distributions")
+         self.target = self.distributions
+-        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.target, logits=values_distribution)
+-        tf.losses.add_loss(self.loss)
++        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=tf.stop_gradient(self.target), logits=values_distribution)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+         self.q_values = tf.tensordot(tf.cast(self.output, tf.float64), self.z_values, 1)
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/cil_head.py b/rl_coach/architectures/tensorflow_components/heads/cil_head.py
+index f3ae003..25a8ae6 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/cil_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/cil_head.py
+@@ -39,9 +39,9 @@ class RegressionHead(Head):
+             self.num_actions = len(self.spaces.action.actions)
+         self.return_type = QActionStateValue
+         if agent_parameters.network_wrappers[self.network_name].replace_mse_with_huber_loss:
+-            self.loss_type = tf.losses.huber_loss
++            self.loss_type = tf.compat.v1.losses.huber_loss
+         else:
+-            self.loss_type = tf.losses.mean_squared_error
++            self.loss_type = tf.compat.v1.losses.mean_squared_error
+         self.output_bias_initializer = output_bias_initializer
+ 
+     def _build_module(self, input_layer):
+diff --git a/rl_coach/architectures/tensorflow_components/heads/classification_head.py b/rl_coach/architectures/tensorflow_components/heads/classification_head.py
+index 6f6af7c..5a9da70 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/classification_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/classification_head.py
+@@ -47,9 +47,9 @@ class ClassificationHead(Head):
+         self.output = tf.nn.softmax(self.class_values)
+ 
+         # calculate cross entropy loss
+-        self.target = tf.placeholder(tf.float32, shape=(None, self.num_actions), name="target")
+-        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.target, logits=self.class_values)
+-        tf.losses.add_loss(self.loss)
++        self.target = tf.compat.v1.placeholder(tf.float32, shape=(None, self.num_actions), name="target")
++        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=tf.stop_gradient(self.target), logits=self.class_values)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+     def __str__(self):
+         result = [
+diff --git a/rl_coach/architectures/tensorflow_components/heads/dnd_q_head.py b/rl_coach/architectures/tensorflow_components/heads/dnd_q_head.py
+index 6462f83..1c43988 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/dnd_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/dnd_q_head.py
+@@ -65,11 +65,11 @@ class DNDQHead(QHead):
+         self.softmax = self.add_softmax_with_temperature()
+ 
+     def _q_value(self, input_layer, action):
+-        result = tf.py_func(self.DND.query,
++        result = tf.compat.v1.py_func(self.DND.query,
+                             [input_layer, action, self.number_of_nn],
+                             [tf.float64, tf.float64, tf.int64])
+-        self.dnd_embeddings[action] = tf.to_float(result[0])
+-        self.dnd_values[action] = tf.to_float(result[1])
++        self.dnd_embeddings[action] = tf.cast(result[0], dtype=tf.float32)
++        self.dnd_values[action] = tf.cast(result[1], dtype=tf.float32)
+         self.dnd_indices[action] = result[2]
+ 
+         # DND calculation
+@@ -77,7 +77,7 @@ class DNDQHead(QHead):
+         distances = tf.reduce_sum(square_diff, axis=2) + [self.l2_norm_added_delta]
+         self.dnd_distances[action] = distances
+         weights = 1.0 / distances
+-        normalised_weights = weights / tf.reduce_sum(weights, axis=1, keep_dims=True)
++        normalised_weights = weights / tf.reduce_sum(weights, axis=1, keepdims=True)
+         q_value = tf.reduce_sum(self.dnd_values[action] * normalised_weights, axis=1)
+         q_value.set_shape((None,))
+         return q_value
+diff --git a/rl_coach/architectures/tensorflow_components/heads/dueling_q_head.py b/rl_coach/architectures/tensorflow_components/heads/dueling_q_head.py
+index 92692ab..d612256 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/dueling_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/dueling_q_head.py
+@@ -32,12 +32,12 @@ class DuelingQHead(QHead):
+ 
+     def _build_module(self, input_layer):
+         # state value tower - V
+-        with tf.variable_scope("state_value"):
++        with tf.compat.v1.variable_scope("state_value"):
+             self.state_value = self.dense_layer(512)(input_layer, activation=self.activation_function, name='fc1')
+             self.state_value = self.dense_layer(1)(self.state_value, name='fc2')
+ 
+         # action advantage tower - A
+-        with tf.variable_scope("action_advantage"):
++        with tf.compat.v1.variable_scope("action_advantage"):
+             self.action_advantage = self.dense_layer(512)(input_layer, activation=self.activation_function, name='fc1')
+             self.action_advantage = self.dense_layer(self.num_actions)(self.action_advantage, name='fc2')
+             self.action_mean = tf.reduce_mean(self.action_advantage, axis=1, keepdims=True)
+diff --git a/rl_coach/architectures/tensorflow_components/heads/head.py b/rl_coach/architectures/tensorflow_components/heads/head.py
+index e971889..82fbabb 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/head.py
+@@ -50,7 +50,7 @@ class Head(object):
+         self.loss_type = []
+         self.regularizations = []
+         self.loss_weight = tf.Variable([float(w) for w in force_list(loss_weight)],
+-                                       trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
++                                       trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+         self.target = []
+         self.importance_weight = []
+         self.input = []
+@@ -73,7 +73,7 @@ class Head(object):
+         :return: the output of the last layer and the target placeholder
+         """
+ 
+-        with tf.variable_scope(self.get_name(), initializer=tf.contrib.layers.xavier_initializer()):
++        with tf.compat.v1.variable_scope(self.get_name(), initializer=tf.compat.v1.keras.initializers.VarianceScaling(scale=1.0, mode="fan_avg", distribution="uniform")):
+             self._build_module(squeeze_tensor(input_layer))
+ 
+             self.output = force_list(self.output)
+@@ -126,7 +126,7 @@ class Head(object):
+ 
+         # there are heads that define the loss internally, but we need to create additional placeholders for them
+         for idx in range(len(self.loss)):
+-            importance_weight = tf.placeholder('float',
++            importance_weight = tf.compat.v1.placeholder('float',
+                                                [None] + [1] * (len(self.target[idx].shape) - 1),
+                                                '{}_importance_weight'.format(self.get_name()))
+             self.importance_weight.append(importance_weight)
+@@ -134,12 +134,12 @@ class Head(object):
+         # add losses and target placeholder
+         for idx in range(len(self.loss_type)):
+             # create target placeholder
+-            target = tf.placeholder('float', self.output[idx].shape, '{}_target'.format(self.get_name()))
++            target = tf.compat.v1.placeholder('float', self.output[idx].shape, '{}_target'.format(self.get_name()))
+             self.target.append(target)
+ 
+             # create importance sampling weights placeholder
+             num_target_dims = len(self.target[idx].shape)
+-            importance_weight = tf.placeholder('float', [None] + [1] * (num_target_dims - 1),
++            importance_weight = tf.compat.v1.placeholder('float', [None] + [1] * (num_target_dims - 1),
+                                                '{}_importance_weight'.format(self.get_name()))
+             self.importance_weight.append(importance_weight)
+ 
+@@ -153,13 +153,13 @@ class Head(object):
+             loss = tf.reduce_mean(loss_weight*tf.reduce_sum(loss, axis=list(range(1, num_target_dims))))
+ 
+             # we add the loss to the losses collection and later we will extract it in general_network
+-            tf.losses.add_loss(loss)
++            tf.compat.v1.losses.add_loss(loss)
+             self.loss.append(loss)
+ 
+         # add regularizations
+         for regularization in self.regularizations:
+             self.loss.append(regularization)
+-            tf.losses.add_loss(regularization)
++            tf.compat.v1.losses.add_loss(regularization)
+ 
+     @classmethod
+     def path(cls):
+diff --git a/rl_coach/architectures/tensorflow_components/heads/measurements_prediction_head.py b/rl_coach/architectures/tensorflow_components/heads/measurements_prediction_head.py
+index 647abc3..2d95d25 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/measurements_prediction_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/measurements_prediction_head.py
+@@ -39,27 +39,27 @@ class MeasurementsPredictionHead(Head):
+     def _build_module(self, input_layer):
+         # This is almost exactly the same as Dueling Network but we predict the future measurements for each action
+         # actions expectation tower (expectation stream) - E
+-        with tf.variable_scope("expectation_stream"):
++        with tf.compat.v1.variable_scope("expectation_stream"):
+             expectation_stream = self.dense_layer(256)(input_layer, activation=self.activation_function, name='fc1')
+             expectation_stream = self.dense_layer(self.multi_step_measurements_size)(expectation_stream, name='output')
+             expectation_stream = tf.expand_dims(expectation_stream, axis=1)
+ 
+         # action fine differences tower (action stream) - A
+-        with tf.variable_scope("action_stream"):
++        with tf.compat.v1.variable_scope("action_stream"):
+             action_stream = self.dense_layer(256)(input_layer, activation=self.activation_function, name='fc1')
+             action_stream = self.dense_layer(self.num_actions * self.multi_step_measurements_size)(action_stream,
+                                                                                                    name='output')
+             action_stream = tf.reshape(action_stream,
+                                        (tf.shape(action_stream)[0], self.num_actions, self.multi_step_measurements_size))
+-            action_stream = action_stream - tf.reduce_mean(action_stream, reduction_indices=1, keepdims=True)
++            action_stream = action_stream - tf.reduce_mean(action_stream, axis=1, keepdims=True)
+ 
+         # merge to future measurements predictions
+         self.output = tf.add(expectation_stream, action_stream, name='output')
+-        self.target = tf.placeholder(tf.float32, [None, self.num_actions, self.multi_step_measurements_size],
++        self.target = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions, self.multi_step_measurements_size],
+                                      name="targets")
+-        targets_nonan = tf.where(tf.is_nan(self.target), self.output, self.target)
+-        self.loss = tf.reduce_sum(tf.reduce_mean(tf.square(targets_nonan - self.output), reduction_indices=0))
+-        tf.losses.add_loss(self.loss_weight[0] * self.loss)
++        targets_nonan = tf.compat.v1.where(tf.math.is_nan(self.target), self.output, self.target)
++        self.loss = tf.reduce_sum(tf.reduce_mean(tf.square(targets_nonan - self.output), axis=0))
++        tf.compat.v1.losses.add_loss(self.loss_weight[0] * self.loss)
+ 
+     def __str__(self):
+         result = [
+diff --git a/rl_coach/architectures/tensorflow_components/heads/naf_head.py b/rl_coach/architectures/tensorflow_components/heads/naf_head.py
+index 9071fed..2bcb724 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/naf_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/naf_head.py
+@@ -38,13 +38,13 @@ class NAFHead(Head):
+         self.output_scale = self.spaces.action.max_abs_range
+         self.return_type = QActionStateValue
+         if agent_parameters.network_wrappers[self.network_name].replace_mse_with_huber_loss:
+-            self.loss_type = tf.losses.huber_loss
++            self.loss_type = tf.compat.v1.losses.huber_loss
+         else:
+-            self.loss_type = tf.losses.mean_squared_error
++            self.loss_type = tf.compat.v1.losses.mean_squared_error
+ 
+     def _build_module(self, input_layer):
+         # NAF
+-        self.action = tf.placeholder(tf.float32, [None, self.num_actions], name="action")
++        self.action = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions], name="action")
+         self.input = self.action
+ 
+         # V Head
+diff --git a/rl_coach/architectures/tensorflow_components/heads/policy_head.py b/rl_coach/architectures/tensorflow_components/heads/policy_head.py
+index 540bd1a..792d52f 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/policy_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/policy_head.py
+@@ -16,6 +16,7 @@
+ 
+ import numpy as np
+ import tensorflow as tf
++import tensorflow_probability as tfp
+ 
+ from rl_coach.architectures.tensorflow_components.layers import Dense
+ from rl_coach.architectures.tensorflow_components.heads.head import Head, normalized_columns_initializer
+@@ -44,9 +45,9 @@ class PolicyHead(Head):
+         if hasattr(agent_parameters.algorithm, 'beta_entropy'):
+             # we set the beta value as a tf variable so it can be updated later if needed
+             self.beta = tf.Variable(float(agent_parameters.algorithm.beta_entropy),
+-                                    trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+-            self.beta_placeholder = tf.placeholder('float')
+-            self.set_beta = tf.assign(self.beta, self.beta_placeholder)
++                                    trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
++            self.beta_placeholder = tf.compat.v1.placeholder('float')
++            self.set_beta = tf.compat.v1.assign(self.beta, self.beta_placeholder)
+ 
+         # a scalar weight that penalizes high activation values (before the activation function) for the final layer
+         if hasattr(agent_parameters.algorithm, 'action_penalty'):
+@@ -64,7 +65,7 @@ class PolicyHead(Head):
+ 
+         # create a compound action network
+         for action_space_idx, action_space in enumerate(action_spaces):
+-            with tf.variable_scope("sub_action_{}".format(action_space_idx)):
++            with tf.compat.v1.variable_scope("sub_action_{}".format(action_space_idx)):
+                 if isinstance(action_space, DiscreteActionSpace):
+                     # create a discrete action network (softmax probabilities output)
+                     self._build_discrete_net(input_layer, action_space)
+@@ -81,27 +82,27 @@ class PolicyHead(Head):
+             # calculate loss
+             self.action_log_probs_wrt_policy = \
+                 tf.add_n([dist.log_prob(action) for dist, action in zip(self.policy_distributions, self.actions)])
+-            self.advantages = tf.placeholder(tf.float32, [None], name="advantages")
++            self.advantages = tf.compat.v1.placeholder(tf.float32, [None], name="advantages")
+             self.target = self.advantages
+             self.loss = -tf.reduce_mean(self.action_log_probs_wrt_policy * self.advantages)
+-            tf.losses.add_loss(self.loss_weight[0] * self.loss)
++            tf.compat.v1.losses.add_loss(self.loss_weight[0] * self.loss)
+ 
+     def _build_discrete_net(self, input_layer, action_space):
+         num_actions = len(action_space.actions)
+-        self.actions.append(tf.placeholder(tf.int32, [None], name="actions"))
++        self.actions.append(tf.compat.v1.placeholder(tf.int32, [None], name="actions"))
+ 
+         policy_values = self.dense_layer(num_actions)(input_layer, name='fc')
+         self.policy_probs = tf.nn.softmax(policy_values, name="policy")
+ 
+         # define the distributions for the policy and the old policy
+         # (the + eps is to prevent probability 0 which will cause the log later on to be -inf)
+-        policy_distribution = tf.contrib.distributions.Categorical(probs=(self.policy_probs + eps))
++        policy_distribution = tf.compat.v1.distributions.Categorical(probs=(self.policy_probs + eps))
+         self.policy_distributions.append(policy_distribution)
+         self.output.append(self.policy_probs)
+ 
+     def _build_continuous_net(self, input_layer, action_space):
+         num_actions = action_space.shape
+-        self.actions.append(tf.placeholder(tf.float32, [None, num_actions], name="actions"))
++        self.actions.append(tf.compat.v1.placeholder(tf.float32, [None, num_actions], name="actions"))
+ 
+         # output activation function
+         if np.all(action_space.max_abs_range < np.inf):
+@@ -135,14 +136,14 @@ class PolicyHead(Head):
+             # it as not trainable puts it for some reason in the global variables collections. If this is not done,
+             # the variable won't be initialized and when working with multiple workers they will get stuck.
+             self.policy_std = tf.Variable(np.ones(num_actions), dtype='float32', trainable=False,
+-                                          name='policy_stdev', collections=[tf.GraphKeys.LOCAL_VARIABLES])
++                                          name='policy_stdev', collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+ 
+             # assign op for the policy std
+-            self.policy_std_placeholder = tf.placeholder('float32', (num_actions,))
+-            self.assign_policy_std = tf.assign(self.policy_std, self.policy_std_placeholder)
++            self.policy_std_placeholder = tf.compat.v1.placeholder('float32', (num_actions,))
++            self.assign_policy_std = tf.compat.v1.assign(self.policy_std, self.policy_std_placeholder)
+ 
+         # define the distributions for the policy and the old policy
+-        policy_distribution = tf.contrib.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std)
++        policy_distribution = tfp.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std)
+         self.policy_distributions.append(policy_distribution)
+ 
+         if self.is_local:
+diff --git a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
+index 63f95a3..1d17a9d 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/ppo_head.py
+@@ -16,6 +16,7 @@
+ 
+ import numpy as np
+ import tensorflow as tf
++import tensorflow_probability as tfp
+ 
+ from rl_coach.architectures.tensorflow_components.layers import Dense
+ from rl_coach.architectures.tensorflow_components.heads.head import Head, normalized_columns_initializer
+@@ -25,6 +26,11 @@ from rl_coach.spaces import BoxActionSpace, DiscreteActionSpace
+ from rl_coach.spaces import SpacesDefinition
+ from rl_coach.utils import eps
+ 
++# Since we are using log prob it is possible to encounter a 0 log 0 condition
++# which will tank the training by producing NaN's therefore it is necessary
++# to add a zero offset to all networks with discreete distributions to prevent
++# this isssue
++ZERO_OFFSET = 1e-8
+ 
+ class PPOHead(Head):
+     def __init__(self, agent_parameters: AgentParameters, spaces: SpacesDefinition, network_name: str,
+@@ -41,8 +47,8 @@ class PPOHead(Head):
+             # kl coefficient and its corresponding assignment operation and placeholder
+             self.kl_coefficient = tf.Variable(agent_parameters.algorithm.initial_kl_coefficient,
+                                               trainable=False, name='kl_coefficient')
+-            self.kl_coefficient_ph = tf.placeholder('float', name='kl_coefficient_ph')
+-            self.assign_kl_coefficient = tf.assign(self.kl_coefficient, self.kl_coefficient_ph)
++            self.kl_coefficient_ph = tf.compat.v1.placeholder('float', name='kl_coefficient_ph')
++            self.assign_kl_coefficient = tf.compat.v1.assign(self.kl_coefficient, self.kl_coefficient_ph)
+             self.kl_cutoff = 2 * agent_parameters.algorithm.target_kl_divergence
+             self.high_kl_penalty_coefficient = agent_parameters.algorithm.high_kl_penalty_coefficient
+ 
+@@ -63,7 +69,11 @@ class PPOHead(Head):
+ 
+         # Used by regular PPO only
+         # add kl divergence regularization
+-        self.kl_divergence = tf.reduce_mean(tf.distributions.kl_divergence(self.old_policy_distribution, self.policy_distribution))
++        if isinstance(self.spaces.action, DiscreteActionSpace):
++            self.kl_divergence = tf.reduce_mean(tf.compat.v1.distributions.kl_divergence(self.old_policy_distribution, self.policy_distribution))
++        else:
++            self.kl_divergence = tf.reduce_mean(tfp.distributions.kl_divergence(self.old_policy_distribution, self.policy_distribution))
++
+ 
+         if self.use_kl_regularization:
+             # no clipping => use kl regularization
+@@ -72,12 +82,12 @@ class PPOHead(Head):
+                                                 tf.square(tf.maximum(0.0, self.kl_divergence - self.kl_cutoff))]
+ 
+         # calculate surrogate loss
+-        self.advantages = tf.placeholder(tf.float32, [None], name="advantages")
++        self.advantages = tf.compat.v1.placeholder(tf.float32, [None], name="advantages")
+         self.target = self.advantages
+         # action_probs_wrt_old_policy != 0 because it is e^...
+         self.likelihood_ratio = tf.exp(self.action_probs_wrt_policy - self.action_probs_wrt_old_policy)
+         if self.clip_likelihood_ratio_using_epsilon is not None:
+-            self.clip_param_rescaler = tf.placeholder(tf.float32, ())
++            self.clip_param_rescaler = tf.compat.v1.placeholder(tf.float32, ())
+             self.input.append(self.clip_param_rescaler)
+             max_value = 1 + self.clip_likelihood_ratio_using_epsilon * self.clip_param_rescaler
+             min_value = 1 - self.clip_likelihood_ratio_using_epsilon * self.clip_param_rescaler
+@@ -95,51 +105,51 @@ class PPOHead(Head):
+                 self.regularizations += [-tf.multiply(self.beta, self.entropy, name='entropy_regularization')]
+ 
+         self.loss = self.surrogate_loss
+-        tf.losses.add_loss(self.loss)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+     def _build_discrete_net(self, input_layer, action_space):
+         num_actions = len(action_space.actions)
+-        self.actions = tf.placeholder(tf.int32, [None], name="actions")
++        self.actions = tf.compat.v1.placeholder(tf.int32, [None], name="actions")
+ 
+-        self.old_policy_mean = tf.placeholder(tf.float32, [None, num_actions], "old_policy_mean")
+-        self.old_policy_std = tf.placeholder(tf.float32, [None, num_actions], "old_policy_std")
++        self.old_policy_mean = tf.compat.v1.placeholder(tf.float32, [None, num_actions], "old_policy_mean")
++        self.old_policy_std = tf.compat.v1.placeholder(tf.float32, [None, num_actions], "old_policy_std")
+ 
+         # Policy Head
+         self.input = [self.actions, self.old_policy_mean]
+         policy_values = self.dense_layer(num_actions)(input_layer, name='policy_fc')
+-        self.policy_mean = tf.nn.softmax(policy_values, name="policy")
++        # Prevent distributions with 0 values
++        self.policy_mean = tf.maximum(tf.nn.softmax(policy_values, name="policy"), ZERO_OFFSET)
+ 
+         # define the distributions for the policy and the old policy
+-        self.policy_distribution = tf.contrib.distributions.Categorical(probs=self.policy_mean)
+-        self.old_policy_distribution = tf.contrib.distributions.Categorical(probs=self.old_policy_mean)
++        self.policy_distribution = tf.compat.v1.distributions.Categorical(probs=self.policy_mean)
++        self.old_policy_distribution = tf.compat.v1.distributions.Categorical(probs=self.old_policy_mean)
+ 
+         self.output = self.policy_mean
+ 
+     def _build_continuous_net(self, input_layer, action_space):
+         num_actions = action_space.shape[0]
+-        self.actions = tf.placeholder(tf.float32, [None, num_actions], name="actions")
++        self.actions = tf.compat.v1.placeholder(tf.float32, [None, num_actions], name="actions")
+ 
+-        self.old_policy_mean = tf.placeholder(tf.float32, [None, num_actions], "old_policy_mean")
+-        self.old_policy_std = tf.placeholder(tf.float32, [None, num_actions], "old_policy_std")
++        self.old_policy_mean = tf.compat.v1.placeholder(tf.float32, [None, num_actions], "old_policy_mean")
++        self.old_policy_std = tf.compat.v1.placeholder(tf.float32, [None, num_actions], "old_policy_std")
+ 
+         self.input = [self.actions, self.old_policy_mean, self.old_policy_std]
+-        self.policy_mean = self.dense_layer(num_actions)(input_layer, name='policy_mean',
+-                                           kernel_initializer=normalized_columns_initializer(0.01))
+-
++        self.policy_mean = tf.identity(self.dense_layer(num_actions)(input_layer, name='policy_mean',
++                                           kernel_initializer=normalized_columns_initializer(0.01)), name="policy")
+         # for local networks in distributed settings, we need to move variables we create manually to the
+         # tf.GraphKeys.LOCAL_VARIABLES collection, since the variable scope custom getter which is set in
+         # Architecture does not apply to them
+         if self.is_local and isinstance(self.ap.task_parameters, DistributedTaskParameters):
+             self.policy_logstd = tf.Variable(np.zeros((1, num_actions)), dtype='float32',
+-                                             collections=[tf.GraphKeys.LOCAL_VARIABLES], name="policy_log_std")
++                                             collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES], name="policy_log_std")
+         else:
+             self.policy_logstd = tf.Variable(np.zeros((1, num_actions)), dtype='float32', name="policy_log_std")
+ 
+-        self.policy_std = tf.tile(tf.exp(self.policy_logstd), [tf.shape(input_layer)[0], 1], name='policy_std')
++        self.policy_std = tf.tile(tf.exp(tf.clip_by_value(self.policy_logstd, -20.0, 3.0)), [tf.shape(input_layer)[0], 1], name='policy_std')
+ 
+         # define the distributions for the policy and the old policy
+-        self.policy_distribution = tf.contrib.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std + eps)
+-        self.old_policy_distribution = tf.contrib.distributions.MultivariateNormalDiag(self.old_policy_mean, self.old_policy_std + eps)
++        self.policy_distribution = tfp.distributions.MultivariateNormalDiag(self.policy_mean, self.policy_std + eps)
++        self.old_policy_distribution = tfp.distributions.MultivariateNormalDiag(self.old_policy_mean, self.old_policy_std + eps)
+ 
+         self.output = [self.policy_mean, self.policy_std]
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/ppo_v_head.py b/rl_coach/architectures/tensorflow_components/heads/ppo_v_head.py
+index e2abbfc..1907fe9 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/ppo_v_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/ppo_v_head.py
+@@ -35,12 +35,12 @@ class PPOVHead(Head):
+         self.output_bias_initializer = output_bias_initializer
+ 
+     def _build_module(self, input_layer):
+-        self.old_policy_value = tf.placeholder(tf.float32, [None], "old_policy_values")
++        self.old_policy_value = tf.compat.v1.placeholder(tf.float32, [None], "old_policy_values")
+         self.input = [self.old_policy_value]
+         self.output = self.dense_layer(1)(input_layer, name='output',
+                                           kernel_initializer=normalized_columns_initializer(1.0),
+                                           bias_initializer=self.output_bias_initializer)
+-        self.target = self.total_return = tf.placeholder(tf.float32, [None], name="total_return")
++        self.target = self.total_return = tf.compat.v1.placeholder(tf.float32, [None], name="total_return")
+ 
+         value_loss_1 = tf.square(self.output - self.target)
+         value_loss_2 = tf.square(self.old_policy_value +
+@@ -49,7 +49,7 @@ class PPOVHead(Head):
+                                                   self.clip_likelihood_ratio_using_epsilon) - self.target)
+         self.vf_loss = tf.reduce_mean(tf.maximum(value_loss_1, value_loss_2))
+         self.loss = self.vf_loss
+-        tf.losses.add_loss(self.loss)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+     def __str__(self):
+         result = [
+diff --git a/rl_coach/architectures/tensorflow_components/heads/q_head.py b/rl_coach/architectures/tensorflow_components/heads/q_head.py
+index 0bd120b..2a9470b 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/q_head.py
+@@ -42,9 +42,9 @@ class QHead(Head):
+             )
+         self.return_type = QActionStateValue
+         if agent_parameters.network_wrappers[self.network_name].replace_mse_with_huber_loss:
+-            self.loss_type = tf.losses.huber_loss
++            self.loss_type = tf.compat.v1.losses.huber_loss
+         else:
+-            self.loss_type = tf.losses.mean_squared_error
++            self.loss_type = tf.compat.v1.losses.mean_squared_error
+ 
+         self.output_bias_initializer = output_bias_initializer
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/quantile_regression_q_head.py b/rl_coach/architectures/tensorflow_components/heads/quantile_regression_q_head.py
+index 4e32e91..9bce7dc 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/quantile_regression_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/quantile_regression_q_head.py
+@@ -38,8 +38,8 @@ class QuantileRegressionQHead(QHead):
+         self.loss_type = []
+ 
+     def _build_module(self, input_layer):
+-        self.actions = tf.placeholder(tf.int32, [None, 2], name="actions")
+-        self.quantile_midpoints = tf.placeholder(tf.float32, [None, self.num_atoms], name="quantile_midpoints")
++        self.actions = tf.compat.v1.placeholder(tf.int32, [None, 2], name="actions")
++        self.quantile_midpoints = tf.compat.v1.placeholder(tf.float32, [None, self.num_atoms], name="quantile_midpoints")
+         self.input = [self.actions, self.quantile_midpoints]
+ 
+         # the output of the head is the N unordered quantile locations {theta_1, ..., theta_N}
+@@ -48,7 +48,7 @@ class QuantileRegressionQHead(QHead):
+         quantiles_locations = tf.reshape(quantiles_locations, (tf.shape(quantiles_locations)[0], self.num_actions, self.num_atoms))
+         self.output = quantiles_locations
+ 
+-        self.quantiles = tf.placeholder(tf.float32, shape=(None, self.num_atoms), name="quantiles")
++        self.quantiles = tf.compat.v1.placeholder(tf.float32, shape=(None, self.num_atoms), name="quantiles")
+         self.target = self.quantiles
+ 
+         # only the quantiles of the taken action are taken into account
+@@ -73,7 +73,7 @@ class QuantileRegressionQHead(QHead):
+         # Quantile regression loss (the probability for each quantile is 1/num_quantiles)
+         quantile_regression_loss = tf.reduce_sum(quantile_huber_loss) / float(self.num_atoms)
+         self.loss = quantile_regression_loss
+-        tf.losses.add_loss(self.loss)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+         self.q_values = tf.tensordot(tf.cast(self.output, tf.float64), self.quantile_probabilities, 1)
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/rainbow_q_head.py b/rl_coach/architectures/tensorflow_components/heads/rainbow_q_head.py
+index f7f0ba4..b138fc7 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/rainbow_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/rainbow_q_head.py
+@@ -37,13 +37,13 @@ class RainbowQHead(QHead):
+ 
+     def _build_module(self, input_layer):
+         # state value tower - V
+-        with tf.variable_scope("state_value"):
++        with tf.compat.v1.variable_scope("state_value"):
+             state_value = self.dense_layer(512)(input_layer, activation=self.activation_function, name='fc1')
+             state_value = self.dense_layer(self.num_atoms)(state_value, name='fc2')
+             state_value = tf.expand_dims(state_value, axis=1)
+ 
+         # action advantage tower - A
+-        with tf.variable_scope("action_advantage"):
++        with tf.compat.v1.variable_scope("action_advantage"):
+             action_advantage = self.dense_layer(512)(input_layer, activation=self.activation_function, name='fc1')
+             action_advantage = self.dense_layer(self.num_actions * self.num_atoms)(action_advantage, name='fc2')
+             action_advantage = tf.reshape(action_advantage, (tf.shape(input_layer)[0], self.num_actions,
+@@ -58,11 +58,11 @@ class RainbowQHead(QHead):
+         self.output = tf.nn.softmax(values_distribution)
+ 
+         # calculate cross entropy loss
+-        self.distributions = tf.placeholder(tf.float32, shape=(None, self.num_actions, self.num_atoms),
++        self.distributions = tf.compat.v1.placeholder(tf.float32, shape=(None, self.num_actions, self.num_atoms),
+                                             name="distributions")
+         self.target = self.distributions
+-        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=self.target, logits=values_distribution)
+-        tf.losses.add_loss(self.loss)
++        self.loss = tf.nn.softmax_cross_entropy_with_logits(labels=tf.stop_gradient(self.target), logits=values_distribution)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+         self.q_values = tf.tensordot(tf.cast(self.output, tf.float64), self.z_values, 1)
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/heads/sac_head.py b/rl_coach/architectures/tensorflow_components/heads/sac_head.py
+index aad9bfc..dfd58c3 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/sac_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/sac_head.py
+@@ -15,6 +15,7 @@
+ #
+ 
+ import tensorflow as tf
++import tensorflow_probability as tfp
+ 
+ from rl_coach.architectures.tensorflow_components.layers import Dense
+ from rl_coach.architectures.tensorflow_components.heads.head import Head
+@@ -39,7 +40,7 @@ class SACPolicyHead(Head):
+         self.squash = squash        # squashing using tanh
+ 
+     def _build_module(self, input_layer):
+-        self.given_raw_actions = tf.placeholder(tf.float32, [None, self.num_actions], name="actions")
++        self.given_raw_actions = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions], name="actions")
+         self.input = [self.given_raw_actions]
+         self.output = []
+ 
+@@ -55,7 +56,7 @@ class SACPolicyHead(Head):
+         '''
+         if not self.squash:
+             return 0
+-        return tf.reduce_sum(tf.log(1 - tf.tanh(actions) ** 2 + eps), axis=1)
++        return tf.reduce_sum(tf.math.log(1 - tf.tanh(actions) ** 2 + eps), axis=1)
+ 
+     def _build_continuous_net(self, input_layer, action_space):
+         num_actions = action_space.shape[0]
+@@ -70,8 +71,7 @@ class SACPolicyHead(Head):
+ 
+         # define the distributions for the policy
+         # Tensorflow's multivariate normal distribution supports reparameterization
+-        tfd = tf.contrib.distributions
+-        self.policy_distribution = tfd.MultivariateNormalDiag(loc=self.policy_mean,
++        self.policy_distribution = tfp.distributions.MultivariateNormalDiag(loc=self.policy_mean,
+                                                               scale_diag=tf.exp(self.policy_log_std))
+ 
+         # define network outputs
+diff --git a/rl_coach/architectures/tensorflow_components/heads/sac_q_head.py b/rl_coach/architectures/tensorflow_components/heads/sac_q_head.py
+index dbac165..d6b4e9d 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/sac_q_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/sac_q_head.py
+@@ -48,15 +48,15 @@ class SACQHead(Head):
+         # state is the observation fed through the input_layer, action is fed through placeholder to the header
+         # each is calculating q value  : q1(s,a) and q2(s,a)
+         # the output of the head is min(q1,q2)
+-        self.actions = tf.placeholder(tf.float32, [None, self.num_actions], name="actions")
+-        self.target = tf.placeholder(tf.float32, [None, 1], name="q_targets")
++        self.actions = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions], name="actions")
++        self.target = tf.compat.v1.placeholder(tf.float32, [None, 1], name="q_targets")
+         self.input = [self.actions]
+         self.output = []
+         # Note (1) : in the author's implementation of sac (in rllab) they summarize the embedding of observation and
+         # action (broadcasting the bias) in the first layer of the network.
+ 
+         # build q1 network head
+-        with tf.variable_scope("q1_head"):
++        with tf.compat.v1.variable_scope("q1_head"):
+             layer_size = self.network_layers_sizes[0]
+             qi_obs_emb = self.dense_layer(layer_size)(input_layer, activation=self.activation_function)
+             qi_act_emb = self.dense_layer(layer_size)(self.actions, activation=self.activation_function)
+@@ -68,7 +68,7 @@ class SACQHead(Head):
+                                                  bias_initializer=self.output_bias_initializer)
+ 
+         # build q2 network head
+-        with tf.variable_scope("q2_head"):
++        with tf.compat.v1.variable_scope("q2_head"):
+             layer_size = self.network_layers_sizes[0]
+             qi_obs_emb = self.dense_layer(layer_size)(input_layer, activation=self.activation_function)
+             qi_act_emb = self.dense_layer(layer_size)(self.actions, activation=self.activation_function)
+@@ -93,7 +93,7 @@ class SACQHead(Head):
+         self.q2_loss = 0.5*tf.reduce_mean(tf.square(self.q2_output - self.target))
+         # eventually both losses are depends on different parameters so we can sum them up
+         self.loss = self.q1_loss+self.q2_loss
+-        tf.losses.add_loss(self.loss)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+     def __str__(self):
+         result = [
+diff --git a/rl_coach/architectures/tensorflow_components/heads/td3_v_head.py b/rl_coach/architectures/tensorflow_components/heads/td3_v_head.py
+index 1457e32..8420f56 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/td3_v_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/td3_v_head.py
+@@ -40,7 +40,7 @@ class TD3VHead(Head):
+     def _build_module(self, input_layer):
+         # Standard V Network
+         q_outputs = []
+-        self.target = tf.placeholder(tf.float32, shape=(None, 1), name="q_networks_min_placeholder")
++        self.target = tf.compat.v1.placeholder(tf.float32, shape=(None, 1), name="q_networks_min_placeholder")
+ 
+         for i in range(input_layer.shape[0]): # assuming that the actual size is 2, as there are two critic networks
+             if self.initializer == 'normalized_columns':
+@@ -57,7 +57,7 @@ class TD3VHead(Head):
+         self.output.append(tf.reduce_min(q_outputs, axis=0))
+         self.output.append(tf.reduce_mean(self.output[0]))
+         self.loss = sum(self.loss)
+-        tf.losses.add_loss(self.loss)
++        tf.compat.v1.losses.add_loss(self.loss)
+ 
+     def __str__(self):
+         result = [
+diff --git a/rl_coach/architectures/tensorflow_components/heads/v_head.py b/rl_coach/architectures/tensorflow_components/heads/v_head.py
+index 16ff185..1f0d00a 100644
+--- a/rl_coach/architectures/tensorflow_components/heads/v_head.py
++++ b/rl_coach/architectures/tensorflow_components/heads/v_head.py
+@@ -33,9 +33,9 @@ class VHead(Head):
+         self.return_type = VStateValue
+ 
+         if agent_parameters.network_wrappers[self.network_name.split('/')[0]].replace_mse_with_huber_loss:
+-            self.loss_type = tf.losses.huber_loss
++            self.loss_type = tf.compat.v1.losses.huber_loss
+         else:
+-            self.loss_type = tf.losses.mean_squared_error
++            self.loss_type = tf.compat.v1.losses.mean_squared_error
+ 
+         self.initializer = initializer
+         self.output_bias_initializer = output_bias_initializer
+diff --git a/rl_coach/architectures/tensorflow_components/layers.py b/rl_coach/architectures/tensorflow_components/layers.py
+index 91c0c30..6fb60a8 100644
+--- a/rl_coach/architectures/tensorflow_components/layers.py
++++ b/rl_coach/architectures/tensorflow_components/layers.py
+@@ -22,7 +22,7 @@ import tensorflow as tf
+ from rl_coach.architectures import layers
+ from rl_coach.architectures.tensorflow_components import utils
+ 
+-
++tf.compat.v1.disable_resource_variables()
+ def batchnorm_activation_dropout(input_layer, batchnorm, activation_function, dropout_rate, is_training, name):
+     layers = [input_layer]
+ 
+@@ -32,7 +32,7 @@ def batchnorm_activation_dropout(input_layer, batchnorm, activation_function, dr
+     # batchnorm
+     if batchnorm:
+         layers.append(
+-            tf.layers.batch_normalization(layers[-1], name="{}_batchnorm".format(name), training=is_training)
++            tf.compat.v1.layers.batch_normalization(layers[-1], name="{}_batchnorm".format(name), training=is_training)
+         )
+ 
+     # activation
+@@ -46,7 +46,7 @@ def batchnorm_activation_dropout(input_layer, batchnorm, activation_function, dr
+     # dropout
+     if dropout_rate > 0:
+         layers.append(
+-            tf.layers.dropout(layers[-1], dropout_rate, name="{}_dropout".format(name), training=is_training)
++            tf.compat.v1.layers.dropout(layers[-1], dropout_rate, name="{}_dropout".format(name), training=is_training)
+         )
+ 
+     # remove the input layer from the layers list
+@@ -116,7 +116,7 @@ class Conv2d(layers.Conv2d):
+         :param name: layer name
+         :return: conv2d layer
+         """
+-        return tf.layers.conv2d(input_layer, filters=self.num_filters, kernel_size=self.kernel_size,
++        return tf.compat.v1.layers.conv2d(input_layer, filters=self.num_filters, kernel_size=self.kernel_size,
+                                 strides=self.strides, data_format='channels_last', name=name)
+ 
+     @staticmethod
+@@ -177,8 +177,8 @@ class Dense(layers.Dense):
+         :return: dense layer
+         """
+         if bias_initializer is None:
+-            bias_initializer = tf.zeros_initializer()
+-        return tf.layers.dense(input_layer, self.units, name=name, kernel_initializer=kernel_initializer,
++            bias_initializer = tf.compat.v1.zeros_initializer()
++        return tf.compat.v1.layers.dense(input_layer, self.units, name=name, kernel_initializer=kernel_initializer,
+                                activation=activation, bias_initializer=bias_initializer)
+ 
+     @staticmethod
+@@ -222,8 +222,8 @@ class NoisyNetDense(layers.NoisyNetDense):
+         def _factorized_noise(inputs, outputs):
+             # TODO: use factorized noise only for compute intensive algos (e.g. DQN).
+             #      lighter algos (e.g. DQN) should not use it
+-            noise1 = _f(tf.random_normal((inputs, 1)))
+-            noise2 = _f(tf.random_normal((1, outputs)))
++            noise1 = _f(tf.random.normal((inputs, 1)))
++            noise2 = _f(tf.random.normal((1, outputs)))
+             return tf.matmul(noise1, noise2)
+ 
+         num_inputs = input_layer.get_shape()[-1].value
+@@ -233,22 +233,22 @@ class NoisyNetDense(layers.NoisyNetDense):
+         activation = activation if activation is not None else (lambda x: x)
+ 
+         if kernel_initializer is None:
+-            kernel_mean_initializer = tf.random_uniform_initializer(-stddev, stddev)
+-            kernel_stddev_initializer = tf.random_uniform_initializer(-stddev * self.sigma0, stddev * self.sigma0)
++            kernel_mean_initializer = tf.compat.v1.random_uniform_initializer(-stddev, stddev)
++            kernel_stddev_initializer = tf.compat.v1.random_uniform_initializer(-stddev * self.sigma0, stddev * self.sigma0)
+         else:
+             kernel_mean_initializer = kernel_stddev_initializer = kernel_initializer
+         if bias_initializer is None:
+-            bias_initializer = tf.zeros_initializer()
+-        with tf.variable_scope(None, default_name=name):
+-            weight_mean = tf.get_variable('weight_mean', shape=(num_inputs, num_outputs),
++            bias_initializer = tf.compat.v1.zeros_initializer()
++        with tf.compat.v1.variable_scope(None, default_name=name):
++            weight_mean = tf.compat.v1.get_variable('weight_mean', shape=(num_inputs, num_outputs),
+                                           initializer=kernel_mean_initializer)
+-            bias_mean = tf.get_variable('bias_mean', shape=(num_outputs,), initializer=bias_initializer)
++            bias_mean = tf.compat.v1.get_variable('bias_mean', shape=(num_outputs,), initializer=bias_initializer)
+ 
+-            weight_stddev = tf.get_variable('weight_stddev', shape=(num_inputs, num_outputs),
++            weight_stddev = tf.compat.v1.get_variable('weight_stddev', shape=(num_inputs, num_outputs),
+                                             initializer=kernel_stddev_initializer)
+-            bias_stddev = tf.get_variable('bias_stddev', shape=(num_outputs,),
++            bias_stddev = tf.compat.v1.get_variable('bias_stddev', shape=(num_outputs,),
+                                           initializer=kernel_stddev_initializer)
+-            bias_noise = _f(tf.random_normal((num_outputs,)))
++            bias_noise = _f(tf.random.normal((num_outputs,)))
+             weight_noise = _factorized_noise(num_inputs, num_outputs)
+ 
+         bias = bias_mean + bias_stddev * bias_noise
+diff --git a/rl_coach/architectures/tensorflow_components/middlewares/lstm_middleware.py b/rl_coach/architectures/tensorflow_components/middlewares/lstm_middleware.py
+index 6ca9cd7..f4005d9 100644
+--- a/rl_coach/architectures/tensorflow_components/middlewares/lstm_middleware.py
++++ b/rl_coach/architectures/tensorflow_components/middlewares/lstm_middleware.py
+@@ -57,17 +57,17 @@ class LSTMMiddleware(Middleware):
+             ))
+ 
+         # add the LSTM layer
+-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(self.number_of_lstm_cells, state_is_tuple=True)
++        lstm_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(self.number_of_lstm_cells, state_is_tuple=True)
+         self.c_init = np.zeros((1, lstm_cell.state_size.c), np.float32)
+         self.h_init = np.zeros((1, lstm_cell.state_size.h), np.float32)
+         self.state_init = [self.c_init, self.h_init]
+-        self.c_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.c])
+-        self.h_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.h])
++        self.c_in = tf.compat.v1.placeholder(tf.float32, [1, lstm_cell.state_size.c])
++        self.h_in = tf.compat.v1.placeholder(tf.float32, [1, lstm_cell.state_size.h])
+         self.state_in = (self.c_in, self.h_in)
+         rnn_in = tf.expand_dims(self.layers[-1], [0])
+         step_size = tf.shape(self.layers[-1])[:1]
+-        state_in = tf.nn.rnn_cell.LSTMStateTuple(self.c_in, self.h_in)
+-        lstm_outputs, lstm_state = tf.nn.dynamic_rnn(
++        state_in = tf.compat.v1.nn.rnn_cell.LSTMStateTuple(self.c_in, self.h_in)
++        lstm_outputs, lstm_state = tf.compat.v1.nn.dynamic_rnn(
+             lstm_cell, rnn_in, initial_state=state_in, sequence_length=step_size, time_major=False)
+         lstm_c, lstm_h = lstm_state
+         self.state_out = (lstm_c[:1, :], lstm_h[:1, :])
+diff --git a/rl_coach/architectures/tensorflow_components/middlewares/middleware.py b/rl_coach/architectures/tensorflow_components/middlewares/middleware.py
+index 64c578f..b52d262 100644
+--- a/rl_coach/architectures/tensorflow_components/middlewares/middleware.py
++++ b/rl_coach/architectures/tensorflow_components/middlewares/middleware.py
+@@ -71,7 +71,7 @@ class Middleware(object):
+         :param input_layer: the input to the graph
+         :return: the input placeholder and the output of the last layer
+         """
+-        with tf.variable_scope(self.get_name()):
++        with tf.compat.v1.variable_scope(self.get_name()):
+             self.input = input_layer
+             self._build_module()
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/savers.py b/rl_coach/architectures/tensorflow_components/savers.py
+index 531c523..ae92826 100644
+--- a/rl_coach/architectures/tensorflow_components/savers.py
++++ b/rl_coach/architectures/tensorflow_components/savers.py
+@@ -28,22 +28,22 @@ class GlobalVariableSaver(Saver):
+         self._names = [name]
+         # if graph is finalized, savers must have already already been added. This happens
+         # in the case of a MonitoredSession
+-        self._variables = tf.global_variables()
++        self._variables = tf.compat.v1.trainable_variables()
+ 
+         # target network is never saved or restored directly from checkpoint, so we are removing all its variables from the list
+         # the target network would be synched back from the online network in graph_manager.improve(...), at the beginning of the run flow.
+-        self._variables = [v for v in self._variables if "/target" not in v.name]
++        self._variables = [v for v in self._variables if ('/target' not in v.name and name.split('/')[0]+'/'  in v.name)]
+ 
+         # Using a placeholder to update the variable during restore to avoid memory leak.
+         # Ref: https://github.com/tensorflow/tensorflow/issues/4151
+         self._variable_placeholders = []
+         self._variable_update_ops = []
+         for v in self._variables:
+-            variable_placeholder = tf.placeholder(v.dtype, shape=v.get_shape())
++            variable_placeholder = tf.compat.v1.placeholder(v.dtype, shape=v.get_shape())
+             self._variable_placeholders.append(variable_placeholder)
+             self._variable_update_ops.append(v.assign(variable_placeholder))
+ 
+-        self._saver = tf.train.Saver(self._variables, max_to_keep=None)
++        self._saver = tf.compat.v1.train.Saver(self._variables, max_to_keep=None)
+ 
+     @property
+     def path(self):
+@@ -118,7 +118,7 @@ class GlobalVariableSaver(Saver):
+         # We don't use saver.restore() because checkpoint is loaded to online
+         # network, but if the checkpoint is from the global network, a namespace
+         # mismatch exists and variable name must be modified before loading.
+-        reader = tf.contrib.framework.load_checkpoint(restore_path)
++        reader = tf.train.load_checkpoint(restore_path)
+         for var_name, _ in reader.get_variable_to_shape_map().items():
+             yield var_name, reader.get_tensor(var_name)
+ 
+diff --git a/rl_coach/architectures/tensorflow_components/shared_variables.py b/rl_coach/architectures/tensorflow_components/shared_variables.py
+index fe805af..5278b70 100644
+--- a/rl_coach/architectures/tensorflow_components/shared_variables.py
++++ b/rl_coach/architectures/tensorflow_components/shared_variables.py
+@@ -21,7 +21,7 @@ import tensorflow as tf
+ 
+ from rl_coach.utilities.shared_running_stats import SharedRunningStats
+ 
+-
++tf.compat.v1.disable_resource_variables()
+ class TFSharedRunningStats(SharedRunningStats):
+     def __init__(self, replicated_device=None, epsilon=1e-2, name="", create_ops=True, pubsub_params=None):
+         super().__init__(name=name, pubsub_params=pubsub_params)
+@@ -42,39 +42,39 @@ class TFSharedRunningStats(SharedRunningStats):
+         """
+ 
+         self.clip_values = clip_values
+-        with tf.variable_scope(self.name):
+-            self._sum = tf.get_variable(
++        with tf.compat.v1.variable_scope(self.name):
++            self._sum = tf.compat.v1.get_variable(
+                 dtype=tf.float64,
+-                initializer=tf.constant_initializer(0.0),
++                initializer=tf.compat.v1.constant_initializer(0.0),
+                 name="running_sum", trainable=False, shape=shape, validate_shape=False,
+-                collections=[tf.GraphKeys.GLOBAL_VARIABLES])
+-            self._sum_squares = tf.get_variable(
++                collections=[tf.compat.v1.GraphKeys.GLOBAL_VARIABLES])
++            self._sum_squares = tf.compat.v1.get_variable(
+                 dtype=tf.float64,
+-                initializer=tf.constant_initializer(self.epsilon),
++                initializer=tf.compat.v1.constant_initializer(self.epsilon),
+                 name="running_sum_squares", trainable=False, shape=shape, validate_shape=False,
+-                collections=[tf.GraphKeys.GLOBAL_VARIABLES])
+-            self._count = tf.get_variable(
++                collections=[tf.compat.v1.GraphKeys.GLOBAL_VARIABLES])
++            self._count = tf.compat.v1.get_variable(
+                 dtype=tf.float64,
+                 shape=(),
+-                initializer=tf.constant_initializer(self.epsilon),
+-                name="count", trainable=False, collections=[tf.GraphKeys.GLOBAL_VARIABLES])
++                initializer=tf.compat.v1.constant_initializer(self.epsilon),
++                name="count", trainable=False, collections=[tf.compat.v1.GraphKeys.GLOBAL_VARIABLES])
+ 
+             self._shape = None
+-            self._mean = tf.div(self._sum, self._count, name="mean")
++            self._mean = tf.compat.v1.div(self._sum, self._count, name="mean")
+             self._std = tf.sqrt(tf.maximum((self._sum_squares - self._count * tf.square(self._mean))
+                                            / tf.maximum(self._count-1, 1), self.epsilon), name="stdev")
+             self.tf_mean = tf.cast(self._mean, 'float32')
+             self.tf_std = tf.cast(self._std, 'float32')
+ 
+-            self.new_sum = tf.placeholder(dtype=tf.float64, name='sum')
+-            self.new_sum_squares = tf.placeholder(dtype=tf.float64, name='var')
+-            self.newcount = tf.placeholder(shape=[], dtype=tf.float64, name='count')
++            self.new_sum = tf.compat.v1.placeholder(dtype=tf.float64, name='sum')
++            self.new_sum_squares = tf.compat.v1.placeholder(dtype=tf.float64, name='var')
++            self.newcount = tf.compat.v1.placeholder(shape=[], dtype=tf.float64, name='count')
+ 
+-            self._inc_sum = tf.assign_add(self._sum, self.new_sum, use_locking=True)
+-            self._inc_sum_squares = tf.assign_add(self._sum_squares, self.new_sum_squares, use_locking=True)
+-            self._inc_count = tf.assign_add(self._count, self.newcount, use_locking=True)
++            self._inc_sum = tf.compat.v1.assign_add(self._sum, self.new_sum, use_locking=True)
++            self._inc_sum_squares = tf.compat.v1.assign_add(self._sum_squares, self.new_sum_squares, use_locking=True)
++            self._inc_count = tf.compat.v1.assign_add(self._count, self.newcount, use_locking=True)
+ 
+-            self.raw_obs = tf.placeholder(dtype=tf.float64, name='raw_obs')
++            self.raw_obs = tf.compat.v1.placeholder(dtype=tf.float64, name='raw_obs')
+             self.normalized_obs = (self.raw_obs - self._mean) / self._std
+             if self.clip_values is not None:
+                 self.clipped_obs = tf.clip_by_value(self.normalized_obs, self.clip_values[0], self.clip_values[1])
 diff --git a/rl_coach/core_types.py b/rl_coach/core_types.py
 index c173318..58fd0bc 100644
 --- a/rl_coach/core_types.py
@@ -324,3 +1595,476 @@ index c173318..58fd0bc 100644
  
  
  # transitions
+diff --git a/rl_coach/data_stores/s3_data_store.py b/rl_coach/data_stores/s3_data_store.py
+index 959422a..42737dd 100644
+--- a/rl_coach/data_stores/s3_data_store.py
++++ b/rl_coach/data_stores/s3_data_store.py
+@@ -17,7 +17,7 @@
+ 
+ from rl_coach.data_stores.data_store import DataStore, DataStoreParameters
+ from minio import Minio
+-from minio.error import ResponseError
++from minio.error import InvalidResponseError
+ from configparser import ConfigParser, Error
+ from rl_coach.checkpoint import CheckpointStateFile
+ from rl_coach.data_stores.data_store import SyncFiles
+@@ -133,7 +133,7 @@ class S3DataStore(DataStore):
+                 for filename in os.listdir(os.path.join(self.params.expt_dir, 'gifs')):
+                         self.mc.fput_object(self.params.bucket_name, filename, os.path.join(self.params.expt_dir, 'gifs', filename))
+ 
+-        except ResponseError as e:
++        except InvalidResponseError as e:
+             print("Got exception: %s\n while saving to S3", e)
+ 
+     def load_from_store(self):
+@@ -189,7 +189,7 @@ class S3DataStore(DataStore):
+                     if not os.path.exists(filename):
+                         self.mc.fget_object(obj.bucket_name, obj.object_name, filename)
+ 
+-        except ResponseError as e:
++        except InvalidResponseError as e:
+             print("Got exception: %s\n while loading from S3", e)
+ 
+     def setup_checkpoint_dir(self, crd=None):
+diff --git a/rl_coach/filters/observation/observation_normalization_filter.py b/rl_coach/filters/observation/observation_normalization_filter.py
+index 791b345..db9e104 100644
+--- a/rl_coach/filters/observation/observation_normalization_filter.py
++++ b/rl_coach/filters/observation/observation_normalization_filter.py
+@@ -87,4 +87,3 @@ class ObservationNormalizationFilter(ObservationFilter):
+ 
+     def restore_state_from_checkpoint(self, checkpoint_dir: str, checkpoint_prefix: str):
+         self.running_observation_stats.restore_state_from_checkpoint(checkpoint_dir, checkpoint_prefix)
+- 
+\ No newline at end of file
+diff --git a/rl_coach/graph_managers/graph_manager.py b/rl_coach/graph_managers/graph_manager.py
+index 60afcee..10ae965 100644
+--- a/rl_coach/graph_managers/graph_manager.py
++++ b/rl_coach/graph_managers/graph_manager.py
+@@ -173,7 +173,7 @@ class GraphManager(object):
+     @staticmethod
+     def _create_worker_or_parameters_server_tf(task_parameters: DistributedTaskParameters):
+         import tensorflow as tf
+-        config = tf.ConfigProto()
++        config = tf.compat.v1.ConfigProto()
+         config.allow_soft_placement = True  # allow placing ops on cpu if they are not fit for gpu
+         config.gpu_options.allow_growth = True  # allow the gpu memory allocated for the worker to grow if needed
+         config.gpu_options.per_process_gpu_memory_fraction = 0.2
+@@ -212,7 +212,7 @@ class GraphManager(object):
+ 
+     def _create_session_tf(self, task_parameters: TaskParameters):
+         import tensorflow as tf
+-        config = tf.ConfigProto()
++        config = tf.compat.v1.ConfigProto()
+         config.allow_soft_placement = True  # allow placing ops on cpu if they are not fit for gpu
+         config.gpu_options.allow_growth = True  # allow the gpu memory allocated for the worker to grow if needed
+         # config.gpu_options.per_process_gpu_memory_fraction = 0.2
+@@ -241,7 +241,7 @@ class GraphManager(object):
+             self.set_session(self.sess)
+         else:
+             # regular session
+-            self.sess = tf.Session(config=config)
++            self.sess = tf.compat.v1.Session(config=config)
+             # set the session for all the modules
+             self.set_session(self.sess)
+ 
+@@ -278,7 +278,7 @@ class GraphManager(object):
+         import tensorflow as tf
+ 
+         # write graph
+-        tf.train.write_graph(tf.get_default_graph(),
++        tf.io.write_graph(tf.compat.v1.get_default_graph(),
+                              logdir=self.task_parameters.checkpoint_save_dir,
+                              name='graphdef.pb',
+                              as_text=False)
+diff --git a/rl_coach/presets/Acrobot_DDQN_BCQ_BatchRL.py b/rl_coach/presets/Acrobot_DDQN_BCQ_BatchRL.py
+index cda8a45..43bd5a9 100644
+--- a/rl_coach/presets/Acrobot_DDQN_BCQ_BatchRL.py
++++ b/rl_coach/presets/Acrobot_DDQN_BCQ_BatchRL.py
+@@ -34,7 +34,7 @@ schedule_params.heatup_steps = EnvironmentSteps(DATASET_SIZE)
+ agent_params = DDQNBCQAgentParameters()
+ agent_params.network_wrappers['main'].batch_size = 128
+ # TODO cross-DL framework abstraction for a constant initializer?
+-agent_params.network_wrappers['main'].heads_parameters = [QHeadParameters(output_bias_initializer=tf.constant_initializer(-100))]
++agent_params.network_wrappers['main'].heads_parameters = [QHeadParameters(output_bias_initializer=tf.compat.v1.constant_initializer(-100))]
+ 
+ agent_params.algorithm.num_steps_between_copying_online_weights_to_target = TrainingSteps(
+     100)
+@@ -77,7 +77,7 @@ experience_generating_agent_params.network_wrappers['main'].learning_rate = 0.00
+ experience_generating_agent_params.network_wrappers['main'].batch_size = 128
+ experience_generating_agent_params.network_wrappers['main'].replace_mse_with_huber_loss = False
+ experience_generating_agent_params.network_wrappers['main'].heads_parameters = \
+-[QHeadParameters(output_bias_initializer=tf.constant_initializer(-100))]
++[QHeadParameters(output_bias_initializer=tf.compat.v1.constant_initializer(-100))]
+ 
+ # ER size
+ experience_generating_agent_params.memory = EpisodicExperienceReplayParameters()
+diff --git a/rl_coach/tests/agents/test_agent_external_communication.py b/rl_coach/tests/agents/test_agent_external_communication.py
+index 77f0a89..aa6a78b 100644
+--- a/rl_coach/tests/agents/test_agent_external_communication.py
++++ b/rl_coach/tests/agents/test_agent_external_communication.py
+@@ -12,7 +12,7 @@ logging.set_verbosity(logging.INFO)
+ 
+ @pytest.mark.unit_test
+ def test_get_QActionStateValue_predictions():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     from rl_coach.presets.CartPole_DQN import graph_manager as cartpole_dqn_graph_manager
+     assert cartpole_dqn_graph_manager
+     cartpole_dqn_graph_manager.create_graph(task_parameters=
+diff --git a/rl_coach/tests/architectures/tensorflow_components/embedders/test_identity_embedder.py b/rl_coach/tests/architectures/tensorflow_components/embedders/test_identity_embedder.py
+index 23ca834..337e549 100644
+--- a/rl_coach/tests/architectures/tensorflow_components/embedders/test_identity_embedder.py
++++ b/rl_coach/tests/architectures/tensorflow_components/embedders/test_identity_embedder.py
+@@ -15,7 +15,7 @@ logging.set_verbosity(logging.INFO)
+ 
+ @pytest.fixture
+ def reset():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+ 
+ 
+ @pytest.mark.unit_test
+@@ -23,17 +23,17 @@ def test_embedder(reset):
+     embedder = VectorEmbedder(np.array([10, 10]), name="test", scheme=EmbedderScheme.Empty)
+ 
+     # make sure the ops where not created yet
+-    assert len(tf.get_default_graph().get_operations()) == 0
++    assert len(tf.compat.v1.get_default_graph().get_operations()) == 0
+ 
+     # call the embedder
+     input_ph, output_ph = embedder()
+ 
+     # make sure that now the ops were created
+-    assert len(tf.get_default_graph().get_operations()) > 0
++    assert len(tf.compat.v1.get_default_graph().get_operations()) > 0
+ 
+     # try feeding a batch of one example  # TODO: consider auto converting to batch
+     input = np.random.rand(1, 10, 10)
+-    sess = tf.Session()
++    sess = tf.compat.v1.Session()
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert output.shape == (1, 100)  # should have flattened the input
+ 
+diff --git a/rl_coach/tests/architectures/tensorflow_components/embedders/test_image_embedder.py b/rl_coach/tests/architectures/tensorflow_components/embedders/test_image_embedder.py
+index 65076d1..efc7584 100644
+--- a/rl_coach/tests/architectures/tensorflow_components/embedders/test_image_embedder.py
++++ b/rl_coach/tests/architectures/tensorflow_components/embedders/test_image_embedder.py
+@@ -12,7 +12,7 @@ logging.set_verbosity(logging.INFO)
+ 
+ @pytest.fixture
+ def reset():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+ 
+ 
+ @pytest.mark.unit_test
+@@ -26,24 +26,24 @@ def test_embedder(reset):
+         embedder = ImageEmbedder(np.array([10, 100, 100, 100]), name="test")
+ 
+ 
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+-    pre_ops = len(tf.get_default_graph().get_operations())
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
++    pre_ops = len(tf.compat.v1.get_default_graph().get_operations())
+     # creating a simple image embedder
+     embedder = ImageEmbedder(np.array([100, 100, 10]), name="test", is_training=is_training)
+ 
+     # make sure the only the is_training op is creates
+-    assert len(tf.get_default_graph().get_operations()) == pre_ops
++    assert len(tf.compat.v1.get_default_graph().get_operations()) == pre_ops
+ 
+     # call the embedder
+     input_ph, output_ph = embedder()
+ 
+     # make sure that now the ops were created
+-    assert len(tf.get_default_graph().get_operations()) > pre_ops
++    assert len(tf.compat.v1.get_default_graph().get_operations()) > pre_ops
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 100, 100, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert output.shape == (1, 5184)
+ 
+@@ -58,7 +58,7 @@ def test_embedder(reset):
+ @pytest.mark.unit_test
+ def test_complex_embedder(reset):
+     # creating a deep vector embedder
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+     embedder = ImageEmbedder(np.array([100, 100, 10]), name="test", scheme=EmbedderScheme.Deep, 
+         is_training=is_training)
+ 
+@@ -67,8 +67,8 @@ def test_complex_embedder(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 100, 100, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert output.shape == (1, 256)  # should have flattened the input
+ 
+@@ -76,7 +76,7 @@ def test_complex_embedder(reset):
+ @pytest.mark.unit_test
+ def test_activation_function(reset):
+     # creating a deep image embedder with relu
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+     embedder = ImageEmbedder(np.array([100, 100, 10]), name="relu", scheme=EmbedderScheme.Deep,
+                              activation_function=tf.nn.relu, is_training=is_training)
+ 
+@@ -85,8 +85,8 @@ def test_activation_function(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 100, 100, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert np.all(output >= 0)  # should have flattened the input
+ 
+@@ -99,7 +99,7 @@ def test_activation_function(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 100, 100, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder_tanh.output, {embedder_tanh.input: input})
+     assert np.all(output >= -1) and np.all(output <= 1)
+diff --git a/rl_coach/tests/architectures/tensorflow_components/embedders/test_vector_embedder.py b/rl_coach/tests/architectures/tensorflow_components/embedders/test_vector_embedder.py
+index 73482f9..400a738 100644
+--- a/rl_coach/tests/architectures/tensorflow_components/embedders/test_vector_embedder.py
++++ b/rl_coach/tests/architectures/tensorflow_components/embedders/test_vector_embedder.py
+@@ -12,7 +12,7 @@ logging.set_verbosity(logging.INFO)
+ 
+ @pytest.fixture
+ def reset():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+ 
+ 
+ @pytest.mark.unit_test
+@@ -22,24 +22,24 @@ def test_embedder(reset):
+         embedder = VectorEmbedder(np.array([10, 10]), name="test")
+ 
+     # creating a simple vector embedder
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+-    pre_ops = len(tf.get_default_graph().get_operations())
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
++    pre_ops = len(tf.compat.v1.get_default_graph().get_operations())
+ 
+     embedder = VectorEmbedder(np.array([10]), name="test", is_training=is_training)
+ 
+     # make sure the ops where not created yet
+-    assert len(tf.get_default_graph().get_operations()) == pre_ops
++    assert len(tf.compat.v1.get_default_graph().get_operations()) == pre_ops
+ 
+     # call the embedder
+     input_ph, output_ph = embedder()
+ 
+     # make sure that now the ops were created
+-    assert len(tf.get_default_graph().get_operations()) > pre_ops
++    assert len(tf.compat.v1.get_default_graph().get_operations()) > pre_ops
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert output.shape == (1, 256)
+ 
+@@ -54,7 +54,7 @@ def test_embedder(reset):
+ @pytest.mark.unit_test
+ def test_complex_embedder(reset):
+     # creating a deep vector embedder
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+     embedder = VectorEmbedder(np.array([10]), name="test", scheme=EmbedderScheme.Deep, is_training=is_training)
+ 
+     # call the embedder
+@@ -62,8 +62,8 @@ def test_complex_embedder(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert output.shape == (1, 128)  # should have flattened the input
+ 
+@@ -71,7 +71,7 @@ def test_complex_embedder(reset):
+ @pytest.mark.unit_test
+ def test_activation_function(reset):
+     # creating a deep vector embedder with relu
+-    is_training = tf.Variable(False, trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
++    is_training = tf.Variable(False, trainable=False, collections=[tf.compat.v1.GraphKeys.LOCAL_VARIABLES])
+     embedder = VectorEmbedder(np.array([10]), name="relu", scheme=EmbedderScheme.Deep,
+                               activation_function=tf.nn.relu, is_training=is_training)
+ 
+@@ -80,8 +80,8 @@ def test_activation_function(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder.output, {embedder.input: input})
+     assert np.all(output >= 0)  # should have flattened the input
+ 
+@@ -94,7 +94,7 @@ def test_activation_function(reset):
+ 
+     # try feeding a batch of one example
+     input = np.random.rand(1, 10)
+-    sess = tf.Session()
+-    sess.run(tf.global_variables_initializer())
++    sess = tf.compat.v1.Session()
++    sess.run(tf.compat.v1.global_variables_initializer())
+     output = sess.run(embedder_tanh.output, {embedder_tanh.input: input})
+     assert np.all(output >= -1) and np.all(output <= 1)
+diff --git a/rl_coach/tests/graph_managers/test_basic_rl_graph_manager.py b/rl_coach/tests/graph_managers/test_basic_rl_graph_manager.py
+index 4e30312..c10a99f 100644
+--- a/rl_coach/tests/graph_managers/test_basic_rl_graph_manager.py
++++ b/rl_coach/tests/graph_managers/test_basic_rl_graph_manager.py
+@@ -14,7 +14,7 @@ logging.set_verbosity(logging.INFO)
+ 
+ @pytest.mark.unit_test
+ def test_basic_rl_graph_manager_with_pong_a3c():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     from rl_coach.presets.Atari_A3C import graph_manager
+     assert graph_manager
+     graph_manager.env_params.level = "PongDeterministic-v4"
+@@ -25,7 +25,7 @@ def test_basic_rl_graph_manager_with_pong_a3c():
+ 
+ @pytest.mark.unit_test
+ def test_basic_rl_graph_manager_with_pong_nec():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     from rl_coach.presets.Atari_NEC import graph_manager
+     assert graph_manager
+     graph_manager.env_params.level = "PongDeterministic-v4"
+@@ -36,7 +36,7 @@ def test_basic_rl_graph_manager_with_pong_nec():
+ 
+ @pytest.mark.unit_test
+ def test_basic_rl_graph_manager_with_cartpole_dqn():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     from rl_coach.presets.CartPole_DQN import graph_manager
+     assert graph_manager
+     graph_manager.create_graph(task_parameters=TaskParameters(framework_type=Frameworks.tensorflow,
+@@ -46,7 +46,7 @@ def test_basic_rl_graph_manager_with_cartpole_dqn():
+ # Test for identifying memory leak in restore_checkpoint
+ @pytest.mark.unit_test
+ def test_basic_rl_graph_manager_with_cartpole_dqn_and_repeated_checkpoint_restore():
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     from rl_coach.presets.CartPole_DQN import graph_manager
+     assert graph_manager
+     graph_manager.create_graph(task_parameters=TaskParameters(framework_type=Frameworks.tensorflow,
+diff --git a/rl_coach/tests/memories/test_differential_neural_dictionary.py b/rl_coach/tests/memories/test_differential_neural_dictionary.py
+index 461b4e5..eb1a0be 100644
+--- a/rl_coach/tests/memories/test_differential_neural_dictionary.py
++++ b/rl_coach/tests/memories/test_differential_neural_dictionary.py
+@@ -43,8 +43,8 @@ def test_random_sample_from_dnd(dnd: QDND):
+     # calculate_normalization_factor
+     sampled_embeddings = dnd.sample_embeddings(NUM_SAMPLED_EMBEDDINGS)
+     coefficient = 1/(NUM_SAMPLED_EMBEDDINGS * (NUM_SAMPLED_EMBEDDINGS - 1.0))
+-    tf_current_embedding = tf.placeholder(tf.float32, shape=(EMBEDDING_SIZE), name='current_embedding')
+-    tf_other_embeddings = tf.placeholder(tf.float32, shape=(NUM_SAMPLED_EMBEDDINGS - 1, EMBEDDING_SIZE), name='other_embeddings')
++    tf_current_embedding = tf.compat.v1.placeholder(tf.float32, shape=(EMBEDDING_SIZE), name='current_embedding')
++    tf_other_embeddings = tf.compat.v1.placeholder(tf.float32, shape=(NUM_SAMPLED_EMBEDDINGS - 1, EMBEDDING_SIZE), name='other_embeddings')
+ 
+     sub = tf_current_embedding - tf_other_embeddings
+     square = tf.square(sub)
+@@ -55,7 +55,7 @@ def test_random_sample_from_dnd(dnd: QDND):
+     ###########################
+     # more efficient method
+     ###########################
+-    sampled_embeddings_expanded = tf.placeholder(
++    sampled_embeddings_expanded = tf.compat.v1.placeholder(
+         tf.float32, shape=(1, NUM_SAMPLED_EMBEDDINGS, EMBEDDING_SIZE), name='sampled_embeddings_expanded')
+     sampled_embeddings_tiled = tf.tile(sampled_embeddings_expanded, (sampled_embeddings_expanded.shape[1], 1, 1))
+     sampled_embeddings_transposed = tf.transpose(sampled_embeddings_tiled, (1, 0, 2))
+@@ -63,11 +63,11 @@ def test_random_sample_from_dnd(dnd: QDND):
+     square2 = tf.square(sub2)
+     result2 = tf.reduce_sum(square2)
+ 
+-    config = tf.ConfigProto()
++    config = tf.compat.v1.ConfigProto()
+     config.allow_soft_placement = True  # allow placing ops on cpu if they are not fit for gpu
+     config.gpu_options.allow_growth = True  # allow the gpu memory allocated for the worker to grow if needed
+ 
+-    sess = tf.Session(config=config)
++    sess = tf.compat.v1.Session(config=config)
+ 
+     sum1 = 0
+     start = time.time()
+diff --git a/rl_coach/tests/test_global_variable_saver.py b/rl_coach/tests/test_global_variable_saver.py
+index 19da034..47e3f23 100644
+--- a/rl_coach/tests/test_global_variable_saver.py
++++ b/rl_coach/tests/test_global_variable_saver.py
+@@ -19,7 +19,7 @@ def name():
+ 
+ @pytest.fixture
+ def variable(shape, name):
+-    tf.reset_default_graph()
++    tf.compat.v1.reset_default_graph()
+     return tf.Variable(tf.zeros(shape), name=name)
+ 
+ 
+@@ -36,8 +36,8 @@ def assert_arrays_ones_shape(arrays, shape, name):
+ 
+ @pytest.mark.unit_test
+ def test_global_variable_saver_to_arrays(variable, name, shape):
+-    with tf.Session() as session:
+-        session.run(tf.global_variables_initializer())
++    with tf.compat.v1.Session() as session:
++        session.run(tf.compat.v1.global_variables_initializer())
+         session.run(variable.assign(tf.ones(shape)))
+ 
+         saver = GlobalVariableSaver("name")
+@@ -47,8 +47,8 @@ def test_global_variable_saver_to_arrays(variable, name, shape):
+ 
+ @pytest.mark.unit_test
+ def test_global_variable_saver_from_arrays(variable, name, shape):
+-    with tf.Session() as session:
+-        session.run(tf.global_variables_initializer())
++    with tf.compat.v1.Session() as session:
++        session.run(tf.compat.v1.global_variables_initializer())
+ 
+         saver = GlobalVariableSaver("name")
+         saver.from_arrays(session, {name: np.ones(shape)})
+@@ -58,8 +58,8 @@ def test_global_variable_saver_from_arrays(variable, name, shape):
+ 
+ @pytest.mark.unit_test
+ def test_global_variable_saver_to_string(variable, name, shape):
+-    with tf.Session() as session:
+-        session.run(tf.global_variables_initializer())
++    with tf.compat.v1.Session() as session:
++        session.run(tf.compat.v1.global_variables_initializer())
+         session.run(variable.assign(tf.ones(shape)))
+ 
+         saver = GlobalVariableSaver("name")
+@@ -70,8 +70,8 @@ def test_global_variable_saver_to_string(variable, name, shape):
+ 
+ @pytest.mark.unit_test
+ def test_global_variable_saver_from_string(variable, name, shape):
+-    with tf.Session() as session:
+-        session.run(tf.global_variables_initializer())
++    with tf.compat.v1.Session() as session:
++        session.run(tf.compat.v1.global_variables_initializer())
+ 
+         saver = GlobalVariableSaver("name")
+         saver.from_string(session, pickle.dumps({name: np.ones(shape)}, protocol=-1))

@@ -135,32 +135,35 @@ def read_pids_from_file(file_path):
 def kill_sagemaker_simapp_jobs_by_pid():
     """This method reads from the simulation and training pid files and kills the processes one by one.
     """
-    total_wait_time = 0
-    while not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
-        if total_wait_time >= SAGEONLY_PID_FILE_NOT_PRESENT_TIME_OUT:
-            LOG.info("simapp_exit_gracefully - Stopped waiting. SimApp Pid Exists=%s, Training Pid Exists=%s.",
-                     os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH),
-                     os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))
-            return
-        LOG.info("simapp_exit_gracefully - Waiting for simapp and training job to come up.")
-        time.sleep(SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME)
-        total_wait_time += SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME
+    try: 
+        total_wait_time = 0
+        while not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
+            if total_wait_time >= SAGEONLY_PID_FILE_NOT_PRESENT_TIME_OUT:
+                LOG.info("simapp_exit_gracefully - Stopped waiting. SimApp Pid Exists=%s, Training Pid Exists=%s.",
+                        os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH),
+                        os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))
+                return
+            LOG.info("simapp_exit_gracefully - Waiting for simapp and training job to come up.")
+            time.sleep(SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME)
+            total_wait_time += SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME
 
-    simapp_pids = read_pids_from_file(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
-    training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
-    LOG.info("simapp_exit_gracefully - SimApp pids=%s, Training pids=%s.", simapp_pids, training_pids)
+        simapp_pids = read_pids_from_file(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
+        training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
+        LOG.info("simapp_exit_gracefully - SimApp pids=%s, Training pids=%s.", simapp_pids, training_pids)
 
-    pids_to_kill = []
-    if os.environ.get(CONDA_DEFAULT_ENV) == CONDA_ENV_NAME:
-        pids_to_kill = simapp_pids
-        pids_to_kill.extend(training_pids)
-    else:
-        pids_to_kill = training_pids
-        pids_to_kill.extend(simapp_pids)
+        pids_to_kill = []
+        if os.environ.get(CONDA_DEFAULT_ENV) == CONDA_ENV_NAME:
+            pids_to_kill = simapp_pids
+            pids_to_kill.extend(training_pids)
+        else:
+            pids_to_kill = training_pids
+            pids_to_kill.extend(simapp_pids)
 
-    LOG.info("simapp_exit_gracefully - Killing pids %s.", pids_to_kill)
-    for pid in pids_to_kill:
-        kill_by_pid(pid)
+        LOG.info("simapp_exit_gracefully - Killing pids %s.", pids_to_kill)
+        for pid in pids_to_kill:
+            kill_by_pid(pid)
+    except Exception as ex:
+        logging.error("simapp_exit_gracefully- Failed to kill sagemaker simapp jobs by pids: {}".format(str(ex)))
 
 
 def kill_by_pid(pid):
