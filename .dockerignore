@@ -1,1 +1,5 @@
 bundle-src/
+build/
+.venv/
+install/
+log/
