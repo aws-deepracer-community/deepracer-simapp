@@ -80,9 +80,6 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 ENV ROS_DISTRO=noetic
 
-# RUN pip3 install -U pip setuptools>=41.0.0
-ARG TENSORFLOW_VER
-
 ADD docker/requirements.txt /
 RUN python3 -m pip install -U pip 'setuptools<65' && \
     pip3 install --no-cache-dir -r requirements.txt 
@@ -94,7 +91,7 @@ RUN apt-get update -y && rosdep init && rosdep update --include-eol-distros && \
     rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment sagemaker_rl_agent && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-    
+
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"

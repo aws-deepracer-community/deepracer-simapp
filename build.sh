@@ -10,18 +10,14 @@ set -e
 
 PREFIX="awsdeepracercommunity"
 ARCH="cpu-avx cpu-avx2 gpu"
-TF_PATH='https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/${arch_secondary}/tensorflow-1.12.3-cp36-cp36m-linux_x86_64.whl'
 
-while getopts ":a:fp:t:" opt; do
+while getopts ":a:fp:" opt; do
     case $opt in
     a)
         ARCH="$OPTARG"
         ;;
     p)
         PREFIX="$OPTARG"
-        ;;
-    t)
-        TF_PATH="$OPTARG"
         ;;
     f)
         OPT_NOCACHE="--no-cache"
@@ -58,21 +54,18 @@ for a in $ARCH; do
         fi
 
         arch_secondary="$(echo $a | gawk 'match($0, /(cpu)(-gl)?-(.*)/, m) { print m[3] }')"
-        tf=$(eval echo $TF_PATH)
         arch_tag="$arch_primary-$arch_secondary"
 
     elif [ -n "$(echo $a | gawk '/gpu/')" ]; then
         arch_primary=$a
         arch_tag=$a
-        tf="https://larsll-build-artifact-share.s3.eu-north-1.amazonaws.com/tensorflow/gpu-nv/tensorflow-1.15.4%2Bnv-cp36-cp36m-linux_x86_64.whl"
-        # tf="tensorflow==1.15.4"
 
     else
         echo "Architecture $a unknown."
     fi
 
     set -x
-    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg TENSORFLOW_VER=$tf --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
     set +x
 
 done
