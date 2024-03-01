@@ -43,9 +43,6 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
                                  ModelMetadataKeys)
 from markov.boto.s3.s3_client import S3Client
 
-import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
-
 logger = Logger(__name__, logging.INFO).get_logger()
 
 ## Suppress unnecessary logs from these modules
