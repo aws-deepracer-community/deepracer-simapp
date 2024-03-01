@@ -421,3 +421,4 @@ class TensorflowModel():
                                                       s3_key=os.path.normpath(
                                                           os.path.join(self._s3_key_dir,
                                                                        frozen_name)),)
+                    LOG.info("Successfully deleted the frozen models in s3 for the iterations: %s", delete_iteration_ids)

@@ -10,7 +10,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_S3_DATA_STORE_EXCEPTION,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
-
+import boto3
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 class RewardFunction():
@@ -51,6 +51,29 @@ class RewardFunction():
                                    max_retry_attempts,
                                    backoff_time_sec)
 
+
+    def _download_directory_from_s3(self):
+
+        s3_client = boto3.resource(
+            service_name = 's3',
+            endpoint_url = 'http://minio:9000',
+        )
+        bucket = s3_client.Bucket('bucket')
+        prefix = 'custom_files/reward'
+        os.makedirs(f'{os.path.dirname(self._local_path)}/reward')
+        for obj in bucket.objects.filter(Prefix=prefix):
+            suffix = '/'.join(obj.key.split('/')[1:])
+            local_dir = os.path.dirname(suffix)
+        if local_dir and not os.path.exists(local_dir):
+            os.makedirs(local_dir)
+            lpath = f'{os.path.dirname(self._local_path)}/{suffix}'
+            LOG.info(f'Downloading {obj.key} to {lpath}')
+            self._s3_client.download_file(
+                bucket=self._bucket,
+                s3_key=obj.key,
+                local_path=lpath)
+            LOG.info(f'Successfully Downloaded {obj.key} to {self._local_path}')
+
     def get_reward_function(self):
         '''Download reward function, import it's module into code, and return it module
 
@@ -73,6 +96,12 @@ class RewardFunction():
 
     def _download(self):
         '''Download customer reward function from s3 with retry logic'''
+        LOG.info(f'Downloading {self._s3_key} to {self._local_path}')
+        self._download_directory_from_s3()
+        self._s3_client.download_file(
+            bucket=self._bucket,
+            s3_key=self._s3_key,
+            local_path=self._local_path)
 
         # check and make local directory
         local_dir = os.path.dirname(self._local_path)
