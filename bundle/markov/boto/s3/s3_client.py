@@ -61,7 +61,7 @@ class S3Client(DeepRacerBotoClient):
             # raise exception and let the client decide the next action
             if self._log_and_cont:
                 error_msg = "[s3] ClientError: Unable to download file from \
-                            bucket {} with key {}. {}".format(bucket, s3_key, ex)
+                            bucket {} with key {}. {}".format(bucket, s3_key, err)
                 raise GenericNonFatalException(error_msg=error_msg,
                                                error_code=SIMAPP_EVENT_ERROR_CODE_500,
                                                error_name=SIMAPP_EVENT_USER_ERROR)
@@ -89,6 +89,61 @@ class S3Client(DeepRacerBotoClient):
                                                                                               ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
+
+
+    def get_object(self, bucket, s3_key):
+        """get object from s3 with retry logic
+        Args:
+            bucket (str): s3 bucket
+            s3_key (str): s3 key
+        """
+
+
+        try:
+            return self.exp_backoff(
+                    action_method=self.get_client().get_object,
+                    Bucket = bucket,
+                    Key = s3_key)
+        except botocore.exceptions.ClientError as err:
+            # It is possible that the file isn't there in which case we should
+             # raise exception and let the client decide the next action
+            if self._log_and_cont:
+                error_msg = "[s3] ClientError: Unable to get object from \
+                    bucket {} with key {}. {}".format(bucket, s3_key, err)
+                raise GenericNonFatalException(
+                    error_msg=error_msg,
+                    error_code = SIMAPP_EVENT_ERROR_CODE_500,
+                    error_name = SIMAPP_EVENT_USER_ERROR)
+            raise err
+        except botocore.exceptions.ConnectTimeoutError as ex:
+
+            if self._log_and_cont:
+                error_msg = "[s3] ConnectTimeoutError: Unable to get object from \
+                    bucket {} with key {}. {}".format(bucket, s3_key, ex)
+                raise GenericNonFatalException(
+                                error_msg=error_msg,
+                            error_code = SIMAPP_EVENT_ERROR_CODE_500,
+                            error_name = SIMAPP_EVENT_USER_ERROR)
+            log_and_exit(
+                    "Issue with your current VPC stack and IAM roles.\
+                      You might need to reset your account resources: {}".format(ex),
+                    SIMAPP_S3_DATA_STORE_EXCEPTION,
+                    SIMAPP_EVENT_ERROR_CODE_500)
+        except Exception as ex:
+            if self._log_and_cont:
+                error_msg = "[s3] SystemError: Unable to get object from \
+                    bucket {} with key {}. {}".format(bucket, s3_key, ex)
+                raise GenericNonFatalException(
+                    error_msg=error_msg,
+                    error_code=SIMAPP_EVENT_ERROR_CODE_500,
+                    error_name=SIMAPP_EVENT_SYSTEM_ERROR)
+            log_and_exit(
+                "Exception in getting object (s3bucket: {} s3_key: {}): {}".format(
+                    bucket,
+                    s3_key,
+                    ex),
+                SIMAPP_S3_DATA_STORE_EXCEPTION,
+                SIMAPP_EVENT_ERROR_CODE_500)
 
     def upload_file(self, bucket, s3_key, local_path, s3_kms_extra_args):
         """upload file to s3 with retry logic

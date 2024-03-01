@@ -360,6 +360,13 @@ def main():
                                    local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format('agent'))
     model_metadata_info = model_metadata.get_model_metadata_info()
     version = model_metadata_info[ModelMetadataKeys.VERSION.value]
+    hyperparameters = Hyperparameters(
+        bucket=args.s3_bucket,
+        s3_key=get_s3_key(args.s3_prefix, HYPERPARAMETER_S3_POSTFIX),
+        region_name=args.aws_region,
+        s3_endpoint_url=args.s3_endpoint_url,
+        local_path=HYPERPARAMETER_LOCAL_PATH_FORMAT.format('agent'))
+    sm_hyperparams_dict = hyperparameters.get_hyperparameters_dict()
 
     agent_config = {
         'model_metadata': model_metadata,
@@ -381,7 +388,8 @@ def main():
             ConfigParams.COLLISION_PENALTY.value: args.collision_penalty,
             ConfigParams.OFF_TRACK_PENALTY.value: args.off_track_penalty,
             ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: args.round_robin_advance_dist,
-            ConfigParams.START_POSITION_OFFSET.value: args.start_position_offset
+            ConfigParams.START_POSITION_OFFSET.value: args.start_position_offset,
+            'hyperparams': sm_hyperparams_dict
         }
     }
 
@@ -479,11 +487,7 @@ def main():
 
     # Download hyperparameters from SageMaker shared s3 bucket
     # TODO: replace 'agent' with name of each agent
-    hyperparameters = Hyperparameters(bucket=args.s3_bucket,
-                                      s3_key=get_s3_key(args.s3_prefix, HYPERPARAMETER_S3_POSTFIX),
-                                      region_name=args.aws_region,
-                                      s3_endpoint_url=args.s3_endpoint_url,
-                                      local_path=HYPERPARAMETER_LOCAL_PATH_FORMAT.format('agent'))
+
     sm_hyperparams_dict = hyperparameters.get_hyperparameters_dict()
 
     enable_domain_randomization = utils.str2bool(rospy.get_param('ENABLE_DOMAIN_RANDOMIZATION', False))
