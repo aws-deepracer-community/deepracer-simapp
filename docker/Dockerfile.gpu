@@ -38,7 +38,8 @@ RUN dpkg --add-architecture i386 && \
     libxdmcp6 libxdmcp6:i386 \
     libxcb1 libxcb1:i386 \
     libxext6 libxext6:i386 \
-    libx11-6 libx11-6:i386 && \    
+    libx11-6 libx11-6:i386 \
+    cuda-nvcc-11-8 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -91,7 +92,7 @@ RUN apt-get update -y && rosdep init && rosdep update --include-eol-distros && \
     rosdep install --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment sagemaker_rl_agent && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-    
+
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
