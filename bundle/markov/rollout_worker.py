@@ -389,7 +389,7 @@ def main():
             ConfigParams.OFF_TRACK_PENALTY.value: args.off_track_penalty,
             ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: args.round_robin_advance_dist,
             ConfigParams.START_POSITION_OFFSET.value: args.start_position_offset,
-            'hyperparams': sm_hyperparams_dict
+            'hyperparameters': sm_hyperparams_dict
         }
     }
 

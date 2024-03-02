@@ -55,8 +55,8 @@ class RewardFunction():
     def _download_directory_from_s3(self):
 
         s3_client = boto3.resource(
-            service_name = 's3',
-            endpoint_url = 'http://minio:9000',
+            service_name='s3',
+            endpoint_url='http://minio:9000',
         )
         bucket = s3_client.Bucket('bucket')
         prefix = 'custom_files/reward'
@@ -64,8 +64,8 @@ class RewardFunction():
         for obj in bucket.objects.filter(Prefix=prefix):
             suffix = '/'.join(obj.key.split('/')[1:])
             local_dir = os.path.dirname(suffix)
-        if local_dir and not os.path.exists(local_dir):
-            os.makedirs(local_dir)
+            if local_dir and not os.path.exists(local_dir):
+                os.makedirs(local_dir)
             lpath = f'{os.path.dirname(self._local_path)}/{suffix}'
             LOG.info(f'Downloading {obj.key} to {lpath}')
             self._s3_client.download_file(
@@ -96,7 +96,8 @@ class RewardFunction():
 
     def _download(self):
         '''Download customer reward function from s3 with retry logic'''
-        LOG.info(f'Downloading {self._s3_key} to {self._local_path}')
+        LOG.info(f'Downloading directory')
+
         self._download_directory_from_s3()
         self._s3_client.download_file(
             bucket=self._bucket,
@@ -108,6 +109,7 @@ class RewardFunction():
         if local_dir and not os.path.exists(local_dir):
             os.makedirs(local_dir)
 
+        LOG.info(f'Downloading {self._s3_key} to {self._local_path}')
         # download customer reward function with retry
         try:
             self._s3_client.download_file(bucket=self._bucket,
