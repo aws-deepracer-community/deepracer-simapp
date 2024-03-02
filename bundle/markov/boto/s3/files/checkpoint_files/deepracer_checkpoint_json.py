@@ -160,6 +160,31 @@ class DeepracerCheckpointJson():
                  s3 key {} to local {}.".format(self._s3_key,
                                                 self._local_path))
 
+    def persist_checkpoint_log(self, body, s3_kms_extra_args):
+        checkpoint_log_fn = os.path.normpath(
+            os.path.join(
+                self.s3_prefix,
+                CHECKPOINT_LOG_SUFFIX))
+        try:
+            resp = self._s3_client.get_object(
+                bucket=self._bucket,
+                s3_key=checkpoint_log_fn
+            )
+            data = resp['Body'].read().decode('utf-8')
+        except ClientError as ex:
+            if ex.response['Error']['Code'] == 'NoSuchKey':
+                data = ''
+            else:
+                raise ex
+
+            data += f"{body}\n"
+
+        self._s3_client.put_object(
+            bucket=self._bucket,
+            s3_key=checkpoint_log_fn,
+            body=bytes(data, encoding='utf-8'),
+            s3_kms_extra_args=s3_kms_extra_args)
+
     def persist(self, body, s3_kms_extra_args):
         '''upload metrics into s3 bucket
 
@@ -168,34 +193,10 @@ class DeepracerCheckpointJson():
             s3_kms_extra_args (dict): s3 key management service extra argument
 
         '''
-        checkpoint_log_fn = os.path.normpath(
-            os.path.join(
-                    self.s3_prefix,
-                    CHECKPOINT_LOG_SUFFIX))
-        try:
-            resp = self._s3_client.get_object(
-                    bucket = self._bucket,
-                s3_key = checkpoint_log_fn
-                                      )
-            data = resp['Body'].read().decode('utf-8')
-        except ClientError as ex:
-
-            if ex.response['Error']['Code'] == 'NoSuchKey':
-                    data = ''
-            else:
-                raise ex
-
-            data += f"{body}\n"
-
-            self._s3_client.put_object(
-                bucket=self._bucket,
-                s3_key=checkpoint_log_fn,
-                body=bytes(data, encoding='utf-8'),
-                s3_kms_extra_args=s3_kms_extra_args)
-
-            self._s3_client.put_object(bucket=self._bucket,
-                                   s3_key=self._s3_key,
-                                   body=bytes(body, encoding='utf-8'),
-                                   s3_kms_extra_args=s3_kms_extra_args)
+        self.persist_checkpoint_log(body, s3_kms_extra_args)
+        self._s3_client.put_object(bucket=self._bucket,
+                               s3_key=self._s3_key,
+                               body=bytes(body, encoding='utf-8'),
+                               s3_kms_extra_args=s3_kms_extra_args)
         LOG.info("[s3] Successfully uploaded deepracer checkpoint to \
                  s3 bucket {} with s3 key {}.".format(self._bucket, self._s3_key))

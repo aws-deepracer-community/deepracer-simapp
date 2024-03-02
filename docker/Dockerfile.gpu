@@ -105,6 +105,7 @@ ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
 
 COPY ./bundle/rl_coach.patch /opt/rl_coach.patch
 RUN patch -p1 -N --directory=/usr/local/lib/python3.8/dist-packages/ < /opt/rl_coach.patch
+RUN patch -p1 -N --directory=/usr/local/lib/python3.11/dist-packages/ < /opt/rl_coach.patch
 COPY ./docker/files/run.sh run.sh
 COPY ./docker/files/debug-reward.diff debug-reward.diff
 COPY ./docker/files/shutdown.sh shutdown.sh
