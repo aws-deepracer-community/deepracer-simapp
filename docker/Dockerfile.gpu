@@ -80,10 +80,13 @@ RUN apt-get update -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ENV ROS_DISTRO=noetic
-
+RUN apt-get update && apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update && apt-get install -y python3.11-dev python3.11-venv
 ADD docker/requirements.txt /
 RUN python3 -m pip install -U pip 'setuptools<65' && \
     pip3 install --no-cache-dir -r requirements.txt 
+RUN pip3 install --no-cache-dir pydantic
 
 COPY --from=bundle  /opt/bundle/install /opt/install
 WORKDIR /opt/install
@@ -93,6 +96,9 @@ RUN apt-get update -y && rosdep init && rosdep update --include-eol-distros && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+ADD docker/requirements.311.txt /
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+RUN python3.11 -m pip install --no-cache-dir -r /requirements.311.txt
 ENV COLCON_CURRENT_PREFIX="/opt/install"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
