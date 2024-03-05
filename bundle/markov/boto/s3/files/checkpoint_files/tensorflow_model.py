@@ -412,13 +412,6 @@ class TensorflowModel():
                         file_in_checkpoint_dir = os.path.split(key)[-1]
                         if len(file_in_checkpoint_dir.split("_Step")) > 0:
                             delete_iteration_ids.add(file_in_checkpoint_dir.split("_Step")[0])
-                    LOG.info("Deleting the frozen models in s3 for the iterations: %s",
+                    LOG.info("NOT Deleting the frozen models in s3 for the iterations: %s",
                              delete_iteration_ids)
-                    # Delete the model_{}.pb files from the s3 bucket for the previous iterations
-                    for iteration_id in list(delete_iteration_ids):
-                        frozen_name = "model_{}.pb".format(iteration_id)
-                        self._s3_client.delete_object(bucket=self._bucket,
-                                                      s3_key=os.path.normpath(
-                                                          os.path.join(self._s3_key_dir,
-                                                                       frozen_name)),)
                     LOG.info("Successfully deleted the frozen models in s3 for the iterations: %s", delete_iteration_ids)

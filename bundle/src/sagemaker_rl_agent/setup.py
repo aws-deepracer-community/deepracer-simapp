@@ -38,7 +38,7 @@ setup(
         'shapely==1.6.4',
         'h5py==2.10.0',
         'protobuf==3.19.4',
-        'tensorflow==1.11',
+        'tensorflow[and-cuda]',
         'redis==4.4.4',
         'opencv-python==4.1.1.26',
         'python-dateutil==2.5.3',
