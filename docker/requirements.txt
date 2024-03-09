@@ -1,6 +1,6 @@
 python-dateutil==2.8.2
 annoy==1.17.3
-pillow==9.0.1
+pillow==10.2.0
 matplotlib==3.7.4
 numpy==1.24.3
 pandas==2.0.3
