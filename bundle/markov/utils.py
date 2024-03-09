@@ -28,6 +28,7 @@ from markov.constants import (NUM_RETRIES, CONNECT_TIMEOUT,
                               DeepRacerJobType)
 import boto3
 import botocore
+from markov.boto.s3.s3_client import S3Client
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -63,6 +64,23 @@ def cancel_simulation_job():
     """
     logger.info("Cancelling the current running simulation job")
     aws_region = os.environ.get('APP_REGION')
+
+    if(os.environ.get("JOB_TYPE", "") == "training"):
+        logger.info("[markov.utils] Uploading log files to S3")
+        try: 
+            s3_client = S3Client(region_name=aws_region, max_retry_attempts=3, backoff_time_sec=1.0)
+            filenames = ["/opt/ml/simapp.log", "/opt/ml/training.log"]
+            # Upload all log files to S3
+            s3_extra_args = get_s3_kms_extra_args()
+            for filename in filenames:
+                s3_client.upload_file(bucket=os.environ.get("S3_ROS_LOG_BUCKET"),
+                                            s3_key=os.path.normpath(
+                                                    os.path.join(os.environ.get("JOB_NAME"),
+                                                        filename.split("/")[-1])),
+                                            local_path=filename,
+                                            s3_kms_extra_args=s3_extra_args)
+        except Exception as ex:
+            logging.error("[markov.utils] Failed to upload log files to S3: {}".format(str(ex)))
     if check_is_sageonly():
         sagemaker_job_name = os.environ.get('TRAINING_JOB_NAME')
         if sagemaker_job_name:

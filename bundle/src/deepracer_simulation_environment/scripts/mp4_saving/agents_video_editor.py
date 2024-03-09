@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ##############################################################
 #                                                            #
 #   Copyright 2019 Amazon.com, Inc. or its affiliates.       #
@@ -9,7 +9,7 @@ import sys
 import time
 import logging
 from threading import Thread
-import Queue
+import queue
 import cv2
 import rospy
 from std_srvs.srv import Empty
@@ -90,7 +90,7 @@ class AgentsVideoEditor(object):
         main_camera_topic = "/{}/{}/zed/rgb/image_rect_color".format(self.racecar_name, "main_camera")
 
         # All Mp4 related initialization
-        self._mp4_queue.append(Queue.Queue())
+        self._mp4_queue.append(queue.Queue())
 
         # Initialize save mp4 ROS service for the markov package to signal when to
         # start and stop collecting video frames
@@ -327,7 +327,7 @@ class AgentsVideoEditor(object):
             try:
                 # Pop from the queue and edit the image
                 frame_data = self._mp4_queue[self.racecar_index].get(timeout=QUEUE_WAIT_TIME)
-            except Queue.Empty:
+            except queue.Empty:
                 LOG.debug("AgentsVideoEditor._mp4_queue['{}'] is empty. Retrying...".format(self.racecar_index))
             if frame_data:
                 edited_frames = self._edit_camera_images(frame_data, is_mp4=True)

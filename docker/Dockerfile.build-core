@@ -1,4 +1,4 @@
-FROM ros:melodic-ros-base
+FROM ros:noetic-ros-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
@@ -15,25 +15,24 @@ ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     python3-pip \
-    python-pip \
     python3-colcon-common-extensions \
     rviz \
     x264 \
     libx264-dev \
-    libignition-math2 \
-    libignition-math2-dev \
-    gazebo9 \
-    libgazebo9-dev \
-    ros-melodic-aws-common
+    libignition-math4 \
+    libignition-math4-dev \
+    gazebo11 \
+    libgazebo11-dev 
 
 # Link AWS CPP libraries
-RUN ln -s /opt/ros/melodic/lib/libaws* /usr/local/lib/ && \
-    ln -s /opt/ros/melodic/include/aws /usr/local/include/ 
+RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
+    ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
 
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle
 
 RUN rosdep update --include-eol-distros && rosdep install --from-paths src --ignore-src -r -y 
 
-ENTRYPOINT ["/ros_entrypoint.sh"]
+ADD docker/files/simulation-entrypoint.sh /
+ENTRYPOINT ["/simulation-entrypoint.sh"]
 CMD ["bash"]

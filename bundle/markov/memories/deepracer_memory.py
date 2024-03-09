@@ -62,7 +62,7 @@ class DeepRacerMemory(Memory):
         Get the number of episodes in the ER (even if they are not complete)
         """
         length = self._length
-        if self._length is not 0 and self._buffer[-1].is_empty():
+        if self._length != 0 and self._buffer[-1].is_empty():
             length = self._length - 1
 
         return length

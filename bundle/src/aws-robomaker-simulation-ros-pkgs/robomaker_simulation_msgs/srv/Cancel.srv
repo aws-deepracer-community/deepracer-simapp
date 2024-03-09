@@ -1,0 +1,20 @@
+# Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# This service is loaded at runtime in AWS RoboMaker simulations.
+#
+# Calling this service will cancel the running job and mark the
+# simulation as cancelled.
+#
+# More information about usage can be found here:
+# https://docs.aws.amazon.com/robomaker
+#
+# This uses the CancelSimulationJob API:
+# https://docs.aws.amazon.com/robomaker/latest/dg/API_CancelSimulationJob.html
+---
+# True if the cancellation request was successful.
+bool success
+
+# Message containing more information about the error if success
+# is false.
+string message

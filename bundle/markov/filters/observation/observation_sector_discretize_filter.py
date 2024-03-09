@@ -40,7 +40,7 @@ class ObservationSectorDiscretizeFilter(ObservationFilter):
         # Clip the observation data to clipping distance.
         np.minimum(observation, self._clipping_dist, out=observation)
         # Discretize the observation sector data
-        observation = np.floor(observation / self._discrete_range).astype(np.int)
+        observation = np.floor(observation / self._discrete_range).astype(int)
         # One hot encode the discretized observation sector data
         one_hot_encode = np.zeros((observation.size, self._num_values_per_sector + 1))
         one_hot_encode[np.arange(observation.size), observation] = 1
