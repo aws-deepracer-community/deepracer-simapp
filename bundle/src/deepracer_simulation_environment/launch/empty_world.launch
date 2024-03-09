@@ -4,7 +4,7 @@
   <!-- these are the arguments you can pass this launch file, for example paused:=true -->
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
-  <arg name="extra_gazebo_args" default=""/>
+  <arg name="extra_gazebo_args" default="$(optenv GAZEBO_ARGS)"/>
   <arg name="gui" default="true"/>
   <arg name="recording" default="false"/>
   <!-- Note that 'headless' is currently non-functional.  See gazebo_ros_pkgs issue #491 (-r arg does not disable

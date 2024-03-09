@@ -23,6 +23,7 @@
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
         <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
+        <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
     <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar_f1.launch" if="$(arg f1)">
@@ -35,6 +36,7 @@
         <arg name="simapp_versions" value="$(arg simapp_versions)" />
         <arg name="multicar" value="$(arg multicar)" />
         <arg name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)" />
+        <arg name="gui" value="$(env ENABLE_GUI)" />
     </include>
 
     <node name="agent" pkg="deepracer_simulation_environment" type="run_evaluation_rl_agent.sh" output="screen" required="true"/>

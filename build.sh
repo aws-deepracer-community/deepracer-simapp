@@ -9,7 +9,7 @@ function ctrl_c() {
 set -e
 
 PREFIX="awsdeepracercommunity"
-ARCH="cpu-avx cpu-avx2 gpu"
+ARCH="cpu gpu"
 
 while getopts ":a:fp:" opt; do
     case $opt in
@@ -46,26 +46,8 @@ echo "Preparing docker images for [$ARCH]"
 
 for a in $ARCH; do
 
-    if [ -n "$(echo $a | gawk '/cpu/')" ]; then
-        if [ -n "$(echo $a | gawk '/cpu-gl/')" ]; then
-            arch_primary="cpu-gl"
-        else
-            arch_primary="cpu"
-        fi
-
-        arch_secondary="$(echo $a | gawk 'match($0, /(cpu)(-gl)?-(.*)/, m) { print m[3] }')"
-        arch_tag="$arch_primary-$arch_secondary"
-
-    elif [ -n "$(echo $a | gawk '/gpu/')" ]; then
-        arch_primary=$a
-        arch_tag=$a
-
-    else
-        echo "Architecture $a unknown."
-    fi
-
     set -x
-    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${arch_tag} -f docker/Dockerfile.${arch_primary} --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${a} -f docker/Dockerfile.${a} --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
     set +x
 
 done
