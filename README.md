@@ -22,7 +22,8 @@ Version 5.2 is the current development version for 2024, and it is receiving bot
 
 | Version  | Comment         | CPU      | GPU      |
 | -------- | -------------- | -------- | -------- | 
-| 5.2.0-dev       | Initial release  |  `5.2.0-dev-cpu`, `5.2.0-dev-cpu-avx2` | `5.2.0-dev-gpu` |
+| 5.2.0-dev       | Initial test version  |  `5.2.0-dev-cpu`, `5.2.0-dev-cpu-avx2` | `5.2.0-dev-gpu` |
+| 5.2.1       | Release  |  `5.2.1-cpu` | `5.2.1-gpu` |
 
 ### Version 5.1
 
