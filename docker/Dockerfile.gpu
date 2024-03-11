@@ -114,6 +114,10 @@ COPY ./bundle/src/deepracer_node_monitor/config/*.txt .
 
 COPY VERSION .
 ARG IMG_VERSION
+ARG SNS_ACCESS_KEY_ID
+ARG SNS_SECRET_ACCESS_KEY
+ENV SNS_ACCESS_KEY_ID=$SNS_ACCESS_KEY_ID
+ENV SNS_SECRET_ACCESS_KEY=$SNS_SECRET_ACCESS_KEY
 LABEL maintainer "AWS DeepRacer Community - deepracing.io"
 LABEL version $IMG_VERSION
 
