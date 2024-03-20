@@ -30,9 +30,9 @@ from markov.track_geom.track_data import TrackData
 from markov.boto.s3.constants import (SIMTRACE_EVAL_LOCAL_PATH_FORMAT,
                                       SIMTRACE_TRAINING_LOCAL_PATH_FORMAT)
 from markov.boto.s3.files.metrics import Metrics
-
+from telegraf.client import TelegrafClient    
 LOGGER = Logger(__name__, logging.INFO).get_logger()
-
+telegraf_client = TelegrafClient(host=os.environ.get('TELEGRAF_HOST','localhost'), port=int(os.environ.get('TELEGRAF_PORT','8092')))
 
 #! TODO this needs to be removed after muti part is fixed, note we don't have
 # agent name here, but we can add it to the step metrics if needed
@@ -145,6 +145,14 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         training_metric['completion_percentage'] = int(self._progress_)
         training_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         self._metrics_.append(training_metric)
+        telegraf_client.metric('training_episodes', 
+                               {'reward':training_metric['reward_score'],
+                               'progress':training_metric['completion_percentage'],
+                               'elapsed_time':training_metric['elapsed_time_in_milliseconds']},
+                               tags={'phase':training_metric['phase'],
+                                     'status':training_metric['episode_status'],
+                                     'model':rospy.get_param("MODEL_S3_PREFIX", "sagemaker")}
+                               )
 
     def upload_episode_metrics(self):
         json_metrics = json.dumps({'metrics': self._metrics_,
@@ -385,6 +393,13 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self._total_evaluation_time += eval_metric['elapsed_time_in_milliseconds']
         eval_metric['trial'] = int(self._number_of_trials_)
         self._metrics_.append(eval_metric)
+        telegraf_client.metric('eval_episodes', 
+                               {'progress':eval_metric['completion_percentage'],
+                               'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
+                               'reset_count':eval_metric['reset_count']},
+                               tags={'status':eval_metric['episode_status'],
+                                     'model':rospy.get_param("MODEL_S3_PREFIX", "sagemaker")}
+                               )
 
     def upload_episode_metrics(self):
         # TODO: Service team can't handle "version" key in Evaluation Metrics due to
