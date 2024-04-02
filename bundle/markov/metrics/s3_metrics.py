@@ -32,9 +32,10 @@ from markov.boto.s3.constants import (SIMTRACE_EVAL_LOCAL_PATH_FORMAT,
 from markov.boto.s3.files.metrics import Metrics
 from telegraf.client import TelegrafClient    
 LOGGER = Logger(__name__, logging.INFO).get_logger()
+TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', None)
 
-if os.environ.get('TELEGRAF_HOST', None):
-    telegraf_client = TelegrafClient(host=os.environ.get('TELEGRAF_HOST','localhost'), port=int(os.environ.get('TELEGRAF_PORT','8092')))
+if TELEGRAF_HOST:
+    telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=int(os.environ.get('TELEGRAF_PORT','8092')))
 
 #! TODO this needs to be removed after muti part is fixed, note we don't have
 # agent name here, but we can add it to the step metrics if needed
@@ -147,7 +148,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         training_metric['completion_percentage'] = int(self._progress_)
         training_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         self._metrics_.append(training_metric)
-        if telegraf_client:
+        if TELEGRAF_HOST:
             telegraf_client.metric('training_episodes', 
                                 {'reward':training_metric['reward_score'],
                                 'progress':training_metric['completion_percentage'],
@@ -396,7 +397,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self._total_evaluation_time += eval_metric['elapsed_time_in_milliseconds']
         eval_metric['trial'] = int(self._number_of_trials_)
         self._metrics_.append(eval_metric)
-        if telegraf_client:
+        if TELEGRAF_HOST:
             telegraf_client.metric('eval_episodes', 
                                 {'progress':eval_metric['completion_percentage'],
                                 'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
