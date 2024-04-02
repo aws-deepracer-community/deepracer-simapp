@@ -11,6 +11,7 @@
   <!-- sensor configuration -->
   <xacro:arg name="include_second_camera" default="false" />
   <xacro:arg name="include_lidar_sensor" default="false" />
+  <xacro:arg name="include_imu_sensor" default="false" />
 
   <!-- lidar 360 degree - settings -->
   <xacro:arg name="lidar_360_degree_sample" default="61" />

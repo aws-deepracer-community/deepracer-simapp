@@ -1,4 +1,4 @@
-''' This module houses all the constants used by the AWS DeepRacer environment
+''' This module hauses all the constants used by the AWS DeepRacer enviroment
     package.
 '''
 # Dimensions of the input training image
@@ -11,6 +11,9 @@ TRAINING_LIDAR_SIZE = 64
 NUMBER_OF_LIDAR_SECTORS = 8
 # Max clipping distance for sector lidar sensor
 SECTOR_LIDAR_CLIPPING_DIST = 0.5
+
+# IMU sensor constraints
+TRAINING_IMU_SIZE = 6
 
 LINK_NAMES = ['racecar::left_rear_wheel', 'racecar::left_front_wheel',
               'racecar::right_rear_wheel', 'racecar::right_front_wheel']
@@ -31,7 +34,7 @@ EFFORT_JOINTS = ['/racecar/left_rear_wheel_joint', '/racecar/right_rear_wheel_jo
                  '/racecar/left_steering_hinge_joint', '/racecar/right_steering_hinge_joint']
 
 # The number of steps to wait before checking if the car is stuck
-# This number should correspond to the camera FPS, since it is pacing the
+# This number should corespond to the camera FPS, since it is pacing the
 # step rate.
 NUM_STEPS_TO_CHECK_STUCK = 15
 
