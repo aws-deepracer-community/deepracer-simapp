@@ -1,11 +1,11 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
 FROM ${BUNDLE_PREFIX}/deepracer-robomaker-build-bundle:latest AS bundle
 
-FROM ubuntu:20.04
+FROM arm64v8/ubuntu:20.04
 
 ENV TZ="America/New_York" 
 ENV DEBIAN_FRONTEND="noninteractive" 
-RUN dpkg --add-architecture i386 && \
+RUN dpkg --add-architecture aarch64 && \
     apt-get update && \ 
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
@@ -29,16 +29,16 @@ RUN dpkg --add-architecture i386 && \
     mesa-utils \
     libgl1-mesa-glx \
     libglu1-mesa \    
-    libglvnd0 libglvnd0:i386 \
-    libgl1 libgl1:i386 \
-    libglx0 libglx0:i386 \
-    libegl1 libegl1:i386 \
-    libgles2 libgles2:i386 \
-    libxau6 libxau6:i386 \
-    libxdmcp6 libxdmcp6:i386 \
-    libxcb1 libxcb1:i386 \
-    libxext6 libxext6:i386 \
-    libx11-6 libx11-6:i386 && \    
+    libglvnd0 \
+    libgl1 \
+    libglx0 \
+    libegl1 \
+    libgles2 \
+    libxau6 \
+    libxdmcp6 \
+    libxcb1 \
+    libxext6 \
+    libx11-6 && \    
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

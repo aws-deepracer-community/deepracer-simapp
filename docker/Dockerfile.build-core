@@ -1,4 +1,4 @@
-FROM ros:noetic-ros-base
+FROM arm64v8/ros:noetic-ros-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
