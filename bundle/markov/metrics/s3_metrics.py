@@ -149,7 +149,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         training_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         self._metrics_.append(training_metric)
         if TELEGRAF_HOST:
-            telegraf_client.metric('training_episodes', 
+            telegraf_client.metric('dr_training_episodes', 
                                 {'reward':training_metric['reward_score'],
                                 'progress':training_metric['completion_percentage'],
                                 'elapsed_time':training_metric['elapsed_time_in_milliseconds']},
@@ -398,7 +398,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         eval_metric['trial'] = int(self._number_of_trials_)
         self._metrics_.append(eval_metric)
         if TELEGRAF_HOST:
-            telegraf_client.metric('eval_episodes', 
+            telegraf_client.metric('dr_eval_episodes', 
                                 {'progress':eval_metric['completion_percentage'],
                                 'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
                                 'reset_count':eval_metric['reset_count']},
