@@ -37,7 +37,7 @@ setup(
         'rospkg==1.1.7',
         'shapely==1.6.4',
         'h5py==2.10.0',
-        'protobuf==3.19.4',
+        'protobuf==3.19.5',
         'tensorflow==1.11',
         'redis==4.4.4',
         'opencv-python==4.1.1.26',
