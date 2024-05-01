@@ -158,7 +158,8 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
                                 'elapsed_time':training_metric['elapsed_time_in_milliseconds']},
                                 tags={'phase':training_metric['phase'],
                                         'status':training_metric['episode_status'],
-                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker')}
+                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker'),
+                                        'worker':str(os.environ.get('ROLLOUT_IDX', 0))}
                                )
 
     def upload_episode_metrics(self):
@@ -413,7 +414,8 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                                 'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
                                 'reset_count':eval_metric['reset_count']},
                                 tags={'status':eval_metric['episode_status'],
-                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker')}
+                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker'),
+                                        'worker':str(os.environ.get('ROLLOUT_IDX', 0))}
                                 )
 
     def upload_episode_metrics(self):
