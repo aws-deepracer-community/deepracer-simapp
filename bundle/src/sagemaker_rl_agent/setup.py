@@ -33,7 +33,7 @@ setup(
         'kubernetes==7.0.0',
         'bokeh==1.4.0',
         'rl-coach-slim==1.0.0',
-        'PyYAML==3.13',
+        'PyYAML==5.4',
         'rospkg==1.1.7',
         'shapely==1.6.4',
         'h5py==2.10.0',
