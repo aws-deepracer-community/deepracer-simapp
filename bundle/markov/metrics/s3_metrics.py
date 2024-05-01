@@ -32,10 +32,6 @@ from markov.boto.s3.constants import (SIMTRACE_EVAL_LOCAL_PATH_FORMAT,
 from markov.boto.s3.files.metrics import Metrics
 from telegraf.client import TelegrafClient    
 LOGGER = Logger(__name__, logging.INFO).get_logger()
-TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', None)
-
-if TELEGRAF_HOST:
-    telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=int(os.environ.get('TELEGRAF_PORT','8092')))
 
 #! TODO this needs to be removed after muti part is fixed, note we don't have
 # agent name here, but we can add it to the step metrics if needed
@@ -118,6 +114,13 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._video_metrics = Mp4VideoMetrics.get_empty_dict()
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
 
+        self._telegraf_client = None
+        TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', None)
+        if TELEGRAF_HOST:
+            TELEGRAF_PORT = int(os.environ.get('TELEGRAF_PORT', '8092'))
+            self._telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=TELEGRAF_PORT)
+            LOGGER.info("Telegraf client connecting to {}:{}".format(TELEGRAF_HOST, str(TELEGRAF_PORT)))
+
     def update_tracker(self, delta_time, sim_time):
         """
         Callback when sim time is updated
@@ -148,8 +151,8 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         training_metric['completion_percentage'] = int(self._progress_)
         training_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         self._metrics_.append(training_metric)
-        if TELEGRAF_HOST:
-            telegraf_client.metric('dr_training_episodes', 
+        if self._telegraf_client:
+            self._telegraf_client.metric('dr_training_episodes', 
                                 {'reward':training_metric['reward_score'],
                                 'progress':training_metric['completion_percentage'],
                                 'elapsed_time':training_metric['elapsed_time_in_milliseconds']},
@@ -322,6 +325,13 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                       self._handle_get_video_metrics)
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
 
+        self._telegraf_client = None
+        TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', None)
+        if TELEGRAF_HOST:
+            TELEGRAF_PORT = int(os.environ.get('TELEGRAF_PORT', '8092'))
+            self._telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=TELEGRAF_PORT)
+            LOGGER.info("Telegraf client connecting to {}:{}".format(TELEGRAF_HOST, str(TELEGRAF_PORT)))
+
     def reset_metrics(self, s3_dict_metrics, is_save_simtrace_enabled):
         """reset matrics for virtual event when next racer coming in
 
@@ -397,8 +407,8 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self._total_evaluation_time += eval_metric['elapsed_time_in_milliseconds']
         eval_metric['trial'] = int(self._number_of_trials_)
         self._metrics_.append(eval_metric)
-        if TELEGRAF_HOST:
-            telegraf_client.metric('dr_eval_episodes', 
+        if self._telegraf_client:
+            self._telegraf_client.metric('dr_eval_episodes', 
                                 {'progress':eval_metric['completion_percentage'],
                                 'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
                                 'reset_count':eval_metric['reset_count']},
