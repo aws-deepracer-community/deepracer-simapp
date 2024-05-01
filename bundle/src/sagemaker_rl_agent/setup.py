@@ -25,7 +25,7 @@ setup(
         'pandas==0.22.0',
         'pygame==1.9.3',
         'PyOpenGL==3.1.0',
-        'scipy==1.11.1',
+        'scipy',
         'scikit-image==0.15.0',
         'futures==3.1.1',
         'boto3==1.9.23',

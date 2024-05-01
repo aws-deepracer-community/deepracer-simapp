@@ -6,7 +6,7 @@ numpy==1.24.3
 pandas==2.0.3
 pygame==2.5.2
 PyOpenGL==3.1.7
-scipy==1.11.1
+scipy
 scikit-image==0.21.0
 futures==3.0.5
 boto3==1.34.12
