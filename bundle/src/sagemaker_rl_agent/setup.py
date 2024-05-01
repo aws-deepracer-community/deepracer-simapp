@@ -19,7 +19,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     install_requires=[
         'annoy==1.8.3',
-        'Pillow==4.3.0',
+        'Pillow==10.3.0',
         'matplotlib==2.0.2',
         'numpy==1.14.5',
         'pandas==0.22.0',
@@ -44,7 +44,7 @@ setup(
         'python-dateutil==2.5.3',
         'pytest==4.6.9',
         'docutils==0.15.2',
-        'cryptography==42.0.2',
+        'cryptography==42.0.4',
         'importlib-metadata==0.23',
         'jsonschema==3.2.0',
         'pytz==2020.1',
