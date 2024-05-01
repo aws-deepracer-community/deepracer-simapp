@@ -506,8 +506,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                 W = 0.17
                 r = L/math.tan(steering_angle)
 
-                left_speed = ((r + W / 2) / r) * action_speed
-                right_speed = ((r - W / 2) / r) * action_speed
+                left_speed = ((r - W / 2) / r) * action_speed
+                right_speed = ((r + W / 2) / r) * action_speed
 
                 left_steering = math.atan(L / (r - W / 2))
                 right_steering = math.atan(L / (r + W / 2))
