@@ -55,6 +55,10 @@ logger = Logger(__name__, logging.INFO).get_logger()
 
 MIN_RESET_COUNT = 2 #Reduced reset limit to avoid eval without box of doom
 
+## Suppress unnecessary logs from these modules
+logging.getLogger('rl_coach').setLevel(logging.ERROR)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
 IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = get_robomaker_profiler_env()
 
 
@@ -135,6 +139,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
     handle_job_completion()
 
 def handle_job_completion():
+    logger.info("Evaluation job complete")
     utils.stop_ros_node_monitor()
 
 def main():

@@ -43,10 +43,11 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
                                  ModelMetadataKeys)
 from markov.boto.s3.s3_client import S3Client
 
-import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
-
 logger = Logger(__name__, logging.INFO).get_logger()
+
+## Suppress unnecessary logs from these modules
+logging.getLogger('rl_coach').setLevel(logging.ERROR)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
 PRETRAINED_MODEL_DIR = "./pretrained_checkpoint_sagemaker"
 SM_MODEL_OUTPUT_DIR = os.environ.get("SM_MODEL_DIR", "/opt/ml/model")
