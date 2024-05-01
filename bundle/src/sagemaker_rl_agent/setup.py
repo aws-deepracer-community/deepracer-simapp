@@ -19,7 +19,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     install_requires=[
         'annoy==1.8.3',
-        'Pillow==4.3.0',
+        'Pillow==10.3.0',
         'matplotlib==2.0.2',
         'numpy==1.14.5',
         'pandas==0.22.0',
