@@ -47,7 +47,7 @@ echo "Preparing docker images for [$ARCH]"
 for a in $ARCH; do
 
     set -x
-    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-robomaker:${VERSION}-${a} -f docker/Dockerfile.${a} --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-simapp:${VERSION}-${a} -f docker/Dockerfile.${a}-combined --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
     set +x
 
 done
