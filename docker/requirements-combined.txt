@@ -34,5 +34,4 @@ sagemaker-training
 scikit-image==0.21.0
 scipy
 shapely==1.6.4
-tensorflow-cpu==2.13.1
 tensorflow-probability==0.21.0

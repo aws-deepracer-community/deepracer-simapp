@@ -45,9 +45,25 @@ docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-bundle
 echo "Preparing docker images for [$ARCH]"
 
 for a in $ARCH; do
+    case $a in
+    gpu)
+        CORE_IMG="nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04"
+        NVCC_VER="cuda-nvcc-11-8"
+        TF_VER="tensorflow==2.13.1 tensorflow-probability==0.21.0"
+        ;;
+    cpu)
+        CORE_IMG="ubuntu:20.04"
+        NVCC_VER=""
+        TF_VER="tensorflow-cpu==2.13.1"
+        ;;
+    esac
 
     set -x
-    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-simapp:${VERSION}-${a} -f docker/Dockerfile.${a}-combined --build-arg IMG_VERSION=$VERSION --build-arg BUNDLE_PREFIX=${PREFIX}
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-simapp:${VERSION}-${a} -f docker/Dockerfile.combined \
+        --build-arg IMG_VERSION=${VERSION} \
+        --build-arg BUNDLE_PREFIX=${PREFIX} \
+        --build-arg CORE_IMG=${CORE_IMG} \
+        --build-arg NVCC_VER=${NVCC_VER} \
+        --build-arg TF_VER=${TF_VER}
     set +x
-
 done

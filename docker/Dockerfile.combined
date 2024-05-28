@@ -1,7 +1,11 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
-FROM ${BUNDLE_PREFIX}/deepracer-robomaker-build-bundle:latest AS bundle
+ARG CORE_IMG=ubuntu:20.04
 
-FROM ubuntu:20.04
+FROM ${BUNDLE_PREFIX}/deepracer-robomaker-build-bundle:latest AS bundle
+FROM ${CORE_IMG}
+
+ARG NVCC_VER=""
+ARG TF_VER=""
 
 ENV TZ="America/New_York" 
 ENV DEBIAN_FRONTEND="noninteractive" 
@@ -48,7 +52,8 @@ RUN dpkg --add-architecture i386 && \
     libxdmcp6 libxdmcp6:i386 \
     libxcb1 libxcb1:i386 \
     libxext6 libxext6:i386 \
-    libx11-6 libx11-6:i386 && \    
+    libx11-6 libx11-6:i386 \
+    ${NVCC_VER} && \    
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -120,7 +125,7 @@ RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-c
 ADD docker/requirements-combined.txt /
 RUN python3 -m pip install -U pip 'setuptools<65' && \
     export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
-    pip3 install -U --no-cache-dir -r requirements-combined.txt  --ignore-installed psutil
+    pip3 install -U --no-cache-dir -r requirements-combined.txt ${TF_VER} --ignore-installed psutil
 
 # Copy compiled bundle
 COPY --from=bundle  /opt/bundle/install /opt/simapp
