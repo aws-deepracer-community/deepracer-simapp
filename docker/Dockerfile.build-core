@@ -33,7 +33,7 @@ RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle
 
-RUN rosdep update --include-eol-distros && rosdep install --from-paths src --ignore-src -r -y 
+RUN rosdep update --rosdistro=noetic && rosdep install --rosdistro=noetic --from-paths src --ignore-src -r -y 
 
 ADD docker/files/ml-code/simulation-entrypoint.sh /
 ENTRYPOINT ["/simulation-entrypoint.sh"]
