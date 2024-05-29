@@ -181,7 +181,6 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             if self._best_model_metric_type == BestModelMetricType.REWARD:
                 self._current_eval_best_model_metric_list_.append(self._episode_reward_)
             elif self._best_model_metric_type == BestModelMetricType.LAPTIME:
-                print(f"DEBUG: Best model metric is laptime")
                 if self._progress_ >= 100:
                     self._current_eval_best_model_metric_list_.append(int(round((self._current_sim_time - self._start_time_) * 1000)))
                 else:
@@ -204,7 +203,6 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
     def update(self, data):
         self._is_eval_ = data != RunPhase.TRAIN
 
-        print(f"DEBUG: is_eval: {self._is_eval_}, use_model_picker: {self._use_model_picker}")
         if not self._is_eval_ and self._use_model_picker:
             if self._eval_stats_dict_['chkpnt_name'] is None:
                 self._eval_stats_dict_['chkpnt_name'] = self._checkpoint_state_.read().name
