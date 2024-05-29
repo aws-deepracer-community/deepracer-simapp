@@ -9,6 +9,7 @@ import json
 import io
 
 from time import gmtime
+
 sys.path.append("common")
 
 
@@ -18,7 +19,8 @@ def str2bool(v):
 
 # S3 bucket
 boto_session = boto3.session.Session(
-    region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    region_name=os.environ.get("AWS_REGION", "us-east-1")
+)
 endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
 
 if endpoint_url == "":
@@ -26,59 +28,52 @@ if endpoint_url == "":
 else:
     s3Client = boto_session.client("s3", endpoint_url=endpoint_url)
 sage_session = sagemaker.local.LocalSession(
-    boto_session=boto_session, s3_endpoint_url=endpoint_url)
+    boto_session=boto_session, s3_endpoint_url=endpoint_url
+)
+aws_region = sage_session.boto_region_name
 
-# sage_session.default_bucket()
 s3_bucket = os.environ.get("MODEL_S3_BUCKET", None)
 s3_prefix = os.environ.get("MODEL_S3_PREFIX", None)
+
 pretrained = str2bool(os.environ.get("PRETRAINED", "False"))
 s3_pretrained_bucket = os.environ.get("PRETRAINED_S3_BUCKET", "bucket")
-s3_pretrained_prefix = os.environ.get(
-    "PRETRAINED_S3_PREFIX", "rl-deepracer-pretrained")
+s3_pretrained_prefix = os.environ.get("PRETRAINED_S3_PREFIX", "rl-deepracer-pretrained")
 
 # SDK appends the job name and output folder
-s3_output_path = 's3://{}/'.format(s3_bucket)
+s3_output_path = "s3://{}/".format(s3_bucket)
 
 # Hyperparameters
 hyperparameter_file = os.environ.get(
-    "HYPERPARAMETER_FILE_S3_KEY", "custom_files/hyperparameters.json")
+    "HYPERPARAMETER_FILE_S3_KEY", "custom_files/hyperparameters.json"
+)
 
 # Model Metadata
 modelmetadata_file = os.environ.get(
-    "MODELMETADATA_FILE_S3_KEY", "custom_files/model_petadata.json")
+    "MODELMETADATA_FILE_S3_KEY", "custom_files/model_petadata.json"
+)
 
 # ### Define Variables
 # create unique job name
-tm = gmtime()
 job_name = s3_prefix
-s3_prefix_robomaker = job_name + "-robomaker"
 
 # Duration of job in seconds (5 hours)
 job_duration_in_seconds = 24 * 60 * 60
 
-aws_region = sage_session.boto_region_name
-
-print("Model checkpoints and other metadata will be stored at: {}{}".format(
-    s3_output_path, job_name))
+print(
+    "Model checkpoints and other metadata will be stored at: {}{}".format(
+        s3_output_path, job_name
+    )
+)
 
 s3_location = "s3://%s/%s" % (s3_bucket, s3_prefix)
 print("Uploading to " + s3_location)
 
-# We use the RLEstimator for training RL jobs.
-#
-# 1. Specify the source directory which has the environment file, preset and training code.
-# 2. Specify the entry point as the training code
-# 3. Specify the choice of RL toolkit and framework. This automatically resolves to the ECR path for the RL Container.
-# 4. Define the training parameters such as the instance count, instance type, job name, s3_bucket and s3_prefix for storing model checkpoints and metadata. **Only 1 training instance is supported for now.**
-# 4. Set the RLCOACH_PRESET as "deepracer" for this example.
-# 5. Define the metrics definitions that you are interested in capturing in your logs. These can also be visualized in CloudWatch and SageMaker Notebooks.
+# We use the Estimator for training RL jobs.
 
-RLCOACH_PRESET = "deepracer"
 sagemaker_image = os.environ.get("SAGEMAKER_IMAGE", "cpu")
 # 'local' for cpu, 'local_gpu' for nvidia gpu (and then you don't have to set default runtime to nvidia)
 instance_type = "local_gpu" if (sagemaker_image.find("gpu") >= 0) else "local"
-image_name = "awsdeepracercommunity/deepracer-simapp:{}".format(
-    sagemaker_image)
+image_name = "awsdeepracercommunity/deepracer-simapp:{}".format(sagemaker_image)
 
 print("Using image %s" % image_name)
 
@@ -88,42 +83,49 @@ hyperparameters_core = {
     "s3_prefix": s3_prefix,
     "aws_region": aws_region,
     "model_metadata_s3_key": "s3://{}/{}".format(s3_bucket, modelmetadata_file),
-    "RLCOACH_PRESET": RLCOACH_PRESET
 }
 
 if pretrained:
-    hyperparameters_core['pretrained_s3_bucket'] = "{}".format(
-        s3_pretrained_bucket)
-    hyperparameters_core['pretrained_s3_prefix'] = s3_pretrained_prefix
-    hyperparameters_core['pretrained_checkpoint'] = os.environ.get(
-        "PRETRAINED_CHECKPOINT", "best")
+    hyperparameters_core["pretrained_s3_bucket"] = "{}".format(s3_pretrained_bucket)
+    hyperparameters_core["pretrained_s3_prefix"] = s3_pretrained_prefix
+    hyperparameters_core["pretrained_checkpoint"] = os.environ.get(
+        "PRETRAINED_CHECKPOINT", "best"
+    )
 
 max_memory_steps = os.environ.get("MAX_MEMORY_STEPS", "")
 if max_memory_steps.isdigit():
-    hyperparameters_core['max_memory_steps'] = max_memory_steps
+    hyperparameters_core["max_memory_steps"] = max_memory_steps
 
 if instance_type == "local_gpu":
     sagemaker_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     if len(sagemaker_cuda_visible_devices) > 0:
-        hyperparameters_core['cuda_visible_devices'] = sagemaker_cuda_visible_devices
+        hyperparameters_core["cuda_visible_devices"] = sagemaker_cuda_visible_devices
 
-# Downloading the hyperparameter file from our local bucket.
+# Downloading the hyperparameter file from our bucket.
 hyperparameter_data = io.BytesIO()
-s3Client.download_fileobj(
-    s3_bucket, hyperparameter_file, hyperparameter_data)
+s3Client.download_fileobj(s3_bucket, hyperparameter_file, hyperparameter_data)
 hyperparameters_nn = json.loads(hyperparameter_data.getvalue().decode("utf-8"))
 hyperparameters = {**hyperparameters_core, **hyperparameters_nn}
-print("Configured following hyperparameters")
-print(hyperparameters)
-estimator = Estimator(sagemaker_session=sage_session,
-                        # bypass sagemaker SDK validation of the role
-                        role="aaa/",
-                        instance_type=instance_type,
-                        instance_count=1,
-                        output_path=s3_output_path,
-                        image_uri=image_name,
-                        hyperparameters=hyperparameters,
-                        max_run=job_duration_in_seconds  # Maximum runtime in seconds
-                        )
+print(f"Configured following hyperparameters:\n{hyperparameters}")
+
+# Define metrics
+model_metrics = (
+    [
+        {"Name": "Entropy", "Regex": "Entropy=(.*?),"}
+    ],
+)
+
+estimator = Estimator(
+    sagemaker_session=sage_session,
+    # bypass sagemaker SDK validation of the role
+    role="aaa/",
+    instance_type=instance_type,
+    instance_count=1,
+    output_path=s3_output_path,
+    image_uri=image_name,
+    hyperparameters=hyperparameters,
+    max_run=job_duration_in_seconds,  # Maximum runtime in seconds
+    metric_definitons=model_metrics,
+)
 
 estimator.fit(job_name=job_name, wait=False)
