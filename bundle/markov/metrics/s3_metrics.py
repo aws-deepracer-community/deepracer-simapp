@@ -81,8 +81,12 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._progress_ = 0.0
         self._episode_status = ''
         self._metrics_ = list()
+        self._agent_xy = list()
+        self._prev_step_time = time.time()
         self._is_eval_ = True
         self._eval_trials_ = 0
+        self._best_lap_time = float('inf')
+        self._last_lap_time = float('inf')
         self._checkpoint_state_ = CheckpointStateFile(ckpnt_dir)
         self._use_model_picker = use_model_picker
         self._eval_stats_dict_ = {'chkpnt_name': None,
@@ -151,6 +155,11 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         training_metric['completion_percentage'] = int(self._progress_)
         training_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         self._metrics_.append(training_metric)
+        
+        if self._episode_status == EpisodeStatus.EPISODE_COMPLETE.value:
+            self._best_lap_time = min(training_metric['elapsed_time_in_milliseconds'], self._best_lap_time)
+            self._last_lap_time = training_metric['elapsed_time_in_milliseconds']
+        
         if self._telegraf_client:
             self._telegraf_client.metric('dr_training_episodes', 
                                 {'reward':training_metric['reward_score'],
@@ -171,6 +180,12 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         if self._is_eval_:
             if self._best_model_metric_type == BestModelMetricType.REWARD:
                 self._current_eval_best_model_metric_list_.append(self._episode_reward_)
+            elif self._best_model_metric_type == BestModelMetricType.LAPTIME:
+                print(f"DEBUG: Best model metric is laptime")
+                if self._progress_ >= 100:
+                    self._current_eval_best_model_metric_list_.append(int(round((self._current_sim_time - self._start_time_) * 1000)))
+                else:
+                    self._current_eval_best_model_metric_list_.append(999999)
             else:
                 self._current_eval_best_model_metric_list_.append(self._progress_)
 
@@ -189,6 +204,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
     def update(self, data):
         self._is_eval_ = data != RunPhase.TRAIN
 
+        print(f"DEBUG: is_eval: {self._is_eval_}, use_model_picker: {self._use_model_picker}")
         if not self._is_eval_ and self._use_model_picker:
             if self._eval_stats_dict_['chkpnt_name'] is None:
                 self._eval_stats_dict_['chkpnt_name'] = self._checkpoint_state_.read().name
@@ -204,18 +220,32 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             self._current_eval_best_model_metric_list_.clear()
 
             time_stamp = self._current_sim_time
-            if self._eval_stats_dict_['avg_eval_metric'] is None or \
-                    mean_metric >= self._eval_stats_dict_['avg_eval_metric']:
-                msg_format = '[BestModelSelection] current {0} mean: {1} >= best {0} mean: {2}'
-                LOGGER.info(msg_format.format(self._best_model_metric_type.value,
-                                              mean_metric,
-                                              self._eval_stats_dict_['avg_eval_metric']))
-                msg_format = '[BestModelSelection] Updating the best checkpoint to "{}" from "{}".'
-                LOGGER.info(msg_format.format(self._eval_stats_dict_['chkpnt_name'], self._best_chkpnt_stats['name']))
-                self._eval_stats_dict_['avg_eval_metric'] = mean_metric
-                self._best_chkpnt_stats = {'name': self._eval_stats_dict_['chkpnt_name'],
-                                           'avg_eval_metric': mean_metric,
-                                           'time_stamp': time_stamp}
+            if self._best_model_metric_type == BestModelMetricType.LAPTIME:
+                if self._eval_stats_dict_['avg_eval_metric'] is None or \
+                        mean_metric <= self._eval_stats_dict_['avg_eval_metric']:
+                    msg_format = '[BestModelSelection] current {0} mean: {1} >= best {0} mean: {2}'
+                    LOGGER.info(msg_format.format(self._best_model_metric_type.value,
+                                                mean_metric,
+                                                self._eval_stats_dict_['avg_eval_metric']))
+                    msg_format = '[BestModelSelection] Updating the best checkpoint to "{}" from "{}".'
+                    LOGGER.info(msg_format.format(self._eval_stats_dict_['chkpnt_name'], self._best_chkpnt_stats['name']))
+                    self._eval_stats_dict_['avg_eval_metric'] = mean_metric
+                    self._best_chkpnt_stats = {'name': self._eval_stats_dict_['chkpnt_name'],
+                                            'avg_eval_metric': mean_metric,
+                                            'time_stamp': time_stamp}
+            else:
+                if self._eval_stats_dict_['avg_eval_metric'] is None or \
+                        mean_metric >= self._eval_stats_dict_['avg_eval_metric']:
+                    msg_format = '[BestModelSelection] current {0} mean: {1} >= best {0} mean: {2}'
+                    LOGGER.info(msg_format.format(self._best_model_metric_type.value,
+                                                mean_metric,
+                                                self._eval_stats_dict_['avg_eval_metric']))
+                    msg_format = '[BestModelSelection] Updating the best checkpoint to "{}" from "{}".'
+                    LOGGER.info(msg_format.format(self._eval_stats_dict_['chkpnt_name'], self._best_chkpnt_stats['name']))
+                    self._eval_stats_dict_['avg_eval_metric'] = mean_metric
+                    self._best_chkpnt_stats = {'name': self._eval_stats_dict_['chkpnt_name'],
+                                            'avg_eval_metric': mean_metric,
+                                            'time_stamp': time_stamp}
             last_chkpnt_stats = {'name': self._eval_stats_dict_['chkpnt_name'],
                                  'avg_eval_metric': mean_metric,
                                  'time_stamp': time_stamp}
@@ -230,16 +260,33 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             self._eval_stats_dict_['chkpnt_name'] = self._checkpoint_state_.read().name
 
     def update_mp4_video_metrics(self, metrics):
+        actual_speed = 0
+        cur_time = self._current_sim_time
         agent_x, agent_y = metrics[StepMetrics.X.value], metrics[StepMetrics.Y.value]
+        if self._agent_xy:
+            # Speed = Distance/Time
+            delta_time = cur_time - self._prev_step_time
+            actual_speed = 0
+            if delta_time:
+                actual_speed = math.sqrt((self._agent_xy[0] - agent_x) ** 2 +
+                                         (self._agent_xy[1] - agent_y) ** 2) / delta_time
+        self._agent_xy = [agent_x, agent_y]
+        self._prev_step_time = cur_time
+        
+        # agent_x, agent_y = metrics[StepMetrics.X.value], metrics[StepMetrics.Y.value]
         self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value] = 0
         self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value] = self._progress_
         # For continuous race, MP4 video will display the total reset counter for the entire race
         # For non-continuous race, MP4 video will display reset counter per lap
         self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value] = 0
 
-        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = 0
-        self._video_metrics[Mp4VideoMetrics.STEERING.value] = 0
-        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = 0
+        # self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = 0
+        # self._video_metrics[Mp4VideoMetrics.STEERING.value] = 0
+        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
+        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
+        self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
+        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
+        self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value] = self._last_lap_time
         self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value] = 0
         self._video_metrics[Mp4VideoMetrics.DONE.value] = metrics[StepMetrics.DONE.value]
         self._video_metrics[Mp4VideoMetrics.X.value] = agent_x
@@ -258,9 +305,11 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         return VideoMetricsSrvResponse(self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value],
                                        self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
                                        self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
+                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
                                        self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
                                        self._video_metrics[Mp4VideoMetrics.STEERING.value],
                                        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
+                                       self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value],
                                        self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value],
                                        self._video_metrics[Mp4VideoMetrics.DONE.value],
                                        self._video_metrics[Mp4VideoMetrics.X.value],
@@ -317,6 +366,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                                  EpisodeStatus.IMMOBILIZED.value: 0,
                                  EpisodeStatus.REVERSED.value: 0}
         self._best_lap_time = float('inf')
+        self._last_lap_time = float('inf')
         self._total_evaluation_time = 0
         self._video_metrics = Mp4VideoMetrics.get_empty_dict()
         self._reset_count_sum = 0
@@ -406,6 +456,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self._number_of_trials_ += 1
             self._best_lap_time = min(eval_metric['elapsed_time_in_milliseconds'], self._best_lap_time)
             self._total_evaluation_time += eval_metric['elapsed_time_in_milliseconds']
+            self._last_lap_time = eval_metric['elapsed_time_in_milliseconds']
         eval_metric['trial'] = int(self._number_of_trials_)
         self._metrics_.append(eval_metric)
         if self._telegraf_client:
@@ -454,9 +505,11 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self.reset_count_dict[EpisodeStatus.REVERSED.value] + \
             (self._reset_count_sum if self._is_continuous else 0)
 
-        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = actual_speed
+        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
+        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
         self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
         self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
+        self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value] = self._last_lap_time
         self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value] = self._total_evaluation_time +\
             int(round((self._current_sim_time - self._start_time_) * 1000))
         self._video_metrics[Mp4VideoMetrics.DONE.value] = metrics[StepMetrics.DONE.value]
@@ -492,9 +545,11 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         return VideoMetricsSrvResponse(self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value],
                                        self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
                                        self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
+                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
                                        self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
                                        self._video_metrics[Mp4VideoMetrics.STEERING.value],
                                        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
+                                       self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value],
                                        self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value],
                                        self._video_metrics[Mp4VideoMetrics.DONE.value],
                                        self._video_metrics[Mp4VideoMetrics.X.value],
@@ -519,6 +574,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                                  EpisodeStatus.IMMOBILIZED.value: 0,
                                  EpisodeStatus.REVERSED.value: 0}
         self._best_lap_time = float('inf')
+        self._last_lap_time = float('inf')
         self._total_evaluation_time = 0
         self._video_metrics = Mp4VideoMetrics.get_empty_dict()
         self._reset_count_sum = 0
