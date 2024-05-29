@@ -92,15 +92,6 @@ if pretrained:
         "PRETRAINED_CHECKPOINT", "best"
     )
 
-max_memory_steps = os.environ.get("MAX_MEMORY_STEPS", "")
-if max_memory_steps.isdigit():
-    hyperparameters_core["max_memory_steps"] = max_memory_steps
-
-if instance_type == "local_gpu":
-    sagemaker_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "")
-    if len(sagemaker_cuda_visible_devices) > 0:
-        hyperparameters_core["cuda_visible_devices"] = sagemaker_cuda_visible_devices
-
 # Downloading the hyperparameter file from our bucket.
 hyperparameter_data = io.BytesIO()
 s3Client.download_fileobj(s3_bucket, hyperparameter_file, hyperparameter_data)
@@ -115,6 +106,18 @@ model_metrics = (
     ],
 )
 
+# Define environment variables
+env_var = {}
+max_memory_steps = os.environ.get("MAX_MEMORY_STEPS", "")
+if max_memory_steps.isdigit():
+    env_var["MAX_MEMORY_STEPS"] = max_memory_steps
+
+if instance_type == "local_gpu":
+    sagemaker_cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if len(sagemaker_cuda_visible_devices) > 0:
+        env_var["CUDA_VISIBLE_DEVICES"] = sagemaker_cuda_visible_devices
+
+
 estimator = Estimator(
     sagemaker_session=sage_session,
     # bypass sagemaker SDK validation of the role
@@ -126,6 +129,8 @@ estimator = Estimator(
     hyperparameters=hyperparameters,
     max_run=job_duration_in_seconds,  # Maximum runtime in seconds
     metric_definitons=model_metrics,
+    environment=env_var,
 )
 
-estimator.fit(job_name=job_name, wait=False)
+# Will block until job is stopped.
+estimator.fit(job_name=job_name, wait=True)
