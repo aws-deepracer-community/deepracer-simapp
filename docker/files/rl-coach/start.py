@@ -70,12 +70,14 @@ print("Uploading to " + s3_location)
 
 # We use the Estimator for training RL jobs.
 
-sagemaker_image = os.environ.get("SAGEMAKER_IMAGE", "cpu")
+sagemaker_image = os.environ.get("SAGEMAKER_IMAGE", None)
 # 'local' for cpu, 'local_gpu' for nvidia gpu (and then you don't have to set default runtime to nvidia)
 instance_type = "local_gpu" if (sagemaker_image.find("gpu") >= 0) else "local"
-image_name = "awsdeepracercommunity/deepracer-simapp:{}".format(sagemaker_image)
-
-print("Using image %s" % image_name)
+if sagemaker_image:
+    print("Using image %s" % sagemaker_image)
+else:
+    print("ERROR: No defined image.")
+    exit(1)
 
 # Prepare hyperparameters
 hyperparameters_core = {
@@ -127,7 +129,7 @@ estimator = Estimator(
     instance_type=instance_type,
     instance_count=1,
     output_path=s3_output_path,
-    image_uri=image_name,
+    image_uri=sagemaker_image,
     hyperparameters=hyperparameters,
     max_run=job_duration_in_seconds,  # Maximum runtime in seconds
     metric_definitons=model_metrics,
