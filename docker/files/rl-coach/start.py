@@ -108,6 +108,8 @@ model_metrics = (
 
 # Define environment variables
 env_var = {}
+env_var["RUN_ID"] = os.environ.get("RUN_ID","Unknown")
+
 max_memory_steps = os.environ.get("MAX_MEMORY_STEPS", "")
 if max_memory_steps.isdigit():
     env_var["MAX_MEMORY_STEPS"] = max_memory_steps
