@@ -104,7 +104,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
-        if os.environ.get('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower in ('true'):
+        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             loc_y += 25
             best_lap_time = mp4_video_metrics_info[self.racecar_index].best_lap_time
             # The initial default best_lap_time from s3_metrics.py is inf

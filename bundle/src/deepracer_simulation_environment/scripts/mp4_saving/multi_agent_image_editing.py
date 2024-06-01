@@ -107,7 +107,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
                                                            font_color=RaceCarColorToRGB.White.value,
                                                            font_shadow_color=RaceCarColorToRGB.Black.value)
                 
-                if os.environ.get('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower in ('true'):
+                if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower in ('true'):
                     # Steering Angle
                     loc_y += 25
                     steering_text = "Steering | {}".format(mp4_video_metrics_info[i].steering)
