@@ -4,6 +4,7 @@ import datetime
 import logging
 import rospy
 import cv2
+import os
 
 from markov.log_handler.logger import Logger
 from markov.reset.constants import RaceType
@@ -105,8 +106,26 @@ class MultiAgentImageEditing(ImageEditingInterface):
                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                            font_color=RaceCarColorToRGB.White.value,
                                                            font_shadow_color=RaceCarColorToRGB.Black.value)
+                
+                if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+                    # Steering Angle
+                    loc_y += 25
+                    steering_text = "Steering | {}".format(mp4_video_metrics_info[i].steering)
+                    major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                            font_color=RaceCarColorToRGB.White.value,
+                                                            font_shadow_color=RaceCarColorToRGB.Black.value)
+                    
+                    # Throttle
+                    loc_y += 25
+                    steering_text = "Throttle | {}".format(mp4_video_metrics_info[i].throttle)
+                    major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                            font_color=RaceCarColorToRGB.White.value,
+                                                            font_shadow_color=RaceCarColorToRGB.Black.value)
+                
                 if self.racecar_name == racecar_info['name']:
-                    agents_speed = mp4_video_metrics_info[i].throttle
+                    agents_speed = mp4_video_metrics_info[i].speed
                 # The race is complete when total lap is same as current lap and done flag is set
                 agent_done = agent_done or (mp4_video_metrics_info[i].done and (current_lap == int(self._total_laps)))
 

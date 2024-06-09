@@ -9,7 +9,7 @@ docker export -o /tmp/bundle-src/deepracer-simapp-`date +%Y-%m-%d`.tar deepracer
 docker stop deepracer-simapp
 
 cd /tmp/bundle-src
-tar xf deepracer-simapp-`date +%Y-%m-%d`.tar opt/amazon
+tar xf deepracer-simapp-`date +%Y-%m-%d`.tar opt/amazon opt/ml
 cd opt/amazon
 rm -rf build/ install/ log/
 
