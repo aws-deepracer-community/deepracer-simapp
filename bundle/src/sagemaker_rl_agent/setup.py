@@ -40,7 +40,7 @@ setup(
         'protobuf==3.19.4',
         'tensorflow==1.11',
         'redis==4.4.4',
-        'opencv-python==4.1.1.26',
+        'opencv-python==4.2.0.32',
         'python-dateutil==2.5.3',
         'pytest==4.6.9',
         'docutils==0.15.2',
