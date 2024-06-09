@@ -5,6 +5,7 @@ import datetime
 import logging
 import rospy
 import cv2
+import os
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
@@ -103,6 +104,21 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+            loc_y += 25
+            best_lap_time = mp4_video_metrics_info[self.racecar_index].best_lap_time
+            # The initial default best_lap_time from s3_metrics.py is inf
+            # If the ros service in s3_metrics.py has not come up yet, best_lap_time is 0
+            best_lap_time = utils.milliseconds_to_timeformat(
+                datetime.timedelta(milliseconds=best_lap_time)) \
+                if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
+                
+            best_lap_time_text = "Best lap | {}".format(best_lap_time) 
+            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time_text,
+                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                    font_color=RaceCarColorToRGB.White.value,
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+        
         # Reset counter
         loc_y += 25
         reset_counter_text = "Reset | {}".format(mp4_video_metrics_info[self.racecar_index].reset_counter)
@@ -110,11 +126,28 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+        
+        # Steering Angle
+        loc_y += 25
+        steering_text = "Steering | {}".format(mp4_video_metrics_info[self.racecar_index].steering)
+        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+                                                   loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                   font_color=RaceCarColorToRGB.White.value,
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+        
+        # Throttle
+        loc_y += 25
+        steering_text = "Throttle | {}".format(mp4_video_metrics_info[self.racecar_index].throttle)
+        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+                                                   loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                   font_color=RaceCarColorToRGB.White.value,
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+        
         # Speed
         loc_x, loc_y = XYPixelLoc.SPEED_EVAL_LOC.value
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.SPEED_LEADERBOARD_LOC.value
-        speed_text = "{} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].throttle))
+        speed_text = "{} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].speed))
         major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_20px,
                                                    font_color=RaceCarColorToRGB.White.value,

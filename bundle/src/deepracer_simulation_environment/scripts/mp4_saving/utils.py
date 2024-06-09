@@ -48,6 +48,26 @@ def plot_circle(image, x_pixel, y_pixel, color_rgb):
     thickness = -1
     return cv2.circle(image, center_coordinates, RACECAR_CIRCLE_RADIUS, color_rgb, thickness)
 
+def plot_rectangle(image, start_x_pixel, start_y_pixel, end_x_pixel, end_y_pixel, color_rgb):
+    """Function used to draw a rectangle given the start and end pixel (x, y) values
+    and the color of the rectangle
+
+    Args:
+        image (Image): Top camera image
+        start_x_pixel (int): X value in the image start pixel
+        start_y_pixel (int): Y value in the image start pixel
+        end_x_pixel (int): X value in the image end pixel
+        end_y_pixel (int): Y value in the image end pixel
+        color_rgb (tuple): RGB value in the form of tuple (255, 255, 255)
+
+    Returns:
+        Image: Edited image with the rectangle
+    """
+    start_coordinates = (int(start_x_pixel), int(start_y_pixel))
+    end_coordinates = (int(end_x_pixel), int(end_y_pixel))
+    thickness = -1
+    return cv2.rectangle(image, start_coordinates, end_coordinates, color_rgb, thickness)
+
 def get_font(font_name, font_size):
     """Helper method that returns an ImageFont object for the desired font if
        available otherwise returns default font
