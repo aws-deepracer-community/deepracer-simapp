@@ -40,7 +40,7 @@ export DEEPRACER_JOB_TYPE_ENV="LOCAL"
 if [[ -n "${RTF_OVERRIDE}" ]]; then
 	echo "Setting RTF to ${RTF_OVERRIDE} for ${WORLD_NAME}"
 	RTF_UPDATE_RATE=$(awk -v rtf=$RTF_OVERRIDE 'BEGIN{ update_rate=rtf*1000; printf "%0.6f", update_rate}')
-	WORLD_FILE="/opt/install/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
+	WORLD_FILE="/opt/simapp/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
 	xmlstarlet ed -L -s '/sdf/world' -t elem -n physics $WORLD_FILE 
 	xmlstarlet ed -L -a '/sdf/world/physics' -t attr -n type -v ode $WORLD_FILE 
 	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n max_step_size -v 0.001000 $WORLD_FILE 
@@ -53,7 +53,7 @@ fi
 # Check if we want to do reward-function debugging
 if [[ "${DEBUG_REWARD,,}" == "true" ]]; then
 	echo "Enabling Reward Debugging"
-	patch -p2 -N --directory=/opt/install < debug-reward.diff
+	patch -p2 -N --directory=/opt/simapp < debug-reward.diff
 fi
 
 # If no run-option given then use the distributed training
