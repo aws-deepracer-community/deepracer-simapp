@@ -42,8 +42,8 @@ docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-robomaker-build-devel:
 
 echo "Building development build of bundle into $(pwd)/bundle..."
 mkdir -p $(pwd)/install $(pwd)/build $(pwd)/log
-docker run --rm -ti -v $(pwd)/bundle:/opt/bundle -v $(pwd)/log:/opt/log -v $(pwd)/install:/opt/install -v $(pwd)/build:/opt/build \
-    ${PREFIX}/deepracer-robomaker-build-devel:latest bash -c 'colcon --log-base /opt/log build --install-base /opt/install --build-base /opt/build'
+docker run --rm -ti -v $(pwd)/bundle:/opt/bundle -v $(pwd)/log:/opt/log -v $(pwd)/install:/opt/simapp -v $(pwd)/build:/opt/build \
+    ${PREFIX}/deepracer-robomaker-build-devel:latest bash -c 'colcon --log-base /opt/log build --install-base /opt/simapp --build-base /opt/build'
 
 if [ -n "${OPT_GAZEBO}" ]; then
     if [ -z "${DR_ROBOMAKER_IMAGE}" ]; then
