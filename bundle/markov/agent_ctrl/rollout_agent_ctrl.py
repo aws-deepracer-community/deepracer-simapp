@@ -11,6 +11,7 @@ from gazebo_msgs.msg import ModelState
 from std_msgs.msg import Float64, String
 from shapely.geometry import Point
 
+from markov import utils
 import markov.agent_ctrl.constants as const
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
 from markov.agent_ctrl.utils import (set_reward_and_metrics,
@@ -64,6 +65,9 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._race_car_ctrl_status = CarControlStatus.RESUME.value
         self._start_sim_time = None
         self._reset_behind_dist = float(rospy.get_param("RESET_BEHIND_DIST", const.DEFAULT_RESET_BEHIND_DIST))
+        self._enable_mercy_reset = utils.str2bool(rospy.get_param("ENABLE_MERCY_RESET", False)) # feature flag
+        self._reset_ahead_dist = float(rospy.get_param("RESET_AHEAD_DIST", const.DEFAULT_RESET_AHEAD_DIST))
+        self._max_reset_count_after_crash = int(rospy.get_param("MAX_RESETS_AFTER_CRASH", const.DEFAULT_MAX_RESETS_AFTER_CRASH))
         # thread lock
         self._lock = RLock()
         # reset rules manager
@@ -189,6 +193,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                              String,
                              self._update_car_status)
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
+        self.current_obstacle_pose = None
+        self.current_obstacle_crash_count = 0
 
     def update_tracker(self, delta_time, sim_time):
         """
@@ -372,7 +378,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         return obstacle_nearest_dist_dict[TrackNearDist.NEAR_DIST_IN.value] < \
                obstacle_nearest_dist_dict[TrackNearDist.NEAR_DIST_OUT.value]
 
-    def _get_car_reset_model_state(self, spawn_dist, car_pose):
+    def _get_car_reset_model_state(self, spawn_dist, car_pose, episode_status):
         '''Get car reset model state when car goes offtrack or crash into a static obstacle
 
         Args:
@@ -387,7 +393,22 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         closest_object_dist, closest_obstacle_pose = self._get_closest_obj(spawn_dist, const.OBSTACLE_NAME_PREFIX)
         if closest_obstacle_pose is not None:
             # reset position varies based on virtual event or not
-            spawn_dist = closest_object_dist - self._reset_behind_dist
+            # Only enable this when the feature flag is on
+            if(self._enable_mercy_reset and episode_status == EpisodeStatus.CRASHED.value):
+                ## check if it crashes into new obstacle
+                if(self.current_obstacle_pose == None or self.current_obstacle_pose != closest_obstacle_pose):
+                    self.current_obstacle_crash_count = 1
+                    self.current_obstacle_pose = closest_obstacle_pose
+                else: # if crashes into same obstacle increment crash counter
+                    self.current_obstacle_crash_count += 1
+                # reset it ahead if it crashes after the set counter
+                if(self.current_obstacle_crash_count == self._max_reset_count_after_crash):
+                    spawn_dist = closest_object_dist + self._reset_ahead_dist
+                    self.current_obstacle_crash_count = 0
+                else: # reset behind otherwise
+                    spawn_dist = closest_object_dist - self._reset_behind_dist
+            else: # default behavior without feature flag set
+                spawn_dist = closest_object_dist - self._reset_behind_dist
             cur_center_pose, inner_reset_pose, outer_reset_pose = self._get_reset_poses(dist=spawn_dist)
             is_object_inner = self._is_obstacle_inner(obstacle_pose=closest_obstacle_pose)
             new_pose = outer_reset_pose if is_object_inner else inner_reset_pose
@@ -704,6 +725,9 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._step_metrics_[StepMetrics.PAUSE_DURATION.value] = self._pause_duration
         self._data_dict_['prev_progress'] = 0.0 if self._step_metrics_[StepMetrics.PROG.value] == 100 \
                                                 else self._step_metrics_[StepMetrics.PROG.value]
+        # Reset the crash metric after lap complete which is flagged by this variable
+        if(done):
+            self.current_obstacle_crash_count = 0
         if self._data_dict_['current_progress'] == 100:
             self._data_dict_['max_progress'] = 0.0
             self._data_dict_['current_progress'] = 0.0
@@ -810,7 +834,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                                 self._track_data_.get_track_length() / 100.0
                 if 'obstacle' in self._curr_crashed_object_name:
                     pause_car_model_pose = self._get_car_reset_model_state(
-                        spawn_dist, car_pose=current_car_pose).pose
+                        spawn_dist, car_pose=current_car_pose, episode_status=episode_status).pose
                     should_reset_camera = True
             elif episode_status in \
                     [EpisodeStatus.OFF_TRACK.value,
@@ -834,7 +858,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                 spawn_dist = self._data_dict_['prev_progress'] * \
                                 self._track_data_.get_track_length() / 100.0
                 pause_car_model_pose = self._get_car_reset_model_state(
-                    spawn_dist, car_pose=self._data_dict_['prev_car_pose']).pose
+                    spawn_dist, car_pose=self._data_dict_['prev_car_pose'], episode_status=episode_status).pose
                 should_reset_camera = True
             self._pause_car_model_pose = pause_car_model_pose
             # pause car model through blocking call to make sure agent pose
