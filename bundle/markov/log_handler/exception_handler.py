@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import sys
 import io
 import signal
 import time
@@ -42,6 +43,35 @@ def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
         JSON string data format: Consists of the error log dumped (if sync file not present)
     '''
     try:
+        # We need a separate log_and_exit flow for model validation process which should return back 
+        # non zero return code if called and we should refrain from using physical sync files in a 
+        # shared environment which causes issues in concurrent validation calls.
+        if(os.getenv("IS_MODEL_VALIDATION")):
+            dict_obj = OrderedDict()
+            json_format_log = dict()
+            fault_code = get_fault_code_for_error(msg)
+            file_name = inspect.stack()[1][1].split("/")[-1]
+            function_name = inspect.stack()[1][3]
+            line_number = inspect.stack()[1][2]
+            dict_obj['date'] = str(datetime.datetime.now())
+            dict_obj['function'] = "{}::{}::{}".format(file_name, function_name, line_number)
+            dict_obj['message'] = msg
+            dict_obj["exceptionType"] = error_source
+            if error_code == SIMAPP_EVENT_ERROR_CODE_400:
+                dict_obj["eventType"] = SIMAPP_EVENT_USER_ERROR
+            else:
+                dict_obj["eventType"] = SIMAPP_EVENT_SYSTEM_ERROR
+            dict_obj["errorCode"] = error_code
+            #TODO: Include fault_code in the json schema to track faults - pending cloud team assistance
+            #dict_obj["faultCode"] = fault_code
+            json_format_log["simapp_exception"] = dict_obj
+            json_log = json.dumps(json_format_log)
+            LOG.error(json_log)
+            # Temporary fault code log
+            LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
+            LOG.error("Exiting validation worker process.")
+            sys.exit(1)
+        # For all other workers other than validation worker, follow the below execution:
         s3_crash_status_file_name = os.environ.get("CRASH_STATUS_FILE_NAME", None)
         #TODO: Find an atomic way to check if file is present else create
         # If the sync file is already present, skip log and exit

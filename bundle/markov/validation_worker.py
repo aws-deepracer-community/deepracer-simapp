@@ -1,15 +1,6 @@
 import os
-import sys
-# Override os._exit with sys.exit for validation worker,
-# so log_and_exit will call sys.exit actually when calling os._exit to exit the process.
-# - There is hanging issue if the process exits with os._exit when exception is thrown from
-#   tensorflow.
-# - Also, we cannot replace os._exit with sys.exit in exception_handler.simapp_exit_gracefully
-#   which is called by log_and_exit as os._exit is only way to fault the RoboMaker job, when
-#   SimApp faults and exits.
-#   - Otherwise, RoboMaker job ignores SimApp termination and runs until timeout instead of faulting
-#     right away when SimApp faults and exits if SimApp exited other than os._exit.
-os._exit = sys.exit
+# Set tensorflow to not throw library warnings/errors to stdout
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import argparse
 import logging
 import pickle
@@ -25,6 +16,7 @@ from markov.constants import (BEST_CHECKPOINT, LAST_CHECKPOINT,
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_VALIDATION_WORKER_EXCEPTION,
+                                          SIMAPP_EVENT_ERROR_CODE_400,
                                           SIMAPP_EVENT_ERROR_CODE_500)
 from markov.agent_ctrl.constants import ConfigParams
 from markov.agents.training_agent_factory import create_training_agent
@@ -38,6 +30,10 @@ from markov.boto.s3.constants import (MODEL_METADATA_S3_POSTFIX,
                                       ModelMetadataKeys)
 
 logger = Logger(__name__, logging.INFO).get_logger()
+
+## Suppress unnecessary logs from these modules
+logging.getLogger('rl_coach').setLevel(logging.ERROR)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
 SAMPLE_PICKLE_PATH = '/opt/ml/code/sample_data'
 MODEL_METADATA_LOCAL_PATH = 'model_metadata.json'
@@ -107,7 +103,7 @@ def get_transition_data(observation_list):
     else:
         log_and_exit("Sensor not supported: {}!".format(observation_list),
                      SIMAPP_VALIDATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_500)
+                     SIMAPP_EVENT_ERROR_CODE_400)
 
     pickle_path = os.path.join(SAMPLE_PICKLE_PATH, pickle_filename)
     with open(pickle_path, 'rb') as in_f:
@@ -138,14 +134,14 @@ def validate(s3_bucket, s3_prefix, aws_region):
     except Exception as ex:
         log_and_exit("Failed to parse model_metadata file: {}".format(ex),
                      SIMAPP_VALIDATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_500)
+                     SIMAPP_EVENT_ERROR_CODE_400)
 
     # Below get_transition_data function must called before create_training_agent function
     # to avoid 500 in case unsupported Sensor is received.
     # create_training_agent will exit with 500 if unsupported sensor is received,
-    # and get_transition_data function below will exit with 500 if unsupported sensor is received.
-    # We want to return 500 in model validation case if unsupported sensor is received.
-    # Thus, call this get_transition_data function before create_traning_agent function!
+    # and get_transition_data function below will exit with 400 if unsupported sensor is received.
+    # We want to return 400 in model validation case if unsupported sensor is received.
+    # Thus, call this get_transition_data function before create_training_agent function!
     transitions = get_transition_data(observation_list)
 
     checkpoint = Checkpoint(bucket=s3_bucket,
@@ -213,7 +209,7 @@ if __name__ == '__main__':
         if utils.is_user_error(err):
             log_and_exit("User modified model/model_metadata: {}".format(err),
                          SIMAPP_VALIDATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
+                         SIMAPP_EVENT_ERROR_CODE_400)
         else:
             log_and_exit("Validation worker value error: {}" .format(err),
                          SIMAPP_VALIDATION_WORKER_EXCEPTION,
