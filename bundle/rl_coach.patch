@@ -2068,3 +2068,59 @@ index 19da034..47e3f23 100644
  
          saver = GlobalVariableSaver("name")
          saver.from_string(session, pickle.dumps({name: np.ones(shape)}, protocol=-1))
+diff --git a/rl_coach/logger.py b/rl_coach/logger.py
+index 6adce30..96eb5d2 100644
+--- a/rl_coach/logger.py
++++ b/rl_coach/logger.py
+@@ -27,6 +27,7 @@
+ from PIL import Image
+ from pandas import DataFrame
+ from six.moves import input
++from telegraf.client import TelegrafClient
+ 
+ global failed_imports
+ failed_imports = []
+@@ -60,6 +61,12 @@
+     def __init__(self, name, use_colors=True):
+         self.name = name
+         self.set_use_colors(use_colors)
++        self._telegraf_client = None
++        TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', "None")
++        if TELEGRAF_HOST != "None":
++            TELEGRAF_PORT = int(os.environ.get('TELEGRAF_PORT', '8092'))
++            self._telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=TELEGRAF_PORT)
++            print("Telegraf client connecting to {}:{}".format(TELEGRAF_HOST, str(TELEGRAF_PORT)))
+ 
+     def set_use_colors(self, use_colors):
+         self._use_colors = use_colors
+@@ -87,6 +94,30 @@
+         print(data)
+ 
+     def log_dict(self, data, prefix=""):
++        if self._telegraf_client:
++            metric_loss = None
++            metric_divergence = None
++            metric_entropy = None
++            metric_epoch = 0
++            
++            for k, v in data.items():
++                if k == "Surrogate loss":
++                    metric_loss = v
++                elif k == "KL divergence":
++                    metric_divergence = v
++                elif k == "Entropy":
++                    metric_entropy = v
++                elif k == "training epoch":
++                    metric_epoch = v
++            
++            if metric_loss and metric_divergence and metric_entropy:    
++                self._telegraf_client.metric('dr_sagemaker_epochs', 
++                                {'surrogate_loss':metric_loss,
++                                'kl_divergence':metric_divergence,
++                                'entropy':metric_entropy,
++                                'epoch': metric_epoch},
++                                tags={'model':os.environ.get('TRAINING_JOB_NAME', 'sagemaker')})
++        
+         if self._use_colors:
+             str = "{}{}{} - ".format(Colors.PURPLE, prefix, Colors.END)
+             for k, v in data.items():
