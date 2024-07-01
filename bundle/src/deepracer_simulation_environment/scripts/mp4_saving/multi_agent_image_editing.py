@@ -118,7 +118,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
                     
                     # Throttle
                     loc_y += 25
-                    steering_text = "Throttle | {}".format(mp4_video_metrics_info[i].throttle)
+                    steering_text = "Throttle | {}".format(round(mp4_video_metrics_info[i].throttle,2))
                     major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                             loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                             font_color=RaceCarColorToRGB.White.value,
