@@ -15,44 +15,32 @@ RUN dpkg --add-architecture i386 && \
     apt-get install --no-install-recommends -y \
     apt-utils \
     build-essential \
-    curl \
     cmake \
-    gnupg  \
+    curl \
     ffmpeg \
-    jq \
+    gnupg \
     jwm \
+    jq \
+    libfreetype6-dev \
+    libgomp1 \
+    libhdf5-serial-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libxrender1 \
+    libzmq3-dev \
     lsb-core \
+    mesa-utils \
     net-tools \
     pkg-config \
     python3-dev \
     python3-opengl \
     python3-pip \
-    libjpeg-dev \
-    libxrender1 \
     wget \
     x11-xserver-utils \
     x11vnc \
     xmlstarlet \
-    xvfb \ 
+    xvfb \
     zlib1g-dev \
-    mesa-utils \
-    libgomp1 \
-    libfreetype6-dev \
-    libhdf5-serial-dev \
-    libpng-dev \
-    libzmq3-dev \
-    libgl1-mesa-glx \
-    libglu1-mesa \    
-    libglvnd0 libglvnd0:i386 \
-    libgl1 libgl1:i386 \
-    libglx0 libglx0:i386 \
-    libegl1 libegl1:i386 \
-    libgles2 libgles2:i386 \
-    libxau6 libxau6:i386 \
-    libxdmcp6 libxdmcp6:i386 \
-    libxcb1 libxcb1:i386 \
-    libxext6 libxext6:i386 \
-    libx11-6 libx11-6:i386 \
     ${NVCC_VER} && \    
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

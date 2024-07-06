@@ -11,7 +11,7 @@ services:
       context: .
       dockerfile: Dockerfile.localuser
       args:
-        FROM_IMG: awsdeepracercommunity/deepracer-simapp:${DR_ROBOMAKER_IMAGE}
+        FROM_IMG: awsdeepracercommunity/deepracer-simapp:${DR_SIMAPP_IMAGE}
         USERNAME: $USER
         USER_UID: $USER_UID
         USER_GID: $USER_GID
