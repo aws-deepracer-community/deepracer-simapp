@@ -2085,8 +2085,8 @@ index 6adce30..96eb5d2 100644
          self.name = name
          self.set_use_colors(use_colors)
 +        self._telegraf_client = None
-+        TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', "None")
-+        if TELEGRAF_HOST != "None":
++        TELEGRAF_HOST = os.environ.get('TELEGRAF_HOST', None)
++        if TELEGRAF_HOST:
 +            TELEGRAF_PORT = int(os.environ.get('TELEGRAF_PORT', '8092'))
 +            self._telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=TELEGRAF_PORT)
 +            print("Telegraf client connecting to {}:{}".format(TELEGRAF_HOST, str(TELEGRAF_PORT)))
