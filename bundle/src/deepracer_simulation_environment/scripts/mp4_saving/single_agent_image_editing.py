@@ -126,6 +126,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+
         if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             # Steering Angle
             loc_y += 25
