@@ -129,7 +129,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
         
         # Steering Angle
         loc_y += 25
-        steering_text = "Steering | {}".format(mp4_video_metrics_info[self.racecar_index].steering)
+        steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].steering)
         major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
@@ -137,7 +137,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
         
         # Throttle
         loc_y += 25
-        steering_text = "Throttle | {}".format(mp4_video_metrics_info[self.racecar_index].throttle)
+        steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].throttle)
         major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
