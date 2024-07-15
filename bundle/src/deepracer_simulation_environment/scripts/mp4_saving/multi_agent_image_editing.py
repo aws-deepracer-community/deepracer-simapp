@@ -110,7 +110,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
                 if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
                     # Steering Angle
                     loc_y += 25
-                    steering_text = "Steering | {}".format(mp4_video_metrics_info[i].steering)
+                    steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[i].steering)
                     major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                             loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                             font_color=RaceCarColorToRGB.White.value,
@@ -118,7 +118,7 @@ class MultiAgentImageEditing(ImageEditingInterface):
                     
                     # Throttle
                     loc_y += 25
-                    steering_text = "Throttle | {}".format(round(mp4_video_metrics_info[i].throttle,2))
+                    steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[i].throttle)
                     major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                             loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                             font_color=RaceCarColorToRGB.White.value,
