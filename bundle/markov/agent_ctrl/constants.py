@@ -33,6 +33,12 @@ CLOSEST_OBJ_GAP = 1.00
 # Reset behind object distance
 DEFAULT_RESET_BEHIND_DIST = 1.00
 
+# Reset infront object distance
+DEFAULT_RESET_AHEAD_DIST = 1.00
+
+# Max reset count for mercy resets
+DEFAULT_MAX_RESETS_AFTER_CRASH = 3
+
 # Bot car z
 BOT_CAR_Z = 0.0
 
