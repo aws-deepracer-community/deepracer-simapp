@@ -47,7 +47,7 @@ In most cases it will be sufficient to use one of our pre-built images:
 
 Both containers support OpenGL acceleration.
 
-Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>`.
+Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also [Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
 
 ## Building the image
 
