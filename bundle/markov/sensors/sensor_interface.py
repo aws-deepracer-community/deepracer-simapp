@@ -35,3 +35,6 @@ class SensorInterface(object, metaclass=abc.ABCMeta):
 
 class LidarInterface(SensorInterface, metaclass=ABCMeta):
     pass
+
+class IMUInterface(SensorInterface, metaclass=ABCMeta):
+    pass
