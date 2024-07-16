@@ -97,14 +97,14 @@ class TrainingImageEditing(ImageEditingInterface):
                                                     font_shadow_color=RaceCarColorToRGB.Black.value)
             
             # Progress
-            progress_text = "Progress | {}".format(round(mp4_video_metrics_info[self.racecar_index].completion_percentage,2)) 
+            progress_text = "Progress | {:.2f}%".format(mp4_video_metrics_info[self.racecar_index].completion_percentage) 
             major_cv_image = utils.write_text_on_image(image=major_cv_image, text=progress_text,
                                                     loc=(width-180, loc_y+50), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
                                                     font_shadow_color=RaceCarColorToRGB.Black.value)
             
             # Steering Angle
-            steering_text = "Steering | {}".format(mp4_video_metrics_info[self.racecar_index].steering)
+            steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].steering)
             major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
@@ -112,7 +112,7 @@ class TrainingImageEditing(ImageEditingInterface):
             
             # Throttle
             loc_y += 25
-            steering_text = "Throttle | {}".format(round(mp4_video_metrics_info[self.racecar_index].throttle,3))
+            steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].throttle)
             major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,

@@ -27,6 +27,6 @@ done
 echo "Pushing docker images for [$ARCH]"
 
 for A in $ARCH; do
-    echo "Pushing $PREFIX/deepracer-robomaker:$VERSION-$A"
-    docker push $PREFIX/deepracer-robomaker:$VERSION-$A
+    echo "Pushing $PREFIX/deepracer-simapp:$VERSION-$A"
+    docker push $PREFIX/deepracer-simapp:$VERSION-$A
 done
