@@ -60,7 +60,7 @@ A build script is available as `build.sh`. By default both images will be built 
 - Cherry pick changes from the commit in the upstream branch into the branch you want to build from (e.g. dev or a branch created from dev)
 - Login to dockerhub (permissions to push to the awsdeepracercommunity community  required)
 - update VERSION file in root of simapp repo to the correct version tag
-- run `./build.sh` -f
+- run `./build.sh -f`
 - push images (e.g. `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-cpu` and `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-gpu`)
 
 ## Development build
