@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 """
 this rollout worker:
 
@@ -37,7 +53,7 @@ from markov.metrics.s3_metrics import TrainingMetrics
 from markov.rollout_utils import (PhaseObserver, signal_robomaker_markov_package_ready,
                                   configure_environment_randomizer, get_robomaker_profiler_env)
 from markov.metrics.iteration_data import IterationData
-from markov.metrics.constants import MetricsS3Keys
+from markov.metrics.constants import FirehoseStreamKeys, FirehoseUploadFrequency, MetricsS3Keys
 from markov.s3_boto_data_store import S3BotoDataStore, S3BotoDataStoreParameters
 from markov.sagemaker_graph_manager import get_graph_manager
 from markov.rospy_wrappers import ServiceProxyWrapper
@@ -46,6 +62,7 @@ from markov.deepracer_memory import DeepRacerRedisPubSubMemoryBackendParameters
 from markov.boto.s3.files.hyperparameters import Hyperparameters
 from markov.boto.s3.files.model_metadata import ModelMetadata
 from markov.boto.s3.files.reward_function import RewardFunction
+from markov.boto.s3.files.simtrace_episode import SimtraceEpisodeUpload
 from markov.boto.s3.files.simtrace_video import SimtraceVideo
 from markov.boto.s3.files.ip_config import IpConfig
 from markov.boto.s3.files.checkpoint import Checkpoint
@@ -53,16 +70,21 @@ from markov.boto.s3.utils import get_s3_key
 from markov.boto.s3.constants import (HYPERPARAMETER_LOCAL_PATH_FORMAT,
                                       MODEL_METADATA_LOCAL_PATH_FORMAT,
                                       REWARD_FUCTION_LOCAL_PATH_FORMAT,
-                                      HYPERPARAMETER_S3_POSTFIX,
+                                      HYPERPARAMETER_S3_POSTFIX, 
+                                      SIMTRACE_EPISODE_TRAINING_LOCAL_PATH_FORMAT,
                                       SIMTRACE_TRAINING_LOCAL_PATH_FORMAT,
                                       CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
                                       CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
-                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT,
+                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT, 
+                                      SimtraceEpisodeNames,
                                       SimtraceVideoNames,
                                       IP_ADDRESS_LOCAL_PATH,
                                       ModelMetadataKeys)
 from markov.boto.s3.s3_client import S3Client
 from std_srvs.srv import Empty, EmptyRequest
+
+enable_episode_simtrace = utils.str2bool(rospy.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
+enable_firehose_upload = utils.str2bool(rospy.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -394,8 +416,91 @@ def main():
                                        key_tuple[1])
     metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: rospy.get_param('METRICS_S3_BUCKET'),
                          MetricsS3Keys.METRICS_KEY.value: metrics_key,
-                         MetricsS3Keys.ENDPOINT_URL.value:  rospy.get_param('S3_ENDPOINT_URL', None),
-                         MetricsS3Keys.REGION.value: rospy.get_param('AWS_REGION')}                         
+                         MetricsS3Keys.REGION.value: rospy.get_param('AWS_REGION')}
+    
+    firehose_metrics_config = None
+    firehose_simtrace_config= None
+    # Only enable this when the feature flag is on
+    if enable_firehose_upload:
+        firehose_upload_frequency = rospy.get_param('FIREHOSE_UPLOAD_FREQUENCY')
+        if firehose_upload_frequency not in FirehoseUploadFrequency._value2member_map_:
+            log_and_exit("Training worker error: Invalid FIREHOSE_UPLOAD_FREQUENCY: {}. "
+                         "Expected one of: {}".format(firehose_upload_frequency, ", "
+                                              .join([e.value for e in FirehoseUploadFrequency])),
+                         SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                         SIMAPP_EVENT_ERROR_CODE_500)
+
+        firehose_s3_bucket = rospy.get_param('FIREHOSE_S3_BUCKET', None)
+        if firehose_s3_bucket:
+            firehose_metrics_stream_name = rospy.get_param('FIREHOSE_METRICS_STREAM_NAME')
+            firehose_simtrace_stream_name = rospy.get_param('FIREHOSE_SIMTRACE_STREAM_NAME')
+            firehose_metrics_s3_prefix = rospy.get_param('FIREHOSE_METRICS_S3_PREFIX')
+            firehose_simtrace_s3_prefix = rospy.get_param('FIREHOSE_SIMTRACE_S3_PREFIX')
+            if args.num_workers > 1: 
+                firehose_metrics_stream_name = os.path.join(firehose_metrics_stream_name, str(args.rollout_idx))
+                firehose_simtrace_stream_name = os.path.join(firehose_simtrace_stream_name, str(args.rollout_idx))
+                firehose_metrics_s3_prefix = os.path.join(firehose_metrics_s3_prefix, str(args.rollout_idx))
+                firehose_simtrace_s3_prefix = os.path.join(firehose_simtrace_s3_prefix, str(args.rollout_idx))
+            firehose_metrics_config = {FirehoseStreamKeys.FIREHOSE_DELIVERY_STREAM.value: firehose_metrics_stream_name,
+                                    FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value: firehose_s3_bucket,
+                                    FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value: firehose_metrics_s3_prefix,
+                                    FirehoseStreamKeys.REGION.value: rospy.get_param('AWS_REGION')}
+            firehose_simtrace_config = {FirehoseStreamKeys.FIREHOSE_DELIVERY_STREAM.value: firehose_simtrace_stream_name,
+                                        FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value: firehose_s3_bucket,
+                                        FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value: firehose_simtrace_s3_prefix,
+                                        FirehoseStreamKeys.REGION.value: rospy.get_param('AWS_REGION')}
+                                   
+    aws_region = rospy.get_param('AWS_REGION', args.aws_region)
+    simtrace_s3_bucket = rospy.get_param('SIMTRACE_S3_BUCKET', None)
+    mp4_s3_bucket = rospy.get_param('MP4_S3_BUCKET', None) if args.rollout_idx == 0 else None
+    if simtrace_s3_bucket:
+        simtrace_s3_object_prefix = rospy.get_param('SIMTRACE_S3_PREFIX')
+        # Only enable this when the feature flag is on
+        if enable_episode_simtrace:
+            simtrace_episode_s3_object_prefix = rospy.get_param('SIMTRACE_EPISODE_S3_PREFIX')
+        if args.num_workers > 1:
+            simtrace_s3_object_prefix = os.path.join(simtrace_s3_object_prefix, str(args.rollout_idx))
+            # Only enable this when the feature flag is on
+            if enable_episode_simtrace:
+                simtrace_episode_s3_object_prefix = os.path.join(simtrace_episode_s3_object_prefix, str(args.rollout_idx))
+    if mp4_s3_bucket:
+        mp4_s3_object_prefix = rospy.get_param('MP4_S3_OBJECT_PREFIX')
+
+    simtrace_video_s3_writers = []
+    simtrace_episode_s3_writer = None
+    #TODO: replace 'agent' with 'agent_0' for multi agent training and
+    # mp4_s3_object_prefix, mp4_s3_bucket will be a list, so need to access with index
+    if simtrace_s3_bucket:
+        # Only enable this when the feature flag is on
+        if enable_episode_simtrace:
+            simtrace_episode_s3_writer = SimtraceEpisodeUpload(upload_type=SimtraceEpisodeNames.SIMTRACE_TRAINING.value, 
+                                                               bucket=simtrace_s3_bucket, 
+                                                               s3_prefix=simtrace_episode_s3_object_prefix, 
+                                                               region_name=aws_region, 
+                                                               local_path=SIMTRACE_EPISODE_TRAINING_LOCAL_PATH_FORMAT.format('agent'))
+        simtrace_video_s3_writers.append(
+            SimtraceVideo(upload_type=SimtraceVideoNames.SIMTRACE_TRAINING.value,
+                          bucket=simtrace_s3_bucket,
+                          s3_prefix=simtrace_s3_object_prefix,
+                          region_name=aws_region,
+                          local_path=SIMTRACE_TRAINING_LOCAL_PATH_FORMAT.format('agent')))
+    if mp4_s3_bucket:
+        simtrace_video_s3_writers.extend([
+            SimtraceVideo(upload_type=SimtraceVideoNames.PIP.value,
+                          bucket=mp4_s3_bucket,
+                          s3_prefix=mp4_s3_object_prefix,
+                          region_name=aws_region,
+                          local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format('agent')),
+            SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
+                          bucket=mp4_s3_bucket,
+                          s3_prefix=mp4_s3_object_prefix,
+                          region_name=aws_region,
+                          local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format('agent')),
+            SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
+                          bucket=mp4_s3_bucket,
+                          s3_prefix=mp4_s3_object_prefix,
+                          region_name=aws_region,
+                          local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format('agent'))])
 
     run_phase_subject = RunPhaseSubject()
 
@@ -407,10 +512,8 @@ def main():
     checkpoint = Checkpoint(bucket=args.s3_bucket,
                             s3_prefix=args.s3_prefix,
                             region_name=args.aws_region,
-                            s3_endpoint_url=args.s3_endpoint_url,
                             agent_name='agent',
                             checkpoint_dir=args.checkpoint_dir)
-
 
     agent_list.append(create_rollout_agent(agent_config,
                                            TrainingMetrics(agent_name='agent',
@@ -418,7 +521,10 @@ def main():
                                                            deepracer_checkpoint_json=checkpoint.deepracer_checkpoint_json,
                                                            ckpnt_dir=os.path.join(args.checkpoint_dir, 'agent'),
                                                            run_phase_sink=run_phase_subject,
-                                                           use_model_picker=(args.rollout_idx == 0)),
+                                                           use_model_picker=(args.rollout_idx == 0),
+                                                           simtrace_episode_s3_writer=simtrace_episode_s3_writer,
+                                                           firehose_dict_metrics=firehose_metrics_config,
+                                                           firehose_dict_simtrace=firehose_simtrace_config),
                                            run_phase_subject))
     agent_list.append(create_obstacles_agent())
     agent_list.append(create_bot_cars_agent())
@@ -426,48 +532,6 @@ def main():
     signal_robomaker_markov_package_ready()
 
     PhaseObserver('/agent/training_phase', run_phase_subject)
-
-    aws_region = rospy.get_param('AWS_REGION', args.aws_region)
-    simtrace_s3_bucket = rospy.get_param('SIMTRACE_S3_BUCKET', None)
-    mp4_s3_bucket = rospy.get_param('MP4_S3_BUCKET', None) if args.rollout_idx == 0 else None
-    if simtrace_s3_bucket:
-        simtrace_s3_object_prefix = rospy.get_param('SIMTRACE_S3_PREFIX')
-        if args.num_workers > 1:
-            simtrace_s3_object_prefix = os.path.join(simtrace_s3_object_prefix, str(args.rollout_idx))
-    if mp4_s3_bucket:
-        mp4_s3_object_prefix = rospy.get_param('MP4_S3_OBJECT_PREFIX')
-
-    simtrace_video_s3_writers = []
-    #TODO: replace 'agent' with 'agent_0' for multi agent training and
-    # mp4_s3_object_prefix, mp4_s3_bucket will be a list, so need to access with index
-    if simtrace_s3_bucket:
-        simtrace_video_s3_writers.append(
-            SimtraceVideo(upload_type=SimtraceVideoNames.SIMTRACE_TRAINING.value,
-                          bucket=simtrace_s3_bucket,
-                          s3_prefix=simtrace_s3_object_prefix,
-                          region_name=aws_region,
-                          s3_endpoint_url=args.s3_endpoint_url,
-                          local_path=SIMTRACE_TRAINING_LOCAL_PATH_FORMAT.format('agent')))
-    if mp4_s3_bucket:
-        simtrace_video_s3_writers.extend([
-            SimtraceVideo(upload_type=SimtraceVideoNames.PIP.value,
-                          bucket=mp4_s3_bucket,
-                          s3_prefix=mp4_s3_object_prefix,
-                          region_name=aws_region,
-                          s3_endpoint_url=args.s3_endpoint_url,
-                          local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format('agent')),
-            SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
-                          bucket=mp4_s3_bucket,
-                          s3_prefix=mp4_s3_object_prefix,
-                          region_name=aws_region,
-                          s3_endpoint_url=args.s3_endpoint_url,
-                          local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format('agent')),
-            SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
-                          bucket=mp4_s3_bucket,
-                          s3_prefix=mp4_s3_object_prefix,
-                          region_name=aws_region,
-                          s3_endpoint_url=args.s3_endpoint_url,
-                          local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format('agent'))])
 
     # TODO: replace 'agent' with specific agent name for multi agent training
     ip_config = IpConfig(bucket=args.s3_bucket,
