@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
     wget \
-    apt-utils
+    apt-utils \
+    git
 
 RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
 
