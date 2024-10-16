@@ -112,6 +112,11 @@ model_metrics = (
 env_var = {}
 env_var["RUN_ID"] = os.environ.get("RUN_ID","Unknown")
 
+telegraf_host = os.environ.get("TELEGRAF_HOST", None)
+if telegraf_host is not None:
+    env_var["TELEGRAF_HOST"] = telegraf_host
+    env_var["TELEGRAF_PORT"] = os.environ.get("TELEGRAF_PORT","8092")
+
 max_memory_steps = os.environ.get("MAX_MEMORY_STEPS", "")
 if max_memory_steps.isdigit():
     env_var["MAX_MEMORY_STEPS"] = max_memory_steps

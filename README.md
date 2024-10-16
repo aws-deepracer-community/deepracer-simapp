@@ -47,11 +47,21 @@ In most cases it will be sufficient to use one of our pre-built images:
 
 Both containers support OpenGL acceleration.
 
-Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>`.
+Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also [Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
 
 ## Building the image
 
 A build script is available as `build.sh`. By default both images will be built (`cpu` and `gpu` for version `5.3`). Use the `-a` switch to limit number of images.
+
+- Clone this repo into the home directory of your Linux machine
+- run `./utils/extract-and-diff.sh` (which pulls changes from the AWS provided image into upstream branch)
+- Commit the changes to the upstream branch
+- Change to the branch you want to build from (e.g. dev or a branch created from dev)
+- Cherry pick changes from the commit in the upstream branch into the branch you want to build from (e.g. dev or a branch created from dev)
+- Login to dockerhub (permissions to push to the awsdeepracercommunity community  required)
+- update VERSION file in root of simapp repo to the correct version tag
+- run `./build.sh -f`
+- push images (e.g. `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-cpu` and `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-gpu`)
 
 ## Development build
 
