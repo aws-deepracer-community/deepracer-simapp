@@ -126,6 +126,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._deepracer_checkpoint_json = deepracer_checkpoint_json
         self._s3_metrics = Metrics(bucket=s3_dict_metrics[MetricsS3Keys.METRICS_BUCKET.value],
                                    s3_key=s3_dict_metrics[MetricsS3Keys.METRICS_KEY.value],
+                                   s3_endpoint_url=s3_dict_metrics[MetricsS3Keys.ENDPOINT_URL.value],
                                    region_name=s3_dict_metrics[MetricsS3Keys.REGION.value])
         self._firehose_dict_metrics = firehose_dict_metrics
         self._firehose_dict_simtrace = firehose_dict_simtrace
@@ -223,6 +224,21 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             self._firehose_upload_frequency == FirehoseUploadFrequency.EPISODE_DATA.value):
             json_metrics = json.dumps(training_metric)
             self._s3_firehose_metrics.add_record(json_metrics)
+            
+        if self._episode_status == EpisodeStatus.EPISODE_COMPLETE.value:
+            self._best_lap_time = min(training_metric['elapsed_time_in_milliseconds'], self._best_lap_time)
+            self._last_lap_time = training_metric['elapsed_time_in_milliseconds']
+
+        if self._telegraf_client:
+            self._telegraf_client.metric('dr_training_episodes', 
+                                {'reward':training_metric['reward_score'],
+                                'progress':training_metric['completion_percentage'],
+                                'elapsed_time':training_metric['elapsed_time_in_milliseconds']},
+                                tags={'phase':training_metric['phase'],
+                                        'status':training_metric['episode_status'],
+                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker'),
+                                        'worker':str(os.environ.get('ROLLOUT_IDX', 0))}
+                               )
 
     def upload_episode_metrics(self):
         json_metrics = json.dumps({'metrics': self._metrics_,
@@ -352,9 +368,10 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value] = 0
 
         self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value] = 0
-        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = 0
-        self._video_metrics[Mp4VideoMetrics.STEERING.value] = 0
-        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = 0
+        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
+        self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
+        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
+        self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value] = self._last_lap_time
         self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value] = 0
         self._video_metrics[Mp4VideoMetrics.DONE.value] = metrics[StepMetrics.DONE.value]
         self._video_metrics[Mp4VideoMetrics.X.value] = agent_x
@@ -374,6 +391,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
                                        self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
                                        self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
                                        self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value],
+                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
                                        self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
                                        self._video_metrics[Mp4VideoMetrics.STEERING.value],
                                        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
@@ -410,6 +428,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         self._agent_name_ = agent_name
         self._s3_metrics = Metrics(bucket=s3_dict_metrics[MetricsS3Keys.METRICS_BUCKET.value],
                                    s3_key=s3_dict_metrics[MetricsS3Keys.METRICS_KEY.value],
+                                   s3_endpoint_url=s3_dict_metrics[MetricsS3Keys.ENDPOINT_URL.value],
                                    region_name=s3_dict_metrics[MetricsS3Keys.REGION.value])
         self._firehose_dict_metrics = firehose_dict_metrics
         self._firehose_dict_simtrace = firehose_dict_simtrace
@@ -554,6 +573,16 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             self._firehose_upload_frequency == FirehoseUploadFrequency.EPISODE_DATA.value):
             json_metrics = json.dumps(eval_metric)
             self._s3_firehose_metrics.add_record(json_metrics)
+            
+        if self._telegraf_client:
+            self._telegraf_client.metric('dr_eval_episodes', 
+                                {'progress':eval_metric['completion_percentage'],
+                                'elapsed_time':eval_metric['elapsed_time_in_milliseconds'],
+                                'reset_count':eval_metric['reset_count']},
+                                tags={'status':eval_metric['episode_status'],
+                                        'model':os.environ.get('SAGEMAKER_SHARED_S3_PREFIX', 'sagemaker'),
+                                        'worker':str(os.environ.get('ROLLOUT_IDX', 0))}
+                                )
 
     def upload_episode_metrics(self):
         # TODO: Service team can't handle "version" key in Evaluation Metrics due to
@@ -601,7 +630,8 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             (self._reset_count_sum if self._is_continuous else 0)
 
         self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value] = metrics[StepMetrics.OBSTACLE_CRASH_COUNTER.value]
-        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = actual_speed
+        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
+        self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
         self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
         self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
         self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value] = self._last_lap_time
@@ -652,6 +682,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                                        self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
                                        self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
                                        self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value],
+                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
                                        self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
                                        self._video_metrics[Mp4VideoMetrics.STEERING.value],
                                        self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
