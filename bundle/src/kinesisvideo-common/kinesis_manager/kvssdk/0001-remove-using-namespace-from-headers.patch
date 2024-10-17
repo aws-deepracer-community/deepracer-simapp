@@ -1,0 +1,395 @@
+From 26d652b0bba7c756c1549dc366e6d2a807b3dab6 Mon Sep 17 00:00:00 2001
+From: Emerson Knapp <emerson.b.knapp@gmail.com>
+Date: Wed, 12 Aug 2020 10:40:47 -0700
+Subject: [PATCH] Remove 'using namespace std' from all headers
+
+Signed-off-by: Emerson Knapp <emerson.b.knapp@gmail.com>
+---
+ ...video_gstreamer_audio_video_sample_app.cpp |  1 +
+ .../kinesis_video_gstreamer_sample_app.cpp    |  1 +
+ ...video_gstreamer_sample_multistream_app.cpp |  1 +
+ .../plugin-src/gstkvssink.cpp                 |  1 +
+ .../plugin-src/gstkvssink.h                   | 22 ++++-----
+ .../src/KinesisVideoProducer.cpp              |  2 +
+ .../src/KinesisVideoProducer.h                |  2 +-
+ .../src/KinesisVideoProducerMetrics.h         |  2 -
+ .../src/KinesisVideoStream.cpp                |  2 +
+ .../src/KinesisVideoStreamMetrics.h           | 11 ++---
+ .../src/StreamDefinition.cpp                  |  5 ++-
+ kinesis-video-producer/src/StreamDefinition.h | 45 +++++++++----------
+ .../src/common/PutFrameHelper.cpp             |  4 +-
+ .../src/common/PutFrameHelper.h               |  4 +-
+ .../tst/ProducerTestFixture.h                 |  3 --
+ 15 files changed, 54 insertions(+), 52 deletions(-)
+
+diff --git a/kinesis-video-gst-demo/kinesis_video_gstreamer_audio_video_sample_app.cpp b/kinesis-video-gst-demo/kinesis_video_gstreamer_audio_video_sample_app.cpp
+index 1170c4a..aa57585 100644
+--- a/kinesis-video-gst-demo/kinesis_video_gstreamer_audio_video_sample_app.cpp
++++ b/kinesis-video-gst-demo/kinesis_video_gstreamer_audio_video_sample_app.cpp
+@@ -16,6 +16,7 @@
+ #include <queue>
+ 
+ using namespace std;
++using namespace std::chrono;
+ using namespace com::amazonaws::kinesis::video;
+ using namespace log4cplus;
+ 
+diff --git a/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_app.cpp b/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_app.cpp
+index 716bdd7..7b64462 100644
+--- a/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_app.cpp
++++ b/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_app.cpp
+@@ -10,6 +10,7 @@
+ #include <IotCertCredentialProvider.h>
+ 
+ using namespace std;
++using namespace std::chrono;
+ using namespace com::amazonaws::kinesis::video;
+ using namespace log4cplus;
+ 
+diff --git a/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_multistream_app.cpp b/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_multistream_app.cpp
+index 059e86b..33d0be3 100644
+--- a/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_multistream_app.cpp
++++ b/kinesis-video-gst-demo/kinesis_video_gstreamer_sample_multistream_app.cpp
+@@ -9,6 +9,7 @@
+ #include <map>
+ 
+ using namespace std;
++using namespace std::chrono;
+ using namespace com::amazonaws::kinesis::video;
+ using namespace log4cplus;
+ 
+diff --git a/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.cpp b/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.cpp
+index 5b3ddee..a5be407 100644
+--- a/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.cpp
++++ b/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.cpp
+@@ -77,6 +77,7 @@
+ LOGGER_TAG("com.amazonaws.kinesis.video.gstkvs");
+ 
+ using namespace std;
++using namespace std::chrono;
+ using namespace log4cplus;
+ 
+ GST_DEBUG_CATEGORY_STATIC (gst_kvs_sink_debug);
+diff --git a/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.h b/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.h
+index ecabc8b..c8a18af 100644
+--- a/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.h
++++ b/kinesis-video-gstreamer-plugin/plugin-src/gstkvssink.h
+@@ -137,8 +137,8 @@ struct _GstKvsSink {
+     guint                       num_audio_streams;
+     guint                       num_video_streams;
+ 
+-    unique_ptr<Credentials> credentials_;
+-    shared_ptr<CustomData> data;
++    std::unique_ptr<Credentials> credentials_;
++    std::shared_ptr<CustomData> data;
+ };
+ 
+ struct _GstKvsSinkClass {
+@@ -153,10 +153,10 @@ class StreamLatencyStateMachine;
+ class ConnectionStaleStateMachine;
+ 
+ typedef struct _CallbackStateMachine {
+-    shared_ptr<StreamLatencyStateMachine> stream_latency_state_machine;
+-    shared_ptr<ConnectionStaleStateMachine> connection_stale_state_machine;
++    std::shared_ptr<StreamLatencyStateMachine> stream_latency_state_machine;
++    std::shared_ptr<ConnectionStaleStateMachine> connection_stale_state_machine;
+ 
+-    _CallbackStateMachine(shared_ptr<CustomData> data);
++    _CallbackStateMachine(std::shared_ptr<CustomData> data);
+ } CallbackStateMachine;
+ 
+ typedef struct _CustomData {
+@@ -169,17 +169,17 @@ typedef struct _CustomData {
+             pts_base(0),
+             media_type(VIDEO_ONLY),
+             first_video_frame(true) {}
+-    unique_ptr<KinesisVideoProducer> kinesis_video_producer;
+-    shared_ptr<KinesisVideoStream> kinesis_video_stream;
+-    shared_ptr<CallbackStateMachine> callback_state_machine;
+-    map<uint64_t, string> track_cpd;
++    std::unique_ptr<KinesisVideoProducer> kinesis_video_producer;
++    std::shared_ptr<KinesisVideoStream> kinesis_video_stream;
++    std::shared_ptr<CallbackStateMachine> callback_state_machine;
++    std::map<uint64_t, std::string> track_cpd;
+     GstKvsSink *kvsSink;
+     bool stream_created = false;
+     MediaType media_type;
+     bool first_video_frame;
+ 
+-    atomic_bool stream_ready;
+-    atomic_uint stream_status;
++    std::atomic_bool stream_ready;
++    std::atomic_uint stream_status;
+ 
+     uint64_t last_dts;
+     uint64_t pts_base;
+diff --git a/kinesis-video-producer/src/KinesisVideoProducer.cpp b/kinesis-video-producer/src/KinesisVideoProducer.cpp
+index ac1b09b..637bfe1 100644
+--- a/kinesis-video-producer/src/KinesisVideoProducer.cpp
++++ b/kinesis-video-producer/src/KinesisVideoProducer.cpp
+@@ -6,6 +6,8 @@ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ LOGGER_TAG("com.amazonaws.kinesis.video");
+ 
++using namespace std;
++
+ unique_ptr<KinesisVideoProducer> KinesisVideoProducer::create(
+         unique_ptr<DeviceInfoProvider> device_info_provider,
+         unique_ptr<ClientCallbackProvider> client_callback_provider,
+diff --git a/kinesis-video-producer/src/KinesisVideoProducer.h b/kinesis-video-producer/src/KinesisVideoProducer.h
+index 31c0cb5..af7994f 100644
+--- a/kinesis-video-producer/src/KinesisVideoProducer.h
++++ b/kinesis-video-producer/src/KinesisVideoProducer.h
+@@ -204,7 +204,7 @@ protected:
+     /**
+      * Map of the handle to stream object
+      */
+-    ThreadSafeMap<STREAM_HANDLE, shared_ptr<KinesisVideoStream>> active_streams_;
++    ThreadSafeMap<STREAM_HANDLE, std::shared_ptr<KinesisVideoStream>> active_streams_;
+ 
+     /**
+      * Callback overrides
+diff --git a/kinesis-video-producer/src/KinesisVideoProducerMetrics.h b/kinesis-video-producer/src/KinesisVideoProducerMetrics.h
+index 4c3c6dd..c31d726 100644
+--- a/kinesis-video-producer/src/KinesisVideoProducerMetrics.h
++++ b/kinesis-video-producer/src/KinesisVideoProducerMetrics.h
+@@ -4,8 +4,6 @@
+ 
+ #include "com/amazonaws/kinesis/video/client/Include.h"
+ 
+-using namespace std;
+-
+ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ /**
+diff --git a/kinesis-video-producer/src/KinesisVideoStream.cpp b/kinesis-video-producer/src/KinesisVideoStream.cpp
+index a09c311..b2b1051 100644
+--- a/kinesis-video-producer/src/KinesisVideoStream.cpp
++++ b/kinesis-video-producer/src/KinesisVideoStream.cpp
+@@ -6,6 +6,8 @@ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ LOGGER_TAG("com.amazonaws.kinesis.video");
+ 
++using namespace std;
++
+ KinesisVideoStream::KinesisVideoStream(const KinesisVideoProducer& kinesis_video_producer, const std::string stream_name)
+         : stream_handle_(INVALID_STREAM_HANDLE_VALUE),
+           stream_name_(stream_name),
+diff --git a/kinesis-video-producer/src/KinesisVideoStreamMetrics.h b/kinesis-video-producer/src/KinesisVideoStreamMetrics.h
+index 085abb2..19e4991 100644
+--- a/kinesis-video-producer/src/KinesisVideoStreamMetrics.h
++++ b/kinesis-video-producer/src/KinesisVideoStreamMetrics.h
+@@ -4,9 +4,6 @@
+ 
+ #include "com/amazonaws/kinesis/video/client/Include.h"
+ 
+-using namespace std;
+-using namespace std::chrono;
+-
+ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ /**
+@@ -27,15 +24,15 @@ public:
+     /**
+      * Returns the current view duration in millis
+      */
+-    duration<uint64_t, milli> getCurrentViewDuration() const {
+-        return milliseconds(stream_metrics_.currentViewDuration / HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
++    std::chrono::duration<uint64_t, std::milli> getCurrentViewDuration() const {
++        return std::chrono::milliseconds(stream_metrics_.currentViewDuration / HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
+     }
+ 
+     /**
+      * Returns the overall view duration in millis
+      */
+-    duration<uint64_t, milli> getOverallViewDuration() const {
+-        return milliseconds(stream_metrics_.overallViewDuration / HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
++    std::chrono::duration<uint64_t, std::milli> getOverallViewDuration() const {
++        return std::chrono::milliseconds(stream_metrics_.overallViewDuration / HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
+     }
+ 
+     /**
+diff --git a/kinesis-video-producer/src/StreamDefinition.cpp b/kinesis-video-producer/src/StreamDefinition.cpp
+index ce26ac7..a3c0598 100644
+--- a/kinesis-video-producer/src/StreamDefinition.cpp
++++ b/kinesis-video-producer/src/StreamDefinition.cpp
+@@ -5,6 +5,9 @@ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ LOGGER_TAG("com.amazonaws.kinesis.video");
+ 
++using namespace std;
++using namespace std::chrono;
++
+ StreamDefinition::StreamDefinition(
+         string stream_name,
+         duration <uint64_t, ratio<3600>> retention_period,
+@@ -153,4 +156,4 @@ const StreamInfo& StreamDefinition::getStreamInfo() {
+ } // namespace video
+ } // namespace kinesis
+ } // namespace amazonaws
+-} // namespace com
+\ No newline at end of file
++} // namespace com
+diff --git a/kinesis-video-producer/src/StreamDefinition.h b/kinesis-video-producer/src/StreamDefinition.h
+index 2eab751..981f87b 100644
+--- a/kinesis-video-producer/src/StreamDefinition.h
++++ b/kinesis-video-producer/src/StreamDefinition.h
+@@ -14,9 +14,6 @@
+ 
+ #define DEFAULT_TRACK_ID 1
+ 
+-using namespace std;
+-using namespace std::chrono;
+-
+ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ /**
+@@ -25,8 +22,8 @@ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+  */
+ typedef struct StreamTrackInfo__ {
+     const uint64_t track_id;
+-    const string track_name;
+-    const string codec_id;
++    const std::string track_name;
++    const std::string codec_id;
+     const uint8_t* cpd;
+     uint32_t cpd_size;
+     MKV_TRACK_INFO_TYPE track_type;
+@@ -45,15 +42,15 @@ public:
+      * @param tags The Kinesis Video PIC stream tags which should be set for this stream.
+      */
+     StreamDefinition(
+-            string stream_name,
+-            duration<uint64_t, ratio<3600>> retention_period,
+-            const map<string, string>* tags = nullptr,
+-            string kms_key_id = "",
++            std::string stream_name,
++            std::chrono::duration<uint64_t, std::ratio<3600>> retention_period,
++            const std::map<std::string, std::string>* tags = nullptr,
++            std::string kms_key_id = "",
+             STREAMING_TYPE streaming_type = STREAMING_TYPE_REALTIME,
+-            string content_type = "video/h264",
+-            duration<uint64_t, milli> max_latency = milliseconds::zero(),
+-            duration<uint64_t, milli> fragment_duration = milliseconds(2000),
+-            duration<uint64_t, milli> timecode_scale = milliseconds(1),
++            std::string content_type = "video/h264",
++            std::chrono::duration<uint64_t, std::milli> max_latency = std::chrono::milliseconds::zero(),
++            std::chrono::duration<uint64_t, std::milli> fragment_duration = std::chrono::milliseconds(2000),
++            std::chrono::duration<uint64_t, std::milli> timecode_scale = std::chrono::milliseconds(1),
+             bool key_frame_fragmentation = true,
+             bool frame_timecodes = true,
+             bool absolute_fragment_times = true,
+@@ -63,21 +60,21 @@ public:
+             uint32_t nal_adaptation_flags = NAL_ADAPTATION_ANNEXB_NALS | NAL_ADAPTATION_ANNEXB_CPD_NALS,
+             uint32_t frame_rate = 25,
+             uint32_t avg_bandwidth_bps = 4 * 1024 * 1024,
+-            duration<uint64_t> buffer_duration = seconds(120),
+-            duration<uint64_t> replay_duration = seconds(40),
+-            duration<uint64_t> connection_staleness = seconds(30),
+-            string codec_id = "V_MPEG4/ISO/AVC",
+-            string track_name = "kinesis_video",
++            std::chrono::duration<uint64_t> buffer_duration = std::chrono::seconds(120),
++            std::chrono::duration<uint64_t> replay_duration = std::chrono::seconds(40),
++            std::chrono::duration<uint64_t> connection_staleness = std::chrono::seconds(30),
++            std::string codec_id = "V_MPEG4/ISO/AVC",
++            std::string track_name = "kinesis_video",
+             const uint8_t* codecPrivateData = nullptr,
+             uint32_t codecPrivateDataSize = 0,
+             MKV_TRACK_INFO_TYPE track_type = MKV_TRACK_INFO_TYPE_VIDEO,
+-            const vector<uint8_t> segment_uuid = vector<uint8_t>(),
++            const std::vector<uint8_t> segment_uuid = std::vector<uint8_t>(),
+             const uint64_t default_track_id = DEFAULT_TRACK_ID
+     );
+ 
+     void addTrack(const uint64_t track_id,
+-                  const string &track_name,
+-                  const string &codec_id,
++                  const std::string &track_name,
++                  const std::string &codec_id,
+                   MKV_TRACK_INFO_TYPE track_type,
+                   const uint8_t* codecPrivateData = nullptr,
+                   uint32_t codecPrivateDataSize = 0);
+@@ -87,7 +84,7 @@ public:
+     /**
+      * @return A reference to the human readable stream name.
+      */
+-    const string& getStreamName() const;
++    const std::string& getStreamName() const;
+ 
+     /**
+      * @return A the number of tracks
+@@ -103,7 +100,7 @@ private:
+     /**
+      * Human readable name of the stream. Usually: <sensor ID>.camera_<stream_tag>
+      */
+-    string stream_name_;
++    std::string stream_name_;
+ 
+     /**
+      * Map of key/value pairs to be added as tags on the Kinesis Video stream
+@@ -113,7 +110,7 @@ private:
+     /**
+      * Vector of StreamTrackInfo that contain track metadata
+      */
+-    vector<StreamTrackInfo> track_info_;
++    std::vector<StreamTrackInfo> track_info_;
+ 
+     /**
+      * The underlying object
+diff --git a/kinesis-video-producer/src/common/PutFrameHelper.cpp b/kinesis-video-producer/src/common/PutFrameHelper.cpp
+index 55e6eeb..f4c6818 100644
+--- a/kinesis-video-producer/src/common/PutFrameHelper.cpp
++++ b/kinesis-video-producer/src/common/PutFrameHelper.cpp
+@@ -5,6 +5,8 @@ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ LOGGER_TAG("com.amazonaws.kinesis.video");
+ 
++using namespace std;
++
+ PutFrameHelper::PutFrameHelper(
+         shared_ptr<KinesisVideoStream> kinesis_video_stream,
+         uint64_t mkv_timecode_scale_ns,
+@@ -195,4 +197,4 @@ PutFrameHelper::~PutFrameHelper() {
+ }
+ }
+ }
+-}
+\ No newline at end of file
++}
+diff --git a/kinesis-video-producer/src/common/PutFrameHelper.h b/kinesis-video-producer/src/common/PutFrameHelper.h
+index 8394e8d..e0985fa 100644
+--- a/kinesis-video-producer/src/common/PutFrameHelper.h
++++ b/kinesis-video-producer/src/common/PutFrameHelper.h
+@@ -48,13 +48,13 @@ class PutFrameHelper {
+     uint32_t next_available_buffer_audio;
+     uint32_t next_available_buffer_video;
+ 
+-    shared_ptr<KinesisVideoStream> kinesis_video_stream;
++    std::shared_ptr<KinesisVideoStream> kinesis_video_stream;
+     bool put_frame_status;
+     bool is_processing_eofr;
+ 
+ public:
+     PutFrameHelper(
+-            shared_ptr<KinesisVideoStream> kinesis_video_stream,
++            std::shared_ptr<KinesisVideoStream> kinesis_video_stream,
+             uint64_t mkv_timecode_scale_ns = DEFAULT_MKV_TIMECODE_SCALE_NS,
+             uint32_t max_audio_queue_size = DEFAULT_MAX_AUDIO_QUEUE_SIZE,
+             uint32_t max_video_queue_size = DEFAULT_MAX_VIDEO_QUEUE_SIZE,
+diff --git a/kinesis-video-producer/tst/ProducerTestFixture.h b/kinesis-video-producer/tst/ProducerTestFixture.h
+index 25e9f10..1defce3 100644
+--- a/kinesis-video-producer/tst/ProducerTestFixture.h
++++ b/kinesis-video-producer/tst/ProducerTestFixture.h
+@@ -16,9 +16,6 @@
+ #include <atomic>
+ #include <map>
+ 
+-using namespace std;
+-using namespace std::chrono;
+-
+ namespace com { namespace amazonaws { namespace kinesis { namespace video {
+ 
+ LOGGER_TAG("com.amazonaws.kinesis.video.TEST");
+-- 
+2.17.1
+

@@ -1,19 +1,12 @@
-## AWS DeepRacer Environment
+# AwsSilverstoneSimAppROSNodeMonitor
 
-The AWS DeepRacer Environment package provides the interface for the "RL Lab - AWS DeepRacer" environment.
-The interface contains the flow control and configuration changes for the simulation environment.
+** Describe AwsSilverstoneSimAppROSNodeMonitor here **
 
-## Installation
+## Documentation
 
-To install AWS DeepRacer Environment package, run the `pip install deepracer-env` command.
+Generated documentation for the latest released version can be accessed here:
+https://devcentral.amazon.com/ac/brazil/package-master/package/go/documentation?name=AwsSilverstoneSimAppROSNodeMonitor&interface=1.0&versionSet=live
 
-Python 3.6, 3.7, 3.8, and 3.9 are supported on Linux, Windows, and macOS.
+## Development
 
-## License
-
-The source code is released under [Apache 2.0](https://aws.amazon.com/apache-2-0/).
-
-
-## Resources
-* [DeepRacer Environment Config](https://github.com/aws-deepracer/deepracer-env-config)
-* [Unified Distributed Environment](https://github.com/aws-deepracer/ude)
+See [DEVELOPMENT.md](./DEVELOPMENT.md)

@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 '''This module is responsible for launching evaluation jobs'''
 import argparse
 import json
@@ -25,7 +41,7 @@ from markov.log_handler.deepracer_exceptions import GenericRolloutError, Generic
 from markov.environments.constants import VELOCITY_TOPICS, STEERING_TOPICS, LINK_NAMES
 from markov.metrics.s3_metrics import EvalMetrics
 from markov.metrics.iteration_data import IterationData
-from markov.metrics.constants import MetricsS3Keys
+from markov.metrics.constants import FirehoseStreamKeys, FirehoseUploadFrequency, MetricsS3Keys
 from markov.s3_boto_data_store import S3BotoDataStore, S3BotoDataStoreParameters
 from markov.sagemaker_graph_manager import get_graph_manager
 from markov.rollout_utils import (PhaseObserver, signal_robomaker_markov_package_ready,
@@ -36,20 +52,26 @@ from markov.track_geom.track_data import TrackData
 from markov.track_geom.utils import get_start_positions
 from markov.track_geom.constants import START_POS_OFFSET, MIN_START_POS_OFFSET, MAX_START_POS_OFFSET
 from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
-                                      MODEL_METADATA_S3_POSTFIX,
+                                      MODEL_METADATA_S3_POSTFIX, 
+                                      SIMTRACE_EPISODE_EVAL_LOCAL_PATH_FORMAT,
                                       SIMTRACE_EVAL_LOCAL_PATH_FORMAT,
                                       CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
                                       CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
-                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT,
+                                      CAMERA_TOPVIEW_LOCAL_PATH_FORMAT, 
+                                      SimtraceEpisodeNames,
                                       SimtraceVideoNames,
                                       ModelMetadataKeys)
 from markov.boto.s3.files.model_metadata import ModelMetadata
+from markov.boto.s3.files.simtrace_episode import SimtraceEpisodeUpload
 from markov.boto.s3.files.simtrace_video import SimtraceVideo
 from markov.boto.s3.files.checkpoint import Checkpoint
 from markov.boto.s3.utils import get_s3_key
 from markov.reset.constants import RaceType
 
 from std_srvs.srv import Empty, EmptyRequest
+
+enable_episode_simtrace = utils.str2bool(rospy.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
+enable_firehose_upload = utils.str2bool(rospy.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -236,16 +258,32 @@ def main():
 
     simtrace_s3_bucket = rospy.get_param('SIMTRACE_S3_BUCKET', None)
     mp4_s3_bucket = rospy.get_param('MP4_S3_BUCKET', None)
-    if simtrace_s3_bucket:
-        simtrace_s3_object_prefix = rospy.get_param('SIMTRACE_S3_PREFIX')
-        simtrace_s3_bucket = utils.force_list(simtrace_s3_bucket)
-        simtrace_s3_object_prefix = utils.force_list(simtrace_s3_object_prefix)
-        validate_list.extend([simtrace_s3_bucket, simtrace_s3_object_prefix])
+    if simtrace_s3_bucket: 
+        simtrace_s3_object_prefix = rospy.get_param('SIMTRACE_S3_PREFIX') 
+        simtrace_s3_bucket = utils.force_list(simtrace_s3_bucket) 
+        simtrace_s3_object_prefix = utils.force_list(simtrace_s3_object_prefix) 
+        validate_list.extend([simtrace_s3_bucket, simtrace_s3_object_prefix]) 
+        # Only enable this when the feature flag is on
+        if enable_episode_simtrace: 
+            simtrace_episode_s3_object_prefix = rospy.get_param('SIMTRACE_EPISODE_S3_PREFIX') 
+            simtrace_episode_s3_object_prefix = utils.force_list(simtrace_episode_s3_object_prefix)
+            validate_list.append(simtrace_episode_s3_object_prefix)
     if mp4_s3_bucket:
         mp4_s3_object_prefix = rospy.get_param('MP4_S3_OBJECT_PREFIX')
         mp4_s3_bucket = utils.force_list(mp4_s3_bucket)
         mp4_s3_object_prefix = utils.force_list(mp4_s3_object_prefix)
         validate_list.extend([mp4_s3_bucket, mp4_s3_object_prefix])
+
+    if enable_firehose_upload:
+        firehose_s3_bucket = utils.force_list(rospy.get_param('FIREHOSE_S3_BUCKET', None))
+        if firehose_s3_bucket:
+            firehose_metrics_stream_names = utils.force_list(rospy.get_param('FIREHOSE_METRICS_STREAM_NAME'))
+            firehose_simtrace_stream_names = utils.force_list(rospy.get_param('FIREHOSE_SIMTRACE_STREAM_NAME'))
+            firehose_metrics_s3_prefixes = utils.force_list(rospy.get_param('FIREHOSE_METRICS_S3_PREFIX'))
+            firehose_simtrace_s3_prefixes = utils.force_list(rospy.get_param('FIREHOSE_SIMTRACE_S3_PREFIX'))
+    
+            validate_list.extend([firehose_metrics_stream_names, firehose_simtrace_stream_names, firehose_s3_bucket,
+                                firehose_metrics_s3_prefixes, firehose_simtrace_s3_prefixes])
 
     if not all([lambda x: len(x) == len(validate_list[0]), validate_list]):
         log_and_exit("Eval worker error: Incorrect arguments passed: {}"
@@ -271,6 +309,7 @@ def main():
     s3_prefix_dict = dict()
     checkpoint_dict = dict()
     simtrace_video_s3_writers = []
+    simtrace_episode_s3_writer = None
     start_positions = get_start_positions(len(arg_s3_bucket), start_pos_offset)
     done_condition = utils.str_to_done_condition(rospy.get_param("DONE_CONDITION", any))
     park_positions = utils.pos_2d_str_to_list(rospy.get_param("PARK_POSITIONS", []))
@@ -352,9 +391,37 @@ def main():
                              # Replaced rospy.get_param('AWS_REGION') to be equal to the argument being passed
                              # or default argument set
                              MetricsS3Keys.REGION.value: args.aws_region}
-        aws_region = rospy.get_param('AWS_REGION', args.aws_region)
 
+        firehose_metrics_config = None
+        firehose_simtrace_config= None
+        # Only enable this when the feature flag is on
+        if enable_firehose_upload:
+            firehose_upload_frequency = rospy.get_param('FIREHOSE_UPLOAD_FREQUENCY')
+            if firehose_upload_frequency not in FirehoseUploadFrequency._value2member_map_:
+                log_and_exit("Eval worker error: Invalid FIREHOSE_UPLOAD_FREQUENCY: {}. "
+                             "Expected one of: {}".format(firehose_upload_frequency, ", "
+                                                          .join([e.value for e in FirehoseUploadFrequency])),
+                             SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                             SIMAPP_EVENT_ERROR_CODE_500)
+                
+            firehose_metrics_config = {FirehoseStreamKeys.FIREHOSE_DELIVERY_STREAM.value: firehose_metrics_stream_names[agent_index],
+                                       FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value: firehose_s3_bucket[agent_index],
+                                       FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value: firehose_metrics_s3_prefixes[agent_index],
+                                       FirehoseStreamKeys.REGION.value: args.aws_region} 
+            firehose_simtrace_config = {FirehoseStreamKeys.FIREHOSE_DELIVERY_STREAM.value: firehose_simtrace_stream_names[agent_index],
+                                        FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value: firehose_s3_bucket[agent_index],
+                                        FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value: firehose_simtrace_s3_prefixes[agent_index],
+                                        FirehoseStreamKeys.REGION.value: args.aws_region}
+                
+        aws_region = rospy.get_param('AWS_REGION', args.aws_region)
         if simtrace_s3_bucket:
+            # Only enable this when the feature flag is on
+            if enable_episode_simtrace:
+                simtrace_episode_s3_writer = SimtraceEpisodeUpload(upload_type=SimtraceEpisodeNames.SIMTRACE_EVAL.value, 
+                                                                   bucket=simtrace_s3_bucket[agent_index], 
+                                                                   s3_prefix=simtrace_episode_s3_object_prefix[agent_index], 
+                                                                   region_name=aws_region, 
+                                                                   local_path=SIMTRACE_EPISODE_EVAL_LOCAL_PATH_FORMAT.format(agent_name))
             simtrace_video_s3_writers.append(
                 SimtraceVideo(upload_type=SimtraceVideoNames.SIMTRACE_EVAL.value,
                               bucket=simtrace_s3_bucket[agent_index],
@@ -385,7 +452,10 @@ def main():
 
         run_phase_subject = RunPhaseSubject()
         agent_list.append(create_rollout_agent(agent_config, EvalMetrics(agent_name, metrics_s3_config,
-                                                                         args.is_continuous),
+                                                                         args.is_continuous,
+                                                                         simtrace_episode_s3_writer,
+                                                                         firehose_metrics_config,
+                                                                         firehose_simtrace_config),
                                                run_phase_subject))
     agent_list.append(create_obstacles_agent())
     agent_list.append(create_bot_cars_agent())
