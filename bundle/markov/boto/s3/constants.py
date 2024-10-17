@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 '''This module contains all s3 related prefix, key, and local path constants'''
 
 import os
@@ -143,6 +159,7 @@ class YamlKey(Enum):
     DISPLAY_NAME_YAML_KEY = "DISPLAY_NAME"
     SIMTRACE_S3_BUCKET_YAML_KEY = "SIMTRACE_S3_BUCKET"
     SIMTRACE_S3_PREFIX_YAML_KEY = "SIMTRACE_S3_PREFIX"
+    SIMTRACE_EPISODE_S3_PREFIX_YAML_KEY = "SIMTRACE_EPISODE_S3_PREFIX"
     MP4_S3_BUCKET_YAML_KEY = "MP4_S3_BUCKET"
     MP4_S3_PREFIX_YAML_KEY = "MP4_S3_OBJECT_PREFIX"
     SAGEMAKER_SHARED_S3_BUCKET_YAML_KEY = "SAGEMAKER_SHARED_S3_BUCKET"
@@ -170,6 +187,7 @@ TOUR_MANDATORY_YAML_KEY = [YamlKey.MODEL_S3_BUCKET_YAML_KEY.value,
                            YamlKey.DISPLAY_NAME_YAML_KEY.value,
                            YamlKey.SIMTRACE_S3_BUCKET_YAML_KEY.value,
                            YamlKey.SIMTRACE_S3_PREFIX_YAML_KEY.value,
+                           YamlKey.SIMTRACE_EPISODE_S3_PREFIX_YAML_KEY.value,
                            YamlKey.MP4_S3_BUCKET_YAML_KEY.value,
                            YamlKey.MP4_S3_PREFIX_YAML_KEY.value]
 
@@ -223,6 +241,27 @@ SIMTRACE_VIDEO_POSTFIX_DICT = \
      SimtraceVideoNames.PIP.value: CAMERA_PIP_MP4_S3_POSTFIX,
      SimtraceVideoNames.DEGREE45.value: CAMERA_45DEGREE_MP4_S3_POSTFIX,
      SimtraceVideoNames.TOPVIEW.value: CAMERA_TOPVIEW_MP4_S3_POSTFIX}
+
+####### for episode data #######
+SIMTRACE_EPISODE_EVAL_S3_POSTFIX = "evaluation-simtrace/{}-episode.csv"
+SIMTRACE_EPISODE_TRAINING_S3_POSTFIX = "training-simtrace/{}-episode.csv"
+
+# episode-wise simtrace local path
+SIMTRACE_EPISODE_EVAL_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH,
+                                               "episode_data/{}/evaluation-simtrace/episode.csv")
+SIMTRACE_EPISODE_TRAINING_LOCAL_PATH_FORMAT = os.path.join(CUSTOM_FILES_PATH, 
+                                                  "episode_data/{}/training-simtrace/episode.csv")
+
+
+class SimtraceEpisodeNames(Enum):
+    SIMTRACE_EVAL = 'simtrace_eval'
+    SIMTRACE_TRAINING = 'simtrace_training'
+
+
+# simtrace episode dict
+SIMTRACE_EPISODE_POSTFIX_DICT = \
+    {SimtraceEpisodeNames.SIMTRACE_EVAL.value: SIMTRACE_EPISODE_EVAL_S3_POSTFIX,
+     SimtraceEpisodeNames.SIMTRACE_TRAINING.value: SIMTRACE_EPISODE_TRAINING_S3_POSTFIX}
 
 #############################
 # ip config upload/download #

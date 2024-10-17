@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 """ Image editing class for head to bot, time-trail, obstacle where
 there is only single agent
 """
@@ -8,7 +24,7 @@ import cv2
 import os
 
 from markov.log_handler.logger import Logger
-from markov.utils import get_racecar_idx
+from markov.utils import get_racecar_idx, str2bool
 from mp4_saving import utils
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   IconographicImageSize,
@@ -46,6 +62,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
         self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
         self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
         self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
+        self._enable_mercy_reset = str2bool(rospy.get_param("ENABLE_MERCY_RESET", ""))
 
         # The track image as iconography
         self.track_icongraphy_img = utils.get_track_iconography_image()
@@ -127,23 +144,14 @@ class SingleAgentImageEditing(ImageEditingInterface):
                                                    font_color=RaceCarColorToRGB.White.value,
                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
 
-        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
-            # Steering Angle
+        if(self._enable_mercy_reset):
+            # Consecutive obstacle crash counter
             loc_y += 25
-            steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].steering)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
-                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
-                                                    font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
-            
-            # Throttle
-            loc_y += 25
-            steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].throttle)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
-                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
-                                                    font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
-        
+            obstacle_reset_counter_text = "Obstacle attempts | {}".format(mp4_video_metrics_info[self.racecar_index].obstacle_reset_counter)
+            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=obstacle_reset_counter_text,
+                                                       loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
+                                                       font_color=RaceCarColorToRGB.White.value,
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
         # Speed
         loc_x, loc_y = XYPixelLoc.SPEED_EVAL_LOC.value
         if self.is_league_leaderboard:

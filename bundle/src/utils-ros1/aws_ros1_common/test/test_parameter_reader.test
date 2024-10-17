@@ -1,0 +1,3 @@
+<launch>
+	<test test-name="test_parameter_reader" pkg="aws_ros1_common" type="test_parameter_reader"/>
+</launch>

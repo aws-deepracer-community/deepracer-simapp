@@ -10,6 +10,8 @@ dependencies:
   - wget
   - curl
   - pip:
+      - pygame==2.5.2
+      - shapely==1.6.4
       - python-dateutil==2.8.2
       - Flask-Testing==0.8.1
       - setuptools==69.0.3
@@ -18,7 +20,6 @@ dependencies:
       - matplotlib==3.7.4
       - numpy==1.24.3
       - pandas==2.0.3
-      - pygame==2.5.2
       - PyOpenGL==3.1.7
       - scipy==1.8.0
       - scikit-image==0.21.0

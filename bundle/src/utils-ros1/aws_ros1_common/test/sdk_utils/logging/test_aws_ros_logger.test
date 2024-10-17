@@ -1,0 +1,3 @@
+<launch>
+    <test test-name="test_aws_ros_logger" pkg="aws_ros1_common" type="test_aws_ros_logger"/>
+</launch>

@@ -18,8 +18,6 @@
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
   <depend>deepracer_msgs</depend>
-  <depend>aws_robomaker_simulation_ros_pkgs</depend>
-  <depend>robomaker_simulation_msgs</depend>
 
   <exec_depend>python3-defusedxml</exec_depend>
   <exec_depend>catkin</exec_depend>

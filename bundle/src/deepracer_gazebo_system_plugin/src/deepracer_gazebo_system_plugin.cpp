@@ -1,3 +1,19 @@
+///////////////////////////////////////////////////////////////////////////////////
+//   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          //
+//                                                                               //
+//   Licensed under the Apache License, Version 2.0 (the "License").             //
+//   You may not use this file except in compliance with the License.            //
+//   You may obtain a copy of the License at                                     //
+//                                                                               //
+//       http://www.apache.org/licenses/LICENSE-2.0                              //
+//                                                                               //
+//   Unless required by applicable law or agreed to in writing, software         //
+//   distributed under the License is distributed on an "AS IS" BASIS,           //
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    //
+//   See the License for the specific language governing permissions and         //
+//   limitations under the License.                                              //
+///////////////////////////////////////////////////////////////////////////////////
+
 #include <deepracer_gazebo_system_plugin/deepracer_gazebo_system_plugin.h>
 
 namespace gazebo
@@ -11,12 +27,12 @@ namespace gazebo
 
     DeepRacerGazeboSystemPlugin::~DeepRacerGazeboSystemPlugin()
     {
-        ROS_INFO_NAMED("deepracer_gazebo_system_plugin","DeepRacerGazeboSystemPlugin: Destructor");
+        ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Destructor");
 
         m_sigintConnection.reset();
         m_loadDeepRacerGazeboPluginEvent.reset();
         // Do nothing if plugin is not loaded
-        if(!m_pluginLoaded)
+        if (!m_pluginLoaded)
         {
             ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Destructor skipped because never loaded");
             return;
@@ -30,22 +46,22 @@ namespace gazebo
         ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Unloaded");
     }
 
-    void DeepRacerGazeboSystemPlugin::Load(int argc, char** argv)
+    void DeepRacerGazeboSystemPlugin::Load(int argc, char **argv)
     {
         ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Load");
 
-        m_sigintConnection = gazebo::event::Events::ConnectSigInt(boost::bind(&DeepRacerGazeboSystemPlugin::processSigInt,this));
+        m_sigintConnection = gazebo::event::Events::ConnectSigInt(boost::bind(&DeepRacerGazeboSystemPlugin::processSigInt, this));
 
         // below needs the world to be created first
         m_loadDeepRacerGazeboPluginEvent = gazebo::event::Events::ConnectWorldCreated(boost::bind(&DeepRacerGazeboSystemPlugin::loadDeepRacerGazeboSystemPlugin,
-                                                                                                  this,_1));
+                                                                                                  this, _1));
         m_pluginLoaded = true;
         ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Finished loading.");
     }
 
     void DeepRacerGazeboSystemPlugin::processSigInt()
     {
-        ROS_INFO_NAMED("deepracer_gazebo_system_plugin","DeepRacerGazeboSystemPlugin: SigInt event received");
+        ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: SigInt event received");
         m_shouldStop = true;
     }
 
@@ -65,13 +81,13 @@ namespace gazebo
         // check if the ros master is available - required
         // gazebo_ros_api plugin will init the ros,
         // so deepracer gazebo plugin can just wait for ros master to be alive.
-        while(!ros::master::check())
+        while (!ros::master::check())
         {
             ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: No ROS master - start roscore to continue...");
             // wait 0.5 second
-            usleep(500*1000); // can't use ROS Time here b/c node handle is not yet initialized
+            usleep(500 * 1000); // can't use ROS Time here b/c node handle is not yet initialized
 
-            if(m_shouldStop)
+            if (m_shouldStop)
             {
                 ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Canceled loading by SigInt event");
                 return;
@@ -89,7 +105,7 @@ namespace gazebo
             return;
         }
 
-        //Create the node
+        // Create the node
         m_gazeboNode = transport::NodePtr(new transport::Node());
         m_gazeboNode->Init(world_name);
 
@@ -97,7 +113,7 @@ namespace gazebo
         m_visualPub = m_gazeboNode->Advertise<msgs::Visual>("~/visual");
 
         advertiseServices();
-        m_gazeboCallbackQueueThread.reset(new boost::thread(&DeepRacerGazeboSystemPlugin::update, this) );
+        m_gazeboCallbackQueueThread.reset(new boost::thread(&DeepRacerGazeboSystemPlugin::update, this));
         ROS_INFO_NAMED("deepracer_gazebo_system_plugin", "DeepRacerGazeboSystemPlugin: Init Complete");
     }
 
@@ -175,7 +191,7 @@ namespace gazebo
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_setVisualVisiblesSrv = m_rosNode->advertiseService(setVisualVisiblesASO);
 
-         ros::AdvertiseServiceOptions setVisualPoseASO =
+        ros::AdvertiseServiceOptions setVisualPoseASO =
             ros::AdvertiseServiceOptions::create<deepracer_msgs::SetVisualPose>(
                 "set_visual_pose",
                 boost::bind(&DeepRacerGazeboSystemPlugin::setVisualPoseCallback, this, _1, _2),
@@ -206,42 +222,42 @@ namespace gazebo
         ros::AdvertiseServiceOptions getModelStatesASO =
             ros::AdvertiseServiceOptions::create<deepracer_msgs::GetModelStates>(
                 "get_model_states",
-                boost::bind(&DeepRacerGazeboSystemPlugin::getModelStatesCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::getModelStatesCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_getModelStatesSrv = m_rosNode->advertiseService(getModelStatesASO);
 
         ros::AdvertiseServiceOptions setModelStatesASO =
             ros::AdvertiseServiceOptions::create<deepracer_msgs::SetModelStates>(
                 "set_model_states",
-                boost::bind(&DeepRacerGazeboSystemPlugin::setModelStatesCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::setModelStatesCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_setModelStatesSrv = m_rosNode->advertiseService(setModelStatesASO);
 
-         ros::AdvertiseServiceOptions getLinkStatesASO =
+        ros::AdvertiseServiceOptions getLinkStatesASO =
             ros::AdvertiseServiceOptions::create<deepracer_msgs::GetLinkStates>(
                 "get_link_states",
-                boost::bind(&DeepRacerGazeboSystemPlugin::getLinkStatesCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::getLinkStatesCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_getLinkStatesSrv = m_rosNode->advertiseService(getLinkStatesASO);
 
         ros::AdvertiseServiceOptions setLinkStatesASO =
             ros::AdvertiseServiceOptions::create<deepracer_msgs::SetLinkStates>(
                 "set_link_states",
-                boost::bind(&DeepRacerGazeboSystemPlugin::setLinkStatesCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::setLinkStatesCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_setLinkStatesSrv = m_rosNode->advertiseService(setLinkStatesASO);
 
         ros::AdvertiseServiceOptions pausePhysicsASO =
             ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
                 "pause_physics_dr",
-                boost::bind(&DeepRacerGazeboSystemPlugin::pausePhysicsCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::pausePhysicsCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_pausePhysicsSrv = m_rosNode->advertiseService(pausePhysicsASO);
 
         ros::AdvertiseServiceOptions unpausePhysicsASO =
             ros::AdvertiseServiceOptions::create<std_srvs::Empty>(
                 "unpause_physics_dr",
-                boost::bind(&DeepRacerGazeboSystemPlugin::unpausePhysicsCallback,this,_1,_2),
+                boost::bind(&DeepRacerGazeboSystemPlugin::unpausePhysicsCallback, this, _1, _2),
                 ros::VoidPtr(), &m_rosCallbackQueue);
         m_unpausePhysicsSrv = m_rosNode->advertiseService(unpausePhysicsASO);
     }
@@ -317,7 +333,7 @@ namespace gazebo
         set(_msg->mutable_orientation(), p.orientation);
     }
 
-    void DeepRacerGazeboSystemPlugin::set(geometry_msgs::Pose & geo_p, const msgs::Pose &p)
+    void DeepRacerGazeboSystemPlugin::set(geometry_msgs::Pose &geo_p, const msgs::Pose &p)
     {
         set(geo_p.position, p.position());
         set(geo_p.orientation, p.orientation());
@@ -341,17 +357,16 @@ namespace gazebo
     {
         msgs::Visual newVisualMsg = visualMsg;
         newVisualMsg.set_name(link->GetScopedName());
-        //publish visual message
+        // publish visual message
         m_visualPub->Publish(newVisualMsg, block);
-#if GAZEBO_MAJOR_VERSION >= 10
         if (block)
         {
-            while(m_visualPub->GetOutgoingCount() > 0)
+            while (m_visualPub->GetOutgoingCount() > 0)
             {
                 m_visualPub->SendMessage();
             }
         }
-#endif
+
         updateVisualMsg(link, visualMsg);
     }
 
@@ -380,9 +395,9 @@ namespace gazebo
         for (physics::Light_V::const_iterator lightIter = lights.begin();
              lightIter != lights.end();
              ++lightIter)
-         {
+        {
             lightNames.push_back(boost::dynamic_pointer_cast<physics::Base>(*lightIter)->GetName());
-         }
+        }
         res.light_names = lightNames;
         res.success = true;
         return true;
@@ -398,11 +413,7 @@ namespace gazebo
              linkNameIter != req.link_names.end();
              ++linkNameIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "GetVisual: link [%s] does not exist", (*linkNameIter).c_str());
@@ -429,12 +440,9 @@ namespace gazebo
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-        //gets the visual message
-#if GAZEBO_MAJOR_VERSION >= 8
+        // gets the visual message
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "GetVisual: link [%s] does not exist", req.link_name.c_str());
@@ -478,7 +486,7 @@ namespace gazebo
         res.mesh_geom_scale.x = 1.0;
         res.mesh_geom_scale.y = 1.0;
         res.mesh_geom_scale.z = 1.0;
-        if(visualMsg.has_geometry())
+        if (visualMsg.has_geometry())
         {
             const msgs::Geometry &geometryMsg = visualMsg.geometry();
             if (geometryMsg.has_mesh())
@@ -497,7 +505,7 @@ namespace gazebo
             }
         }
 
-        if(visualMsg.has_pose())
+        if (visualMsg.has_pose())
         {
             set(res.pose, visualMsg.pose());
         }
@@ -509,13 +517,12 @@ namespace gazebo
         return true;
     }
 
-
     bool DeepRacerGazeboSystemPlugin::getVisualsCallback(deepracer_msgs::GetVisuals::Request &req,
                                                          deepracer_msgs::GetVisuals::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-        if(req.link_names.size() != req.visual_names.size())
+        if (req.link_names.size() != req.visual_names.size())
         {
             res.status_message = "GetVisuals: link_names, visual_names must be same size!";
             res.success = false;
@@ -541,15 +548,11 @@ namespace gazebo
 
         std::vector<std::string>::const_iterator linkNameIter = req.link_names.begin();
         std::vector<std::string>::const_iterator visualNameIter = req.visual_names.begin();
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter)
         {
-            //gets the visual message
-#if GAZEBO_MAJOR_VERSION >= 8
+            // gets the visual message
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
             std_msgs::ColorRGBA ambient, diffuse, specular, emissive;
             ambient = defaultColorRGBA();
             diffuse = defaultColorRGBA();
@@ -577,7 +580,8 @@ namespace gazebo
                 message = "GetVisuals: link does not exist";
                 status = false;
             }
-            else {
+            else
+            {
                 msgs::Visual visualMsg = link->GetVisualMessage(*visualNameIter);
 
                 // Use default material if there is no material for the visual
@@ -608,7 +612,7 @@ namespace gazebo
                     }
                 }
 
-                if(visualMsg.has_geometry())
+                if (visualMsg.has_geometry())
                 {
                     const msgs::Geometry &geometryMsg = visualMsg.geometry();
                     if (geometryMsg.has_mesh())
@@ -623,18 +627,17 @@ namespace gazebo
                     }
                     if (geometryMsg.has_type())
                     {
-                        geometry_type = (unsigned short) geometryMsg.type();
+                        geometry_type = (unsigned short)geometryMsg.type();
                     }
                 }
 
-
-                if(visualMsg.has_pose())
+                if (visualMsg.has_pose())
                 {
                     set(pose, visualMsg.pose());
                 }
 
-                transparency = visualMsg.has_transparency()? visualMsg.transparency(): 0.0;
-                visible = visualMsg.has_visible()? visualMsg.visible(): true;
+                transparency = visualMsg.has_transparency() ? visualMsg.transparency() : 0.0;
+                visible = visualMsg.has_visible() ? visualMsg.visible() : true;
             }
 
             visualNames.push_back(*visualNameIter);
@@ -670,17 +673,13 @@ namespace gazebo
         return true;
     }
 
-
     bool DeepRacerGazeboSystemPlugin::setVisualColorCallback(deepracer_msgs::SetVisualColor::Request &req,
                                                              deepracer_msgs::SetVisualColor::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-#if GAZEBO_MAJOR_VERSION >= 8
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualColor: link [%s] does not exist", req.link_name.c_str());
@@ -698,7 +697,7 @@ namespace gazebo
         set(materialMsg->mutable_specular(), req.specular);
         set(materialMsg->mutable_emissive(), req.emissive);
 
-        //publish visual message
+        // publish visual message
         publishVisualMsg(link, visualMsg, req.block);
 
         res.success = true;
@@ -709,7 +708,7 @@ namespace gazebo
                                                               deepracer_msgs::SetVisualColors::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
-        if( req.link_names.size() != req.visual_names.size() ||
+        if (req.link_names.size() != req.visual_names.size() ||
             req.link_names.size() != req.ambients.size() ||
             req.link_names.size() != req.diffuses.size() ||
             req.link_names.size() != req.speculars.size() ||
@@ -728,14 +727,11 @@ namespace gazebo
 
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter, ++ambientIter, ++diffuseIter, ++specularIter, ++emissiveIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
+
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualColors: link [%s] does not exist", (*linkNameIter).c_str());
@@ -752,7 +748,7 @@ namespace gazebo
             set(materialMsg->mutable_specular(), *specularIter);
             set(materialMsg->mutable_emissive(), *emissiveIter);
 
-            //publish visual message
+            // publish visual message
             publishVisualMsg(link, visualMsg, req.block);
             statusList.push_back(true);
             messages.push_back("");
@@ -768,11 +764,8 @@ namespace gazebo
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-#if GAZEBO_MAJOR_VERSION >= 8
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualTransparency: link [%s] does not exist", req.link_name.c_str());
@@ -784,7 +777,7 @@ namespace gazebo
 
         visualMsg.set_transparency(req.transparency);
 
-        //publish visual message
+        // publish visual message
         publishVisualMsg(link, visualMsg, req.block);
 
         res.success = true;
@@ -795,7 +788,7 @@ namespace gazebo
                                                                       deepracer_msgs::SetVisualTransparencies::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
-        if( req.link_names.size() != req.visual_names.size() ||
+        if (req.link_names.size() != req.visual_names.size() ||
             req.link_names.size() != req.transparencies.size())
         {
             res.status_message = "SetVisualTransparencies: link_names, visual_names, transparencies must be same size!";
@@ -808,14 +801,11 @@ namespace gazebo
 
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter, ++transparencyIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
+
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualTransparencies: link [%s] does not exist", (*linkNameIter).c_str());
@@ -826,7 +816,7 @@ namespace gazebo
             msgs::Visual visualMsg = link->GetVisualMessage(*visualNameIter);
             visualMsg.set_transparency(*transparencyIter);
 
-            //publish visual message
+            // publish visual message
             publishVisualMsg(link, visualMsg, req.block);
             statusList.push_back(true);
             messages.push_back("");
@@ -842,11 +832,8 @@ namespace gazebo
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-#if GAZEBO_MAJOR_VERSION >= 8
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualVisible: link [%s] does not exist", req.link_name.c_str());
@@ -858,7 +845,7 @@ namespace gazebo
 
         visualMsg.set_visible((bool)req.visible);
 
-        //publish visual message
+        // publish visual message
         publishVisualMsg(link, visualMsg, req.block);
 
         res.success = true;
@@ -869,7 +856,7 @@ namespace gazebo
                                                                 deepracer_msgs::SetVisualVisibles::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
-        if( req.link_names.size() != req.visual_names.size() ||
+        if (req.link_names.size() != req.visual_names.size() ||
             req.link_names.size() != req.visibles.size())
         {
             res.status_message = "SetVisualVisibles: link_names, visual_names, visibles must be same size!";
@@ -882,14 +869,11 @@ namespace gazebo
 
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter, ++visibleIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
+
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualVisibles: link [%s] does not exist", (*linkNameIter).c_str());
@@ -900,7 +884,7 @@ namespace gazebo
             msgs::Visual visualMsg = link->GetVisualMessage(*visualNameIter);
             visualMsg.set_visible((bool)*visibleIter);
 
-            //publish visual message
+            // publish visual message
             publishVisualMsg(link, visualMsg, req.block);
             statusList.push_back(true);
             messages.push_back("");
@@ -911,17 +895,13 @@ namespace gazebo
         return true;
     }
 
-
     bool DeepRacerGazeboSystemPlugin::setVisualPoseCallback(deepracer_msgs::SetVisualPose::Request &req,
                                                             deepracer_msgs::SetVisualPose::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-#if GAZEBO_MAJOR_VERSION >= 8
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualPose: link [%s] does not exist", req.link_name.c_str());
@@ -933,7 +913,7 @@ namespace gazebo
 
         set(visualMsg.mutable_pose(), req.pose);
 
-        //publish visual message
+        // publish visual message
         publishVisualMsg(link, visualMsg, req.block);
 
         res.success = true;
@@ -944,7 +924,7 @@ namespace gazebo
                                                              deepracer_msgs::SetVisualPoses::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
-        if( req.link_names.size() != req.visual_names.size() ||
+        if (req.link_names.size() != req.visual_names.size() ||
             req.link_names.size() != req.poses.size())
         {
             res.status_message = "SetVisualPoses: link_names, visual_names, poses must be same size!";
@@ -957,14 +937,11 @@ namespace gazebo
 
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter, ++poseIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
+
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualPoses: link [%s] does not exist", (*linkNameIter).c_str());
@@ -976,7 +953,7 @@ namespace gazebo
 
             set(visualMsg.mutable_pose(), *poseIter);
 
-            //publish visual message
+            // publish visual message
             publishVisualMsg(link, visualMsg, req.block);
             statusList.push_back(true);
             messages.push_back("");
@@ -992,11 +969,8 @@ namespace gazebo
     {
         std::lock_guard<std::mutex> lock(m_lock);
 
-#if GAZEBO_MAJOR_VERSION >= 8
         physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(req.link_name));
-#else
-        physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(req.link_name));
-#endif
+
         if (!link)
         {
             ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualMesh: link [%s] does not exist", req.link_name.c_str());
@@ -1014,7 +988,7 @@ namespace gazebo
         meshGeomMsg->set_filename(geometryName);
         set(meshGeomMsg->mutable_scale(), req.scale);
 
-        //publish visual message
+        // publish visual message
         publishVisualMsg(link, visualMsg, req.block);
 
         res.success = true;
@@ -1025,7 +999,7 @@ namespace gazebo
                                                               deepracer_msgs::SetVisualMeshes::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
-        if( req.link_names.size() != req.visual_names.size() ||
+        if (req.link_names.size() != req.visual_names.size() ||
             req.link_names.size() != req.filenames.size() ||
             req.link_names.size() != req.scales.size())
         {
@@ -1041,14 +1015,11 @@ namespace gazebo
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
 
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++visualNameIter, ++filenameIter, ++scaleIter)
         {
-#if GAZEBO_MAJOR_VERSION >= 8
             physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->EntityByName(*linkNameIter));
-#else
-            physics::LinkPtr link = boost::dynamic_pointer_cast<physics::Link>(m_world->GetEntity(*linkNameIter));
-#endif
+
             if (!link)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "SetVisualMeshes: link [%s] does not exist", (*linkNameIter).c_str());
@@ -1066,7 +1037,7 @@ namespace gazebo
             meshGeomMsg->set_filename(geometryName);
             set(meshGeomMsg->mutable_scale(), *scaleIter);
 
-            //publish visual message
+            // publish visual message
             publishVisualMsg(link, visualMsg, req.block);
             statusList.push_back(true);
             messages.push_back("");
@@ -1080,7 +1051,7 @@ namespace gazebo
     bool DeepRacerGazeboSystemPlugin::getModelStatesCallback(deepracer_msgs::GetModelStates::Request &req,
                                                              deepracer_msgs::GetModelStates::Response &res)
     {
-        if( req.model_names.size() != req.relative_entity_names.size() )
+        if (req.model_names.size() != req.relative_entity_names.size())
         {
             res.status_message = "GetModelStates: model_names, relative_entity_names must be same size!";
             res.success = false;
@@ -1094,23 +1065,19 @@ namespace gazebo
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
 
-        for (;modelNameIter != req.model_names.end();
+        for (; modelNameIter != req.model_names.end();
              ++modelNameIter, ++relativeEntityNameIter)
         {
             gazebo_msgs::ModelState modelState;
             modelState.model_name = *modelNameIter;
             modelState.reference_frame = *relativeEntityNameIter;
 
-#if GAZEBO_MAJOR_VERSION >= 8
             gazebo::physics::ModelPtr model = m_world->ModelByName(*modelNameIter);
             gazebo::physics::EntityPtr frame = m_world->EntityByName(*relativeEntityNameIter);
-#else
-            gazebo::physics::ModelPtr model = m_world->GetModel(*modelNameIter);
-            gazebo::physics::EntityPtr frame = m_world->GetEntity(*relativeEntityNameIter);
-#endif
+
             if (!model)
             {
-                ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "GetModelStates: model [%s] does not exist",(*modelNameIter).c_str());
+                ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "GetModelStates: model [%s] does not exist", (*modelNameIter).c_str());
                 modelStates.push_back(modelState);
                 statusList.push_back(false);
                 messages.push_back("GetModelStates: model does not exist");
@@ -1118,30 +1085,20 @@ namespace gazebo
             }
             else
             {
-#if GAZEBO_MAJOR_VERSION >= 8
-                ignition::math::Pose3d   model_pose = model->WorldPose();
-                ignition::math::Vector3d model_linear_vel  = model->WorldLinearVel();
+                ignition::math::Pose3d model_pose = model->WorldPose();
+                ignition::math::Vector3d model_linear_vel = model->WorldLinearVel();
                 ignition::math::Vector3d model_angular_vel = model->WorldAngularVel();
-#else
-                ignition::math::Pose3d   model_pose = model->GetWorldPose().Ign();
-                ignition::math::Vector3d model_linear_vel  = model->GetWorldLinearVel().Ign();
-                ignition::math::Vector3d model_angular_vel = model->GetWorldAngularVel().Ign();
-#endif
-                ignition::math::Vector3d    model_pos = model_pose.Pos();
+
+                ignition::math::Vector3d model_pos = model_pose.Pos();
                 ignition::math::Quaterniond model_rot = model_pose.Rot();
 
                 if (frame)
                 {
                     // convert to relative pose, rates
-#if GAZEBO_MAJOR_VERSION >= 8
                     ignition::math::Pose3d frame_pose = frame->WorldPose();
-                    ignition::math::Vector3d frame_vpos = frame->WorldLinearVel(); // get velocity in gazebo frame
+                    ignition::math::Vector3d frame_vpos = frame->WorldLinearVel();  // get velocity in gazebo frame
                     ignition::math::Vector3d frame_veul = frame->WorldAngularVel(); // get velocity in gazebo frame
-#else
-                    ignition::math::Pose3d frame_pose = frame->GetWorldPose().Ign();
-                    ignition::math::Vector3d frame_vpos = frame->GetWorldLinearVel().Ign(); // get velocity in gazebo frame
-                    ignition::math::Vector3d frame_veul = frame->GetWorldAngularVel().Ign(); // get velocity in gazebo frame
-#endif
+
                     ignition::math::Pose3d model_rel_pose = model_pose - frame_pose;
                     model_pos = model_rel_pose.Pos();
                     model_rot = model_rel_pose.Rot();
@@ -1150,7 +1107,7 @@ namespace gazebo
                     model_angular_vel = frame_pose.Rot().RotateVectorReverse(model_angular_vel - frame_veul);
                 }
                 /// @todo: FIXME map is really wrong, need to use tf here somehow
-                else if ( (*relativeEntityNameIter) == "" || (*relativeEntityNameIter) == "world" || (*relativeEntityNameIter) == "map" || (*relativeEntityNameIter) == "/map")
+                else if ((*relativeEntityNameIter) == "" || (*relativeEntityNameIter) == "world" || (*relativeEntityNameIter) == "map" || (*relativeEntityNameIter) == "/map")
                 {
                     ROS_DEBUG_NAMED("deepracer_gazebo_system_plugin", "GetModelStates: relative_entity_name is empty/world/map, using inertial frame");
                 }
@@ -1191,7 +1148,6 @@ namespace gazebo
         return true;
     }
 
-
     bool DeepRacerGazeboSystemPlugin::setModelStatesCallback(deepracer_msgs::SetModelStates::Request &req,
                                                              deepracer_msgs::SetModelStates::Response &res)
     {
@@ -1201,7 +1157,7 @@ namespace gazebo
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
 
-        for (;modelStateIter != req.model_states.end();
+        for (; modelStateIter != req.model_states.end();
              ++modelStateIter)
         {
             gazebo_msgs::ModelState model_state = *modelStateIter;
@@ -1213,15 +1169,12 @@ namespace gazebo
                                                    model_state.pose.orientation.y,
                                                    model_state.pose.orientation.z);
             target_rot.Normalize(); // eliminates invalid rotation (0, 0, 0, 0)
-            ignition::math::Pose3d target_pose(target_pos,target_rot);
-            ignition::math::Vector3d target_pos_dot(model_state.twist.linear.x,model_state.twist.linear.y,model_state.twist.linear.z);
-            ignition::math::Vector3d target_rot_dot(model_state.twist.angular.x,model_state.twist.angular.y,model_state.twist.angular.z);
+            ignition::math::Pose3d target_pose(target_pos, target_rot);
+            ignition::math::Vector3d target_pos_dot(model_state.twist.linear.x, model_state.twist.linear.y, model_state.twist.linear.z);
+            ignition::math::Vector3d target_rot_dot(model_state.twist.angular.x, model_state.twist.angular.y, model_state.twist.angular.z);
 
-#if GAZEBO_MAJOR_VERSION >= 8
             gazebo::physics::ModelPtr model = m_world->ModelByName(model_state.model_name);
-#else
-            gazebo::physics::ModelPtr model = m_world->GetModel(model_state.model_name);
-#endif
+
             if (!model)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "Updating ModelState: model [%s] does not exist",
@@ -1232,18 +1185,11 @@ namespace gazebo
             }
             else
             {
-#if GAZEBO_MAJOR_VERSION >= 8
                 gazebo::physics::EntityPtr relative_entity = m_world->EntityByName(model_state.reference_frame);
-#else
-                gazebo::physics::EntityPtr relative_entity = m_world->GetEntity(model_state.reference_frame);
-#endif
+
                 if (relative_entity)
                 {
-#if GAZEBO_MAJOR_VERSION >= 8
-                    ignition::math::Pose3d  frame_pose = relative_entity->WorldPose(); // - myBody->GetCoMPose();
-#else
-                    ignition::math::Pose3d  frame_pose = relative_entity->GetWorldPose().Ign(); // - myBody->GetCoMPose();
-#endif
+                    ignition::math::Pose3d frame_pose = relative_entity->WorldPose(); // - myBody->GetCoMPose();
 
                     target_pose = target_pose + frame_pose;
 
@@ -1253,7 +1199,7 @@ namespace gazebo
                     target_rot_dot = frame_pose.Rot().RotateVector(target_rot_dot);
                 }
                 /// @todo: FIXME map is really wrong, need to use tf here somehow
-                else if (model_state.reference_frame == "" || model_state.reference_frame == "world" || model_state.reference_frame == "map" || model_state.reference_frame == "/map" )
+                else if (model_state.reference_frame == "" || model_state.reference_frame == "world" || model_state.reference_frame == "map" || model_state.reference_frame == "/map")
                 {
                     ROS_DEBUG_NAMED("deepracer_gazebo_system_plugin", "Updating ModelState: reference frame is empty/world/map, usig inertial frame");
                 }
@@ -1267,7 +1213,8 @@ namespace gazebo
                 }
 
                 bool is_paused = m_world->IsPaused();
-                if (!is_paused) m_world->SetPaused(true);
+                if (!is_paused)
+                    m_world->SetPaused(true);
                 model->SetWorldPose(target_pose);
                 m_world->SetPaused(is_paused);
 
@@ -1289,7 +1236,7 @@ namespace gazebo
                                                             deepracer_msgs::GetLinkStates::Response &res)
     {
 
-        if( req.link_names.size() != req.reference_frames.size() )
+        if (req.link_names.size() != req.reference_frames.size())
         {
             res.status_message = "GetLinkStates: link_names, reference_frames must be same size!";
             res.success = false;
@@ -1302,7 +1249,7 @@ namespace gazebo
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
 
-        for (;linkNameIter != req.link_names.end();
+        for (; linkNameIter != req.link_names.end();
              ++linkNameIter, ++referenceFrameIter)
         {
             gazebo_msgs::LinkState linkState;
@@ -1310,13 +1257,8 @@ namespace gazebo
             linkState.link_name = *linkNameIter;
             linkState.reference_frame = *referenceFrameIter;
 
-#if GAZEBO_MAJOR_VERSION >= 8
             gazebo::physics::LinkPtr body = boost::dynamic_pointer_cast<gazebo::physics::Link>(m_world->EntityByName(*linkNameIter));
             gazebo::physics::EntityPtr frame = m_world->EntityByName(*referenceFrameIter);
-#else
-            gazebo::physics::LinkPtr body = boost::dynamic_pointer_cast<gazebo::physics::Link>(m_world->GetEntity(*linkNameIter));
-            gazebo::physics::EntityPtr frame = m_world->GetEntity(*referenceFrameIter);
-#endif
 
             if (!body)
             {
@@ -1328,28 +1270,17 @@ namespace gazebo
 
             // get body pose
             // Get inertial rates
-#if GAZEBO_MAJOR_VERSION >= 8
             ignition::math::Pose3d body_pose = body->WorldPose();
-            ignition::math::Vector3d body_vpos = body->WorldLinearVel(); // get velocity in gazebo frame
+            ignition::math::Vector3d body_vpos = body->WorldLinearVel();  // get velocity in gazebo frame
             ignition::math::Vector3d body_veul = body->WorldAngularVel(); // get velocity in gazebo frame
-#else
-            ignition::math::Pose3d body_pose = body->GetWorldPose().Ign();
-            ignition::math::Vector3d body_vpos = body->GetWorldLinearVel().Ign(); // get velocity in gazebo frame
-            ignition::math::Vector3d body_veul = body->GetWorldAngularVel().Ign(); // get velocity in gazebo frame
-#endif
 
             if (frame)
             {
                 // convert to relative pose, rates
-#if GAZEBO_MAJOR_VERSION >= 8
                 ignition::math::Pose3d frame_pose = frame->WorldPose();
-                ignition::math::Vector3d frame_vpos = frame->WorldLinearVel(); // get velocity in gazebo frame
+                ignition::math::Vector3d frame_vpos = frame->WorldLinearVel();  // get velocity in gazebo frame
                 ignition::math::Vector3d frame_veul = frame->WorldAngularVel(); // get velocity in gazebo frame
-#else
-                ignition::math::Pose3d frame_pose = frame->GetWorldPose().Ign();
-                ignition::math::Vector3d frame_vpos = frame->GetWorldLinearVel().Ign(); // get velocity in gazebo frame
-                ignition::math::Vector3d frame_veul = frame->GetWorldAngularVel().Ign(); // get velocity in gazebo frame
-#endif
+
                 body_pose = body_pose - frame_pose;
 
                 body_vpos = frame_pose.Rot().RotateVectorReverse(body_vpos - frame_vpos);
@@ -1404,18 +1335,14 @@ namespace gazebo
         std::vector<int8_t> statusList;
         std::vector<std::string> messages;
 
-        for (;linkStateIter != req.link_states.end();
+        for (; linkStateIter != req.link_states.end();
              ++linkStateIter)
         {
             gazebo_msgs::LinkState link_state = *linkStateIter;
 
-#if GAZEBO_MAJOR_VERSION >= 8
             gazebo::physics::LinkPtr body = boost::dynamic_pointer_cast<gazebo::physics::Link>(m_world->EntityByName(link_state.link_name));
             gazebo::physics::LinkPtr frame = boost::dynamic_pointer_cast<gazebo::physics::Link>(m_world->EntityByName(link_state.reference_frame));
-#else
-            gazebo::physics::LinkPtr body = boost::dynamic_pointer_cast<gazebo::physics::Link>(m_world->GetEntity(link_state.link_name));
-            gazebo::physics::EntityPtr frame = m_world->GetEntity(link_state.reference_frame);
-#endif
+
             if (!body)
             {
                 ROS_ERROR_NAMED("deepracer_gazebo_system_plugin", "Updating LinkState: link [%s] does not exist",
@@ -1431,21 +1358,16 @@ namespace gazebo
             ignition::math::Vector3d target_pos(link_state.pose.position.x, link_state.pose.position.y, link_state.pose.position.z);
             ignition::math::Quaterniond target_rot(link_state.pose.orientation.w, link_state.pose.orientation.x,
                                                    link_state.pose.orientation.y, link_state.pose.orientation.z);
-            ignition::math::Pose3d target_pose(target_pos,target_rot);
+            ignition::math::Pose3d target_pose(target_pos, target_rot);
             ignition::math::Vector3d target_linear_vel(link_state.twist.linear.x, link_state.twist.linear.y, link_state.twist.linear.z);
             ignition::math::Vector3d target_angular_vel(link_state.twist.angular.x, link_state.twist.angular.y, link_state.twist.angular.z);
 
             if (frame)
             {
-#if GAZEBO_MAJOR_VERSION >= 8
-                ignition::math::Pose3d  frame_pose = frame->WorldPose(); // - myBody->GetCoMPose();
+                ignition::math::Pose3d frame_pose = frame->WorldPose(); // - myBody->GetCoMPose();
                 ignition::math::Vector3d frame_linear_vel = frame->WorldLinearVel();
                 ignition::math::Vector3d frame_angular_vel = frame->WorldAngularVel();
-#else
-                ignition::math::Pose3d  frame_pose = frame->GetWorldPose().Ign(); // - myBody->GetCoMPose();
-                ignition::math::Vector3d frame_linear_vel = frame->GetWorldLinearVel().Ign();
-                ignition::math::Vector3d frame_angular_vel = frame->GetWorldAngularVel().Ign();
-#endif
+
                 ignition::math::Vector3d frame_pos = frame_pose.Pos();
                 ignition::math::Quaterniond frame_rot = frame_pose.Rot();
 
@@ -1467,7 +1389,8 @@ namespace gazebo
             }
 
             bool is_paused = m_world->IsPaused();
-            if (!is_paused) m_world->SetPaused(true);
+            if (!is_paused)
+                m_world->SetPaused(true);
             body->SetWorldPose(target_pose);
             m_world->SetPaused(is_paused);
 
@@ -1485,14 +1408,14 @@ namespace gazebo
         return true;
     }
 
-    bool DeepRacerGazeboSystemPlugin::pausePhysicsCallback(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res)
+    bool DeepRacerGazeboSystemPlugin::pausePhysicsCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
         m_world->SetPaused(true);
         return true;
     }
 
-    bool DeepRacerGazeboSystemPlugin::unpausePhysicsCallback(std_srvs::Empty::Request &req,std_srvs::Empty::Response &res)
+    bool DeepRacerGazeboSystemPlugin::unpausePhysicsCallback(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
     {
         std::lock_guard<std::mutex> lock(m_lock);
         m_world->SetPaused(false);

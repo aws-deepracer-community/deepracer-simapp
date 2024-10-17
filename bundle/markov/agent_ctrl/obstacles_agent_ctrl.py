@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 '''This module implements concrete agent controllers for the rollout worker'''
 import numpy as np
 import os
@@ -83,6 +99,8 @@ class ObstaclesCtrl(AgentCtrlInterface):
                 # Inner lane is 1, outer lane is -1. If True, use outer lane
                 obstacle_lanes.append(lane_choices[int(object_location[1]) == -1])
         else:
+            ## converting percent to absolute
+            self.min_obstacle_dist = (self.min_obstacle_dist / 100.0) * self.track_data.center_line.length
             # Start with equally spaced
             obstacle_start_dist = self.min_obstacle_dist
             obstacle_end_dist = self.track_data.center_line.length - 1.0

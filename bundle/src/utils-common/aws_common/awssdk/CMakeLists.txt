@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(AWSSDK)
+set(AWSSDK_VERSION 1.8.85)
+set(AWSSDK_MD5 889124168bfa13bf0c70c09c36c7ff36)
+
+if(NOT EXTERNAL_INSTALL_LOCATION)
+  set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+endif()
+
+#############
+## Library ##
+#############
+file(MAKE_DIRECTORY ${EXTERNAL_INSTALL_LOCATION}/include)
+file(MAKE_DIRECTORY ${EXTERNAL_INSTALL_LOCATION}/lib)
+
+string(REPLACE ";" "$<SEMICOLON>" SERVICES_ARG "${SERVICE}")
+
+include(ExternalProject)
+ExternalProject_Add(AWS_SDK_IMPORT
+  SOURCE_DIR ${EXTERNAL_INSTALL_LOCATION}/src
+  URL https://github.com/aws/aws-sdk-cpp/archive/${AWSSDK_VERSION}.tar.gz
+  URL_MD5 ${AWSSDK_MD5}
+  CMAKE_ARGS -DMINIMIZE_SIZE=TRUE -DENABLE_TESTING=FALSE -DBUILD_ONLY=${SERVICES_ARG} -DCPP_STANDARD=11 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+)
+
+#############
+## Install ##
+#############
+
+install(DIRECTORY ${EXTERNAL_INSTALL_LOCATION}/lib/
+  DESTINATION lib/
+  FILES_MATCHING PATTERN "libaws*.so"
+)
+
+install(
+  DIRECTORY ${EXTERNAL_INSTALL_LOCATION}/include/aws
+  DESTINATION include/
+)
+
+export(PACKAGE ${PROJECT_NAME})

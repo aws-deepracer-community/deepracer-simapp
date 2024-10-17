@@ -1,0 +1,3 @@
+#!/bin/bash
+sed -i '/pkg_check_modules.*\(GLIB\|GST\|GOBJ\)/s/^/#/g' $1/CMakeLists.txt
+sed -i 's/build_gst_artifact=TRUE/build_gst_artifact=FALSE/g' $1/min-install-script
