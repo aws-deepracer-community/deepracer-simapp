@@ -102,6 +102,8 @@ def main():
             racecars_with_stereo_cameras = list()
             # List of racecar names that should include lidar while launching
             racecars_with_lidars = list()
+            # List of racecar names that should include IMU while launching
+            racecars_with_imu = list()
             # List of SimApp versions
             simapp_versions = list()
             for agent_index, model_s3_bucket in enumerate(yaml_file.model_s3_buckets):
@@ -125,11 +127,14 @@ def main():
                 if Input.LIDAR.value in sensors or Input.SECTOR_LIDAR.value in sensors or \
                         Input.DISCRETIZED_SECTOR_LIDAR.value in sensors:
                     racecars_with_lidars.append(racecar_name)
+                if Input.IMU.value in sensors:
+                    racecars_with_imu.append(racecar_name)
 
             cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
                             "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
                             "racecars_with_lidars:={} ".format(','.join(racecars_with_lidars)),
+                            "racecars_with_imu:={} ".format(','.join(racecars_with_imu)),
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),

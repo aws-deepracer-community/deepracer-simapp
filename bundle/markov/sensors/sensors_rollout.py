@@ -19,12 +19,13 @@ import logging
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image as sensor_image
+from sensor_msgs.msg import Imu as imu_msg
 from sensor_msgs.msg import LaserScan
 from PIL import Image
 from markov.sensors.utils import get_observation_space, get_front_camera_embedders, \
                                  get_left_camera_embedders, get_stereo_camera_embedders, \
-                                 get_lidar_embedders, get_observation_embedder
-from markov.sensors.sensor_interface import SensorInterface, LidarInterface
+                                 get_lidar_embedders, get_observation_embedder, get_imu_embedders
+from markov.sensors.sensor_interface import SensorInterface, LidarInterface, IMUInterface
 from markov.environments.constants import TRAINING_IMAGE_SIZE
 from markov.architecture.constants import Input
 from markov.log_handler.deepracer_exceptions import GenericRolloutException, GenericError
@@ -60,6 +61,8 @@ class SensorFactory(object):
             return DiscretizedSectorLidar(racecar_name, config_dict)
         elif sensor_type == Input.OBSERVATION.value:
             return Observation(racecar_name)
+        elif sensor_type == Input.IMU.value:
+            return IMU(racecar_name)            
         else:
             raise GenericRolloutException("Unknown sensor")
 
@@ -326,6 +329,72 @@ class DualCamera(SensorInterface):
         except Exception as ex:
             LOGGER.info("Unable to retrieve frame: %s", ex)
 
+class IMU(IMUInterface):
+    '''This is the observation class for the IMU
+    '''
+    def __init__(self, racecar_name, timeout=120.0):
+        """IMU sensor constructor
+
+        Args:
+            racecar_name (str): racecar name
+            timeout (float): time limit for buffer get method until error out.
+            The reason why using 120.0 as default value for sensor is
+            because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
+        """
+        self.imu_buffer = utils.DoubleBuffer(clear_data_on_get=False)
+        rospy.Subscriber('/{}/imu'.format(racecar_name), imu_msg, self._imu_cb_)
+        self.sensor_type = Input.IMU.value
+        self.raw_data = None
+        self.timeout = timeout
+
+    def get_observation_space(self):
+        try:
+            return get_observation_space(Input.IMU.value)
+        except GenericError as ex:
+            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
+        except Exception as ex:
+            raise GenericRolloutException('{}'.format(ex))
+
+    def get_state(self, block=True):
+        try:
+            try:
+                # Make sure the first sensor message is the starting one
+                imu_data = self.imu_buffer.get(block=block, timeout=self.timeout)
+            
+            except utils.DoubleBuffer.Empty:
+                imu_data = self.imu_buffer.get(block=True, timeout=self.timeout)
+
+            imu_frame = []
+            imu_frame.append(imu_data.linear_acceleration.x)
+            imu_frame.append(imu_data.linear_acceleration.y)
+            imu_frame.append(imu_data.linear_acceleration.z)
+            imu_frame.append(imu_data.angular_velocity.x)
+            imu_frame.append(imu_data.angular_velocity.y)
+            imu_frame.append(imu_data.angular_velocity.z)
+
+            return {Input.IMU.value: np.array(imu_frame)}
+        except Exception as ex:
+            raise GenericRolloutException("Unable to set state: {}".format(ex))
+
+    def reset(self):
+        self.imu_buffer.clear()
+
+    def get_input_embedders(self, network_type):
+        try:
+            return get_imu_embedders(network_type)
+        except GenericError as ex:
+            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
+        except Exception as ex:
+            raise GenericRolloutException('{}'.format(ex))
+
+    def _imu_cb_(self, data):
+        ''' Callback for the IMU, this is triggered by ROS
+            data - IMU data from the gazebo plugin, it is a sensor message
+        '''
+        try:
+            self.imu_buffer.put(data)
+        except Exception as ex:
+            LOGGER.info("Unable to retrieve frame: %s", ex)
 
 class Lidar(LidarInterface):
     '''This class handles the data collection for lidar'''

@@ -6,6 +6,7 @@
   <arg name="kinesis_video_stream_region" default="us-east-1" />
   <arg name="racecars_with_stereo_cameras" default="racecar" />
   <arg name="racecars_with_lidars" default="racecar" />
+  <arg name="racecars_with_imu" default="racecar" />
   <arg name="body_shell_types" />
   <arg name="simapp_versions" />
   <arg name="multicar" default="false" />
@@ -26,6 +27,7 @@
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
     <arg name="include_second_camera" value="$(eval 'racecar' in racecars_with_stereo_cameras.split(','))" />
     <arg name="include_lidar_sensor" value="$(eval 'racecar' in racecars_with_lidars.split(','))" />
+    <arg name="include_imu_sensor" value="$(eval 'racecar' in racecars_with_imu.split(','))" />
     <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[0])" />
     <arg name="publish_to_kinesis_stream" value="$(eval publish_to_kinesis_stream and len(kinesis_video_stream_names) > 0)" />
     <arg name="make_required" value="$(arg make_required)" />
@@ -45,6 +47,7 @@
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
     <arg name="include_second_camera" value="$(eval 'racecar_0' in racecars_with_stereo_cameras.split(','))" />
     <arg name="include_lidar_sensor" value="$(eval 'racecar_0' in racecars_with_lidars.split(','))" />
+    <arg name="include_imu_sensor" value="$(eval 'racecar' in racecars_with_imu.split(','))" />
     <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[0])" />
     <arg name="publish_to_kinesis_stream" value="$(eval publish_to_kinesis_stream and len(kinesis_video_stream_names) > 0)" />
     <arg name="make_required" value="$(arg make_required)" />
@@ -65,6 +68,7 @@
     <arg name="kinesis_video_stream_region" value="$(arg kinesis_video_stream_region)"/>
     <arg name="include_second_camera" value="$(eval 'racecar_1' in racecars_with_stereo_cameras.split(','))" />
     <arg name="include_lidar_sensor" value="$(eval 'racecar_1' in racecars_with_lidars.split(','))" />
+    <arg name="include_imu_sensor" value="$(eval 'racecar_0' in racecars_with_imu.split(','))" />
     <arg name="body_shell_type" value="$(eval body_shell_types.split(',')[1])" />
     <arg name="make_required" value="$(arg make_required)" />
   </include>

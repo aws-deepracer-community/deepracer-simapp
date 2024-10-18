@@ -274,6 +274,9 @@ def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_rand
                                                         'to_uint8',
                                                         ObservationToUInt8Filter(0, 255))
 
+                if observation == Input.IMU.value:
+                    pass
+
                 if observation == Input.LIDAR.value:
                     input_filter.add_observation_filter(observation,
                                                         'clipping',

@@ -17,7 +17,7 @@
 '''This module contains a composite sensor class for supporting agents with multiple sensors'''
 from rl_coach.spaces import StateSpace
 
-from markov.sensors.sensor_interface import SensorInterface, LidarInterface
+from markov.sensors.sensor_interface import SensorInterface, LidarInterface, IMUInterface
 
 
 class CompositeSensor(SensorInterface):
@@ -54,6 +54,8 @@ class CompositeSensor(SensorInterface):
                 # We ignore blocking request to Lidar sensor update and follow-up non-blocking call below
                 # will use the latest Lidar data whether it was used previously or not.
                 if isinstance(sensor, LidarInterface):
+                    continue
+                if isinstance(sensor, IMUInterface):
                     continue
                 state.update(sensor.get_state(block=block))
 
