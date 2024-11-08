@@ -11,7 +11,7 @@ services:
       context: .
       dockerfile: Dockerfile.localuser
       args:
-        FROM_IMG: awsdeepracercommunity/deepracer-robomaker:${DR_ROBOMAKER_IMAGE}
+        FROM_IMG: awsdeepracercommunity/deepracer-simapp:${DR_ROBOMAKER_IMAGE}
         USERNAME: $USER
         USER_UID: $USER_UID
         USER_GID: $USER_GID
@@ -28,6 +28,6 @@ services:
       - XDG_RUNTIME_DIR=/tmp/runtime-$USER
     volumes:
       - '../docker/files:/opt/files'
-      - '../install:/opt/install'
+      - '../install:/opt/simapp'
       - '/tmp/.X11-unix/:/tmp/.X11-unix'
       - '${XAUTHORITY}:$HOME/.Xauthority'
