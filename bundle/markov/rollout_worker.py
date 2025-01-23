@@ -478,6 +478,7 @@ def main():
                                                                bucket=simtrace_s3_bucket, 
                                                                s3_prefix=simtrace_episode_s3_object_prefix, 
                                                                region_name=aws_region, 
+                                                               s3_endpoint_url=args.s3_endpoint_url,
                                                                local_path=SIMTRACE_EPISODE_TRAINING_LOCAL_PATH_FORMAT.format('agent'))
         simtrace_video_s3_writers.append(
             SimtraceVideo(upload_type=SimtraceVideoNames.SIMTRACE_TRAINING.value,
