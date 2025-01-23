@@ -416,7 +416,8 @@ def main():
                                        key_tuple[1])
     metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: rospy.get_param('METRICS_S3_BUCKET'),
                          MetricsS3Keys.METRICS_KEY.value: metrics_key,
-                         MetricsS3Keys.REGION.value: rospy.get_param('AWS_REGION')}
+                         MetricsS3Keys.REGION.value: rospy.get_param('AWS_REGION'),
+                         MetricsS3Keys.ENDPOINT_URL.value: args.s3_endpoint_url}
     
     firehose_metrics_config = None
     firehose_simtrace_config= None
@@ -483,6 +484,7 @@ def main():
                           bucket=simtrace_s3_bucket,
                           s3_prefix=simtrace_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=SIMTRACE_TRAINING_LOCAL_PATH_FORMAT.format('agent')))
     if mp4_s3_bucket:
         simtrace_video_s3_writers.extend([
@@ -490,16 +492,19 @@ def main():
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format('agent')),
             SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format('agent')),
             SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format('agent'))])
 
     run_phase_subject = RunPhaseSubject()
@@ -512,6 +517,7 @@ def main():
     checkpoint = Checkpoint(bucket=args.s3_bucket,
                             s3_prefix=args.s3_prefix,
                             region_name=args.aws_region,
+                            s3_endpoint_url=args.s3_endpoint_url,
                             agent_name='agent',
                             checkpoint_dir=args.checkpoint_dir)
 
