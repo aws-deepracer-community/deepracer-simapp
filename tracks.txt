@@ -38,6 +38,8 @@
 2022_october_pro_ccw
 2022_october_pro_cw
 2022_october_pro
+2022_reinvent_champ_ccw
+2022_reinvent_champ_cw
 2022_reinvent_champ
 2022_september_open_ccw
 2022_september_open_cw
@@ -49,6 +51,8 @@
 2022_summit_speedway_cw
 2022_summit_speedway_mini
 2022_summit_speedway
+2024_reinvent_champ_ccw
+2024_reinvent_champ_cw
 Albert
 AmericasGeneratedInclStart
 Aragon
