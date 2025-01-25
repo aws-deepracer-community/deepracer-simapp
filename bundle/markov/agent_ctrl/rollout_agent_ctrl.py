@@ -1,3 +1,19 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 '''This module implements concrete agent controllers for the rollout worker'''
 import copy
 from collections import OrderedDict
@@ -394,7 +410,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         if closest_obstacle_pose is not None:
             # reset position varies based on virtual event or not
             # Only enable this when the feature flag is on
-            if(self._enable_mercy_reset and episode_status == EpisodeStatus.CRASHED.value):
+            if(self._enable_mercy_reset): # resetting regardless of crash or not, as long as car is stuck behind the box
                 ## check if it crashes into new obstacle
                 if(self.current_obstacle_pose == None or self.current_obstacle_pose != closest_obstacle_pose):
                     self.current_obstacle_crash_count = 1
@@ -723,6 +739,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._step_metrics_[StepMetrics.TIME.value] = self._current_sim_time
         self._step_metrics_[StepMetrics.EPISODE_STATUS.value] = episode_status
         self._step_metrics_[StepMetrics.PAUSE_DURATION.value] = self._pause_duration
+        self._step_metrics_[StepMetrics.OBSTACLE_CRASH_COUNTER.value] = self.current_obstacle_crash_count
         self._data_dict_['prev_progress'] = 0.0 if self._step_metrics_[StepMetrics.PROG.value] == 100 \
                                                 else self._step_metrics_[StepMetrics.PROG.value]
         # Reset the crash metric after lap complete which is flagged by this variable
