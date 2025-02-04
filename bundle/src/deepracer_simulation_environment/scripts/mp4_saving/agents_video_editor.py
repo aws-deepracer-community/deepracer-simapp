@@ -122,7 +122,7 @@ class AgentsVideoEditor(object):
         # ROS service to get video metrics
         rospy.wait_for_service("/{}/{}".format(self.agent_name, "mp4_video_metrics"))
         self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
-                                                         VideoMetricsSrv)
+                                                         VideoMetricsSrv, persistent=True)
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited

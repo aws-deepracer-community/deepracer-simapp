@@ -73,7 +73,7 @@ class ModelUpdater(object):
             if service.name in GAZEBO_SERVICES:
                 rospy.wait_for_service(service.value)
         # Gazebo service that allows us to position the car
-        self._model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState)
+        self._model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState, persistent=True)
 
         self._get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value,
                                                    GetModelProperties)
@@ -86,8 +86,8 @@ class ModelUpdater(object):
                                                         SetVisualVisibles)
         self._set_visual_transparencies = ServiceProxyWrapper(GazeboServiceName.SET_VISUAL_TRANSPARENCIES.value,
                                                               SetVisualTransparencies)
-        self._pause_physics = ServiceProxyWrapper(GazeboServiceName.PAUSE_PHYSICS.value, Empty)
-        self._unpause_physics = ServiceProxyWrapper(GazeboServiceName.UNPAUSE_PHYSICS.value, Empty)
+        self._pause_physics = ServiceProxyWrapper(GazeboServiceName.PAUSE_PHYSICS.value, Empty, persistent=True)
+        self._unpause_physics = ServiceProxyWrapper(GazeboServiceName.UNPAUSE_PHYSICS.value, Empty, persistent=True)
         self._set_model_state_tracker = SetModelStateTracker.get_instance()
         self._get_model_state_tracker = GetModelStateTracker.get_instance()
         # there should be only one model updater instance

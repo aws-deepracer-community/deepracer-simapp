@@ -114,8 +114,8 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
         # Make the clients that will allow us to pause and unpause the physics
         rospy.wait_for_service('/gazebo/pause_physics_dr')
         rospy.wait_for_service('/gazebo/unpause_physics_dr')
-        pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty)
-        unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty)
+        pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty, persistent=True)
+        unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty, persistent=True)
 
         for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
             rospy.wait_for_service(mp4_sub)

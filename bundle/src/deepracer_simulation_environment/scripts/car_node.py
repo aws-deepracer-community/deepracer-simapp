@@ -78,7 +78,7 @@ class DeepRacer(object):
         start_pos_offset = max(min(float(rospy.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
                                MIN_START_POS_OFFSET)
         # Gazebo service that allows us to position the car
-        self.model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState)
+        self.model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState, persistent=True)
 
         self.get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value,
                                                   GetModelProperties)

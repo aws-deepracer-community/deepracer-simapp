@@ -47,7 +47,7 @@ class SetModelStateTracker(AbstractTracker):
         self.model_state_map = {}
 
         rospy.wait_for_service(SET_MODEL_STATES)
-        self.set_model_states = ServiceProxyWrapper(SET_MODEL_STATES, SetModelStates)
+        self.set_model_states = ServiceProxyWrapper(SET_MODEL_STATES, SetModelStates, persistent=True)
 
         SetModelStateTracker._instance_ = self
         super(SetModelStateTracker, self).__init__(priority=consts.TrackerPriority.LOW)
