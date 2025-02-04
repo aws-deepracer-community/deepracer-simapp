@@ -18,7 +18,7 @@
 import numpy as np
 
 from markov.environments.constants import (
-    TRAINING_IMAGE_SIZE, TRAINING_LIDAR_SIZE,
+    TRAINING_IMAGE_SIZE, TRAINING_IMU_SIZE, TRAINING_LIDAR_SIZE,
     NUMBER_OF_LIDAR_SECTORS
 )
 
@@ -64,6 +64,8 @@ def get_observation_space(sensor, model_metadata=None):
         obs[sensor] = VectorObservationSpace(shape=shape,
                                              low=0.0,
                                              high=1.0)
+    elif sensor == Input.IMU.value:
+        obs[sensor] = VectorObservationSpace(shape=TRAINING_IMU_SIZE)
     else:
         raise Exception("Unable to set observation space for sensor {}".format(sensor))
     return obs
@@ -203,6 +205,21 @@ def get_lidar_embedders(network_type, lidar_type):
     '''
     #! TODO decide whether we need lidar layers for different network types
     input_embedder = {lidar_type:
+                      {SchemeInfo.CONV_INFO_LIST.value: [],
+                       SchemeInfo.DENSE_LAYER_INFO_LIST.value: [256, 256],
+                       SchemeInfo.BN_INFO_CONV.value: [False, ActivationFunctions.RELU.value, 0.0],
+                       SchemeInfo.BN_INFO_DENSE.value: [False, ActivationFunctions.RELU.value,
+                                                        0.0],
+                       SchemeInfo.IS_FIRST_LAYER_BN.value: False}}
+    return input_embedder
+
+def get_imu_embedders(network_type):
+    '''Utility method for retrieving the input embedder for the IMU sensor, this
+       needs to be in the util module due to the sagemaker/robomaker incompatibility
+       network_type - The type of network for which to return the embedder for
+    '''
+    #! TODO decide whether we need lidar layers for different network types
+    input_embedder = {Input.IMU.value:
                       {SchemeInfo.CONV_INFO_LIST.value: [],
                        SchemeInfo.DENSE_LAYER_INFO_LIST.value: [256, 256],
                        SchemeInfo.BN_INFO_CONV.value: [False, ActivationFunctions.RELU.value, 0.0],

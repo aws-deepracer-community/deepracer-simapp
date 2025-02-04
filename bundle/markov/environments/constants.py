@@ -28,6 +28,9 @@ NUMBER_OF_LIDAR_SECTORS = 8
 # Max clipping distance for sector lidar sensor
 SECTOR_LIDAR_CLIPPING_DIST = 0.5
 
+# IMU sensor constraints
+TRAINING_IMU_SIZE = 6
+
 LINK_NAMES = ['racecar::left_rear_wheel', 'racecar::left_front_wheel',
               'racecar::right_rear_wheel', 'racecar::right_front_wheel']
 

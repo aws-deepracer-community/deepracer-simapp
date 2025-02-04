@@ -48,6 +48,8 @@ def construct_sensor(racecar_name, observation_list, factory, model_metadata_inf
                                                 {"model_metadata": model_metadata_info}))
     if Input.OBSERVATION.value in observation_list:
         sensor.add_sensor(factory.create_sensor(racecar_name, Input.OBSERVATION.value, {}))
+    if Input.IMU.value in observation_list:
+        sensor.add_sensor(factory.create_sensor(racecar_name, Input.IMU.value, {}))
     return sensor
 
 def get_network_settings(sensor, network):

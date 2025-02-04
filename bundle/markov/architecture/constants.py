@@ -49,6 +49,7 @@ class Input(Enum):
     CAMERA = 'FRONT_FACING_CAMERA'
     LEFT_CAMERA = 'LEFT_CAMERA'
     STEREO = 'STEREO_CAMERAS'
+    IMU = 'IMU'
     
     @classmethod
     def validate_inputs(cls, input_list):

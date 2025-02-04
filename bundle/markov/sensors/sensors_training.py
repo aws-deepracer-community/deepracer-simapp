@@ -16,10 +16,10 @@
 
 '''This module contains the available sensors for the sim app'''
 from markov.architecture.constants import Input
-from markov.sensors.sensor_interface import SensorInterface, LidarInterface
+from markov.sensors.sensor_interface import SensorInterface, LidarInterface, IMUInterface
 from markov.sensors.utils import get_observation_space, get_front_camera_embedders, \
                                  get_left_camera_embedders, get_stereo_camera_embedders, \
-                                 get_lidar_embedders, get_observation_embedder
+                                 get_lidar_embedders, get_observation_embedder, get_imu_embedders
 from markov.log_handler.deepracer_exceptions import GenericTrainerException, GenericError
 from markov.log_handler.constants import SIMAPP_TRAINING_WORKER_EXCEPTION
 
@@ -48,6 +48,8 @@ class SensorFactory(object):
             return DiscretizedSectorLidar(config_dict)
         elif sensor_type == Input.OBSERVATION.value:
             return Observation()
+        elif sensor_type == Input.IMU.value:
+            return IMU()
         else:
             raise GenericTrainerException("Unknown sensor")
 
@@ -150,6 +152,29 @@ class DualCamera(SensorInterface):
         except Exception as ex:
             raise GenericTrainerException('{}'.format(ex))
 
+class IMU(IMUInterface):
+    '''This class handles the data for dual cameras'''
+    def get_observation_space(self):
+        try:
+            return get_observation_space(Input.IMU.value)
+        except GenericError as ex:
+            ex.log_except_and_exit(SIMAPP_TRAINING_WORKER_EXCEPTION)
+        except Exception as ex:
+            raise GenericTrainerException('{}'.format(ex))
+
+    def get_state(self, block=True):
+        return dict()
+
+    def reset(self):
+        pass
+
+    def get_input_embedders(self, network_type):
+        try:
+            return get_imu_embedders(network_type)
+        except GenericError as ex:
+            ex.log_except_and_exit(SIMAPP_TRAINING_WORKER_EXCEPTION)
+        except Exception as ex:
+            raise GenericTrainerException('{}'.format(ex))
 
 class Lidar(LidarInterface):
     '''This class handles the data collection for lidar'''

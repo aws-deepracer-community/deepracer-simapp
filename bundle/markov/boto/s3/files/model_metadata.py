@@ -287,6 +287,11 @@ class ModelMetadata():
                             raise ValueError(err_msg)
                         lidar_config[clipping_dist_key] = config[clipping_dist_key]
 
+                imu_sensors = [Input.IMU.value]
+                imu_sensors_type_count = sum([sensor_elem in imu_sensors for sensor_elem in sensor])
+                if imu_sensors_type_count > 1:
+                    raise ValueError("model_metadata contains more than 1 imu sensor: {}".format(sensor))
+
                 if ModelMetadataKeys.NEURAL_NETWORK.value in data:
                     network = data[ModelMetadataKeys.NEURAL_NETWORK.value]
                 else:
