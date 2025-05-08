@@ -134,6 +134,45 @@ class ModelMetadata():
         clipping_dist_key = ModelMetadataKeys.CLIPPING_DISTANCE.value
         return self._model_metadata[lidar_config_key][clipping_dist_key]
 
+    @property
+    def llm_config(self):
+        """Return the LLM configuration if present in model metadata"""
+        if not self._model_metadata:
+            self._download_and_set_model_metadata()
+        return self._model_metadata.get(ModelMetadataKeys.LLM_CONFIG.value, {})
+
+    @property
+    def model_id(self):
+        """Return the Bedrock model ID from LLM config"""
+        return self.llm_config.get(ModelMetadataKeys.LLM_MODEL_ID.value, '')
+    
+    @property
+    def system_prompt(self):
+        """Return the system prompt for the LLM"""
+        return self.llm_config.get(ModelMetadataKeys.LLM_SYSTEM_PROMPT.value, [])
+    
+    @property
+    def max_tokens(self):
+        """Return max tokens setting for the LLM"""
+        return self.llm_config.get(ModelMetadataKeys.LLM_MAX_TOKENS.value, 1000)
+
+    @property
+    def context_window(self):
+        """Return context window size for the LLM"""
+        return self.llm_config.get(ModelMetadataKeys.LLM_CONTEXT_WINDOW.value, 0)
+
+    @property
+    def repeated_prompt(self):
+        """Return the repeated prompt for the LLM"""
+        return self.llm_config.get(ModelMetadataKeys.LLM_REPEATED_PROMPT.value, '')
+
+    @property
+    def neural_network_type(self):
+        """Return neural network type from model metadata"""
+        if not self._model_metadata:
+            self._download_and_set_model_metadata()
+        return self._model_metadata.get(ModelMetadataKeys.NEURAL_NETWORK.value, 'DEEP_CONVOLUTIONAL_NETWORK')
+
     def get_action_dict(self, action):
         """return the action dict containing the steering_angle and speed value
 
@@ -314,6 +353,10 @@ class ModelMetadata():
                                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                      SIMAPP_EVENT_ERROR_CODE_500)
 
+                llm_config = {}
+                if ModelMetadataKeys.LLM_CONFIG.value in data:
+                    llm_config = data[ModelMetadataKeys.LLM_CONFIG.value]
+
             LOG.info("Sensor list %s, network %s, simapp_version %s, training_algorithm %s, action_space_type %s lidar_config %s",
                      sensor, network,
                      simapp_version, training_algorithm, action_space_type, lidar_config)
@@ -324,6 +367,7 @@ class ModelMetadata():
             model_metadata[ModelMetadataKeys.ACTION_SPACE.value] = action_values
             model_metadata[ModelMetadataKeys.ACTION_SPACE_TYPE.value] = action_space_type
             model_metadata[ModelMetadataKeys.LIDAR_CONFIG.value] = lidar_config
+            model_metadata[ModelMetadataKeys.LLM_CONFIG.value] = llm_config
             return model_metadata
         except ValueError as ex:
             raise ValueError('model_metadata ValueError: {}'.format(ex))

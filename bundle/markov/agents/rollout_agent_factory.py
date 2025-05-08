@@ -24,14 +24,22 @@ from markov.agents.utils import construct_sensor, get_network_settings
 from markov.sensors.sensors_rollout import SensorFactory
 from markov.cameras.frustum_manager import FrustumManager
 from markov.boto.s3.constants import ModelMetadataKeys
+from markov.agents.llm_agent import LLMAgent
+from markov.architecture.constants import NeuralNetwork
 
 
-def create_rollout_agent(agent_config, metrics, run_phase_subject):
-    '''Returns an rollout agent object
-       agent_config - Dictionary containing the key specified in ConfigParams
-       metrics - Metrics object for the agent
-       run_phase_subject - Subject that notifies observers when the run phase changes
-    '''
+def create_rollout_agent(agent_config, metrics, run_phase_subject=None):
+    """
+    Factory method for creating agents based on the agent_config
+    Args:
+        agent_config (dict): agent configuration containing neural network type
+        metrics: metrics object
+        run_phase_subject: Subject that notifies observers when the run phase changes
+    Returns:
+        Agent object
+    """
+    # Get model metadata
+    agent_name = agent_config['agent_name']  
     model_metadata = agent_config['model_metadata']
     model_metadata_info = model_metadata.get_model_metadata_info()
     observation_list = model_metadata_info[ModelMetadataKeys.SENSOR.value]
@@ -41,13 +49,24 @@ def create_rollout_agent(agent_config, metrics, run_phase_subject):
     sensor = construct_sensor(agent_name, observation_list, SensorFactory, model_metadata_info)
     network_settings = get_network_settings(sensor, network)
     FrustumManager.get_instance().add(agent_name=agent_name,
-                                      observation_list=observation_list,
-                                      version=version)
+                                        observation_list=observation_list,
+                                        version=version)
 
-    ctrl_config = agent_config[ConfigParams.CAR_CTRL_CONFIG.value]
-    ctrl = RolloutCtrl(ctrl_config, run_phase_subject, metrics)
+    # Get neural network type from model metadata
+    neural_network_type = model_metadata.get_model_metadata_info()[ModelMetadataKeys.NEURAL_NETWORK.value]
+    
+    # If LLM type, create LLM agent
+    if neural_network_type == NeuralNetwork.LLM.value:
+        sensor = construct_sensor(agent_name, model_metadata_info[ModelMetadataKeys.SENSOR.value],
+                                SensorFactory, model_metadata_info)
+        ctrl = RolloutCtrl(agent_config)
+        return LLMAgent(sensor, ctrl, metrics, agent_name, run_phase_subject)
+    else:
+        # Existing code for regular neural network agents
+        ctrl_config = agent_config[ConfigParams.CAR_CTRL_CONFIG.value]
+        ctrl = RolloutCtrl(ctrl_config, run_phase_subject, metrics)
 
-    return Agent(network_settings, sensor, ctrl)
+        return Agent(network_settings, sensor, ctrl)
 
 def create_obstacles_agent():
     '''Returns an obstacle agent, such as a box. Will not be used for training'''
