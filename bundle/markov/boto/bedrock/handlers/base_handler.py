@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 import boto3
 from botocore.exceptions import ClientError
@@ -47,7 +47,7 @@ class ModelHandler(ABC):
         self.action_space = None
         self.action_space_type = None
 
-    def set_system_prompt(self, prompt: str | List[str]) -> None:
+    def set_system_prompt(self, prompt: Union[str, List[str]]) -> None:
         """Set the system prompt for the model"""
         if isinstance(prompt, list):
             self.system_prompt = "\n".join(prompt)
