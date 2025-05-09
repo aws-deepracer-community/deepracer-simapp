@@ -31,6 +31,9 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     gazebo11 \
     libgazebo11-dev \
     python3-rosdep \
+    xvfb \
+    x11vnc \
+    jwm \
     ros-noetic-media-export \
     ros-noetic-ros-base \
     ros-noetic-rosmsg \
@@ -43,8 +46,8 @@ RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
     ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
 
 # Install Python PIP modules
-ADD docker/requirements.txt /
-RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
+ADD requirements.txt /
+RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<60' && \
     export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
     pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil
 
