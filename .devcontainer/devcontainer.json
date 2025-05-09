@@ -1,0 +1,135 @@
+{
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "USERNAME": "${localEnv:USER}"
+        }
+    },
+    "containerUser": "${localEnv:USER}",
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "QT_X11_NO_MITSHM": "1"
+    },
+    "runArgs": [
+        "--privileged",
+        "--network",
+        "host"
+    ],
+    "mounts": [
+        "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
+        "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+        "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind",
+        "source=${XAUTHORITY},target=/home/${localEnv:USER}/.Xauthority,type=bind"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.profiles.linux": {
+                    "bash (ROS)": {
+                        "path": "/bin/bash",
+                        "args": [
+                            "--init-file",
+                            ".devcontainer/bashrc"
+                        ]
+                    }
+                },
+                "terminal.integrated.defaultProfile.linux": "bash (ROS)",
+                "cmake.configureOnOpen": false,
+                "python.autoComplete.extraPaths": [
+                    "/opt/ros/noetic/lib/python3/dist-packages/",
+                    "/workspaces/bundle/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
+                ],
+                "python.analysis.extraPaths": [
+                    "/opt/ros/noetic/lib/python3/dist-packages/",
+                    "/workspaces/bundle/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
+                ],
+                "files.associations": {
+                    "condition_variable": "cpp",
+                    "thread": "cpp",
+                    "cctype": "cpp",
+                    "clocale": "cpp",
+                    "cmath": "cpp",
+                    "csignal": "cpp",
+                    "cstdarg": "cpp",
+                    "cstddef": "cpp",
+                    "cstdio": "cpp",
+                    "cstdlib": "cpp",
+                    "cstring": "cpp",
+                    "ctime": "cpp",
+                    "cwchar": "cpp",
+                    "cwctype": "cpp",
+                    "array": "cpp",
+                    "atomic": "cpp",
+                    "strstream": "cpp",
+                    "bit": "cpp",
+                    "*.tcc": "cpp",
+                    "bitset": "cpp",
+                    "chrono": "cpp",
+                    "codecvt": "cpp",
+                    "complex": "cpp",
+                    "cstdint": "cpp",
+                    "deque": "cpp",
+                    "list": "cpp",
+                    "map": "cpp",
+                    "set": "cpp",
+                    "unordered_map": "cpp",
+                    "vector": "cpp",
+                    "exception": "cpp",
+                    "algorithm": "cpp",
+                    "functional": "cpp",
+                    "iterator": "cpp",
+                    "memory": "cpp",
+                    "memory_resource": "cpp",
+                    "numeric": "cpp",
+                    "optional": "cpp",
+                    "random": "cpp",
+                    "ratio": "cpp",
+                    "regex": "cpp",
+                    "string": "cpp",
+                    "string_view": "cpp",
+                    "system_error": "cpp",
+                    "tuple": "cpp",
+                    "type_traits": "cpp",
+                    "utility": "cpp",
+                    "fstream": "cpp",
+                    "future": "cpp",
+                    "initializer_list": "cpp",
+                    "iomanip": "cpp",
+                    "iosfwd": "cpp",
+                    "iostream": "cpp",
+                    "istream": "cpp",
+                    "limits": "cpp",
+                    "mutex": "cpp",
+                    "new": "cpp",
+                    "ostream": "cpp",
+                    "shared_mutex": "cpp",
+                    "sstream": "cpp",
+                    "stdexcept": "cpp",
+                    "streambuf": "cpp",
+                    "cfenv": "cpp",
+                    "cinttypes": "cpp",
+                    "typeindex": "cpp",
+                    "typeinfo": "cpp",
+                    "valarray": "cpp",
+                    "variant": "cpp",
+                    "*.ipp": "cpp",
+                    "unordered_set": "cpp"
+                },
+                "files.exclude": {
+                    "**/build": true
+                },
+                "search.exclude": {
+                    "**/build": true
+                },
+                "autopep8.args": [
+                    "--max-line-length=120"
+                ]
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-python.autopep8"
+            ]
+        }
+    }
+}
