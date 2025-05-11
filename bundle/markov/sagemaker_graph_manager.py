@@ -15,6 +15,7 @@
 #################################################################################
 
 import json
+from bundle.markov.architecture.llm_agent import LLMAgentParameters
 from markov.architecture.constants import Input
 from markov.architecture.embedder_factory import create_input_embedder, create_middle_embedder
 from markov.constants import (ExplorationTypes,
@@ -254,8 +255,10 @@ def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_rand
             params = get_updated_hyper_parameters(hp_dict, training_algorithm)
             if TrainingAlgorithm.SAC.value == training_algorithm:
                 agent_params = get_sac_params(DeepRacerSACAgentParams(), agent, params, run_type)
-            else:
+            elif TrainingAlgorithm.CLIPPED_PPO.value == training_algorithm:
                 agent_params = get_clipped_ppo_params(DeepRacerClippedPPOAgentParams(), agent, params)
+            elif TrainingAlgorithm.LLM.value == training_algorithm:
+                agent_params = LLMAgentParameters(agent.ctrl.model_metadata)
             agent_params.env_agent = agent
             input_filter = InputFilter(is_a_reference_filter=True)
             for observation in agent.network_settings['input_embedders'].keys():

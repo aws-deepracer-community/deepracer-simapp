@@ -71,6 +71,7 @@ class TrainingAlgorithm(Enum):
     '''Enum containing the training algorithm values passed as a parameter in model_metadata.'''
     CLIPPED_PPO = 'clipped_ppo'
     SAC = 'sac'
+    LLM = 'llm'
 
     @classmethod
     def has_training_algorithm(cls, training_algorithm):
@@ -83,7 +84,8 @@ class TrainingAlgorithm(Enum):
 # Mapping between the training algorithm and output heads to create frozen graph.
 FROZEN_HEAD_OUTPUT_GRAPH_FORMAT_MAPPING = {
     TrainingAlgorithm.CLIPPED_PPO.value: 'main_level/{}/main/online/network_1/ppo_head_0/policy',
-    TrainingAlgorithm.SAC.value: 'main_level/{}/policy/online/network_0/sac_policy_head_0/policy'
+    TrainingAlgorithm.SAC.value: 'main_level/{}/policy/online/network_0/sac_policy_head_0/policy',
+    TrainingAlgorithm.LLM.value: ''
 }
 
 
