@@ -15,8 +15,8 @@
 #################################################################################
 
 import json
-from bundle.markov.architecture.llm_agent import LLMAgentParameters
 from markov.architecture.constants import Input
+from markov.architecture.llm_agent import LLMAgentParameters
 from markov.architecture.embedder_factory import create_input_embedder, create_middle_embedder
 from markov.constants import (ExplorationTypes,
                               HyperParameterKeys,
