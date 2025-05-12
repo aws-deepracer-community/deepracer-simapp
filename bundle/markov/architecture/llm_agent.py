@@ -190,7 +190,7 @@ class LLMAgent(Agent):
         try:
             start_time = time.time()
             
-            LOG.info(f"Choosing action for episode {self.current_episode}, step {self.total_steps_counter}")
+            LOG.info(f"Choosing action for step {self.current_episode_steps_counter}, phase {self._phase}")
 
             # Get prompt and image data
             prompt_text, image_data = self._construct_prompt(curr_state)
@@ -199,23 +199,22 @@ class LLMAgent(Agent):
             action_dict = self.handler.process(prompt_text, image_data)
             inference_time = time.time() - start_time
             
-            LOG.info(f"LLM inference time: {inference_time:.2f}s")
+            LOG.debug(f"LLM inference time: {inference_time:.2f}s")
             
             # Extract action values with proper keys
             steering_angle = float(action_dict.get("steering_angle", 0.0))
             speed = float(action_dict.get("speed", 0.0))
-            
-            # Ensure values are within bounds
-            speed = max(self.action_space_info['speed']['low'], 
-                       min(speed, self.action_space_info['speed']['high']))
-                       
-            steering_angle = max(self.action_space_info['steering_angle']['low'],
-                                min(steering_angle, self.action_space_info['steering_angle']['high']))
-            
-            LOG.info(f"Driving action: speed={speed:.2f}, steering_angle={steering_angle:.2f}")
+            LOG.debug(f"Driving action: speed={speed:.2f}, steering_angle={steering_angle:.2f}")
             
             # Convert to appropriate action format based on action space type
             if self.model_metadata.action_space_type == "continuous":
+                # Ensure values are within bounds
+                speed = max(self.action_space_info['speed']['low'], 
+                        min(speed, self.action_space_info['speed']['high']))
+                        
+                steering_angle = max(self.action_space_info['steering_angle']['low'],
+                                    min(steering_angle, self.action_space_info['steering_angle']['high']))
+
                 # For continuous action space, return [steering_angle, speed]
                 action = np.array([steering_angle, speed])
             else:
@@ -240,7 +239,7 @@ class LLMAgent(Agent):
                 "reasoning": action_dict.get('reasoning', '')
             }
                 
-            return ActionInfo(action=action, action_info=action_info)
+            return ActionInfo(action=action)
             
         except Exception as e:
             LOG.error(f"Error in LLM agent action selection: {e}")
