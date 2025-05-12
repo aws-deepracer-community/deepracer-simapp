@@ -51,7 +51,10 @@ from rl_coach.filters.observation.observation_clipping_filter import Observation
 from markov.filters.observation.observation_sector_discretize_filter import ObservationSectorDiscretizeFilter
 from rl_coach.graph_managers.graph_manager import ScheduleParameters
 from rl_coach.schedules import LinearSchedule
+from markov.log_handler.logger import Logger
+import logging
 
+logger = Logger("GraphManager", logging.DEBUG).get_logger()
 
 class DeepRacerClippedPPOAgentParams(ClippedPPOAgentParameters):
     def __init__(self):
@@ -221,88 +224,96 @@ def get_updated_hyper_parameters(hp_dict, training_algorithm):
 def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_randomization=False,
                       done_condition=any, run_type=str(RunType.ROLLOUT_WORKER),
                       pause_physics=None, unpause_physics=None):
-    ####################
-    # Hyperparameters #
-    ####################
-    # Note: The following three line hard-coded to pick the first agent's trainig algorithm
-    # and dump the hyper parameters for the particular training algorithm into json
-    # for training jobs (so that the console display the training hyperparameters correctly)
-    # since right now, we only support training one model at a time.
-    # TODO: clean these lines up when we support multi-agent training.
-    training_algorithm = agent_list[0].ctrl.model_metadata.training_algorithm if agent_list else None
-    params = get_updated_hyper_parameters(hp_dict, training_algorithm)
-    params_json = json.dumps(params, indent=2, sort_keys=True)
-    print("Using the following hyper-parameters", params_json, sep='\n')
+    
+    try:
+        ####################
+        # Hyperparameters #
+        ####################
+        # Note: The following three line hard-coded to pick the first agent's trainig algorithm
+        # and dump the hyper parameters for the particular training algorithm into json
+        # for training jobs (so that the console display the training hyperparameters correctly)
+        # since right now, we only support training one model at a time.
+        # TODO: clean these lines up when we support multi-agent training.
+        training_algorithm = agent_list[0].ctrl.model_metadata.training_algorithm if agent_list else None
+        params = get_updated_hyper_parameters(hp_dict, training_algorithm)
+        params_json = json.dumps(params, indent=2, sort_keys=True)
+        print("Using the following hyper-parameters", params_json, sep='\n')
 
-    ####################
-    # Graph Scheduling #
-    ####################
-    schedule_params = ScheduleParameters()
-    schedule_params.improve_steps = TrainingSteps(params[HyperParameterKeys.TERMINATION_CONDITION_MAX_EPISODES.value])
-    schedule_params.steps_between_evaluation_periods = EnvironmentEpisodes(40)
-    schedule_params.evaluation_steps = EnvironmentEpisodes(5)
-    schedule_params.heatup_steps = EnvironmentSteps(0)
+        ####################
+        # Graph Scheduling #
+        ####################
+        schedule_params = ScheduleParameters()
+        schedule_params.improve_steps = TrainingSteps(params[HyperParameterKeys.TERMINATION_CONDITION_MAX_EPISODES.value])
+        schedule_params.steps_between_evaluation_periods = EnvironmentEpisodes(40)
+        schedule_params.evaluation_steps = EnvironmentEpisodes(5)
+        schedule_params.heatup_steps = EnvironmentSteps(0)
 
-    #########
-    # Agent #
-    #########
-    trainable_agents_list = list()
-    non_trainable_agents_list = list()
+        #########
+        # Agent #
+        #########
+        trainable_agents_list = list()
+        non_trainable_agents_list = list()
 
-    for agent in agent_list:
-        if agent.network_settings:
-            training_algorithm = agent.ctrl.model_metadata.training_algorithm
-            params = get_updated_hyper_parameters(hp_dict, training_algorithm)
-            if TrainingAlgorithm.SAC.value == training_algorithm:
-                agent_params = get_sac_params(DeepRacerSACAgentParams(), agent, params, run_type)
-            elif TrainingAlgorithm.CLIPPED_PPO.value == training_algorithm:
-                agent_params = get_clipped_ppo_params(DeepRacerClippedPPOAgentParams(), agent, params)
-            elif TrainingAlgorithm.LLM.value == training_algorithm:
-                agent_params = LLMAgentParameters(agent.ctrl.model_metadata)
-            agent_params.env_agent = agent
-            input_filter = InputFilter(is_a_reference_filter=True)
-            for observation in agent.network_settings['input_embedders'].keys():
-                if observation == Input.LEFT_CAMERA.value or observation == Input.CAMERA.value or \
-                        observation == Input.OBSERVATION.value:
-                    input_filter.add_observation_filter(observation,
-                                                        'to_grayscale', ObservationRGBToYFilter())
-                    input_filter.add_observation_filter(observation,
-                                                        'to_uint8',
-                                                        ObservationToUInt8Filter(0, 255))
-                    input_filter.add_observation_filter(observation,
-                                                        'stacking', ObservationStackingFilter(1))
+        for agent in agent_list:
+            if agent.network_settings:
+                training_algorithm = agent.ctrl.model_metadata.training_algorithm
+                params = get_updated_hyper_parameters(hp_dict, training_algorithm)
+                if TrainingAlgorithm.SAC.value == training_algorithm:
+                    agent_params = get_sac_params(DeepRacerSACAgentParams(), agent, params, run_type)
+                elif TrainingAlgorithm.CLIPPED_PPO.value == training_algorithm:
+                    agent_params = get_clipped_ppo_params(DeepRacerClippedPPOAgentParams(), agent, params)
+                elif TrainingAlgorithm.LLM.value == training_algorithm:
+                    agent_params = LLMAgentParameters(agent.ctrl.model_metadata)
+                    agent_params.network_wrappers['main'].input_embedders_parameters = \
+                        create_input_embedder(agent.network_settings['input_embedders'],
+                              agent.network_settings['embedder_type'],
+                              agent.network_settings['activation_function'])
+                agent_params.env_agent = agent
+                input_filter = InputFilter(is_a_reference_filter=True)
+                for observation in agent.network_settings['input_embedders'].keys():
+                    if observation == Input.LEFT_CAMERA.value or observation == Input.CAMERA.value or \
+                            observation == Input.OBSERVATION.value:
+                        input_filter.add_observation_filter(observation,
+                                                            'to_grayscale', ObservationRGBToYFilter())
+                        input_filter.add_observation_filter(observation,
+                                                            'to_uint8',
+                                                            ObservationToUInt8Filter(0, 255))
+                        input_filter.add_observation_filter(observation,
+                                                            'stacking', ObservationStackingFilter(1))
 
-                if observation == Input.STEREO.value:
-                    input_filter.add_observation_filter(observation,
-                                                        'to_uint8',
-                                                        ObservationToUInt8Filter(0, 255))
+                    if observation == Input.STEREO.value:
+                        input_filter.add_observation_filter(observation,
+                                                            'to_uint8',
+                                                            ObservationToUInt8Filter(0, 255))
 
-                if observation == Input.LIDAR.value:
-                    input_filter.add_observation_filter(observation,
-                                                        'clipping',
-                                                        ObservationClippingFilter(0.15, 1.0))
-                if observation == Input.SECTOR_LIDAR.value:
-                    sector_binary_filter = ObservationSectorDiscretizeFilter(num_sectors=NUMBER_OF_LIDAR_SECTORS,
-                                                                             num_values_per_sector=1,
-                                                                             clipping_dist=SECTOR_LIDAR_CLIPPING_DIST)
-                    input_filter.add_observation_filter(observation,
-                                                        'binary',
-                                                        sector_binary_filter)
-                if observation == Input.DISCRETIZED_SECTOR_LIDAR.value:
-                    num_sectors = agent.ctrl.model_metadata.lidar_num_sectors
-                    num_values_per_sector = agent.ctrl.model_metadata.lidar_num_values_per_sector
-                    clipping_dist = agent.ctrl.model_metadata.lidar_clipping_dist
+                    if observation == Input.LIDAR.value:
+                        input_filter.add_observation_filter(observation,
+                                                            'clipping',
+                                                            ObservationClippingFilter(0.15, 1.0))
+                    if observation == Input.SECTOR_LIDAR.value:
+                        sector_binary_filter = ObservationSectorDiscretizeFilter(num_sectors=NUMBER_OF_LIDAR_SECTORS,
+                                                                                num_values_per_sector=1,
+                                                                                clipping_dist=SECTOR_LIDAR_CLIPPING_DIST)
+                        input_filter.add_observation_filter(observation,
+                                                            'binary',
+                                                            sector_binary_filter)
+                    if observation == Input.DISCRETIZED_SECTOR_LIDAR.value:
+                        num_sectors = agent.ctrl.model_metadata.lidar_num_sectors
+                        num_values_per_sector = agent.ctrl.model_metadata.lidar_num_values_per_sector
+                        clipping_dist = agent.ctrl.model_metadata.lidar_clipping_dist
 
-                    sector_discretize_filter = ObservationSectorDiscretizeFilter(num_sectors=num_sectors,
-                                                                                 num_values_per_sector=num_values_per_sector,
-                                                                                 clipping_dist=clipping_dist)
-                    input_filter.add_observation_filter(observation,
-                                                        'discrete',
-                                                        sector_discretize_filter)
-            agent_params.input_filter = input_filter()
-            trainable_agents_list.append(agent_params)
-        else:
-            non_trainable_agents_list.append(agent)
+                        sector_discretize_filter = ObservationSectorDiscretizeFilter(num_sectors=num_sectors,
+                                                                                    num_values_per_sector=num_values_per_sector,
+                                                                                    clipping_dist=clipping_dist)
+                        input_filter.add_observation_filter(observation,
+                                                            'discrete',
+                                                            sector_discretize_filter)
+                agent_params.input_filter = input_filter()
+                trainable_agents_list.append(agent_params)
+            else:
+                non_trainable_agents_list.append(agent)
+    except Exception as ex:
+        logger.error("Failed to create graph manager: {}".format(ex))
 
     ###############
     # Environment #

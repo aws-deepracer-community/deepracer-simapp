@@ -69,6 +69,7 @@ from markov.boto.s3.utils import get_s3_key
 from markov.reset.constants import RaceType
 
 from std_srvs.srv import Empty, EmptyRequest
+import traceback
 
 enable_episode_simtrace = utils.str2bool(rospy.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
 enable_firehose_upload = utils.str2bool(rospy.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
@@ -99,67 +100,75 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
         race_type (str): race type
     """
     # Collect profiler information only IS_PROFILER_ON is true
-    with utils.Profiler(s3_bucket=PROFILER_S3_BUCKET, s3_prefix=PROFILER_S3_PREFIX,
-                        output_local_path=ROLLOUT_WORKER_PROFILER_PATH, enable_profiling=IS_PROFILER_ON):
-        subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic = list(), list()
-        subscribe_to_save_mp4, unsubscribe_from_save_mp4 = list(), list()
-        for agent_param in graph_manager.agents_params:
-            racecar_name = 'racecar' if len(agent_param.name.split("_")) == 1 \
-                                     else "racecar_{}".format(agent_param.name.split("_")[1])
-            subscribe_to_save_mp4_topic.append("/{}/save_mp4/subscribe_to_save_mp4".format(racecar_name))
-            unsubscribe_from_save_mp4_topic.append("/{}/save_mp4/unsubscribe_from_save_mp4".format(racecar_name))
-        graph_manager.data_store.wait_for_checkpoints()
-        graph_manager.data_store.modify_checkpoint_variables()
+    try:
+        with utils.Profiler(s3_bucket=PROFILER_S3_BUCKET, s3_prefix=PROFILER_S3_PREFIX,
+                            output_local_path=ROLLOUT_WORKER_PROFILER_PATH, enable_profiling=IS_PROFILER_ON):
+            subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic = list(), list()
+            subscribe_to_save_mp4, unsubscribe_from_save_mp4 = list(), list()
+            for agent_param in graph_manager.agents_params:
+                racecar_name = 'racecar' if len(agent_param.name.split("_")) == 1 \
+                                        else "racecar_{}".format(agent_param.name.split("_")[1])
+                subscribe_to_save_mp4_topic.append("/{}/save_mp4/subscribe_to_save_mp4".format(racecar_name))
+                unsubscribe_from_save_mp4_topic.append("/{}/save_mp4/unsubscribe_from_save_mp4".format(racecar_name))
+            graph_manager.data_store.wait_for_checkpoints()
+            graph_manager.data_store.modify_checkpoint_variables()
 
-        # Make the clients that will allow us to pause and unpause the physics
-        rospy.wait_for_service('/gazebo/pause_physics_dr')
-        rospy.wait_for_service('/gazebo/unpause_physics_dr')
-        pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty)
-        unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty)
+            # Make the clients that will allow us to pause and unpause the physics
+            rospy.wait_for_service('/gazebo/pause_physics_dr')
+            rospy.wait_for_service('/gazebo/unpause_physics_dr')
+            pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty)
+            unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty)
 
-        for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
-            rospy.wait_for_service(mp4_sub)
-            rospy.wait_for_service(mp4_unsub)
-        for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
-            subscribe_to_save_mp4.append(ServiceProxyWrapper(mp4_sub, Empty))
-            unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub, Empty),
-                                                    args=(EmptyRequest(), )))
+            for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
+                rospy.wait_for_service(mp4_sub)
+                rospy.wait_for_service(mp4_unsub)
+            for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
+                subscribe_to_save_mp4.append(ServiceProxyWrapper(mp4_sub, Empty))
+                unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub, Empty),
+                                                        args=(EmptyRequest(), )))
 
-        graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,
-                                   start_physics=unpause_physics, empty_service_call=EmptyRequest)
-        logger.info("Graph manager successfully created the graph: Unpausing physics")
-        unpause_physics(EmptyRequest())
+            graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,
+                                    start_physics=unpause_physics, empty_service_call=EmptyRequest)
+            logger.info("Graph manager successfully created the graph: Unpausing physics")
+            unpause_physics(EmptyRequest())
 
-        is_save_mp4_enabled = rospy.get_param('MP4_S3_BUCKET', None)
-        if is_save_mp4_enabled:
-            for subscribe_mp4 in subscribe_to_save_mp4:
-                subscribe_mp4(EmptyRequest())
+            is_save_mp4_enabled = rospy.get_param('MP4_S3_BUCKET', None)
+            if is_save_mp4_enabled:
+                for subscribe_mp4 in subscribe_to_save_mp4:
+                    subscribe_mp4(EmptyRequest())
 
-        configure_environment_randomizer()
-        track_data = TrackData.get_instance()
+            configure_environment_randomizer()
+            track_data = TrackData.get_instance()
 
-        # Before each evaluation episode (single lap for non-continuous race and complete race for
-        # continuous race), a new copy of park_positions needs to be loaded into track_data because
-        # a park position will be pop from park_positions when a racer car need to be parked.
-        if is_continuous:
-            track_data.park_positions = park_positions
-            graph_manager.evaluate(EnvironmentSteps(1))
-        else:
-            for _ in range(number_of_trials):
+            # Before each evaluation episode (single lap for non-continuous race and complete race for
+            # continuous race), a new copy of park_positions needs to be loaded into track_data because
+            # a park position will be pop from park_positions when a racer car need to be parked.
+            if is_continuous:
                 track_data.park_positions = park_positions
                 graph_manager.evaluate(EnvironmentSteps(1))
-        if is_save_mp4_enabled:
-            for unsubscribe_mp4 in unsubscribe_from_save_mp4:
-                unsubscribe_mp4.start()
-            for unsubscribe_mp4 in unsubscribe_from_save_mp4:
-                unsubscribe_mp4.join()
-        # upload simtrace and mp4 into s3 bucket
-        for s3_writer in simtrace_video_s3_writers:
-            s3_writer.persist(utils.get_s3_kms_extra_args())
-        time.sleep(1)
-        pause_physics(EmptyRequest())
-    handle_job_completion()
-
+            else:
+                for _ in range(number_of_trials):
+                    track_data.park_positions = park_positions
+                    graph_manager.evaluate(EnvironmentSteps(1))
+            if is_save_mp4_enabled:
+                for unsubscribe_mp4 in unsubscribe_from_save_mp4:
+                    unsubscribe_mp4.start()
+                for unsubscribe_mp4 in unsubscribe_from_save_mp4:
+                    unsubscribe_mp4.join()
+            # upload simtrace and mp4 into s3 bucket
+            for s3_writer in simtrace_video_s3_writers:
+                s3_writer.persist(utils.get_s3_kms_extra_args())
+            time.sleep(1)
+            pause_physics(EmptyRequest())
+        handle_job_completion()
+    except Exception as ex:
+        logger.error("Evaluation worker error: {}".format(traceback.format_exc()))
+        if hasattr(ex, 'log_except_and_exit'):
+            ex.log_except_and_exit()
+        else:
+            log_and_exit("Eval worker error: {}".format(ex),
+                         SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                         SIMAPP_EVENT_ERROR_CODE_500)
 def handle_job_completion():
     logger.info("Evaluation job complete")
     utils.stop_ros_node_monitor()

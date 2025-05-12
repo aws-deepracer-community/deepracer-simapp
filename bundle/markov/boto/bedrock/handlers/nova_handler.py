@@ -67,7 +67,7 @@ class NovaHandler(ModelHandler):
             "content": [
                 {"text": self.system_prompt},
                 {"text": json.dumps({
-                    "action_space_type": self.action_space_type,
+                    "action_space_type": self.action_space_type.value,
                     "action_space": self.action_space
                 })}
             ]

@@ -1,14 +1,25 @@
 import json
+import os
 import numpy as np
 import cv2
 import base64
 import io
 import time
-from typing import Union
+from typing import OrderedDict, Union
 
 from rl_coach.agents.agent import Agent
 from rl_coach.base_parameters import AgentParameters
 from rl_coach.core_types import ActionInfo, StateType, RunPhase
+from rl_coach.agents.agent import Agent
+from rl_coach.architectures.embedder_parameters import InputEmbedderParameters
+from rl_coach.architectures.middleware_parameters import FCMiddlewareParameters
+from rl_coach.base_parameters import AlgorithmParameters, NetworkParameters, EmbedderScheme, \
+    AgentParameters
+from rl_coach.core_types import ActionInfo
+from rl_coach.exploration_policies.e_greedy import EGreedyParameters
+from rl_coach.memories.non_episodic.experience_replay import ExperienceReplayParameters
+from rl_coach.architectures.head_parameters import PPOHeadParameters, VHeadParameters
+from rl_coach.filters.observation.observation_stacking_filter import LazyStack
 from markov.boto.bedrock.handler_factory import HandlerFactory
 from markov.log_handler.logger import Logger
 from markov.boto.s3.files.model_metadata import ModelMetadata
@@ -21,12 +32,34 @@ LOG = Logger(__name__, logging.INFO).get_logger()
 class LLMAgentParameters(AgentParameters):
     """Parameters for the LLM Agent"""
     def __init__(self, model_metadata: ModelMetadata=None):
-        super().__init__()
+        super().__init__(algorithm=LLMAlgorithmParameters(),
+                         exploration=EGreedyParameters(),
+                         memory=ExperienceReplayParameters(),
+                         networks={"main": LLMNetworkParameters()})
         self.model_metadata = model_metadata
+        self.env_agent = None
 
     @property
     def path(self):
         return 'markov.architecture.llm_agent:LLMAgent'
+
+class LLMAlgorithmParameters(AlgorithmParameters):
+    def __init__(self):
+        super().__init__()
+
+
+class LLMNetworkParameters(NetworkParameters):
+    def __init__(self):
+        super().__init__()
+        self.input_embedders_parameters = {'observation': InputEmbedderParameters()}
+        self.input_embedders_parameters['observation'].scheme = EmbedderScheme.Medium
+        self.heads_parameters = [VHeadParameters()]
+        self.middleware_parameters = FCMiddlewareParameters()
+        self.optimizer_type = 'Adam'
+        self.batch_size = 32
+        self.replace_mse_with_huber_loss = False
+        self.create_target_network = False
+
 
 class LLMAgent(Agent):
     """Agent that uses Amazon Bedrock LLM for decision making"""
@@ -37,41 +70,47 @@ class LLMAgent(Agent):
         Args:
             agent_parameters: Parameters for the agent
             parent: Parent object (optional)"""
-        super().__init__(agent_parameters, parent)
-               
-        # Extract LLM configuration from model metadata
-        model_metadata = agent_parameters.model_metadata
+
+        try:
+            super().__init__(agent_parameters, parent)
         
-        # Initialize from model metadata
-        self.model_id = model_metadata.model_id
-        self.max_tokens = model_metadata.max_tokens
-        self.system_prompt = model_metadata.system_prompt
-        self.repeated_prompt = model_metadata.repeated_prompt
-        self.context_window = model_metadata.context_window
-        
-        LOG.info(f"Initializing LLM Agent with model: {self.model_id}")
-        
-        # Get action space from model metadata
-        self.action_space_info = self._get_action_space_info()
-        
-        # Create appropriate model handler
-        system_prompt_text = "\n".join(self.system_prompt) if isinstance(self.system_prompt, list) else self.system_prompt
-        self.handler = HandlerFactory.create_handler(
-            model_id=self.model_id,
-            action_space=self.action_space_info,
-            action_space_type=self.ctrl.model_metadata.action_space_type,
-            system_prompt=system_prompt_text,
-            max_context_messages=self.context_window
-        )
-        
-        LOG.info(f"LLM Agent initialized successfully with {self.handler.model_class} handler")
-    
+            # Extract LLM configuration from model metadata
+            self.model_metadata = agent_parameters.model_metadata
+            
+            # Initialize from model metadata
+            self.model_id = self.model_metadata.model_id
+            self.max_tokens = self.model_metadata.max_tokens
+            self.system_prompt = self.model_metadata.system_prompt
+            self.repeated_prompt = self.model_metadata.repeated_prompt
+            self.context_window = self.model_metadata.context_window
+            
+            LOG.info(f"Initializing LLM Agent with model: {self.model_id}")
+            
+            # Get action space from model metadata
+            self.action_space_info = self._get_action_space_info()
+            
+            # Create appropriate model handler
+            system_prompt_text = "\n".join(self.system_prompt) if isinstance(self.system_prompt, list) else self.system_prompt
+            self.handler = HandlerFactory.create_handler(
+                model_id=self.model_id,
+                action_space=self.action_space_info,
+                action_space_type=self.model_metadata.action_space_type,
+                system_prompt=system_prompt_text,
+                max_context_messages=self.context_window
+            )
+            
+            LOG.info(f"LLM Agent initialized successfully with {self.handler.model_class} handler")
+
+        except Exception as e:
+            LOG.error(f"Error initializing LLM Agent: {e}")
+            raise e
+
     def _get_action_space_info(self):
         """Get action space information from model metadata"""
-        action_space = self.ctrl.model_metadata.action_space
+        action_space = self.model_metadata.action_space
         
         # For continuous action space
-        if self.ctrl.model_metadata.action_space_type == "continuous":
+        if self.model_metadata.action_space_type == "continuous":
             speed_range = action_space.get("speed", {})
             steering_range = action_space.get("steering_angle", {})
             
@@ -116,12 +155,19 @@ class LLMAgent(Agent):
         image = None
         for key, value in observation.items():
             if key in ['FRONT_FACING_CAMERA', 'CAMERA', 'observation', 'left_camera', 'stereo', 'front_facing_camera']:
-                image = value
-                break
+                if isinstance(value, LazyStack):
+                    # Access the history attribute directly
+                    if value.history and len(value.history) > 0:
+                        image = value.history[-1]  # Get the most recent image
+                        break
+                elif value is not None:
+                    # Handle case where it might be a direct image
+                    image = value
+                    break
         
         if image is None:
             LOG.error("No image found in observation")
-            return "No image available. Please provide steering_angle and speed values."
+            return "No image available. Please provide steering_angle and speed values.", None
         
         # Encode image to base64
         img_base64 = self._encode_image_to_base64(image)
@@ -144,6 +190,8 @@ class LLMAgent(Agent):
         try:
             start_time = time.time()
             
+            LOG.info(f"Choosing action for episode {self.current_episode}, step {self.total_steps_counter}")
+
             # Get prompt and image data
             prompt_text, image_data = self._construct_prompt(curr_state)
             
@@ -167,7 +215,7 @@ class LLMAgent(Agent):
             LOG.info(f"Driving action: speed={speed:.2f}, steering_angle={steering_angle:.2f}")
             
             # Convert to appropriate action format based on action space type
-            if self.ctrl.model_metadata.action_space_type == "continuous":
+            if self.model_metadata.action_space_type == "continuous":
                 # For continuous action space, return [steering_angle, speed]
                 action = np.array([steering_angle, speed])
             else:
@@ -197,7 +245,7 @@ class LLMAgent(Agent):
         except Exception as e:
             LOG.error(f"Error in LLM agent action selection: {e}")
             # Return safe default action
-            if self.ctrl.model_metadata.action_space_type == "continuous":
+            if self.model_metadata.action_space_type == "continuous":
                 return ActionInfo(action=np.array([0.0, self.action_space_info['speed']['low']]))
             else:
                 return ActionInfo(action=0)  # Default discrete action index
@@ -212,15 +260,18 @@ class LLMAgent(Agent):
         # Clear conversation history
         if hasattr(self, 'handler'):
             self.handler.clear_conversation()
-    
-    # Legacy method for compatibility with existing code
-    def act(self, observation, reward, done, info):
-        """Choose action - legacy method for compatibility"""
-        action_info = self.choose_action(observation)
-        return action_info.action
-    
-    # Legacy method for compatibility
-    def reset(self):
-        """Reset agent - legacy method for compatibility"""
-        self.reset_internal_state()
-        return True
+
+    def save_replay_buffer_and_exit(self):
+        replay_buffer_path = os.path.join(self.agent_logger.experiments_path, 'replay_buffer.p')
+        self.memory.tp = None
+        self.memory.save(replay_buffer_path)
+        LOG.info("Replay buffer was stored in {}".format(replay_buffer_path))
+        exit()
+
+    def log_to_screen(self):
+        # log to screen
+        log = OrderedDict()
+        log["Episode"] = self.current_episode
+        log["Total reward"] = round(self.total_reward_in_current_episode, 2)
+        log["Steps"] = self.total_steps_counter
+        LOG.info("Recording: {}".format(log))
