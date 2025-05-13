@@ -19,7 +19,7 @@
         "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
         "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind",
-        "source=${XAUTHORITY},target=/home/${localEnv:USER}/.Xauthority,type=bind"
+        "source=${localEnv:XAUTHORITY},target=/home/${localEnv:USER}/.Xauthority,type=bind"
     ],
     "customizations": {
         "vscode": {
