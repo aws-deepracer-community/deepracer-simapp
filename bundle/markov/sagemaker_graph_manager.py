@@ -271,7 +271,11 @@ def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_rand
                 agent_params.env_agent = agent
                 input_filter = InputFilter(is_a_reference_filter=True)
                 for observation in agent.network_settings['input_embedders'].keys():
-                    if observation == Input.LEFT_CAMERA.value or observation == Input.CAMERA.value or \
+                    if observation == Input.CAMERA.value and training_algorithm == TrainingAlgorithm.LLM.value:
+                        input_filter.add_observation_filter(observation,
+                                                            'to_uint8',
+                                                            ObservationToUInt8Filter(0, 255))
+                    elif observation == Input.LEFT_CAMERA.value or observation == Input.CAMERA.value or \
                             observation == Input.OBSERVATION.value:
                         input_filter.add_observation_filter(observation,
                                                             'to_grayscale', ObservationRGBToYFilter())

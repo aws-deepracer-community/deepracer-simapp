@@ -79,8 +79,14 @@ def get_front_camera_embedders(network_type):
         raise GenericError("None string type for network type: {}".format(type(network_type)))
 
     input_embedder = dict()
-    if network_type == NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_SHALLOW.value or network_type == \
-        NeuralNetwork.LLM.value:
+    if network_type == NeuralNetwork.LLM.value:
+        input_embedder = {Input.CAMERA.value:
+                          {SchemeInfo.CONV_INFO_LIST.value: [],
+                          SchemeInfo.DENSE_LAYER_INFO_LIST.value: [],
+                          SchemeInfo.BN_INFO_CONV.value: [False, None, 0.0],
+                          SchemeInfo.BN_INFO_DENSE.value: [False, None, 0.0],
+                          SchemeInfo.IS_FIRST_LAYER_BN.value: False}}
+    elif network_type == NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_SHALLOW.value:
         input_embedder = {Input.CAMERA.value:
                           {SchemeInfo.CONV_INFO_LIST.value: [[32, 8, 4], [64, 4, 2], [64, 3, 1]],
                            SchemeInfo.DENSE_LAYER_INFO_LIST.value: [],

@@ -1,7 +1,6 @@
 import json
 import os
 import numpy as np
-import cv2
 import base64
 import io
 import time
@@ -18,7 +17,7 @@ from rl_coach.base_parameters import AlgorithmParameters, NetworkParameters, Emb
 from rl_coach.core_types import ActionInfo
 from rl_coach.exploration_policies.e_greedy import EGreedyParameters
 from rl_coach.memories.non_episodic.experience_replay import ExperienceReplayParameters
-from rl_coach.architectures.head_parameters import PPOHeadParameters, VHeadParameters
+from rl_coach.architectures.head_parameters import VHeadParameters
 from rl_coach.filters.observation.observation_stacking_filter import LazyStack
 from markov.boto.bedrock.handler_factory import HandlerFactory
 from markov.log_handler.logger import Logger
@@ -130,21 +129,12 @@ class LLMAgent(Agent):
     
     def _encode_image_to_base64(self, image_array):
         """Convert image array to base64 string"""
-        # Convert to RGB if needed
-        if len(image_array.shape) == 2:
-            # Convert grayscale to RGB
-            image_array = cv2.cvtColor(image_array, cv2.COLOR_GRAY2RGB)
-        elif image_array.shape[2] == 4:
-            # Convert RGBA to RGB
-            image_array = cv2.cvtColor(image_array, cv2.COLOR_RGBA2RGB)
-        
         # Convert to PIL Image
-        pil_image = Image.fromarray(image_array)
+        pil_image = Image.fromarray(image_array, mode='RGB')
         
         # Save to bytes
         buffered = io.BytesIO()
         pil_image.save(buffered, format="JPEG")
-        
         # Encode to base64
         img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return img_str
@@ -234,11 +224,10 @@ class LLMAgent(Agent):
                 
                 action = best_action_idx
             
-            # Add reasoning as action info if available
-            action_info = {
-                "reasoning": action_dict.get('reasoning', '')
-            }
-                
+            # Log the action dictionary in a nicely formatted way
+            formatted_action_dict = json.dumps(action_dict, indent=4)
+            LOG.info(f"Action dictionary:\n{formatted_action_dict}")
+
             return ActionInfo(action=action)
             
         except Exception as e:

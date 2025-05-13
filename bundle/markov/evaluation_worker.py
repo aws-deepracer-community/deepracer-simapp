@@ -110,7 +110,8 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
                                         else "racecar_{}".format(agent_param.name.split("_")[1])
                 subscribe_to_save_mp4_topic.append("/{}/save_mp4/subscribe_to_save_mp4".format(racecar_name))
                 unsubscribe_from_save_mp4_topic.append("/{}/save_mp4/unsubscribe_from_save_mp4".format(racecar_name))
-            graph_manager.data_store.wait_for_checkpoints()
+            
+            # graph_manager.data_store.wait_for_checkpoints()
             graph_manager.data_store.modify_checkpoint_variables()
 
             # Make the clients that will allow us to pause and unpause the physics
@@ -340,7 +341,6 @@ def main():
         model_metadata_info = model_metadata.get_model_metadata_info()
         version = model_metadata_info[ModelMetadataKeys.VERSION.value]
 
-
         # checkpoint s3 instance
         checkpoint = Checkpoint(bucket=arg_s3_bucket[agent_index],
                                 s3_prefix=arg_s3_prefix[agent_index],
@@ -348,22 +348,25 @@ def main():
                                 s3_endpoint_url=args.s3_endpoint_url,
                                 agent_name=agent_name,
                                 checkpoint_dir=args.local_model_directory)
-        # make coach checkpoint compatible
-        if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
-            checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
 
-        # Get the correct checkpoint
-        if args.eval_checkpoint.lower() == "best":
-            # get best model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
-        else:
-            # get the last model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_last_checkpoint()
+        if False:
 
-        # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
-        checkpoint.rl_coach_checkpoint.update(
-            model_checkpoint_name=model_checkpoint_name,
-            s3_kms_extra_args=utils.get_s3_kms_extra_args())
+            # make coach checkpoint compatible
+            if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
+                checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
+
+            # Get the correct checkpoint
+            if args.eval_checkpoint.lower() == "best":
+                # get best model checkpoint string
+                model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
+            else:
+                # get the last model checkpoint string
+                model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_last_checkpoint()
+
+            # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
+            checkpoint.rl_coach_checkpoint.update(
+                model_checkpoint_name=model_checkpoint_name,
+                s3_kms_extra_args=utils.get_s3_kms_extra_args())
 
         checkpoint_dict[agent_name] = checkpoint
 
@@ -499,7 +502,9 @@ def main():
     graph_manager.env_params.seed = 0
 
     task_parameters = TaskParameters()
-    task_parameters.checkpoint_restore_path = args.local_model_directory
+    if False:
+        task_parameters.checkpoint_restore_path = args.local_model_directory
+    task_parameters.checkpoint_save_dir = args.local_model_directory   
 
     evaluation_worker(
         graph_manager=graph_manager,

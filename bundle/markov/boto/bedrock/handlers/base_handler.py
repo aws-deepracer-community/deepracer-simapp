@@ -28,7 +28,7 @@ class ModelHandler(ABC):
         self.model_id = model_id
         self.model_class = model_class
         self.region = region or os.environ.get(
-            "AWS_DEFAULT_REGION", "us-east-1")
+            "APP_REGION", "us-east-1")
 
         # Set up logger
         self.logger = Logger(self.__class__.__name__, logging.INFO).get_logger()
