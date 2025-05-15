@@ -263,7 +263,7 @@ def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_rand
                 elif TrainingAlgorithm.CLIPPED_PPO.value == training_algorithm:
                     agent_params = get_clipped_ppo_params(DeepRacerClippedPPOAgentParams(), agent, params)
                 elif TrainingAlgorithm.LLM.value == training_algorithm:
-                    agent_params = LLMAgentParameters(agent.ctrl.model_metadata)
+                    agent_params = LLMAgentParameters(agent.ctrl.model_metadata, agent.ctrl)
                     agent_params.network_wrappers['main'].input_embedders_parameters = \
                         create_input_embedder(agent.network_settings['input_embedders'],
                               agent.network_settings['embedder_type'],

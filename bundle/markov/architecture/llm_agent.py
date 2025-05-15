@@ -19,6 +19,8 @@ from rl_coach.exploration_policies.e_greedy import EGreedyParameters
 from rl_coach.memories.non_episodic.experience_replay import ExperienceReplayParameters
 from rl_coach.architectures.head_parameters import VHeadParameters
 from rl_coach.filters.observation.observation_stacking_filter import LazyStack
+from markov.agent_ctrl.constants import RewardParam
+from markov.agent_ctrl.rollout_agent_ctrl import RolloutCtrl
 from markov.boto.bedrock.handler_factory import HandlerFactory
 from markov.log_handler.logger import Logger
 from markov.boto.s3.files.model_metadata import ModelMetadata
@@ -29,13 +31,18 @@ from PIL import Image
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 class LLMAgentParameters(AgentParameters):
-    """Parameters for the LLM Agent"""
-    def __init__(self, model_metadata: ModelMetadata=None):
+    """Parameters for the LLM agent
+    
+    Given that the LLM agent is a specialized agent, it does not require
+    the same parameters as a standard RL agent. Instead, it uses
+    a simplified set of parameters that are specific to the LLM architecture."""
+    def __init__(self, model_metadata: ModelMetadata=None, agent_ctrl: RolloutCtrl=None):
         super().__init__(algorithm=LLMAlgorithmParameters(),
                          exploration=EGreedyParameters(),
                          memory=ExperienceReplayParameters(),
                          networks={"main": LLMNetworkParameters()})
         self.model_metadata = model_metadata
+        self.agent_ctrl = agent_ctrl
         self.env_agent = None
 
     @property
@@ -43,11 +50,13 @@ class LLMAgentParameters(AgentParameters):
         return 'markov.architecture.llm_agent:LLMAgent'
 
 class LLMAlgorithmParameters(AlgorithmParameters):
+    """Dummy algorithm parameters for LLM agent"""
     def __init__(self):
         super().__init__()
 
 
 class LLMNetworkParameters(NetworkParameters):
+    """Dummy network parameters for LLM agent"""
     def __init__(self):
         super().__init__()
         self.input_embedders_parameters = {'observation': InputEmbedderParameters()}
@@ -75,6 +84,7 @@ class LLMAgent(Agent):
         
             # Extract LLM configuration from model metadata
             self.model_metadata = agent_parameters.model_metadata
+            self.agent_ctrl = agent_parameters.agent_ctrl
             
             # Initialize from model metadata
             self.model_id = self.model_metadata.model_id
@@ -180,7 +190,14 @@ class LLMAgent(Agent):
         try:
             start_time = time.time()
             
-            LOG.info(f"Choosing action for step {self.current_episode_steps_counter}, phase {self._phase}")
+            off_track = self.agent_ctrl._reward_params_.get(RewardParam.OFFTRACK.value[0], False)
+            crashed = self.agent_ctrl._reward_params_.get(RewardParam.CRASHED.value[0], False)
+            pause_duration = self.agent_ctrl._pause_duration
+
+            LOG.info(
+                f"Choosing action for step {self.current_episode_steps_counter}, phase {self._phase}, "
+                f"off_track={off_track}, crashed={crashed}, paused={pause_duration > 0}"
+            )
 
             # Get prompt and image data
             prompt_text, image_data = self._construct_prompt(curr_state)
