@@ -71,6 +71,7 @@ class TrainingAlgorithm(Enum):
     '''Enum containing the training algorithm values passed as a parameter in model_metadata.'''
     CLIPPED_PPO = 'clipped_ppo'
     SAC = 'sac'
+    LLM = 'llm'
 
     @classmethod
     def has_training_algorithm(cls, training_algorithm):
@@ -83,7 +84,8 @@ class TrainingAlgorithm(Enum):
 # Mapping between the training algorithm and output heads to create frozen graph.
 FROZEN_HEAD_OUTPUT_GRAPH_FORMAT_MAPPING = {
     TrainingAlgorithm.CLIPPED_PPO.value: 'main_level/{}/main/online/network_1/ppo_head_0/policy',
-    TrainingAlgorithm.SAC.value: 'main_level/{}/policy/online/network_0/sac_policy_head_0/policy'
+    TrainingAlgorithm.SAC.value: 'main_level/{}/policy/online/network_0/sac_policy_head_0/policy',
+    TrainingAlgorithm.LLM.value: ''
 }
 
 
@@ -101,9 +103,17 @@ class ModelMetadataKeys(Enum):
     LOW = 'low'
     HIGH = 'high'
     LIDAR_CONFIG = 'lidar_config'
+    LLM_CONFIG = 'llm_config'
     NUM_SECTORS = 'num_sectors'
     NUM_VALUES_PER_SECTOR = 'num_values_per_sector'
     CLIPPING_DISTANCE = 'clipping_dist'
+    
+    # LLM specific keys
+    LLM_MODEL_ID = 'model_id'
+    LLM_SYSTEM_PROMPT = 'system_prompt'
+    LLM_MAX_TOKENS = 'max_tokens'
+    LLM_CONTEXT_WINDOW = 'context_window'
+    LLM_REPEATED_PROMPT = 'repeated_prompt'
 
 
 ########################################
