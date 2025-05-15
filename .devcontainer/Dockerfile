@@ -39,17 +39,24 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     ros-noetic-rosmsg \
     ros-noetic-rqt-common-plugins \
     ros-noetic-web-video-server \
-    ros-noetic-xacro
+    ros-noetic-xacro \ 
+    ros-noetic-gazebo-ros \
+    ros-noetic-gazebo-dev
 
 # Link AWS CPP libraries
 RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
     ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
 
 # Install Python PIP modules
-ADD requirements.txt /
-RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<60' && \
+ADD .devcontainer/requirements.txt /
+RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
     export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
-    pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil
+    pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil && \
+    python3 -m pip uninstall setuptools 
+
+# Patch RL Coach
+ADD bundle/rl_coach.patch /tmp/
+RUN patch -p1 -N --directory=/usr/local/lib/python3.8/dist-packages/ < /tmp/rl_coach.patch
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
