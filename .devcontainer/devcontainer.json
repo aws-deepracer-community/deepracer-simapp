@@ -3,7 +3,8 @@
         "dockerfile": "Dockerfile",
         "args": {
             "USERNAME": "${localEnv:USER}"
-        }
+        },
+        "context": ".."
     },
     "containerUser": "${localEnv:USER}",
     "containerEnv": {
@@ -19,7 +20,7 @@
         "source=deepracer-ros-bashhistory,target=/commandhistory,type=volume",
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
         "source=${localEnv:HOME}/.aws,target=/home/${localEnv:USER}/.aws,type=bind",
-        "source=${localEnv:XAUTHORITY},target=/home/${localEnv:USER}/.Xauthority,type=bind"
+        "source=${localEnv:HOME}/.Xauthority,target=/home/${localEnv:USER}/.Xauthority,type=bind"
     ],
     "customizations": {
         "vscode": {
