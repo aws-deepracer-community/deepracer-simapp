@@ -27,6 +27,7 @@ from markov.boto.s3.files.model_metadata import ModelMetadata
 import logging
 
 from PIL import Image
+from PIL import ImageDraw, ImageFont
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -36,7 +37,7 @@ class LLMAgentParameters(AgentParameters):
     Given that the LLM agent is a specialized agent, it does not require
     the same parameters as a standard RL agent. Instead, it uses
     a simplified set of parameters that are specific to the LLM architecture."""
-    def __init__(self, model_metadata: ModelMetadata=None, agent_ctrl: RolloutCtrl=None):
+    def __init__(self, model_metadata: ModelMetadata=None, agent_ctrl: RolloutCtrl=None, trace: bool=True):
         super().__init__(algorithm=LLMAlgorithmParameters(),
                          exploration=EGreedyParameters(),
                          memory=ExperienceReplayParameters(),
@@ -44,6 +45,7 @@ class LLMAgentParameters(AgentParameters):
         self.model_metadata = model_metadata
         self.agent_ctrl = agent_ctrl
         self.env_agent = None
+        self.trace = trace
 
     @property
     def path(self):
@@ -85,6 +87,8 @@ class LLMAgent(Agent):
             # Extract LLM configuration from model metadata
             self.model_metadata = agent_parameters.model_metadata
             self.agent_ctrl = agent_parameters.agent_ctrl
+            self.trace = agent_parameters.trace
+            self.trace_stamp = time.strftime("%Y%m%d-%H%M%S")
             
             # Initialize from model metadata
             self.model_id = self.model_metadata.model_id
@@ -94,6 +98,12 @@ class LLMAgent(Agent):
             self.context_window = self.model_metadata.context_window
             
             LOG.info(f"Initializing LLM Agent with model: {self.model_id}")
+            
+            # Set up tracing directory if tracing is enabled
+            if self.trace:
+                self.trace_dir = os.path.join("/tmp", "llm_agent_traces")
+                os.makedirs(self.trace_dir, exist_ok=True)
+                LOG.info(f"LLM Agent tracing enabled. Traces will be saved to {self.trace_dir}")
             
             # Get action space from model metadata
             self.action_space_info = self._get_action_space_info()
@@ -113,6 +123,29 @@ class LLMAgent(Agent):
         except Exception as e:
             LOG.error(f"Error initializing LLM Agent: {e}")
             raise e
+            
+    def _log_trace(self, event_type, data):
+        """Log trace data to disk if tracing is enabled
+        
+        Args:
+            event_type: Type of event (request, response, action)
+            data: Data to log
+        """
+        if not self.trace:
+            return
+            
+        timestamp = self.trace_stamp
+        episode = self.current_episode
+        step = self.current_episode_steps_counter
+        filename = f"{timestamp}_ep{episode}_step{step}_{event_type}.json"
+        filepath = os.path.join(self.trace_dir, filename)
+        
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=2)
+            LOG.debug(f"Trace logged to {filepath}")
+        except Exception as e:
+            LOG.error(f"Failed to write trace to {filepath}: {e}")
 
     def _get_action_space_info(self):
         """Get action space information from model metadata"""
@@ -137,11 +170,47 @@ class LLMAgent(Agent):
         else:
             return {"actions": action_space}
     
-    def _encode_image_to_base64(self, image_array):
+    def _encode_image_to_base64(self, image_array, add_labels=True, flip_horizontally=False):
         """Convert image array to base64 string"""
         # Convert to PIL Image
         pil_image = Image.fromarray(image_array, mode='RGB')
-        
+
+
+        if add_labels:
+            # Draw "Left" and "Right" labels on the image
+            draw = ImageDraw.Draw(pil_image)
+            font = ImageFont.load_default(size=15)
+
+            # "Left" in upper left corner
+            draw.text((10, 10), "Left", fill=(255, 255, 255), font=font)
+
+            # "Right" in upper right corner
+            text = "Right"
+            # Use font.getbbox() instead of draw.textsize()
+            text_bbox = font.getbbox(text)
+            text_width = text_bbox[2] - text_bbox[0]
+            image_width, _ = pil_image.size
+            draw.text((image_width - text_width - 10, 10), text, fill=(255, 255, 255), font=font)
+
+            # "Center of Car" at the bottom, center-aligned
+            center_text = "Center of Car"
+            center_bbox = font.getbbox(center_text)
+            center_text_width = center_bbox[2] - center_bbox[0]
+            center_text_height = center_bbox[3] - center_bbox[1]
+            image_width, image_height = pil_image.size
+            center_x = (image_width - center_text_width) // 2
+            center_y = image_height - center_text_height - 10
+            draw.text((center_x, center_y), center_text, fill=(255, 255, 255), font=font)
+
+        if flip_horizontally:
+            # Flip the image horizontally
+            pil_image = pil_image.transpose(Image.FLIP_LEFT_RIGHT)
+
+        if self.trace:
+            # Save the image to disk in the "folder" directory
+            output_path = os.path.join(self.trace_dir, f"{self.trace_stamp}_ep{self.current_episode}_step{self.current_episode_steps_counter}_img.jpg")
+            pil_image.save(output_path, format="JPEG")
+
         # Save to bytes
         buffered = io.BytesIO()
         pil_image.save(buffered, format="JPEG")
@@ -149,7 +218,7 @@ class LLMAgent(Agent):
         img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return img_str
     
-    def _construct_prompt(self, observation):
+    def _construct_prompt(self, observation, step):
         """Construct prompt for the LLM based on observation"""
         # Get image data from observation
         image = None
@@ -173,7 +242,7 @@ class LLMAgent(Agent):
         img_base64 = self._encode_image_to_base64(image)
         
         # Use the repeated prompt from model metadata or a default
-        prompt_text = self.repeated_prompt or "Analyze the image and provide a driving command."
+        prompt_text = "Image #{}. {}".format(step, self.repeated_prompt or "Analyze the image and provide a driving command.")
         
         return prompt_text, img_base64
     
@@ -200,10 +269,22 @@ class LLMAgent(Agent):
             )
 
             # Get prompt and image data
-            prompt_text, image_data = self._construct_prompt(curr_state)
+            prompt_text, image_data = self._construct_prompt(curr_state, self.current_episode_steps_counter)
             
-            # Process with model handler
-            action_dict = self.handler.process(prompt_text, image_data)
+            # Create trace context with additional information if tracing is enabled
+            trace_context = None
+            if self.trace:
+                trace_context = {
+                    "trace_dir": self.trace_dir,
+                    "episode": self.current_episode,
+                    "step": self.current_episode_steps_counter,
+                    "timestamp": time.time(),
+                    "off_track": off_track,
+                    "crashed": crashed
+                }
+            
+            # Process with model handler, passing trace context if enabled
+            action_dict = self.handler.process(prompt_text, image_data, trace_context)
             inference_time = time.time() - start_time
             
             LOG.debug(f"LLM inference time: {inference_time:.2f}s")
@@ -244,6 +325,18 @@ class LLMAgent(Agent):
             # Log the action dictionary in a nicely formatted way
             formatted_action_dict = json.dumps(action_dict, indent=4)
             LOG.info(f"Action dictionary:\n{formatted_action_dict}")
+            
+            # Log the final action if tracing is enabled
+            if self.trace:
+                trace_action = {
+                    "raw_action_dict": action_dict,
+                    "normalized_action": action.tolist() if isinstance(action, np.ndarray) else action,
+                    "steering_angle": steering_angle,
+                    "speed": speed,
+                    "inference_time": inference_time,
+                    "timestamp": time.time()
+                }
+                self._log_trace("action", trace_action)
 
             return ActionInfo(action=action)
             

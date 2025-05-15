@@ -20,7 +20,6 @@ class ClaudeHandler(ModelHandler):
 
         # Claude-specific settings
         self.max_tokens = int(os.environ.get("MAX_TOKENS", "1024"))
-        self.temperature = 0.0  # Deterministic for DeepRacer
         self.anthropic_version = "bedrock-2023-05-31"
 
         # Override default system prompt
@@ -101,7 +100,9 @@ class ClaudeHandler(ModelHandler):
         return {
             "anthropic_version": self.anthropic_version,
             "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
+            "temperature": 0.3,
+            "top_p": 1.0,
+            "top_k": 0,
             "system": self.system_prompt,
             "messages": messages
         }

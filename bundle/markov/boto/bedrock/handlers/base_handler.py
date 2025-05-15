@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List, Union
 
@@ -157,22 +158,86 @@ class ModelHandler(ABC):
         """
         return extract_json_from_llm_response(response_text, self.logger, self.model_class)
 
-    def process(self, prompt: str, image_data: Optional[str] = None) -> Dict[str, Any]:
+    def process(self, prompt: str, image_data: Optional[str] = None, trace_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Process a prompt with image and return a driving action
 
         Args:
             prompt: The text prompt
             image_data: Base64-encoded image data
+            trace_context: Optional dictionary with tracing context information
 
         Returns:
             Dict containing the driving action
         """
         # Prepare the prompt
         request_body = self.prepare_prompt(prompt, image_data)
-
+        
+        # Log trace information before making the request
+        if trace_context:
+            trace_dir = trace_context.get("trace_dir")
+            episode = trace_context.get("episode")
+            step = trace_context.get("step")
+            
+            # Create a request trace with sanitized image data for size
+            request_trace = {
+                "model_id": self.model_id,
+                "request_body": request_body.copy(),  # Make a copy to avoid modifying the original
+                "prompt": prompt,
+                "image_present": image_data is not None,
+                "image_size_bytes": len(image_data) if image_data else 0,
+                "timestamp": trace_context.get("timestamp", time.time()),
+                "episode": episode,
+                "step": step,
+                "off_track": trace_context.get("off_track", False),
+                "crashed": trace_context.get("crashed", False)
+            }
+            
+            # Log the request trace
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename = f"{timestamp}_ep{episode}_step{step}_request.json"
+            filepath = os.path.join(trace_dir, filename)
+            
+            try:
+                with open(filepath, 'w') as f:
+                    json.dump(request_trace, f, indent=2)
+                self.logger.debug(f"Request trace logged to {filepath}")
+            except Exception as e:
+                self.logger.error(f"Failed to write request trace to {filepath}: {e}")
+        
         # Invoke the model
+        start_time = time.time()
         response_body = self.invoke_model(request_body)
+        inference_time = time.time() - start_time
+        
+        # Log trace information after receiving the response
+        if trace_context:
+            trace_dir = trace_context.get("trace_dir")
+            episode = trace_context.get("episode")
+            step = trace_context.get("step")
+            
+            # Create a response trace
+            response_trace = {
+                "model_id": self.model_id,
+                "response_body": response_body,
+                "timestamp": time.time(),
+                "inference_time": inference_time,
+                "episode": episode,
+                "step": step,
+                "token_usage": self.get_token_usage()
+            }
+            
+            # Log the response trace
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            filename = f"{timestamp}_ep{episode}_step{step}_response.json"
+            filepath = os.path.join(trace_dir, filename)
+            
+            try:
+                with open(filepath, 'w') as f:
+                    json.dump(response_trace, f, indent=2)
+                self.logger.debug(f"Response trace logged to {filepath}")
+            except Exception as e:
+                self.logger.error(f"Failed to write response trace to {filepath}: {e}")
 
         # Extract the text response
         response_text = self.extract_response_text(response_body)
