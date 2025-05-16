@@ -19,7 +19,6 @@ class LlamaHandler(ModelHandler):
         super().__init__(model_id, "Llama", region)
 
         # Llama-specific settings
-        self.max_tokens = int(os.environ.get("MAX_TOKENS", "1024"))
         self.temperature = 0.0  # Deterministic for DeepRacer
 
         # Override default system prompt

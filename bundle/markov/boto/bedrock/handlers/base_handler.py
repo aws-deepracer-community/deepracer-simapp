@@ -44,6 +44,7 @@ class ModelHandler(ABC):
         # Common properties that subclasses will use
         self.system_prompt = "You are an AI assistant."
         self.max_context_messages = 0
+        self.max_tokens = 1000
         self.conversation_context = []
         self.action_space = None
         self.action_space_type = None
@@ -58,6 +59,10 @@ class ModelHandler(ABC):
     def set_max_context_messages(self, max_messages: int) -> None:
         """Set maximum number of conversation context messages to maintain"""
         self.max_context_messages = max_messages
+
+    def set_max_tokens(self, max_tokens: int) -> None:
+        """Set maximum number of tokens to generate"""
+        self.max_tokens = max_tokens
 
     def set_action_space(self, action_space: Dict[str, Any]) -> None:
         """Set the action space for the model"""

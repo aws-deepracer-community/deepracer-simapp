@@ -20,7 +20,8 @@ class HandlerFactory:
                       action_space_type: str,
                       region: Optional[str] = None,
                       system_prompt: Optional[str] = None,
-                      max_context_messages: int = 0) -> ModelHandler:
+                      max_context_messages: int = 0,
+                      max_tokens: int = 1000) -> ModelHandler:
         """
         Create appropriate handler for the given model ID
         
@@ -31,6 +32,7 @@ class HandlerFactory:
             region: AWS region
             system_prompt: Optional system prompt to use
             max_context_messages: Number of context messages to keep
+            max_tokens: Maximum number of tokens to generate
             
         Returns:
             Appropriate model handler instance
@@ -76,6 +78,7 @@ class HandlerFactory:
         handler.set_max_context_messages(max_context_messages)
         handler.set_action_space(action_space)
         handler.set_action_space_type(ActionSpaceTypes(action_space_type))
+        handler.set_max_tokens(max_tokens)
         
         logger.info(f"Created {handler.__class__.__name__} for model {model_id}")
         return handler

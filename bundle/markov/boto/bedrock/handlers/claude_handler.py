@@ -19,7 +19,6 @@ class ClaudeHandler(ModelHandler):
         super().__init__(model_id, "Claude", region)
 
         # Claude-specific settings
-        self.max_tokens = int(os.environ.get("MAX_TOKENS", "1024"))
         self.anthropic_version = "bedrock-2023-05-31"
 
         # Override default system prompt

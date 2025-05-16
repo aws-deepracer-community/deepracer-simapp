@@ -19,7 +19,6 @@ class MistralHandler(ModelHandler):
         super().__init__(model_id, "Mistral", region)
 
         # Mistral-specific settings
-        self.max_tokens = int(os.environ.get("MAX_TOKENS", "1000"))
         self.temperature = 0.0  # Deterministic for DeepRacer
 
         # Override default system prompt

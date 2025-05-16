@@ -115,7 +115,8 @@ class LLMAgent(Agent):
                 action_space=self.action_space_info,
                 action_space_type=self.model_metadata.action_space_type,
                 system_prompt=system_prompt_text,
-                max_context_messages=self.context_window
+                max_context_messages=self.context_window,
+                max_tokens=self.max_tokens,
             )
             
             LOG.info(f"LLM Agent initialized successfully with {self.handler.model_class} handler")

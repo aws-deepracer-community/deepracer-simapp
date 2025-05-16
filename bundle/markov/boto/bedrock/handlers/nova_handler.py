@@ -19,7 +19,6 @@ class NovaHandler(ModelHandler):
         super().__init__(model_id, "Nova", region)
 
         # Nova-specific settings
-        self.max_tokens = int(os.environ.get("MAX_TOKENS", "1000"))
         self.system_prompt = "You are an AI driver assistant."
 
     def _create_user_message(self, prompt: str, image_data: Optional[str]) -> Dict[str, Any]:
