@@ -138,7 +138,7 @@ class LLMAgent(Agent):
         timestamp = self.trace_stamp
         episode = self.current_episode
         step = self.current_episode_steps_counter
-        filename = f"{timestamp}_ep{episode}_step{step}_{event_type}.json"
+        filename = f"{timestamp}_ep{episode}_step{int(step):03d}_{event_type}.json"
         filepath = os.path.join(self.trace_dir, filename)
         
         try:
@@ -209,7 +209,7 @@ class LLMAgent(Agent):
 
         if self.trace:
             # Save the image to disk in the "folder" directory
-            output_path = os.path.join(self.trace_dir, f"{self.trace_stamp}_ep{self.current_episode}_step{self.current_episode_steps_counter}_img.jpg")
+            output_path = os.path.join(self.trace_dir, f"{self.trace_stamp}_ep{self.current_episode}_step{int(self.current_episode_steps_counter):03d}_img.jpg")
             pil_image.save(output_path, format="JPEG")
 
         # Save to bytes

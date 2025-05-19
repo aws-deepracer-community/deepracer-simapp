@@ -202,7 +202,7 @@ class ModelHandler(ABC):
             
             # Log the request trace
             timestamp = request_trace["timestamp"]
-            filename = f"{timestamp}_ep{episode}_step{step}_request.json"
+            filename = f"{timestamp}_ep{episode}_step{int(step):03d}_request.json"
             filepath = os.path.join(trace_dir, filename)
             
             try:
@@ -236,7 +236,7 @@ class ModelHandler(ABC):
             
             # Log the response trace
             timestamp = request_trace["timestamp"]
-            filename = f"{timestamp}_ep{episode}_step{step}_response.json"
+            filename = f"{timestamp}_ep{episode}_step{int(step):03d}_response.json"
             filepath = os.path.join(trace_dir, filename)
             
             try:
