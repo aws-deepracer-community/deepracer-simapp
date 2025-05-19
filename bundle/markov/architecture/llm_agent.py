@@ -171,7 +171,7 @@ class LLMAgent(Agent):
         else:
             return {"actions": action_space}
     
-    def _encode_image_to_base64(self, image_array, add_labels=True, flip_horizontally=False):
+    def _encode_image_to_base64(self, image_array, add_labels=False, flip_horizontally=False):
         """Convert image array to base64 string"""
         # Convert to PIL Image
         pil_image = Image.fromarray(image_array, mode='RGB')
@@ -279,13 +279,13 @@ class LLMAgent(Agent):
                     "trace_dir": self.trace_dir,
                     "episode": self.current_episode,
                     "step": self.current_episode_steps_counter,
-                    "timestamp": time.time(),
+                    "timestamp": self.trace_stamp,
                     "off_track": off_track,
                     "crashed": crashed
                 }
             
             # Process with model handler, passing trace context if enabled
-            action_dict = self.handler.process(prompt_text, image_data, trace_context)
+            action_dict = self.handler.process(prompt_text, image_data, trace_context, self.agent_ctrl._reward_params_)
             inference_time = time.time() - start_time
             
             LOG.debug(f"LLM inference time: {inference_time:.2f}s")
@@ -335,7 +335,7 @@ class LLMAgent(Agent):
                     "steering_angle": steering_angle,
                     "speed": speed,
                     "inference_time": inference_time,
-                    "timestamp": time.time()
+                    "timestamp": self.trace_stamp
                 }
                 self._log_trace("action", trace_action)
 

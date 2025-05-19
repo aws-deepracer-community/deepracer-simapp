@@ -115,13 +115,14 @@ class ModelHandler(ABC):
             raise
 
     @abstractmethod
-    def prepare_prompt(self, text_prompt: str, image_data: Optional[str] = None) -> Dict[str, Any]:
+    def prepare_prompt(self, text_prompt: str, image_data: Optional[str] = None, reward_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Prepare the prompt in the format required by the specific model
 
         Args:
             text_prompt: The text prompt to send to the model
             image_data: Optional base64-encoded image data
+            reward_params: Optional parameters providing state information
 
         Returns:
             Dict containing the formatted prompt for the model
@@ -163,7 +164,7 @@ class ModelHandler(ABC):
         """
         return extract_json_from_llm_response(response_text, self.logger, self.model_class)
 
-    def process(self, prompt: str, image_data: Optional[str] = None, trace_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process(self, prompt: str, image_data: Optional[str] = None, trace_context: Optional[Dict[str, Any]] = None, reward_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Process a prompt with image and return a driving action
 
@@ -171,12 +172,13 @@ class ModelHandler(ABC):
             prompt: The text prompt
             image_data: Base64-encoded image data
             trace_context: Optional dictionary with tracing context information
+            reward_params: Optional parameters providing state information
 
         Returns:
             Dict containing the driving action
         """
         # Prepare the prompt
-        request_body = self.prepare_prompt(prompt, image_data)
+        request_body = self.prepare_prompt(prompt, image_data, reward_params)
         
         # Log trace information before making the request
         if trace_context:
@@ -191,7 +193,7 @@ class ModelHandler(ABC):
                 "prompt": prompt,
                 "image_present": image_data is not None,
                 "image_size_bytes": len(image_data) if image_data else 0,
-                "timestamp": trace_context.get("timestamp", time.time()),
+                "timestamp": trace_context.get("timestamp", time.strftime("%Y%m%d-%H%M%S")),
                 "episode": episode,
                 "step": step,
                 "off_track": trace_context.get("off_track", False),
@@ -199,7 +201,7 @@ class ModelHandler(ABC):
             }
             
             # Log the request trace
-            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            timestamp = request_trace["timestamp"]
             filename = f"{timestamp}_ep{episode}_step{step}_request.json"
             filepath = os.path.join(trace_dir, filename)
             
@@ -225,7 +227,7 @@ class ModelHandler(ABC):
             response_trace = {
                 "model_id": self.model_id,
                 "response_body": response_body,
-                "timestamp": time.time(),
+                "timestamp": trace_context.get("timestamp", time.strftime("%Y%m%d-%H%M%S")),
                 "inference_time": inference_time,
                 "episode": episode,
                 "step": step,
@@ -233,7 +235,7 @@ class ModelHandler(ABC):
             }
             
             # Log the response trace
-            timestamp = time.strftime("%Y%m%d-%H%M%S")
+            timestamp = request_trace["timestamp"]
             filename = f"{timestamp}_ep{episode}_step{step}_response.json"
             filepath = os.path.join(trace_dir, filename)
             

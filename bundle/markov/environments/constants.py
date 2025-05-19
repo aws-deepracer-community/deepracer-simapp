@@ -18,7 +18,7 @@
     package.
 '''
 # Dimensions of the input training image
-TRAINING_IMAGE_SIZE = (640, 480)
+TRAINING_IMAGE_SIZE = (160, 120)
 # Dimensions of input lidar data
 TRAINING_LIDAR_SIZE = 64
 

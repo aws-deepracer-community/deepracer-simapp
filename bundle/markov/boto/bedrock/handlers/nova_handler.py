@@ -21,18 +21,28 @@ class NovaHandler(ModelHandler):
         # Nova-specific settings
         self.system_prompt = "You are an AI driver assistant."
 
-    def _create_user_message(self, prompt: str, image_data: Optional[str]) -> Dict[str, Any]:
+    def _create_user_message(self, prompt: str, image_data: Optional[str], reward_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Create a user message with optional image for Nova format
 
         Args:
             prompt: The text prompt
             image_data: Optional base64-encoded image
+            reward_params: Optional parameters providing state information
 
         Returns:
             Message in Nova format
         """
         content = [{"text": prompt}]
+
+        # Add reward parameters if provided
+        if reward_params:
+            content.extend([{
+                "text": "Current state information"
+            }, {
+                "text": json.dumps(reward_params)
+            }]
+            )
 
         if image_data:
             content.append({
@@ -49,13 +59,14 @@ class NovaHandler(ModelHandler):
             "content": content
         }
 
-    def prepare_prompt(self, text_prompt: str, image_data: Optional[str] = None) -> Dict[str, Any]:
+    def prepare_prompt(self, text_prompt: str, image_data: Optional[str] = None, reward_params: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Prepare a prompt for Nova in the format it expects
 
         Args:
             text_prompt: The text prompt to send to Nova
             image_data: Optional base64-encoded image data
+            reward_params: Optional parameters providing state information
 
         Returns:
             Dict containing the formatted prompt for Nova
@@ -79,7 +90,7 @@ class NovaHandler(ModelHandler):
                 self.conversation_context[-self.max_context_messages:])
 
         # Add the new user message
-        user_message = self._create_user_message(text_prompt, image_data)
+        user_message = self._create_user_message(text_prompt, image_data, reward_params)
         messages.append(user_message)
 
         # Add the user message to conversation context
@@ -148,5 +159,3 @@ class NovaHandler(ModelHandler):
         else:
             self.logger.debug(
                 "Could not determine token usage from Nova response")
-
-
