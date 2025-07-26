@@ -1,4 +1,4 @@
-FROM ros:noetic-ros-base
+FROM ros:noetic-robot
 
 ARG USERNAME=user-name-goes-here
 ARG USER_UID=1000
@@ -52,7 +52,7 @@ ADD .devcontainer/requirements.txt /
 RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
     export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
     pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil && \
-    python3 -m pip uninstall setuptools 
+    pip3 install -U --no-cache-dir "setuptools<46"
 
 # Patch RL Coach
 ADD bundle/rl_coach.patch /tmp/
