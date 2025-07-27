@@ -78,12 +78,22 @@ RUN apt-get update -y && \
     libcurl4-openssl-dev \
     libignition-math4 \
     libignition-math4-dev \
+    liblog4cplus-dev \
     libx264-dev \
     python3-colcon-common-extensions \
+    python3-jsonschema \
     python3-pip \
     python3-rosdep \
+    python3-scipy \
+    python3-shapely \
+    ros-noetic-controller-manager \
+    ros-noetic-gazebo-plugins \
+    ros-noetic-gazebo-ros-control \
     ros-noetic-media-export \
     ros-noetic-ros-base \
+    ros-noetic-ros-control \
+    ros-noetic-ros-controllers \
+    ros-noetic-robot \
     ros-noetic-rosmsg \
     ros-noetic-rqt-common-plugins \
     ros-noetic-web-video-server \
