@@ -1,5 +1,5 @@
-bundle-src/
-build/
 .venv/
-install/
-log/
+bundle-src/
+bundle/build/
+bundle/install/
+bundle/log/

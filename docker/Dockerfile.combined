@@ -78,12 +78,22 @@ RUN apt-get update -y && \
     libcurl4-openssl-dev \
     libignition-math4 \
     libignition-math4-dev \
+    liblog4cplus-dev \
     libx264-dev \
     python3-colcon-common-extensions \
+    python3-jsonschema \
     python3-pip \
     python3-rosdep \
+    python3-scipy \
+    python3-shapely \
+    ros-noetic-controller-manager \
+    ros-noetic-gazebo-plugins \
+    ros-noetic-gazebo-ros-control \
     ros-noetic-media-export \
     ros-noetic-ros-base \
+    ros-noetic-ros-control \
+    ros-noetic-ros-controllers \
+    ros-noetic-robot \
     ros-noetic-rosmsg \
     ros-noetic-rqt-common-plugins \
     ros-noetic-web-video-server \
@@ -120,7 +130,7 @@ COPY --from=bundle  /opt/bundle/install /opt/simapp
 WORKDIR /opt/simapp
 
 # Install ROS dependencies
-RUN apt-get update -y && rosdep init && rosdep update --rosdistro=noetic && \
+RUN apt-get update -y && rosdep init && rosdep update --rosdistro=noetic -q && \
     rosdep install --rosdistro=noetic --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment sagemaker_rl_agent && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
