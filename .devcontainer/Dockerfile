@@ -18,30 +18,39 @@ RUN curl -s http://packages.osrfoundation.org/gazebo.key | apt-key add -
 
 ENV DEBIAN_FRONTEND="noninteractive" 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    gazebo11 \
+    jwm \
     libcurl4-openssl-dev \
-    python \
-    python3 \
-    python3-pip \
-    python3-colcon-common-extensions \
-    rviz \
-    x264 \
-    libx264-dev \
+    libgazebo11-dev \
     libignition-math4 \
     libignition-math4-dev \
-    gazebo11 \
-    libgazebo11-dev \
+    liblog4cplus-dev \
+    libx264-dev \
+    python \
+    python3 \
+    python3-colcon-common-extensions \
+    python3-jsonschema \
+    python3-pip \
     python3-rosdep \
-    xvfb \
-    x11vnc \
-    jwm \
+    python3-scipy \
+    python3-shapely \
+    ros-noetic-controller-manager \
+    ros-noetic-gazebo-dev \
+    ros-noetic-gazebo-plugins \
+    ros-noetic-gazebo-ros \
+    ros-noetic-gazebo-ros-control \
     ros-noetic-media-export \
     ros-noetic-ros-base \
+    ros-noetic-ros-control \
+    ros-noetic-ros-controllers \
     ros-noetic-rosmsg \
     ros-noetic-rqt-common-plugins \
     ros-noetic-web-video-server \
-    ros-noetic-xacro \ 
-    ros-noetic-gazebo-ros \
-    ros-noetic-gazebo-dev
+    ros-noetic-xacro \
+    rviz \
+    x11vnc \
+    x264 \
+    xvfb
 
 # Link AWS CPP libraries
 RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \

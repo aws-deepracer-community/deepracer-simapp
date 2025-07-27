@@ -1,1 +1,35 @@
+# 3D Models and Assets
 *.ma linguist-vendored
+*.dae linguist-vendored
+*.obj linguist-vendored
+*.stl linguist-vendored
+*.mesh linguist-vendored
+
+# Textures and Images
+*.png linguist-vendored
+*.jpg linguist-vendored
+*.jpeg linguist-vendored
+*.bmp linguist-vendored
+*.tga linguist-vendored
+*.tiff linguist-vendored
+
+# Simulation and Robot Description Files
+*.world linguist-vendored
+*.urdf linguist-vendored
+*.xacro linguist-vendored
+*.sdf linguist-vendored
+
+# Patch files (third-party modifications)
+*.patch linguist-vendored
+*.diff linguist-vendored
+
+# Configuration files that should be treated as data
+*.yml eol=lf
+*.yaml eol=lf
+*.json eol=lf
+
+# Shell scripts should have consistent line endings
+*.sh eol=lf text
+
+# Python files
+*.py eol=lf text
