@@ -44,7 +44,7 @@ setup(
         'boto3==1.9.23',
         'minio==4.0.5',
         'kubernetes==7.0.0',
-        'bokeh==1.4.0',
+        'bokeh==3.8.2',
         'rl-coach-slim==1.0.0',
         'PyYAML==5.4',
         'rospkg==1.1.7',
