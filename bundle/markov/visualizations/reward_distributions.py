@@ -14,10 +14,12 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-import rospy
+import rclpy
 from deepracer_simulation_environment.msg import AgentRewardData
 
-class RewardDataPublisher(object):
+class RewardDataPublisher:
+    _data_pub_node = None
+
     def __init__(self, agent_name, json_actions):
         print('Reward Distribution Graph: ', agent_name, json_actions)
         self.steering_angle_list = list()
@@ -27,7 +29,10 @@ class RewardDataPublisher(object):
             self.speed_list.append(str(json_action['speed']))
             self.steering_angle_list.append(str(json_action['steering_angle']))
         self.agent_name = agent_name
-        self.reward_distribution_graph_publisher = rospy.Publisher('/reward_data/'+self.agent_name, AgentRewardData, queue_size=1)
+
+        if not _data_pub_node:
+            _data_pub_node = rclpy.create_node('MarkovRewardDataPublisher')
+        self.reward_distribution_graph_publisher = _data_pub_node.create_publisher(AgentRewardData, '/reward_data/'+agent_name, 1)
 
     def publish_frame(self, image, action_index, reward_value):
         reward_data = AgentRewardData()

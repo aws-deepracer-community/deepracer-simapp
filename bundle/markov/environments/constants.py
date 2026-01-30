@@ -28,18 +28,18 @@ NUMBER_OF_LIDAR_SECTORS = 8
 # Max clipping distance for sector lidar sensor
 SECTOR_LIDAR_CLIPPING_DIST = 0.5
 
-LINK_NAMES = ['racecar::left_rear_wheel', 'racecar::left_front_wheel',
-              'racecar::right_rear_wheel', 'racecar::right_front_wheel']
+LINK_NAMES = ['left_rear_wheel', 'left_front_wheel',
+              'right_rear_wheel', 'right_front_wheel']
 
 # List of required velocity topics, one topic per wheel
-VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/command',
-                   '/racecar/right_rear_wheel_velocity_controller/command',
-                   '/racecar/left_front_wheel_velocity_controller/command',
-                   '/racecar/right_front_wheel_velocity_controller/command']
+VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/commands',
+                   '/racecar/right_rear_wheel_velocity_controller/commands',
+                   '/racecar/left_front_wheel_velocity_controller/commands',
+                   '/racecar/right_front_wheel_velocity_controller/commands']
 
 # List of required steering hinges
-STEERING_TOPICS = ['/racecar/left_steering_hinge_position_controller/command',
-                   '/racecar/right_steering_hinge_position_controller/command']
+STEERING_TOPICS = ['/racecar/left_steering_hinge_position_controller/commands',
+                   '/racecar/right_steering_hinge_position_controller/commands']
 
 # List of all effort joints
 EFFORT_JOINTS = ['/racecar/left_rear_wheel_joint', '/racecar/right_rear_wheel_joint',

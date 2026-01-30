@@ -21,8 +21,7 @@ import math
 import os
 import threading
 import numpy as np
-import rospkg
-import rospy
+from ament_index_python.packages import get_package_share_directory
 
 from geometry_msgs.msg import Pose
 from shapely.geometry import Point, Polygon
@@ -33,6 +32,7 @@ from markov.cameras.frustum_manager import FrustumManager
 from markov.track_geom.constants import TrackNearPnts, TrackNearDist, ParkLocation
 from markov.track_geom.utils import euler_to_quaternion, apply_orientation, find_prev_next, quaternion_to_euler
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
+from markov.world_config import WorldConfig
 from markov import utils
 
 
@@ -41,7 +41,7 @@ class FiniteDifference(Enum):
     CENTRAL_DIFFERENCE = 1
     FORWARD_DIFFERENCE = 2
 
-class TrackLine(object):
+class TrackLine():
     def __init__(self, line):
         self.line = line
         self.ndists = [self.line.project(Point(p), normalized=True)
@@ -83,7 +83,7 @@ class TrackLine(object):
         return pose
 
 
-class TrackData(object):
+class TrackData():
     '''This class is responsible for managing all the track geometry, the object should
        be created and shared between agents on the track
     '''
@@ -181,17 +181,20 @@ class TrackData(object):
     def __init__(self):
         '''Instantiates the class and creates clients for the relevant ROS services'''
         self._park_positions_ = deque()
-        self._park_location = ParkLocation(rospy.get_param("PARK_LOCATION", ParkLocation.BOTTOM.value).lower())
-        self._reverse_dir_ = utils.str2bool(rospy.get_param("REVERSE_DIR", False))
+        self._park_location = ParkLocation(WorldConfig.get_param("PARK_LOCATION", ParkLocation.BOTTOM.value).lower())
+        self._reverse_dir_ = utils.str2bool(WorldConfig.get_param("REVERSE_DIR", False))
         if TrackData._instance_ is not None:
             raise GenericRolloutException("Attempting to construct multiple TrackData objects")
         try:
-            rospack = rospkg.RosPack()
-            deepracer_path = rospack.get_path("deepracer_simulation_environment")
+            try:
+                deepracer_path = get_package_share_directory("deepracer_simulation_environment")
+            except Exception as e:
+                raise GenericRolloutException(f'Failed to find deepracer_simulation_environment package: {e}')
+            
             waypoints_path = os.path.join(deepracer_path, "routes",
-                                          "{}.npy".format(rospy.get_param("WORLD_NAME")))
-            self._is_bot_car_ = int(rospy.get_param("NUMBER_OF_BOT_CARS", 0)) > 0
-            self._bot_car_speed_ = float(rospy.get_param("BOT_CAR_SPEED", 0.0))
+                                          "{}.npy".format(WorldConfig.get_param("WORLD_NAME", "default_world")))
+            self._is_bot_car_ = int(WorldConfig.get_param("NUMBER_OF_BOT_CARS", 0)) > 0
+            self._bot_car_speed_ = float(WorldConfig.get_param("BOT_CAR_SPEED", 0.0))
             waypoints = np.load(waypoints_path)
 
             self.is_loop = np.all(waypoints[0, :] == waypoints[-1, :])
@@ -213,14 +216,14 @@ class TrackData(object):
             self._outer_lane_reverse_ = TrackLine(poly_func((waypoints[:, 4:6][::-1] + \
                                                              waypoints[:, 0:2][::-1]) / 2))
             if self.is_loop:
-                self._inner_poly_ = Polygon(self.center_line, [self.inner_border])
-                self._road_poly_ = Polygon(self.outer_border, [self.inner_border])
+                self._inner_poly_ = Polygon(self.center_line.line, [self.inner_border.line])
+                self._road_poly_ = Polygon(self.outer_border.line, [self.inner_border.line])
                 self._is_ccw_ = self._center_line_forward_.is_ccw
             else:
-                self._inner_poly_ = Polygon(np.vstack((self.center_line.line,
-                                                       np.flipud(self.inner_border))))
-                self._road_poly_ = Polygon(np.vstack((self.outer_border,
-                                                      np.flipud(self.inner_border))))
+                self._inner_poly_ = Polygon(np.vstack((self.center_line.line.coords,
+                                                       np.flipud(self.inner_border.line.coords))))
+                self._road_poly_ = Polygon(np.vstack((self.outer_border.line.coords,
+                                                      np.flipud(self.inner_border.line.coords))))
                 self._is_ccw_ = True
 
             self.object_poses = OrderedDict()

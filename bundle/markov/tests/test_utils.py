@@ -19,6 +19,7 @@ import os
 import multiprocessing
 import json
 import botocore
+import unittest.mock as mock
 from markov import utils
 from markov.log_handler.constants import (SIMAPP_EVENT_SYSTEM_ERROR,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -126,3 +127,34 @@ def test_get_boto_config():
     in markov/utils.py
     """
     utils.get_boto_config()
+
+@pytest.mark.sagemaker
+def test_get_node_name_suffix():
+    """This function checks the functionality of get_node_name_suffix function
+    in markov/utils.py
+    """
+    # Test normal case on Linux
+    with mock.patch('platform.system', return_value='Linux'), \
+         mock.patch('subprocess.run') as mock_run, \
+         mock.patch('os.getpid', return_value=12345):
+        
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = 'python /path/to/test_script.py'
+        
+        result = utils.get_node_name_suffix()
+        assert result == 'test_script_py'
+    
+    # Test non-Unix platform
+    with mock.patch('platform.system', return_value='Windows'), \
+         mock.patch('os.getpid', return_value=12345):
+        
+        result = utils.get_node_name_suffix()
+        assert result == 'pid_12345'
+    
+    # Test exception handling
+    with mock.patch('platform.system', return_value='Linux'), \
+         mock.patch('subprocess.run', side_effect=Exception('Test error')), \
+         mock.patch('os.getpid', return_value=12345):
+        
+        result = utils.get_node_name_suffix()
+        assert result == 'pid_12345'

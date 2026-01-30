@@ -146,6 +146,12 @@ class YamlFile():
         return self._body_shell_types
 
     @property
+    def car_colors(self):
+        '''return list of car colors'''
+        self.get_yaml_values()
+        return force_list(self._yaml_values.get(YamlKey.CAR_COLOR_YAML_KEY.value, [CarColorType.BLACK.value]))
+
+    @property
     def kinesis_webrtc_signaling_channel_name(self):
         '''return the KVS WebRTC Signaling Channel Name'''
         self.get_yaml_values()

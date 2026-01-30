@@ -1,0 +1,9 @@
+language: python
+python:
+- '3.12'
+install: pip install tox-travis codecov
+script:
+- tox test/unit
+after_success:
+  - codecov
+

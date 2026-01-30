@@ -1,39 +1,45 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0"?>
 <sdf version="1.7">
-<world name="2022_may_pro_cw">
-  <scene>
-    <ambient>0.5 0.5 0.5 1.0</ambient>
-    <shadows>0</shadows>
-    <sky />
-  </scene>
-  <include>
-    <uri>model://sun</uri>
-    <pose>0.0 0.0 15.0 0 0 0</pose>
-    <cast_shadows>false</cast_shadows>
-    <attenuation>
-      <constant>0.5</constant>
-      <linear>0.01</linear>
-      <quadratic>0.0</quadratic>
-      <range>100</range>
-    </attenuation>
-  </include>
-  <light name="Light 1" type="point">
-         <pose>0 0 15 0 0 0</pose>
-         <diffuse>0.225 0.225 0.225 1</diffuse>
-         <specular>.1 .1 .1 1</specular>
-         <attenuation>
-                <constant>0.4</constant>
-                <linear>0.01</linear>
-                <quadratic>0.00</quadratic>
-                <range>50</range>
-         </attenuation>
-         <direction>0 0 -1</direction>
-         <cast_shadows>false</cast_shadows>
-  </light>
-  <include>
-    <uri>model://models/2022_may_pro_cw</uri>
-    <pose>0 0 0 0 0 0</pose>
-    <name>racetrack</name>
-  </include>
-</world>
+  <world name="2022_may_pro_cw">
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="libdeepracer_gazebo_system_plugin.so" name="gz::sim::systems::DeepRacerGazeboSystemPlugin"/>
+    <scene>
+      <ambient>0.5 0.5 0.5 1.0</ambient>
+      <shadows>0</shadows>
+      <grid>false</grid>
+      <origin_visual>false</origin_visual>
+      <sky/>
+    </scene>
+        <light type="directional" name="sun">
+      <pose>0 0 15 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <intensity>1.0</intensity>
+      <direction>-0.5 0.1 -0.9</direction>
+      <diffuse>1 1 0.8 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+    </light>
+    <light name="Light 1" type="point">
+      <pose>0 0 15 0 0 0</pose>
+      <diffuse>0.225 0.225 0.225 1</diffuse>
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <constant>0.4</constant>
+        <linear>0.01</linear>
+        <quadratic>0.00</quadratic>
+        <range>50</range>
+      </attenuation>
+      <direction>0 0 -1</direction>
+      <cast_shadows>false</cast_shadows>
+    </light>
+    <include>
+      <uri>model://models/2022_may_pro_cw</uri>
+      <pose>0 0 0 0 0 0</pose>
+      <name>racetrack</name>
+    </include>
+  </world>
 </sdf>

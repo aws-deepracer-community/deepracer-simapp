@@ -27,6 +27,8 @@ import time
 import cProfile
 import pstats
 import random
+import subprocess
+import platform
 
 from itertools import count
 from markov.log_handler.constants import (SIMAPP_ENVIRONMENT_EXCEPTION,
@@ -201,18 +203,18 @@ def get_video_display_name():
         list: List of the display name. In head2head there would be two values else one value.
     """
     #
-    # The import rospy statement is here because the util is used by the sagemaker and it fails because ROS is not installed.
+    # The import markov statement is here because the util is used by the sagemaker and it fails because ROS is not installed.
     # Also the rollout_utils.py fails because its PhaseObserver is python3 compatable and not python2.7 because of
     # def __init__(self, topic: str, sink: RunPhaseSubject) -> None:
     #
-    import rospy
-    video_job_type = rospy.get_param("VIDEO_JOB_TYPE", "")
+    from markov.world_config import WorldConfig
+    video_job_type = WorldConfig.get_param("VIDEO_JOB_TYPE", "")
     # TODO: This code should be removed when the cloud service starts providing VIDEO_JOB_TYPE YAML parameter
     if not video_job_type:
-        return force_list(rospy.get_param("DISPLAY_NAME", ""))
+        return force_list(WorldConfig.get_param("DISPLAY_NAME", ""))
     if video_job_type == "RACING":
-        return force_list(rospy.get_param("RACER_NAME", ""))
-    return force_list(rospy.get_param("MODEL_NAME", ""))
+        return force_list(WorldConfig.get_param("RACER_NAME", ""))
+    return force_list(WorldConfig.get_param("MODEL_NAME", ""))
 
 def get_racecar_names(racecar_num):
     """Return the racer names based on the number of racecars given.
@@ -292,9 +294,8 @@ def get_s3_kms_extra_args():
         else:
             # Having a try catch block if sagemaker drops SM_TRAINING_ENV and for some reason this is empty in sagemaker
             try:
-                # The import rospy statement will fail in sagemaker because ROS is not installed
-                import rospy
-                s3_kms_cmk_arn = rospy.get_param(ROBOMAKER_S3_KMS_CMK_ARN, None)
+                from markov.world_config import WorldConfig
+                s3_kms_cmk_arn = WorldConfig.get_param(ROBOMAKER_S3_KMS_CMK_ARN, None)
             except Exception:
                 pass
     return get_s3_extra_args(s3_kms_cmk_arn)
@@ -370,9 +371,9 @@ class DoorMan:
     def exit_gracefully(self, signum, frame):
         self.terminate_now = True
         logger.info("DoorMan: received signal {}".format(signum))
-        simapp_exit_gracefully(simapp_exit=SIMAPP_DONE_EXIT)
+        simapp_exit_gracefully(simapp_exit=SIMAPP_DONE_EXIT, name='Doorman')
 
-class DoubleBuffer(object):
+class DoubleBuffer:
     def __init__(self, clear_data_on_get=True):
         self.read_buffer = None
         self.write_buffer = None
@@ -426,9 +427,8 @@ class DoubleBuffer(object):
     class Empty(Exception):
         pass
 
-class Profiler(object):
-    """ Class to profile the specific code.
-    """
+class Profiler:
+    """ Class to profile the specific code.  """
     _file_count = count(0)
     _profiler = None
     _profiler_owner = None
@@ -507,3 +507,47 @@ class Profiler(object):
             log_and_exit("Unable to upload profiler data: {}".format(ex),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
+
+
+def get_node_name_suffix():
+    """
+    Generate a suffix for ROS2 node names based on the executable name.
+    Returns a string suitable for appending to node names.
+    """
+    # Check if we're on a Unix-based machine
+    if platform.system() not in ['Linux', 'Darwin']:
+        logger = Logger(__name__, logging.INFO).get_logger()
+        logger.warning("Platform is not Unix-based. Using PID as node suffix")
+        return f"pid_{os.getpid()}"
+    
+    try:
+        pid = os.getpid()
+        result = subprocess.run(['/usr/bin/ps', '-p', str(pid), '-o', 'args='], 
+                              capture_output=True, text=True, timeout=1)
+        if result.returncode == 0:
+            command_line = result.stdout.strip()
+            args = command_line.split()
+            if args:
+                exec_path = None
+                # First, look for args that look like paths (contain '/')
+                for arg in args[1:]:
+                    if '/' in arg and not arg.startswith('-'):
+                        exec_path = arg
+                        break
+                # If no path found, use first non-switch argument
+                if not exec_path:
+                    for arg in args[1:]:
+                        if not arg.startswith('-'):
+                            exec_path = arg
+                            break
+                
+                if exec_path:
+                    exec_name = os.path.basename(exec_path)
+                    # Convert to ROS2 node name format: lowercase with underscores
+                    return exec_name.lower().replace('.', '_').replace('-', '_')
+        
+        return f"pid_{pid}"
+    except Exception as ex:
+        logger = Logger(__name__, logging.INFO).get_logger()
+        logger.error(f"Failed to retrieve process name for node suffix: {ex}")
+        return f"pid_{os.getpid()}"

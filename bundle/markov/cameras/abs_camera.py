@@ -18,10 +18,10 @@ import abc
 import threading
 
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.track_geom.constants import SPAWN_SDF_MODEL
 from markov.cameras.camera_manager import CameraManager
-from gazebo_msgs.srv import SpawnModel
+from deepracer_msgs.srv import SpawnModel
 
 # Python 2 and 3 compatible Abstract class
 ABC = abc.ABCMeta('ABC', (object,), {})
@@ -39,7 +39,10 @@ class AbstractCamera(ABC):
         self._namespace = namespace or 'default'
         self.lock = threading.Lock()
         self.is_reset_called = False
-        self.spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel)
+        
+        # NOTE: SPAWN_SDF_MODEL may need to be set to '/world/default/create'
+        # Use longer timeout for spawn service as it takes time to initialize after model is ready
+        self.spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel, max_retry_attempts=10, timeout_sec=10.0)
         CameraManager.get_instance().add(self, namespace)
 
     @property
@@ -90,7 +93,17 @@ class AbstractCamera(ABC):
         """
         camera_sdf = self._get_sdf_string(camera_sdf_path)
         camera_pose = self._get_initial_camera_pose(car_pose)
-        self.spawn_sdf_model(self.model_name, camera_sdf, self.model_name, camera_pose, '')
+        req = SpawnModel.Request()
+        # ROS2 FIX: Use model_name instead of name for SpawnModel request
+        # req.name = self.model_name  # OLD: This doesn't work in ROS2
+        req.model_name = self.model_name  # NEW: Correct attribute for ROS2
+        req.robot_namespace = self._namespace
+        # OLD ROS1→ROS2 migration error: req.initial_post = camera_pose
+        # FIXED ROS2: Correct attribute name is initial_pose (from service definition)
+        req.initial_pose = camera_pose
+        req.model_xml = camera_sdf
+        req.reference_frame = ''
+        self.spawn_sdf_model(req)
 
     def update_pose(self, car_pose, delta_time):
         """

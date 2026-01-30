@@ -18,20 +18,22 @@
    depend on ros, it should not be used in modules imported to the training worker
 '''
 import logging
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
 from std_msgs.msg import String
-from std_srvs.srv import Empty, EmptyResponse
+from std_srvs.srv import Empty
 from markov.agents.utils import RunPhaseSubject
 from markov.common import ObserverInterface
 from markov.log_handler.logger import Logger
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.domain_randomizations.randomizer_manager import RandomizerManager
 from markov.domain_randomizations.visual.light_randomizer import LightRandomizer
 from markov.domain_randomizations.constants import GazeboServiceName
 from markov.constants import (ROBOMAKER_IS_PROFILER_ON, ROBOMAKER_PROFILER_S3_BUCKET,
                               ROBOMAKER_PROFILER_S3_PREFIX)
 from markov.utils import str2bool
-from deepracer_msgs.srv import (GetLightNames, GetLightNamesRequest)
+from markov.world_config import WorldConfig
+from deepracer_msgs.srv import GetLightNames
 
 from rl_coach.core_types import RunPhase
 
@@ -56,37 +58,19 @@ LABEL_TRANSITION = [[HEAT, TRAIN, EVAL, IDLE, WAITING],
                     [HEAT, TRAIN, EVAL, IDLE, WAITING],
                     [HEAT, TRAIN, EVAL, IDLE, WAITING]]
 
-def signal_robomaker_markov_package_ready():
-    """ Since the ROS nodes are asynchronous, there is no guarantee that the required
-    node is up and running and all the information are populated. In some cases, the node
-    launched from the simulation application would have to wait for all the markov package
-    to be ready.
-    In one of the scenario, where the mapping of agents/bots/obstacles on the track as icon
-    has to wait for all the models to spawn up. The getModelState would throw exception,
-    because gazebo service might be up but the spawn model in markov package is not populated
-    with all the obstacles, agents and bot. The current approach of trying to getModel and
-    then see if the value present would pollute the logs. To avoid this a ROS service is
-    created. This ros-service will be up only when all the Markov package is ready. This way
-    the client can wait on this service and need not have to have a seperate logic.
-    """
-    rospy.Service("/robomaker_markov_package_ready", Empty, handle_robomaker_markov_package_ready)
-
-def handle_robomaker_markov_package_ready():
-    """ This is the handler for responding to the request to check if markov robomaker package
-    is up and all the required data is available.
-
-    Returns:
-        EmptyResponse: An empty response stating its ready
-    """
-    return EmptyResponse()
 
 class PhaseObserver(ObserverInterface):
     '''Class that gets notified when the phase changes and publishes the phase to
        a desired topic
     '''
+    _phase_pub_node_ = None
+
     def __init__(self, topic: str, sink: RunPhaseSubject) -> None:
         '''topic - Topic for which to publish the phase '''
-        self._phase_pub_ = rospy.Publisher(topic, String, queue_size=1)
+        if PhaseObserver._phase_pub_node_ is None:
+            PhaseObserver._phase_pub_node_ = rclpy.create_node('MarkovPhaseObserver')
+        self._phase_pub_ = self._phase_pub_node_.create_publisher(String, topic, QoSProfile(depth=1))
+        self.topic = topic
         self._state_ = None
         sink.register(self)
 
@@ -100,22 +84,58 @@ class PhaseObserver(ObserverInterface):
             LOG.info('Unknown phase: %s', data)
             msg = UNKWN
             self._state_ = None
-        self._phase_pub_.publish(msg)
+        msg_obj = String()
+        msg_obj.data = msg
+        self._phase_pub_.publish(msg_obj)
 
 
 def configure_environment_randomizer(light_name_filter=None):
-    rospy.wait_for_service(GazeboServiceName.GET_LIGHT_NAMES.value)
-    get_light_names = ServiceProxyWrapper(GazeboServiceName.GET_LIGHT_NAMES.value, GetLightNames)
-    res = get_light_names(GetLightNamesRequest())
-    for light_name in res.light_names:
-        if light_name_filter and light_name not in light_name_filter:
-            continue
-        RandomizerManager.get_instance().add(LightRandomizer(light_name=light_name))
+    try:
+        get_light_names = ServiceProxyWrapper(GazeboServiceName.GET_LIGHT_NAMES.value, GetLightNames, 
+                                            max_retry_attempts=3, timeout_sec=1.0)
+        res = get_light_names(GetLightNames.Request())
+        
+        for light_name in res.light_names:
+            if light_name_filter and light_name not in light_name_filter:
+                continue
+            RandomizerManager.get_instance().add(LightRandomizer(light_name=light_name))
+        
+    except Exception as e:
+        LOG.error("Error adding light randomizers: %s", e)
+        raise
 
+
+def signal_robomaker_markov_package_ready():
+    """ Create the robomaker_markov_package_ready service on the existing rl_coach node """
+    try:
+        
+        # Use the existing rl_coach node that was passed from evaluation_worker.py
+        global _rl_coach_node
+        if '_rl_coach_node' in globals() and _rl_coach_node is not None:
+            # Create service on the existing rl_coach node
+            service = _rl_coach_node.create_service(Empty, '/robomaker_markov_package_ready', handle_robomaker_markov_package_ready)
+            LOG.debug('robomaker_markov_package_ready service created on existing rl_coach node')
+        else:
+            LOG.debug('rl_coach node reference not available')
+    except Exception as e:
+        LOG.error(f"Failed to create robomaker markov package ready service: {e}")
+
+def handle_robomaker_markov_package_ready(request, response):
+    """ This is the handler for responding to the request to check if markov robomaker package
+    is up and all the required data is available.
+
+    Args:
+        request: Empty service request
+        response: Empty service response
+
+    Returns:
+        Empty.Response: An empty response stating its ready
+    """
+    return response
 
 def get_robomaker_profiler_env():
     """ Read robomaker profiler environment """
-    is_profiler_on = str2bool(rospy.get_param(ROBOMAKER_IS_PROFILER_ON, False))
-    profiler_s3_bucker = rospy.get_param(ROBOMAKER_PROFILER_S3_BUCKET, None)
-    profiler_s3_prefix = rospy.get_param(ROBOMAKER_PROFILER_S3_PREFIX, None)
+    is_profiler_on = str2bool(WorldConfig.get_param(ROBOMAKER_IS_PROFILER_ON, False))
+    profiler_s3_bucker = WorldConfig.get_param(ROBOMAKER_PROFILER_S3_BUCKET, None)
+    profiler_s3_prefix = WorldConfig.get_param(ROBOMAKER_PROFILER_S3_PREFIX, None)
     return is_profiler_on, profiler_s3_bucker, profiler_s3_prefix

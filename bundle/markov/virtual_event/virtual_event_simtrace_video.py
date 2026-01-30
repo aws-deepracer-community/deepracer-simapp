@@ -14,10 +14,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-import rospy
-
-from deepracer_simulation_environment.srv import (VirtualEventVideoEditSrv,
-                                                  VirtualEventVideoEditSrvRequest)
+from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from markov.boto.s3.constants import (CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
                                       CAMERA_PIP_MP4_LOCAL_PATH_FORMAT,
                                       CAMERA_TOPVIEW_LOCAL_PATH_FORMAT,
@@ -26,9 +23,8 @@ from markov.boto.s3.constants import (CAMERA_45DEGREE_LOCAL_PATH_FORMAT,
 from markov.boto.s3.files.simtrace_video import SimtraceVideo
 from markov.constants import DEFAULT_COLOR
 from markov.utils import get_s3_extra_args
-from markov.rospy_wrappers import ServiceProxyWrapper
-from std_srvs.srv import (Empty,
-                          EmptyRequest)
+from markov.rclpy_wrappers import ServiceProxyWrapper
+from std_srvs.srv import Empty
 
 
 class VirtualEventSimtraceVideo():
@@ -91,13 +87,11 @@ class VirtualEventSimtraceVideo():
         """
         mp4_sub = "/{}/save_mp4/subscribe_to_save_mp4".format(self._profile.racecar_name)
         mp4_unsub = "/{}/save_mp4/unsubscribe_from_save_mp4".format(self._profile.racecar_name)
-        rospy.wait_for_service(mp4_sub)
-        rospy.wait_for_service(mp4_unsub)
         self._subscribe_to_save_mp4 = ServiceProxyWrapper(mp4_sub, VirtualEventVideoEditSrv)
-        self._unsubscribe_from_save_mp4 = ServiceProxyWrapper(mp4_unsub, Empty)
+        self._unsubscribe_from_save_mp4 = ServiceProxyWrapper(mp4_unsub)
         if self._is_saving_mp4:
             # racecar_color is not used for virtual event image editing, so simply pass default "Black"
-            self._subscribe_to_save_mp4(VirtualEventVideoEditSrvRequest(
+            self._subscribe_to_save_mp4(VirtualEventVideoEditSrv.Request(
                 display_name=self._profile.racerAlias,
                 racecar_color=DEFAULT_COLOR))
 
@@ -106,7 +100,7 @@ class VirtualEventSimtraceVideo():
         Persist simtrace video
         """
         if self._is_saving_mp4:
-            self._unsubscribe_from_save_mp4(EmptyRequest())
+            self._unsubscribe_from_save_mp4(Empty.Request())
         if hasattr(self._profile.outputMp4, 's3KmsKeyArn'):
             simtrace_mp4_kms = self._profile.outputMp4.s3KmsKeyArn
         elif hasattr(self._profile.outputSimTrace, 's3KmsKeyArn'):

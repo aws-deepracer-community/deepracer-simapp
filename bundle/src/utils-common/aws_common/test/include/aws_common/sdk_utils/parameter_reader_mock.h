@@ -28,7 +28,6 @@ public:
   MOCK_CONST_METHOD2(ReadParam, Aws::AwsError(const ParameterPath &, int &));
   MOCK_CONST_METHOD2(ReadParam, Aws::AwsError(const ParameterPath &, bool &));
   MOCK_CONST_METHOD2(ReadParam, Aws::AwsError(const ParameterPath &, Aws::String &));
-  MOCK_CONST_METHOD2(ReadParam, Aws::AwsError(const ParameterPath &, std::string &));
   MOCK_CONST_METHOD2(ReadParam, Aws::AwsError(const ParameterPath &, std::map<std::string, std::string> &));
 };
 

@@ -21,13 +21,16 @@ import time
 import json
 import logging
 import os
+import threading
 import numpy as np
 from collections import OrderedDict
 import statistics
 import boto3
 import botocore
-import rospy
-from deepracer_simulation_environment.srv import VideoMetricsSrvResponse, VideoMetricsSrv
+import rclpy
+from rclpy.node import Node
+from rclpy.executors import SingleThreadedExecutor
+from deepracer_simulation_environment.srv import VideoMetricsSrv, VideoMetricsSrv_Response
 from geometry_msgs.msg import Point32
 from markov.constants import BEST_CHECKPOINT, LAST_CHECKPOINT, METRICS_VERSION
 from markov.common import ObserverInterface
@@ -50,10 +53,12 @@ from markov.boto.firehose.files.metrics import FirehoseMetrics
 from markov.boto.firehose.files.simtrace import FirehoseSimtrace
 from markov.boto.s3.files.metrics import Metrics
 from telegraf.client import TelegrafClient    
+from markov.world_config import WorldConfig
+
 LOGGER = Logger(__name__, logging.INFO).get_logger()
 
-enable_episode_simtrace = str2bool(rospy.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
-enable_firehose_upload = str2bool(rospy.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
+enable_episode_simtrace = str2bool(WorldConfig.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
+enable_firehose_upload = str2bool(WorldConfig.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
 
 
 #! TODO this needs to be removed after muti part is fixed, note we don't have
@@ -106,9 +111,76 @@ def custom_serializer(obj):
     raise TypeError(f"Type {type(obj)} not serializable")
 
 
+def make_response_value(metrics, key, default):
+    '''Safely make the response value from the metrics.
+
+    metrics - The metrics dictionary.
+    key - The key of the value in the dictionary.
+    default - The default value to use if not found in the dictionary.
+    '''
+
+    expected_type = type(default)
+
+    # Safely get the value but fall back to the default value.
+    value = metrics.get(key, default)
+
+    # Sometimes the key exists but the value is None.
+    if value is None:
+        # Fall back to default
+        value = default
+    elif not isinstance(value, expected_type):
+        # This usually happens when the type is float but the value is 0 (an int)
+        # Make sure we are providing the correct type.
+        value = expected_type(value)
+
+    return value
+
+
+class MarkovVideoMetrics(Node):
+    '''Node with mp4_video_metrics service that delegates to the provided handler.'''
+
+    def __init__(self, node_name, handler, agent_name):
+        '''
+        node_name - The name of the node.
+        handler - The callback function to handle the service request
+        agent_name - The agent name provided to TrainingMetrics/EvalMetrics
+        '''
+
+        super().__init__(node_name)
+
+        self._thread = None
+        self._handler = handler
+        self._service = self.create_service(
+            VideoMetricsSrv,
+            f"/{agent_name}/mp4_video_metrics",
+            self._handle_get_video_metrics)
+
+    def _handle_get_video_metrics(self, request, response):
+        '''Serivce callback, which delegates to the provided handler.'''
+        return self._handler(request, response)
+
+    def start(self):
+        '''Start a thread to listen for service requests.'''
+
+        # Spin the node in a separate thread so it can respond to service calls
+        def spin_node():
+            if rclpy.ok():
+                try:
+                    executor = SingleThreadedExecutor()
+                    executor.add_node(self)
+                    executor.spin()
+                except Exception as e:
+                    LOGGER.error("Node spinning error: %s", e)
+
+        self._thread = threading.Thread(target=spin_node, daemon=True)
+        self._thread.start()
+
+
 class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
     '''This class is responsible for uploading training metrics to s3'''
-    def __init__(self, agent_name, s3_dict_metrics, deepracer_checkpoint_json, ckpnt_dir, run_phase_sink, use_model_picker=True, 
+
+    def __init__(self, agent_name, s3_dict_metrics, deepracer_checkpoint_json,
+                 ckpnt_dir, run_phase_sink, use_model_picker=True, 
                  simtrace_episode_s3_writer=None, firehose_dict_metrics=None, firehose_dict_simtrace=None):
         '''s3_dict_metrics - Dictionary containing the required s3 info for the metrics
                              bucket with keys specified by MetricsS3Keys
@@ -139,7 +211,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
                                                           s3_bucket=firehose_dict_simtrace[FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value],
                                                           s3_prefix=firehose_dict_simtrace[FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value],
                                                           region_name=firehose_dict_simtrace[FirehoseStreamKeys.REGION.value])
-            self._firehose_upload_frequency = rospy.get_param('FIREHOSE_UPLOAD_FREQUENCY')
+            self._firehose_upload_frequency = WorldConfig.get_param('FIREHOSE_UPLOAD_FREQUENCY', 'EPISODE')
         self._simtrace_episode_s3_writer = simtrace_episode_s3_writer
         self._start_time_ = time.time()
         self._episode_ = 0
@@ -161,8 +233,8 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
                                    'avg_eval_metric': None,
                                    'time_stamp': time.time()}
         self._current_eval_best_model_metric_list_ = list()
-        self.is_save_simtrace_enabled = rospy.get_param('SIMTRACE_S3_BUCKET', None)
-        self._best_model_metric_type = BestModelMetricType(rospy.get_param('BEST_MODEL_METRIC',
+        self.is_save_simtrace_enabled = WorldConfig.get_param('SIMTRACE_S3_BUCKET', None)
+        self._best_model_metric_type = BestModelMetricType(WorldConfig.get_param('BEST_MODEL_METRIC',
                                                                            BestModelMetricType.PROGRESS.value).lower())
         self.track_data = TrackData.get_instance()
         run_phase_sink.register(self)
@@ -177,10 +249,15 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             simtrace_episode_dirname = os.path.dirname(self._simtrace_episode_local_path)
             # Create simtrace episode directory if it doesn't exist 
             create_simtrace_directory(simtrace_episode_dirname)
+
         self._current_sim_time = 0
-        rospy.Service("/{}/{}".format(self._agent_name_, "mp4_video_metrics"), VideoMetricsSrv,
-                      self._handle_get_video_metrics)
+
         self._video_metrics = Mp4VideoMetrics.get_empty_dict()
+        self._training_metrics_node = MarkovVideoMetrics(
+            "MarkovTrainingMetrics", self._handle_get_video_metrics, self._agent_name_
+        )
+        self._training_metrics_node.start()
+
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
 
         self._telegraf_client = None
@@ -198,7 +275,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             delta_time (float): time diff from last call
             sim_time (Clock): simulation time
         """
-        self._current_sim_time = sim_time.clock.secs + 1.e-9 * sim_time.clock.nsecs
+        self._current_sim_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
 
     def reset(self):
         self._start_time_ = self._current_sim_time
@@ -382,31 +459,70 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         object_locations = []
         for pose in object_poses:
             point = Point32()
-            point.x, point.y, point.z = pose.position.x, pose.position.y, 0
+            # FIX: Ensure values are floats to prevent ROS2 assertion failure
+            # "Assertion `PyFloat_Check(field)' failed" in geometry_msgs Point32 conversion
+            point.x = float(pose.position.x) if pose.position.x is not None else 0.0
+            point.y = float(pose.position.y) if pose.position.y is not None else 0.0
+            point.z = 0.0
             object_locations.append(point)
         self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value] = object_locations
 
-    def _handle_get_video_metrics(self, req):
-        return VideoMetricsSrvResponse(self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
-                                       self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
-                                       self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
-                                       self._video_metrics[Mp4VideoMetrics.STEERING.value],
-                                       self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.DONE.value],
-                                       self._video_metrics[Mp4VideoMetrics.X.value],
-                                       self._video_metrics[Mp4VideoMetrics.Y.value],
-                                       self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value],
-                                       self._video_metrics[Mp4VideoMetrics.EPISODE_STATUS.value],
-                                       self._video_metrics[Mp4VideoMetrics.PAUSE_DURATION.value])
+    def _handle_get_video_metrics(self, request, response):
+        # Fill the response
+        response.lap_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.LAP_COUNTER.value, response.lap_counter
+        )
+        response.completion_percentage = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.COMPLETION_PERCENTAGE.value, response.completion_percentage
+        )
+        response.reset_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.RESET_COUNTER.value, response.reset_counter
+        )
+        response.obstacle_reset_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value, response.obstacle_reset_counter
+        )
+        response.speed = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.SPEED.value, response.speed
+        )
+        response.throttle = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.THROTTLE.value, response.throttle
+        )
+        response.steering = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.STEERING.value, response.steering
+        )
+        response.best_lap_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.BEST_LAP_TIME.value, response.best_lap_time
+        )
+        response.last_lap_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.LAST_LAP_TIME.value, response.last_lap_time
+        )
+        response.total_evaluation_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value, response.total_evaluation_time
+        )
+        response.done = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.DONE.value, response.done
+        )
+        response.x = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.X.value, response.x
+        )
+        response.y = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.Y.value, response.y
+        )
+        response.object_locations = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.OBJECT_LOCATIONS.value, response.object_locations
+        )
+        response.episode_status = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.EPISODE_STATUS.value, response.episode_status
+        )
+        response.pause_duration = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.PAUSE_DURATION.value, response.pause_duration
+        )
+        return response
 
 
 class EvalMetrics(MetricsInterface, AbstractTracker):
     '''This class is responsible for uploading eval metrics to s3'''
+
     def __init__(self, agent_name, s3_dict_metrics, is_continuous, simtrace_episode_s3_writer=None, 
                  firehose_dict_metrics=None, firehose_dict_simtrace=None, pause_time_before_start=0.0):
         '''Init eval metrics
@@ -441,10 +557,11 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                                                           s3_bucket=firehose_dict_simtrace[FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value],
                                                           s3_prefix=firehose_dict_simtrace[FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value],
                                                           region_name=firehose_dict_simtrace[FirehoseStreamKeys.REGION.value])
-            self._firehose_upload_frequency = rospy.get_param('FIREHOSE_UPLOAD_FREQUENCY')
+            self._firehose_upload_frequency = WorldConfig.get_param('FIREHOSE_UPLOAD_FREQUENCY', 'EPISODE')
             # Delete previous metric and simtrace objects
             self._s3_firehose_metrics.delete()
             self._s3_firehose_simtrace.delete()
+
         self._simtrace_episode_s3_writer = simtrace_episode_s3_writer
         self._is_continuous = is_continuous
         self._start_time_ = time.time()
@@ -452,15 +569,19 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         self._progress_ = 0.0
         self._episode_status = ''
         self._metrics_ = list()
+
         # This is used to calculate the actual distance traveled by the car
         self._agent_xy = list()
         self._prev_step_time = time.time()
-        self.is_save_simtrace_enabled = rospy.get_param('SIMTRACE_S3_BUCKET', None)
+        self.is_save_simtrace_enabled = WorldConfig.get_param('SIMTRACE_S3_BUCKET', None)
+
         # Create the agent specific directories needed for storing the metric files
         self._simtrace_iteration_local_path = SIMTRACE_EVAL_LOCAL_PATH_FORMAT.format(self._agent_name_)
         simtrace_iteration_dirname = os.path.dirname(self._simtrace_iteration_local_path)
+
         # Create simtrace directories if they don't exist 
         create_simtrace_directory(simtrace_iteration_dirname) 
+
         # Only enable this when the feature flag is on
         # Only do this if simtrace_episode_s3_writer is defined
         if enable_episode_simtrace and self._simtrace_episode_s3_writer:
@@ -482,8 +603,13 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         self._reset_count_sum = 0
         self._current_sim_time = 0
         self.track_data = TrackData.get_instance()
-        rospy.Service("/{}/{}".format(self._agent_name_, "mp4_video_metrics"), VideoMetricsSrv,
-                      self._handle_get_video_metrics)
+
+
+        self._eval_metrics_node = MarkovVideoMetrics(
+            "MarkovEvalMetrics", self._handle_get_video_metrics, self._agent_name_
+        )
+        self._eval_metrics_node.start()
+
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
 
         self._telegraf_client = None
@@ -515,7 +641,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             delta_time (float): time diff from last call
             sim_time (Clock): simulation time
         """
-        self._current_sim_time = sim_time.clock.secs + 1.e-9 * sim_time.clock.nsecs
+        self._current_sim_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
 
     def reset(self):
         """clear reset counter only for non-continuous racing
@@ -646,7 +772,11 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         object_locations = []
         for pose in object_poses:
             point = Point32()
-            point.x, point.y, point.z = pose.position.x, pose.position.y, 0
+            # FIX: Ensure values are floats to prevent ROS2 assertion failure
+            # "Assertion `PyFloat_Check(field)' failed" in geometry_msgs Point32 conversion
+            point.x = float(pose.position.x) if pose.position.x is not None else 0.0
+            point.y = float(pose.position.y) if pose.position.y is not None else 0.0
+            point.z = 0.0
             object_locations.append(point)
         self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value] = object_locations
         self._video_metrics[Mp4VideoMetrics.EPISODE_STATUS.value] = \
@@ -677,27 +807,60 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
                     elif self._firehose_upload_frequency == FirehoseUploadFrequency.EPISODE_DATA.value: 
                         self._s3_firehose_simtrace.add_record(json_metrics)
 
-    def _handle_get_video_metrics(self, req):
-        return VideoMetricsSrvResponse(self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value],
-                                       self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value],
-                                       self._video_metrics[Mp4VideoMetrics.SPEED.value],
-                                       self._video_metrics[Mp4VideoMetrics.THROTTLE.value],
-                                       self._video_metrics[Mp4VideoMetrics.STEERING.value],
-                                       self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value],
-                                       self._video_metrics[Mp4VideoMetrics.DONE.value],
-                                       self._video_metrics[Mp4VideoMetrics.X.value],
-                                       self._video_metrics[Mp4VideoMetrics.Y.value],
-                                       self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value],
-                                       self._video_metrics[Mp4VideoMetrics.EPISODE_STATUS.value],
-                                       self._video_metrics[Mp4VideoMetrics.PAUSE_DURATION.value])
+    def _handle_get_video_metrics(self, request, response):
+        # Fill the response
+        response.lap_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.LAP_COUNTER.value, response.lap_counter
+        )
+        response.completion_percentage = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.COMPLETION_PERCENTAGE.value, response.completion_percentage
+        )
+        response.reset_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.RESET_COUNTER.value, response.reset_counter
+        )
+        response.obstacle_reset_counter = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value, response.obstacle_reset_counter
+        )
+        response.speed = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.SPEED.value, response.speed
+        )
+        response.throttle = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.THROTTLE.value, response.throttle
+        )
+        response.steering = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.STEERING.value, response.steering
+        )
+        response.best_lap_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.BEST_LAP_TIME.value, response.best_lap_time
+        )
+        response.last_lap_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.LAST_LAP_TIME.value, response.last_lap_time
+        )
+        response.total_evaluation_time = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value, response.total_evaluation_time
+        )
+        response.done = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.DONE.value, response.done
+        )
+        response.x = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.X.value, response.x
+        )
+        response.y = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.Y.value, response.y
+        )
+        response.object_locations = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.OBJECT_LOCATIONS.value, response.object_locations
+        )
+        response.episode_status = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.EPISODE_STATUS.value, response.episode_status
+        )
+        response.pause_duration = make_response_value(
+            self._video_metrics, Mp4VideoMetrics.PAUSE_DURATION.value, response.pause_duration
+        )
+        return response
 
     def clear(self):
-        """clear all EvalMetrics member variable
-        """
+        """clear all EvalMetrics member variable """
         self._is_pause_time_subtracted = False
         self._start_time_ = self._current_sim_time
         self._number_of_trials_ = 0

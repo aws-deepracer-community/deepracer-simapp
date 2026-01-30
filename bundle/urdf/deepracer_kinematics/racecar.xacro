@@ -12,6 +12,9 @@
   <xacro:arg name="include_second_camera" default="false" />
   <xacro:arg name="include_lidar_sensor" default="false" />
 
+  <!-- ros2_control configuration -->
+  <xacro:arg name="ros2_control_params" default="$(find deepracer_simulation_environment)/config/racecar_control_kinematics.yaml" />
+
   <!-- lidar 360 degree - settings -->
   <xacro:arg name="lidar_360_degree_sample" default="61" />
   <xacro:arg name="lidar_360_degree_horizontal_resolution" default="1" />
@@ -85,6 +88,57 @@
   <xacro:if value="$(arg include_lidar_sensor)">
     <xacro:configure_collide_bitmask link_name="laser" bitmask="$(arg racecar_bitmask)" />
   </xacro:if>
+
+  <!-- ros2_control hardware interface -->
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    
+    <!-- Wheel joints -->
+    <joint name="left_rear_wheel_joint">
+      <command_interface name="effort"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    
+    <joint name="right_rear_wheel_joint">
+      <command_interface name="effort"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    
+    <joint name="left_front_wheel_joint">
+      <command_interface name="effort"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    
+    <joint name="right_front_wheel_joint">
+      <command_interface name="effort"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    
+    <!-- Steering joints -->
+    <joint name="left_steering_hinge_joint">
+      <command_interface name="effort"/>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    
+    <joint name="right_steering_hinge_joint">
+      <command_interface name="effort"/>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
 
   <!-- add the remaining xacros -->
   <xacro:unless value="$(arg disable_gazebo_sensors)">

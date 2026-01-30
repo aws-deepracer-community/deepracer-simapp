@@ -18,7 +18,7 @@ import logging
 import numpy as np
 from enum import Enum
 
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.domain_randomizations.abs_randomizer import AbstractRandomizer
 from markov.log_handler.logger import Logger
 from markov.domain_randomizations.constants import (GazeboServiceName,
@@ -26,9 +26,8 @@ from markov.domain_randomizations.constants import (GazeboServiceName,
                                                     RANGE_MIN, RANGE_MAX,
                                                     Color, Attenuation)
 
-import rospy
 from std_msgs.msg import ColorRGBA
-from gazebo_msgs.srv import SetLightProperties, SetLightPropertiesRequest
+from deepracer_msgs.srv import SetLightProperties
 
 
 logger = Logger(__name__, logging.INFO).get_logger()
@@ -66,11 +65,10 @@ class LightRandomizer(AbstractRandomizer):
             self.range[RangeType.ATTENUATION].update(attenuation_range)
 
         # ROS Services
-        rospy.wait_for_service(GazeboServiceName.SET_LIGHT_PROPERTIES.value)
         self.set_light_prop = ServiceProxyWrapper(GazeboServiceName.SET_LIGHT_PROPERTIES.value, SetLightProperties)
 
     def _randomize(self):
-        req = SetLightPropertiesRequest()
+        req = SetLightProperties.Request()
         req.light_name = self.light_name
 
         color_range = self.range[RangeType.COLOR]

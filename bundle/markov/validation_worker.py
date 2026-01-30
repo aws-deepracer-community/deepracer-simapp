@@ -18,6 +18,9 @@ import os
 # Set tensorflow to not throw library warnings/errors to stdout
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import argparse
+import tensorflow as tf
+# Disable eager execution for compatibility with older checkpoints
+tf.compat.v1.disable_eager_execution()
 import logging
 import pickle
 
@@ -51,7 +54,7 @@ logger = Logger(__name__, logging.INFO).get_logger()
 logging.getLogger('rl_coach').setLevel(logging.ERROR)
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 
-SAMPLE_PICKLE_PATH = '/opt/ml/code/sample_data'
+SAMPLE_PICKLE_PATH = '/var/task/sample_data'
 MODEL_METADATA_LOCAL_PATH = 'model_metadata.json'
 LOCAL_MODEL_DIR = 'local_model_checkpoint'
 
@@ -70,6 +73,7 @@ def _validate(graph_manager, task_parameters, transitions,
         screen.log_title(" Validating Last Checkpoint: {}".format(last_model_checkpoint_name))
         # load the last rl coach checkpoint from store
         graph_manager.data_store.load_from_store()
+        # create graph after loading checkpoint data
         graph_manager.create_graph(task_parameters)
         graph_manager.phase = RunPhase.TEST
         screen.log_title(" Start emulate_act_on_trainer on Last Checkpoint")

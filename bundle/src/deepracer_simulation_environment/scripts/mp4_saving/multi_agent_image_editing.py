@@ -1,30 +1,17 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """Image editing class for head to head where there are multiple agents
 """
 import datetime
 import logging
-import rospy
 import cv2
 import os
 
 from markov.log_handler.logger import Logger
 from markov.reset.constants import RaceType
 from markov.utils import get_racecar_idx
+from markov.world_config import WorldConfig
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   RACE_TYPE_TO_VIDEO_TEXT_MAPPING, SCALE_RATIO,
@@ -39,13 +26,15 @@ LOG = Logger(__name__, logging.INFO).get_logger()
 class MultiAgentImageEditing(ImageEditingInterface):
     """Image editing class for head to head where there are multiple agents
     """
-    def __init__(self, racecar_name, racecars_info, race_type):
+    def __init__(self, racecar_name, racecars_info, race_type, node=None):
         """ This class is used for head to head racing where there are more than one agent
         Args:
             racecar_name (str): The agent name with 45degree camera view
             racecars_info (dict): All the agents information
             race_type (str): The type of race. This is used to know if its race type or evaluation
+            node (Node): ROS 2 node for parameter access (optional)
         """
+        self._node = node
         self.racecar_name = racecar_name
         self.racecars_info = racecars_info
         racecar_index = get_racecar_idx(racecar_name)
@@ -60,10 +49,23 @@ class MultiAgentImageEditing(ImageEditingInterface):
         self.amazon_ember_light_20px = utils.get_font('AmazonEmber-Light', 20)
         self.amazon_ember_light_italic_20px = utils.get_font('AmazonEmber-LightItalic', 20)
 
-        self.is_racing = rospy.get_param("VIDEO_JOB_TYPE", "") == "RACING"
-        self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
-        self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
-        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
+        # Parameter access with fallback
+        if self._node is not None:
+            self._node.declare_parameter('VIDEO_JOB_TYPE', '')
+            self._node.declare_parameter('LEADERBOARD_TYPE', '')
+            self._node.declare_parameter('LEADERBOARD_NAME', '')
+            self._node.declare_parameter('NUMBER_OF_TRIALS', 0)
+            
+            self.is_racing = self._node.get_parameter('VIDEO_JOB_TYPE').get_parameter_value().string_value == "RACING"
+            self.is_league_leaderboard = self._node.get_parameter('LEADERBOARD_TYPE').get_parameter_value().string_value == "LEAGUE"
+            self.leaderboard_name = self._node.get_parameter('LEADERBOARD_NAME').get_parameter_value().string_value
+            self._total_laps = int(self._node.get_parameter('NUMBER_OF_TRIALS').get_parameter_value().integer_value)
+        else:
+            # Fallback to world config
+            self.is_racing = WorldConfig.get_param('VIDEO_JOB_TYPE', '') == "RACING"
+            self.is_league_leaderboard = WorldConfig.get_param('LEADERBOARD_TYPE', '') == "LEAGUE"
+            self.leaderboard_name = WorldConfig.get_param('LEADERBOARD_NAME', '')
+            self._total_laps = int(WorldConfig.get_param('NUMBER_OF_TRIALS', 0))
 
         # The track image as iconography
         self.track_icongraphy_img = utils.get_track_iconography_image()

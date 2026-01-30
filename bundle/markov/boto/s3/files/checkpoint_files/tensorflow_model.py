@@ -234,7 +234,7 @@ class TensorflowModel():
                     new_name = var_name
                     # Set the new name
                     # Replace agent/ or agent_#/ with {agent_name}/
-                    new_name = re.sub('agent/|agent_\d+/', '{}/'.format(agent_name), new_name)
+                    new_name = re.sub(r'agent/|agent_\d+/', '{}/'.format(agent_name), new_name)
                     # Rename the variable
                     var = tf.Variable(var, name=new_name)
                 saver = tf.compat.v1.train.Saver()

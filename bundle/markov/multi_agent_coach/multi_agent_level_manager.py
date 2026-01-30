@@ -15,6 +15,7 @@
 #################################################################################
 
 import copy
+import logging
 from typing import Union, Dict
 
 from rl_coach.agents.composite_agent import CompositeAgent
@@ -24,6 +25,9 @@ from rl_coach.environments.environment import Environment
 from rl_coach.environments.environment_interface import EnvironmentInterface
 from rl_coach.saver import SaverCollection
 from rl_coach.spaces import ActionSpace, SpacesDefinition
+from markov.log_handler.logger import Logger
+
+logger = Logger(__name__, logging.INFO).get_logger()
 
 
 class MultiAgentLevelManager(EnvironmentInterface):
@@ -61,13 +65,19 @@ class MultiAgentLevelManager(EnvironmentInterface):
         :param name: the level's name
         :param spaces_definition: external definition of spaces for when we don't have an environment (e.g. batch-rl)
         """
+
         super().__init__()
 
         if not isinstance(agents, dict):
             # insert the single composite agent to a dictionary for compatibility
             agents = {agents.name: agents}
+        
+        
         if real_environment is None:
             self._real_environment = real_environment = environment
+        else:
+            logger.debug("Using provided real_environment")
+            
         self.done_condition = done_condition
         self.agents = agents
         self.environment = environment
@@ -90,10 +100,21 @@ class MultiAgentLevelManager(EnvironmentInterface):
 
         if not isinstance(self.steps_limit, EnvironmentSteps):
             raise ValueError("The num consecutive steps for acting must be defined in terms of environment steps")
+        
         self.build(spaces_definition)
 
         # there are cases where we don't have an environment. e.g. in batch-rl or in imitation learning.
-        self.last_env_response = self.real_environment.last_env_response if self.real_environment else None
+        if self.real_environment:
+            self.last_env_response = self.real_environment.last_env_response
+            if self.last_env_response:
+                if hasattr(self.last_env_response, 'game_over'):
+                    logger.debug("Last env response has game_over attribute")
+                else:
+                    logger.debug("Last env response does not have game_over attribute")
+            else:
+                logger.debug("No last env response from real environment")
+        else:
+            self.last_env_response = None
 
         self.parent_graph_manager = None
 
@@ -102,6 +123,7 @@ class MultiAgentLevelManager(EnvironmentInterface):
         End the environment episode
         :return: None
         """
+        
         [agent.handle_episode_ended() for agent in self.agents.values()]
 
     def reset_internal_state(self, force_environment_reset: bool = False) -> EnvResponse:
@@ -111,10 +133,25 @@ class MultiAgentLevelManager(EnvironmentInterface):
                                         itself. This flag allows force the reset.
         :return: the environment response as returned in get_last_env_response
         """
+        
         [agent.reset_internal_state() for agent in self.agents.values()]
+        
         self.reset_required = False
+        
         if self.real_environment and self.real_environment.current_episode_steps_counter == 0:
             self.last_env_response = self.real_environment.last_env_response
+        else:
+            logger.debug("Real environment not available or episode steps counter not zero")
+            
+        if self.last_env_response:
+            if hasattr(self.last_env_response, 'game_over'):
+                logger.debug("Environment response has game_over: %s, reward: %s", 
+                           self.last_env_response.game_over, self.last_env_response.reward)
+            else:
+                logger.debug("Environment response does not have game_over attribute")
+        else:
+            logger.debug("No last environment response available")
+            
         return self.last_env_response
 
     @property
@@ -219,12 +256,20 @@ class MultiAgentLevelManager(EnvironmentInterface):
         if action is not None:
             for agent_name, agent in self.agents.items():
                 agent.set_incoming_directive(action)
+        else:
+            logger.debug("No agents to set incoming directive")
 
         if self.reset_required:
             self.reset_internal_state()
+        else:
+            logger.debug("Reset not required")
 
         # get last response or initial response from the environment
-        env_responses = copy.copy(self.environment.last_env_response)
+        try:
+            env_responses = copy.copy(self.environment.last_env_response)
+        except Exception as e:
+            logger.error("Error copying environment response: %s", e)
+            raise
         if isinstance(env_responses, EnvResponse):
             env_responses = [env_responses]
 
@@ -232,25 +277,37 @@ class MultiAgentLevelManager(EnvironmentInterface):
         accumulated_rewards = [0] * len(self.agents)
 
         for i in range(self.steps_limit.num_steps):
+            
             # let the agent observe the result and decide if it wants to terminate the episode
-            done = self.done_condition([agent.observe(env_response) for agent, env_response in zip(self.agents.values(), env_responses)])
+            observe_results = [agent.observe(env_response) for agent, env_response in zip(self.agents.values(), env_responses)]
+            done = self.done_condition(observe_results)
+            
             if done:
+                logger.debug("Episode done! Breaking from loop at step %d", i+1)
                 break
             else:
                 # get action
-                action_infos = [agent.act() for agent in self.agents.values()]
+                logger.debug("Episode not done, continuing with agent actions. About to call agent.act() for %d agents", len(self.agents))
+                action_infos = []
+                for i, agent in enumerate(self.agents.values()):
+                    action_info = agent.act()
+                    action_infos.append(action_info)
 
                 # imitation agents will return no action since they don't play during training
                 if any(action_infos):
                     # step environment
                     env_responses = self.environment.step([action_info.action if action_info else None
                                                            for action_info in action_infos])
+                    
                     if isinstance(env_responses, EnvResponse):
                         env_responses = [env_responses]
+                    else:
+                        logger.debug("Environment responses is already a list")
 
                     # accumulate rewards such that the master policy will see the total reward during the step phase
                     accumulated_rewards = [accumulated_reward + env_response.reward if env_response else accumulated_reward
                                            for accumulated_reward, env_response in zip(accumulated_rewards, env_responses)]
+
 
         # update the env response that will be exposed to the parent agent
         env_responses_for_upper_level = copy.copy(env_responses)
@@ -262,9 +319,13 @@ class MultiAgentLevelManager(EnvironmentInterface):
         # in HRL,excluding top level one, we will always enter the below if clause
         # (because should_reset_agent_state_after_time_limit_passes is set to True)
         done = self.done_condition(env_response.game_over for env_response in env_responses)
+        
         if done or self.should_reset_agent_state_after_time_limit_passes:
             # this is the agent's only opportunity to observe this transition - he will not get another one
+            # final_observe_start = time.time()
             [agent.observe(env_response) for agent, env_response in zip(self.agents.values(), env_responses)]
+            # final_observe_end = time.time()
+            
             self.handle_episode_ended()
             self.reset_required = True
 

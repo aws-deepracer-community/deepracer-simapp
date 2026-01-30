@@ -42,7 +42,8 @@ from markov.constants import DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
-def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
+def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True,
+                 *, name=None):
     '''Helper method that logs an exception and exits the application.
     In case of multiple exceptions due to nodes failing, only the first exception will be logged
     using logic to check if the sync file ERROR.txt exists in the environment.
@@ -62,7 +63,7 @@ def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
         # We need a separate log_and_exit flow for model validation process which should return back 
         # non zero return code if called and we should refrain from using physical sync files in a 
         # shared environment which causes issues in concurrent validation calls.
-        if(os.getenv("IS_MODEL_VALIDATION")):
+        if os.getenv("IS_MODEL_VALIDATION"):
             dict_obj = OrderedDict()
             json_format_log = dict()
             fault_code = get_fault_code_for_error(msg)
@@ -87,6 +88,7 @@ def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
             LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
             LOG.error("Exiting validation worker process.")
             sys.exit(1)
+
         # For all other workers other than validation worker, follow the below execution:
         s3_crash_status_file_name = os.environ.get("CRASH_STATUS_FILE_NAME", None)
         #TODO: Find an atomic way to check if file is present else create
@@ -120,10 +122,12 @@ def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
                 sync_file.write(json_log)
                 # Temporary fault code log
                 LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
+
             simapp_exit_gracefully(json_log=json_log,
                                    s3_crash_status_file_name=s3_crash_status_file_name,
                                    hasSimAppExceptionOccured=True,
-                                   stopRosNodeMonitor=stopRosNodeMonitor)
+                                   stopRosNodeMonitor=stopRosNodeMonitor,
+                                   name=name)
 
     except Exception as ex:
         msg = "Exception thrown in logger - log_and_exit: {}".format(ex)
@@ -149,6 +153,7 @@ def log_and_exit(msg, error_source, error_code, stopRosNodeMonitor=True):
         LOG.error(json_log)
         # Temporary fault code log
         LOG.error("ERROR: FAULT_CODE: {}".format(fault_code))
+        # Don't change this line. Place it here to use delayed import and avoid circular import
         from markov.utils import stop_ros_node_monitor
         stop_ros_node_monitor()
 
@@ -227,7 +232,9 @@ def kill_by_pid(pid):
 
 def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
                            s3_crash_status_file_name=None, hasSimAppExceptionOccured=False,
-                           stopRosNodeMonitor=True):
+                           stopRosNodeMonitor=True,
+                           *, 
+                           name=None):
     # simapp exception leading to exiting the system
     # - close the running processes
     # - upload simtrace data to S3
@@ -242,16 +249,19 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
 
     if simapp_exit == SIMAPP_ERROR_EXIT:
         LOG.info("Calling cancel_simulation_job because of failure.")
-        if(hasSimAppExceptionOccured):
-            #directly importing rospy doesn't work
-            from rospy import get_name, signal_shutdown
-            err_msg = "Killing rosnode and cancelling job because of failure: {}".format(get_name())
+        if hasSimAppExceptionOccured:
+            import rclpy
+            err_msg = "Killing ros2 and cancelling job because of failure"
+            if name:
+                err_msg = "{}: {}".format(name, err_msg)
             LOG.error(err_msg)
-            signal_shutdown(err_msg)
+            rclpy.shutdown()
             # wait for monitoring to detect the dead node
             time.sleep(5)
+
         # for non exception and live races, just normally stop
-        if(stopRosNodeMonitor):
+        if stopRosNodeMonitor:
+            # Don't change this line. Place it here to use delayed import and avoid circular import
             from markov.utils import stop_ros_node_monitor
             stop_ros_node_monitor()
 

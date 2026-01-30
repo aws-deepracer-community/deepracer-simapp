@@ -78,7 +78,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/New_York_Track/New_York_track_building_wall</uri>
+<uri>model://meshes/New_York_Track/New_York_track_building_wall.dae</uri>
 </mesh>
 </geometry>
 </collision>
@@ -86,7 +86,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/New_York_Track/New_York_track_building_wall</uri>
+<uri>model://meshes/New_York_Track/New_York_track_building_wall.dae</uri>
 </mesh>
 </geometry>
 </visual>
@@ -332,7 +332,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/New_York_Track/New_York_track_road_light.dae</uri>
+<uri>model://meshes/New_York_Track/New_york_track_road_light.dae</uri>
 </mesh>
 </geometry>
 </collision>
@@ -340,7 +340,7 @@
 <pose>0 0 0 0 0 0</pose>
 <geometry>
 <mesh>
-<uri>model://meshes/New_York_Track/New_York_track_road_light.dae</uri>
+<uri>model://meshes/New_York_Track/New_york_track_road_light.dae</uri>
 </mesh>
 </geometry>
 </visual>

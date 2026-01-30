@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 ##############################################################
 #                                                            #
@@ -27,8 +14,12 @@ import logging
 from threading import Thread, Condition
 from queue import Queue
 import cv2
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from rclpy.exceptions import ROSInterruptException
 from std_srvs.srv import Empty
+from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
 from collections import OrderedDict
@@ -40,7 +31,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import (RaceType)
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
 from markov.virtual_event.constants import WAIT_DISPLAY_NAME
 from deepracer_simulation_environment.srv import (VideoMetricsSrvRequest,
@@ -60,7 +51,7 @@ from mp4_saving.virtual_event_video_metrics import VirtualEventVideoMetrics
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
-class VirtualEventVideoEditor(object):
+class VirtualEventVideoEditor(Node):
     """ This node is used to produce frames for the AWS kinesis video stream and
     for saving the mp4 and uploading to S3. Both are subscribed to the output of
     the image topic produced by this node.
@@ -70,11 +61,7 @@ class VirtualEventVideoEditor(object):
     _racecars_info = list()
 
     def __init__(self, racecar_name, agent_name):
-        #
-        # We have no guarantees as to when gazebo will load the model, therefore we need
-        # to wait until the model is loaded and markov packages has spawned all the models
-        #
-        rospy.wait_for_service('/robomaker_markov_package_ready')
+        super().__init__(f'virtual_event_video_editor_{racecar_name}')
         self._agents_metrics.append(DoubleBuffer(clear_data_on_get=False))
 
         self.racecar_name = racecar_name
@@ -103,7 +90,11 @@ class VirtualEventVideoEditor(object):
         self._kvs_frame_buffer = DoubleBuffer(clear_data_on_get=False)
 
         # Publish to KVS stream topic
-        self.kvs_pub = rospy.Publisher('/{}/deepracer/kvs_stream'.format(self.racecar_name), ROSImg, queue_size=1)
+        self.kvs_pub = self.create_publisher(
+            ROSImg,
+            f'/{self.racecar_name}/deepracer/kvs_stream',
+            1
+        )
 
         # All Mp4 related initialization
         self._mp4_queue = Queue()
@@ -112,7 +103,8 @@ class VirtualEventVideoEditor(object):
 
         # Initialize save mp4 ROS service for the markov package to signal when to
         # start and stop collecting video frames
-        race_type = rospy.get_param("RACE_TYPE", RaceType.TIME_TRIAL.value)
+        self.declare_parameter('RACE_TYPE', RaceType.TIME_TRIAL.value)
+        race_type = self.get_parameter('RACE_TYPE').get_parameter_value().string_value
         is_f1_race_type = race_type == RaceType.F1.value
         camera_info = utils.get_cameratype_params(self.racecar_name, self.agent_name, is_f1_race_type)
         self.save_to_mp4_obj = SaveToMp4(camera_infos=[camera_info[CameraTypeParams.CAMERA_PIP_PARAMS],
@@ -121,22 +113,35 @@ class VirtualEventVideoEditor(object):
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
                                          frame_size=Mp4Parameter.FRAME_SIZE.value)
-        rospy.Service('/{}/save_mp4/subscribe_to_save_mp4'.format(self.racecar_name),
-                      VirtualEventVideoEditSrv, self.subscribe_to_save_mp4)
-        rospy.Service('/{}/save_mp4/unsubscribe_from_save_mp4'.format(self.racecar_name),
-                      Empty, self.unsubscribe_to_save_mp4)
+        self.subscribe_service = self.create_service(
+            VirtualEventVideoEditSrv,
+            f'/{self.racecar_name}/save_mp4/subscribe_to_save_mp4',
+            self.subscribe_to_save_mp4
+        )
+        self.unsubscribe_service = self.create_service(
+            Empty,
+            f'/{self.racecar_name}/save_mp4/unsubscribe_from_save_mp4',
+            self.unsubscribe_to_save_mp4
+        )
 
         # Publish to save mp4 topic
-        self.mp4_main_camera_pub = rospy.Publisher('/{}/deepracer/main_camera_stream'.format(self.racecar_name), ROSImg,
-                                                   queue_size=1)
+        self.mp4_main_camera_pub = self.create_publisher(
+            ROSImg,
+            f'/{self.racecar_name}/deepracer/main_camera_stream',
+            1
+        )
 
         # ROS service to get video metrics
-        rospy.wait_for_service("/{}/{}".format(self.agent_name, "mp4_video_metrics"))
         self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
                                                          VideoMetricsSrv)
         self.is_save_mp4_enabled = False
 
-        rospy.Subscriber(main_camera_topic, ROSImg, self._producer_frame_thread)
+        self.main_camera_subscription = self.create_subscription(
+            ROSImg,
+            main_camera_topic,
+            self._producer_frame_thread,
+            QoSProfile(depth=10)
+        )
         Thread(target=self._consumer_mp4_frame_thread).start()
         Thread(target=self._kvs_publisher).start()
         Thread(target=self._mp4_publisher).start()
@@ -182,7 +187,7 @@ class VirtualEventVideoEditor(object):
             Union(VirtualEventSingleAgentImageEditing,
                   VirtualEventMultiAgentImageEditing): VirtualEventSingleAgentImageEditing instance
         """
-        race_type = rospy.get_param("RACE_TYPE", RaceType.TIME_TRIAL.value)
+        race_type = self.get_parameter('RACE_TYPE').get_parameter_value().string_value
         if race_type in [RaceType.TIME_TRIAL.value, RaceType.OBJECT_AVOIDANCE.value,
                          RaceType.HEAD_TO_BOT.value]:
             return VirtualEventSingleAgentImageEditing(self.racecar_name, self._racecars_info, race_type)
@@ -194,7 +199,7 @@ class VirtualEventVideoEditor(object):
     def _update_racers_metrics(self):
         """ Used to update the racers metric information
         """
-        if not rospy.is_shutdown():
+        if rclpy.ok():
             video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrvRequest())
             self._agents_metrics[self.racecar_index].put(video_metrics)
 
@@ -240,7 +245,7 @@ class VirtualEventVideoEditor(object):
         Arguments:
             frame (cv2.ImgMsg): Image/Sensor topic of the camera image frame
         """
-        if not rospy.is_shutdown():
+        if rclpy.ok():
             self._update_racers_metrics()
             # Get frame from main camera & agents metric information
             agent_metric_info = [metrics.get() for metrics in self._agents_metrics]
@@ -277,7 +282,7 @@ class VirtualEventVideoEditor(object):
         """ Consumes the frame produced by the _producer_frame_thread and edits the image
         The edited image is put into another queue for publishing to MP4 topic
         """
-        while not rospy.is_shutdown():
+        while rclpy.ok():
             with self._mp4_condition_lock:
                 if self._mp4_queue.empty():
                     # Wait untill producer adds something to queue
@@ -302,16 +307,16 @@ class VirtualEventVideoEditor(object):
         """
         try:
             prev_time = time.time()
-            while not rospy.is_shutdown():
+            while rclpy.ok():
                 if not self._mp4_edited_frame_queue.empty():
-                    if rospy.is_shutdown():
+                    if not rclpy.ok():
                         break
                     self.mp4_main_camera_pub.publish(self._mp4_edited_frame_queue.get())
                 cur_time = time.time()
                 time_diff = cur_time - prev_time
                 time.sleep(max(KVS_PUBLISH_PERIOD - time_diff, 0))
                 prev_time = time.time()
-        except (rospy.ROSInterruptException, rospy.ROSException):
+        except:
             pass
 
     def _kvs_publisher(self):
@@ -319,7 +324,7 @@ class VirtualEventVideoEditor(object):
         """
         try:
             prev_time = time.time()
-            while not rospy.is_shutdown():
+            while rclpy.ok():
                 frame_data = self._kvs_frame_buffer.get()
                 if len(self._racecars_info) > len(frame_data[FrameQueueData.AGENT_METRIC_INFO.value]):
                     # Waiting for all the agents to initialize before editing videos
@@ -331,13 +336,13 @@ class VirtualEventVideoEditor(object):
                                  SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
                 edited_frame = self._edit_camera_images(frame_data)
-                if not rospy.is_shutdown():
+                if rclpy.ok():
                     self.kvs_pub.publish(edited_frame)
                     cur_time = time.time()
                     time_diff = cur_time - prev_time
                     time.sleep(max(KVS_PUBLISH_PERIOD - time_diff, 0))
                     prev_time = time.time()
-        except (rospy.ROSInterruptException, rospy.ROSException):
+        except:
             pass
 
 
@@ -351,13 +356,33 @@ def main():
             VirtualEventVideoEditor(
                 racecar_name=racecar_name,
                 agent_name=racecar_name.replace("racecar", "agent"))
-    except Exception as err_msg:
-        log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(err_msg),
+    except Exception as e:
+        log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(e),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 
 
+def ros2_main(args=None):
+    rclpy.init(args=args)
+    
+    try:
+        # Create a dummy node for ROS 2 context
+        node = Node('virtual_event_video_editor_node')
+        
+        # Run the main logic
+        main()
+        
+        # Keep the node alive
+        rclpy.spin(node)
+        
+    except Exception as err_msg:
+        log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(err_msg),
+                     SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500)
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
 if __name__ == '__main__':
-    rospy.init_node('virtual_event_video_editor_node', anonymous=True)
-    main()
-    rospy.spin()
+    ros2_main()

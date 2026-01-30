@@ -16,15 +16,21 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-# rosnode is imported in NodeMonitor class, but this package is not a ROS environment.
-# Since this is missing the rosnode, mocking the rosnode module.
+# rclpy is imported in NodeMonitor class, but this package is not a ROS environment.
+# Since this is missing the rclpy, mocking the rclpy module.
 # https://stackoverflow.com/questions/8658043/how-to-mock-an-import
 import sys
-sys.modules['rosnode'] = MagicMock()
-sys.modules['botocore.config'] = MagicMock()
-sys.modules['boto3'] = MagicMock()
-sys.modules['markov.log_handler.constants'] = MagicMock()
-sys.modules['markov.log_handler.exception_handler'] = MagicMock()
+
+sys.modules["rclpy"] = MagicMock()
+sys.modules["rclpy.node"] = MagicMock()
+sys.modules["rclpy.parameter_service"] = MagicMock()
+sys.modules["rcl_interfaces.srv"] = MagicMock()
+sys.modules["botocore.config"] = MagicMock()
+sys.modules["boto3"] = MagicMock()
+sys.modules["markov.log_handler.constants"] = MagicMock()
+sys.modules["markov.log_handler.exception_handler"] = MagicMock()
+sys.modules["markov.utils"] = MagicMock()
+sys.modules["markov.constants"] = MagicMock()
 
 from deepracer_node_monitor.aws_utils.s3_utils import S3Utils
 
@@ -33,13 +39,17 @@ from deepracer_node_monitor.aws_utils.s3_utils import S3Utils
 class S3UtilsTest(TestCase):
     def test_get_s3_heartbeat_location_path(self, os_mock):
         os_mock.environ.get.return_value = "JOB_STATUS_S3_LOCATION"
-        self.assertEqual("JOB_STATUS_S3_LOCATION", S3Utils.get_s3_heartbeat_location_path())
+        self.assertEqual(
+            "JOB_STATUS_S3_LOCATION", S3Utils.get_s3_heartbeat_location_path()
+        )
 
     def test_get_s3_job_location_path_empty(self, os_mock):
-        os_mock.environ.get.return_value = ''
+        os_mock.environ.get.return_value = ""
         self.assertEqual("", S3Utils.get_s3_heartbeat_location_path())
 
-    @patch("deepracer_node_monitor.aws_utils.s3_utils.S3Utils.get_s3_heartbeat_location_path")
+    @patch(
+        "deepracer_node_monitor.aws_utils.s3_utils.S3Utils.get_s3_heartbeat_location_path"
+    )
     def test_get_heartbeat_s3_info(self, get_s3_heartbeat_location_path_mock, os_mock):
         get_s3_heartbeat_location_path_mock.return_value = "s3://aws-deepracer-bba2e912-6ef0-4c3c-a072-ce17e254bcf2/node_monitor/job_status.txt"
         bucket = "aws-deepracer-bba2e912-6ef0-4c3c-a072-ce17e254bcf2"

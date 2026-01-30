@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ Image editing class for virtual event only
 """
@@ -20,7 +7,6 @@
 import os
 import datetime
 import logging
-import rospy
 import cv2
 
 from markov.log_handler.logger import Logger
@@ -46,6 +32,7 @@ from markov.boto.s3.constants import (SECTOR_TIME_LOCAL_PATH,
                                       SECTOR_X_FORMAT,
                                       SECTOR_TIME_FORMAT_DICT)
 from markov.boto.s3.utils import get_s3_key
+from markov.world_config import WorldConfig
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -61,10 +48,10 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
             race_type (str): Since this class is reused for all the different race_type
         """
         # race duration in milliseconds
-        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
-        self._world_name = rospy.get_param("WORLD_NAME")
-        self.num_sectors = int(rospy.get_param("NUM_SECTORS", "3"))
-        self.race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
+        self._total_laps = int(WorldConfig.get_param("NUMBER_OF_TRIALS", 0))
+        self._world_name = WorldConfig.get_param("WORLD_NAME")
+        self.num_sectors = int(WorldConfig.get_param("NUM_SECTORS", "3"))
+        self.race_duration = int(WorldConfig.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
         self.racecar_info = racecar_info
         self.race_type = race_type
         racecar_index = get_racecar_idx(racecar_name)

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>h264_encoder_core</name>
+  <version>2.0.3</version>
+  <description>Common base code for ROS2 H264 encoder node</description>
+  <url>http://wiki.ros.org/h264_encoder_core</url>
+
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+  
+  <license>LGPLv2.1</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+
+  <depend>aws_common</depend>
+  <depend>ffmpeg</depend>
+  <depend>libavcodec-dev</depend>
+  <depend>libavformat-dev</depend>
+  <depend>libswscale-dev</depend>
+
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</test_depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>

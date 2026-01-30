@@ -196,11 +196,13 @@ class S3BotoDataStore(DataStore):
         except botocore.exceptions.ClientError:
             log_and_exit("Unable to download checkpoint",
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
+                         SIMAPP_EVENT_ERROR_CODE_500,
+                         name="Checkpoint download")
         except Exception as ex:
             log_and_exit("Exception in downloading checkpoint: {}".format(ex),
                          SIMAPP_S3_DATA_STORE_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
+                         SIMAPP_EVENT_ERROR_CODE_500,
+                         name="Checkpoint download")
 
     def load_from_store(self, expected_checkpoint_number=-1):
         '''download tf model, rl coach .coach_checkpoint, .finished, .ready file from s3

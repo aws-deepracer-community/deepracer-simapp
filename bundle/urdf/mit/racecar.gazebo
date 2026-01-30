@@ -48,10 +48,13 @@
 <!-- Gazebo plugins -->
 
 <gazebo>
-  <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-    <robotNamespace>/$(arg racecar_name)</robotNamespace>
-    <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-    <legacyModeNS>true</legacyModeNS>
+  <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <ros2_control>
+      <parameters>$(find deepracer_simulation_environment)/config/racecar_control.yaml</parameters>
+    </ros2_control>
+    <ros>
+      <namespace>/$(arg racecar_name)</namespace>
+    </ros>
   </plugin>
 </gazebo>
 
@@ -60,6 +63,8 @@
 <xacro:unless value="$(optenv DISABLE_GAZEBO_CAMERA false)">
   <gazebo reference="camera_link">
     <sensor type="camera" name="zed_camera_left_sensor">
+      <visualize>false</visualize>
+      <always_on>true</always_on>
       <update_rate>15.0</update_rate>
       <camera name="zed_camera_left_camera">
         <horizontal_fov>1.13</horizontal_fov>
@@ -73,20 +78,8 @@
           <far>300</far>
         </clip>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>60</updateRate>
-        <cameraName>/camera/zed</cameraName>
-        <imageTopicName>rgb/image_rect_color</imageTopicName>
-        <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
-        <frameName>camera_link</frameName>
-        <hackBaseline>0</hackBaseline><!-- set this to 0.12 for the second camera -->
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!-- Native Gazebo sensor - bridge handled in launch files -->
+      <topic>/$(arg racecar_name)/camera/zed/rgb/image_rect_color</topic>
     </sensor>
   </gazebo>
 </xacro:unless>

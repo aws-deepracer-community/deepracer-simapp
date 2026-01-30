@@ -14,13 +14,17 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-import rospy
 import time
 import threading
+import logging
+from markov.log_handler.logger import Logger
 from markov.cameras.camera_factory import CameraFactory
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
 from markov.defaults import DEFAULT_MAIN_CAMERA, DEFAULT_SUB_CAMERA
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
+from markov.world_config import WorldConfig
+
+logger = Logger(__name__, logging.INFO).get_logger()
 
 is_configure_camera_called = False
 configure_camera_function_lock = threading.Lock()
@@ -38,18 +42,34 @@ def wait_for_model(model_name, relative_entity_name):
         model_name (str): wait model name
         relative_entity_name (str): relative entity name to model name
     """
-    model = GetModelStateTracker.get_instance().get_model_state(model_name,
-                                                                relative_entity_name,
-                                                                blocking=True,
-                                                                auto_sync=False)
-    should_wait_for_model = not model.success
-    while should_wait_for_model:
-        time.sleep(WAIT_TO_PREVENT_SPAM)
+    try:
         model = GetModelStateTracker.get_instance().get_model_state(model_name,
                                                                     relative_entity_name,
-                                                                    blocking=True,
-                                                                    auto_sync=False)
+                                                                    blocking=True)
+    except Exception as e:
+        logger.error("Error getting model state for %s: %s", model_name, e)
+        return
+        
+    should_wait_for_model = not model.success
+    iteration = 0
+    while should_wait_for_model:
+        iteration += 1
+        time.sleep(WAIT_TO_PREVENT_SPAM)
+        
+        try:
+            model = GetModelStateTracker.get_instance().get_model_state(model_name,
+                                                                        relative_entity_name,
+                                                                        blocking=True)
+        except Exception as e:
+            logger.error("Error getting model state in iteration %d: %s", iteration, e)
+            break
+            
         should_wait_for_model = not model.success
+        
+        if iteration > 100:  # Prevent infinite loop
+            logger.warning(f"wait_for_model timed out after {iteration} iterations for {model_name}")
+            break
+    
 
 
 def configure_camera(namespaces=None, is_wait_for_model=True):
@@ -67,24 +87,37 @@ def configure_camera(namespaces=None, is_wait_for_model=True):
         tuple(list(FollowCarCamera), TopCamera): tuple of a list of FollowCarCamera instance and
         a TopCamera instance
     """
+    
+    
     namespaces = namespaces or ["racecar"]
+    
     global is_configure_camera_called
     with configure_camera_function_lock:
+        
         if not is_configure_camera_called:
             is_configure_camera_called = True
-            main_camera_type = rospy.get_param("MAIN_CAMERA", DEFAULT_MAIN_CAMERA)
-            sub_camera_type = rospy.get_param("SUB_CAMERA", DEFAULT_SUB_CAMERA)
+            
+            main_camera_type = WorldConfig.get_param("MAIN_CAMERA", DEFAULT_MAIN_CAMERA)
+            sub_camera_type = WorldConfig.get_param("SUB_CAMERA", DEFAULT_SUB_CAMERA)
+            
             main_cameras = dict()
             for namespace in namespaces:
                 if is_wait_for_model:
                     wait_for_model(model_name=namespace, relative_entity_name="")
+                
+                
+                start_time = time.time()
                 main_cameras[namespace] = CameraFactory.create_instance(camera_type=main_camera_type,
                                                                         model_name="/{}/{}".format(namespace,
                                                                                                    "main_camera"),
                                                                         namespace=namespace)
+                end_time = time.time()
+                
+            start_time = time.time()
             sub_camera = CameraFactory.create_instance(camera_type=sub_camera_type,
                                                        model_name="/{}".format("sub_camera"),
                                                        namespace=namespace)
+            end_time = time.time()
             return main_cameras, sub_camera
         else:
             err_msg = "configure_camera called more than once. configure_camera MUST be called ONLY once!"

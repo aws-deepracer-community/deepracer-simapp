@@ -16,7 +16,7 @@
 
 import logging
 import os
-import rospy
+import rclpy
 from markov import utils
 from markov.gazebo_utils.model_updater import ModelUpdater
 from markov.virtual_event.virtual_event import VirtualEvent
@@ -52,7 +52,8 @@ def main():
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('virtual_event_manager', anonymous=True)
+        rclpy.init(args=None)
+        rclpy.create_node('virtual_event_manager')
         main()
     except Exception as ex:
         log_and_exit("Virtual event worker error: {}".format(ex),

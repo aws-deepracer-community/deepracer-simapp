@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
 
@@ -34,24 +21,24 @@ class GeometryType(Enum):
 
 class GazeboServiceName(Enum):
     """Gazebo Service Names"""
-    GET_MODEL_PROPERTIES = '/gazebo/get_model_properties'
-    GET_LIGHT_NAMES = '/gazebo/get_light_names'
-    GET_VISUAL_NAMES = '/gazebo/get_visual_names'
-    GET_VISUAL = '/gazebo/get_visual'
-    GET_VISUALS = '/gazebo/get_visuals'
-    SET_LIGHT_PROPERTIES = '/gazebo/set_light_properties'
-    SET_VISUAL_COLOR = '/gazebo/set_visual_color'
-    SET_VISUAL_COLORS = '/gazebo/set_visual_colors'
-    SET_VISUAL_TRANSPARENCY = '/gazebo/set_visual_transparency'
-    SET_VISUAL_TRANSPARENCIES = '/gazebo/set_visual_transparencies'
-    SET_VISUAL_VISIBLE = '/gazebo/set_visual_visible'
-    SET_VISUAL_VISIBLES = '/gazebo/set_visual_visibles'
-    SET_VISUAL_POSE = '/gazebo/set_visual_pose'
-    SET_VISUAL_POSES = '/gazebo/set_visual_poses'
-    SET_VISUAL_MESH = '/gazebo/set_visual_mesh'
-    SET_VISUAL_MESHES = '/gazebo/set_visual_meshes'
-    PAUSE_PHYSICS = '/gazebo/pause_physics_dr'
-    UNPAUSE_PHYSICS = '/gazebo/unpause_physics_dr'
+    GET_MODEL_PROPERTIES = '/deepracer/get_model_properties'
+    GET_LIGHT_NAMES = '/deepracer/get_light_names'
+    GET_VISUAL_NAMES = '/deepracer/get_visual_names'
+    GET_VISUAL = '/deepracer/get_visual'
+    GET_VISUALS = '/deepracer/get_visuals'
+    SET_LIGHT_PROPERTIES = '/deepracer/set_light_properties'
+    SET_VISUAL_COLOR = '/deepracer/set_visual_color'
+    SET_VISUAL_COLORS = '/deepracer/set_visual_colors'
+    SET_VISUAL_TRANSPARENCY = '/deepracer/set_visual_transparency'
+    SET_VISUAL_TRANSPARENCIES = '/deepracer/set_visual_transparencies'
+    SET_VISUAL_VISIBLE = '/deepracer/set_visual_visible'
+    SET_VISUAL_VISIBLES = '/deepracer/set_visual_visibles'
+    SET_VISUAL_POSE = '/deepracer/set_visual_pose'
+    SET_VISUAL_POSES = '/deepracer/set_visual_poses'
+    SET_VISUAL_MESH = '/deepracer/set_visual_mesh'
+    SET_VISUAL_MESHES = '/deepracer/set_visual_meshes'
+    PAUSE_PHYSICS = '/deepracer/pause_physics_dr'
+    UNPAUSE_PHYSICS = '/deepracer/unpause_physics_dr'
 
 
 class ModelRandomizerType(Enum):

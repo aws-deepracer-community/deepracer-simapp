@@ -14,7 +14,6 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-import rospy
 
 from rl_coach.base_parameters import TaskParameters
 from rl_coach.core_types import EnvironmentSteps
@@ -35,7 +34,8 @@ from markov.track_geom.constants import (START_POS_OFFSET,
                                          MAX_START_POS_OFFSET)
 from markov.virtual_event.constants import (PAUSE_TIME_BEFORE_START,
                                             LOCAL_MODEL_DIR)
-from std_srvs.srv import EmptyRequest
+from markov.world_config import WorldConfig
+from std_srvs.srv import Empty
 
 
 class VirtualEventGraphManager():
@@ -66,7 +66,7 @@ class VirtualEventGraphManager():
         self._eval_metrics = eval_metrics
         self._run_phase_subject = run_phase_subject
         self._virtual_event_agent_camera_models = virtual_event_agent_camera_models
-        self._start_pos_offset = max(min(float(rospy.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
+        self._start_pos_offset = max(min(float(WorldConfig.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
                                      MIN_START_POS_OFFSET)
         self._setup()
 
@@ -150,7 +150,7 @@ class VirtualEventGraphManager():
         self._current_graph_manager.create_graph(task_parameters=task_parameters,
                                                  stop_physics=self._model_updater.pause_physics_service,
                                                  start_physics=self._model_updater.unpause_physics_service,
-                                                 empty_service_call=EmptyRequest)
+                                                 empty_service_call=Empty.Request)
 
     def _get_agent_list(self):
         """
@@ -170,8 +170,8 @@ class VirtualEventGraphManager():
                         velocity_topic.replace('racecar', profile.racecar_name) for velocity_topic in VELOCITY_TOPICS],
                     ConfigParams.STEERING_LIST.value: [
                         steering_topic.replace('racecar', profile.racecar_name) for steering_topic in STEERING_TOPICS],
-                    ConfigParams.CHANGE_START.value: utils.str2bool(rospy.get_param('CHANGE_START_POSITION', False)),
-                    ConfigParams.ALT_DIR.value: utils.str2bool(rospy.get_param('ALTERNATE_DRIVING_DIRECTION', False)),
+                    ConfigParams.CHANGE_START.value: utils.str2bool(WorldConfig.get_param('CHANGE_START_POSITION', False)),
+                    ConfigParams.ALT_DIR.value: utils.str2bool(WorldConfig.get_param('ALTERNATE_DRIVING_DIRECTION', False)),
                     ConfigParams.MODEL_METADATA.value: profile.model_metadata,
                     ConfigParams.REWARD.value: reward_function,
                     ConfigParams.AGENT_NAME.value: profile.racecar_name,

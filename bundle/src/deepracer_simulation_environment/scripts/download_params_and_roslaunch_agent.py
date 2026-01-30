@@ -1,20 +1,6 @@
 #!/usr/bin/env python3
-
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """script to download yaml param from S3 bucket to local directory and start training/eval ROS launch
 
@@ -28,7 +14,9 @@ import os
 import sys
 import time
 import botocore
-import rospy
+import rclpy
+from rclpy.node import Node
+import re
 
 from enum import Enum
 from markov.utils import test_internet_connection, str2bool
@@ -45,6 +33,8 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_ME
                                       AgentType, YamlKey, ModelMetadataKeys)
 from markov.boto.s3.utils import get_s3_key
 from markov.log_handler.logger import Logger
+from markov.world_config import WorldConfig
+
 
 LOG = Logger(__name__, logging.INFO).get_logger() 
  
@@ -71,7 +61,7 @@ def main():
         
         if s3_endpoint_url is not None:
             logging.info('Endpoint URL {}'.format(s3_endpoint_url))
-            rospy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
+            rclpy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
 
         if AgentType.ROLLOUT.value in launch_name:
             # For rollout, launch_name is "rollout_rl_agent.launch"
@@ -96,6 +86,8 @@ def main():
                              s3_endpoint_url=s3_endpoint_url,
                              local_path=YAML_LOCAL_PATH_FORMAT.format(s3_yaml_name))
         yaml_file.get_yaml_values()
+
+        WorldConfig.get_instance().set_local_yaml_config_file(yaml_file.local_path)
 
         if not agent_type == AgentType.VIRTUAL_EVENT.value:
             # List of racecar names that should include second camera while launching
@@ -126,20 +118,21 @@ def main():
                         Input.DISCRETIZED_SECTOR_LIDAR.value in sensors:
                     racecars_with_lidars.append(racecar_name)
 
-            cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
+            cmd = [''.join(("ros2 launch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
-                            "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras)),
-                            "racecars_with_lidars:={} ".format(','.join(racecars_with_lidars)),
+                            "racecars_with_stereo_cameras:={} ".format(','.join(racecars_with_stereo_cameras) or 'none'),
+                            "racecars_with_lidars:={} ".format(','.join(racecars_with_lidars) or 'none'),
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "body_shell_types:={} ".format(','.join(yaml_file.body_shell_types)),
+                            "car_colors:={} ".format(','.join(yaml_file.car_colors)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={} ".format(yaml_file.is_f1),
                             "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
         else:
-            # Note: SimApp Version is default to 5.0: virtual event only have a single body_shell_types
-            cmd = [''.join(("roslaunch deepracer_simulation_environment {} ".format(launch_name),
+            # Note: SimApp Version is default to 6.0: virtual event only have a single body_shell_types
+            cmd = [''.join(("ros2 launch deepracer_simulation_environment {} ".format(launch_name),
                             "local_yaml_path:={} ".format(yaml_file.local_path),
-                            "simapp_versions:={} ".format('5.0'),                            
+                            "simapp_versions:={} ".format('6.0'),
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
@@ -171,7 +164,7 @@ def write_pids_to_file():
     """ Write pids to files for clean up purpose.
     """
     if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
-        pid_list = get_pid_list(["roslaunch", "rosmaster", "roscore"])  # ros processes
+        pid_list = get_pid_list(["ros2", "gz", "python3"])  # ROS 2 and Gazebo processes
         pid_list.append(str(os.getpid()))
         # Get the ros processes pids to clean up
         with open(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH, "w") as fp:
@@ -195,7 +188,7 @@ def get_pid_list(cmd_names):
     sub_proc.stdout.readline()
     for line in sub_proc.stdout:
         # the separator for splitting is 'variable number of spaces'
-        proc_info = re.split("\s+", line.decode('utf-8'), 10)
+        proc_info = re.split(r"\s+", line.decode('utf-8'), 10)
         pid = proc_info[1]
         cmd = proc_info[10]
         for cmd_name in cmd_names:
@@ -204,8 +197,27 @@ def get_pid_list(cmd_names):
     return pid_list
 
 
+class DownloadParamsNode(Node):
+    def __init__(self):
+        super().__init__('download_params_and_roslaunch_agent_node')
+
+
+def ros2_main(args=None):
+    rclpy.init(args=args)
+    
+    try:
+        node = DownloadParamsNode()
+        # Run the main download and launch logic
+        main()
+        # Keep the node alive
+        rclpy.spin(node)
+    except Exception as ex:
+        LOG.error(f"Exception in download params node: {ex}")
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
 if __name__ == '__main__':
     write_pids_to_file()
-    rospy.init_node('download_params_and_roslaunch_agent_node', anonymous=True)
-    main()
-    rospy.spin()
+    ros2_main()
