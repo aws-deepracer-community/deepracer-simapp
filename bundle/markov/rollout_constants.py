@@ -43,7 +43,7 @@ class BodyShellType(Enum):
     F1_CAR_21 = 'f1_car_21'
 
 
-DEFAULT_COLOR = ColorRGBA(0.0, 0.0, 0.0, 1.0)
+DEFAULT_COLOR = ColorRGBA(r=0.0, g=0.0, b=0.0, a=1.0)
 
 
 class CarColorType(Enum):
@@ -69,23 +69,23 @@ class CarColorType(Enum):
 
 
 COLOR_MAP = {
-    CarColorType.BLACK.value: ColorRGBA(.1, 0.1, 0.1, 1.0),
-    CarColorType.GREY.value: ColorRGBA(0.529, 0.584, 0.588, 1.0),
-    CarColorType.BLUE.value: ColorRGBA(0.266, 0.372, 0.898, 1.0),
-    CarColorType.RED.value: ColorRGBA(0.878, 0.101, 0.145, 1.0),
-    CarColorType.ORANGE.value: ColorRGBA(1.0, 0.627, 0.039, 1.0),
-    CarColorType.WHITE.value: ColorRGBA(1.0, 1.0, 1.0, 1.0),
-    CarColorType.PURPLE.value: ColorRGBA(0.611, 0.164, 0.764, 1.0),
-    CarColorType.F1_CAR_1E73FC.value: ColorRGBA(0.117, 0.450, 0.988, 1.0),
-    CarColorType.F1_CAR_7102BB.value: ColorRGBA(0.443, 0.007, 0.733, 1.0),
-    CarColorType.F1_CAR_CF15FC.value: ColorRGBA(0.811, 0.082, 0.988, 1.0),
-    CarColorType.F1_CAR_EB0000.value: ColorRGBA(0.921, 0.000, 0.000, 1.0),
-    CarColorType.F1_CAR_FF9900.value: ColorRGBA(1.000, 0.600, 0.000, 1.0),
-    CarColorType.F1_CAR_FFFE01.value: ColorRGBA(1.000, 0.996, 0.003, 1.0),
-    CarColorType.F1_CAR_9EFC03.value: ColorRGBA(0.619, 0.988, 0.011, 1.0),
-    CarColorType.F1_CAR_1BD900.value: ColorRGBA(0.105, 0.850, 0.000, 1.0),
-    CarColorType.F1_CAR_73FDF9.value: ColorRGBA(0.450, 0.992, 0.976, 1.0),
-    CarColorType.F1_CAR_000000.value: ColorRGBA(0.000, 0.000, 0.000, 1.0),
-    CarColorType.F1_CAR_BCCACC.value: ColorRGBA(0.737, 0.792, 0.800, 1.0),
-    CarColorType.F1_CAR_FFFFFF.value: ColorRGBA(1.000, 1.000, 1.000, 1.0)
+    CarColorType.BLACK.value: ColorRGBA(r=.1, g=0.1, b=0.1, a=1.0),
+    CarColorType.GREY.value: ColorRGBA(r=0.529, g=0.584, b=0.588, a=1.0),
+    CarColorType.BLUE.value: ColorRGBA(r=0.266, g=0.372, b=0.898, a=1.0),
+    CarColorType.RED.value: ColorRGBA(r=0.878, g=0.101, b=0.145, a=1.0),
+    CarColorType.ORANGE.value: ColorRGBA(r=1.0, g=0.627, b=0.039, a=1.0),
+    CarColorType.WHITE.value: ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0),
+    CarColorType.PURPLE.value: ColorRGBA(r=0.611, g=0.164, b=0.764, a=1.0),
+    CarColorType.F1_CAR_1E73FC.value: ColorRGBA(r=0.117, g=0.450, b=0.988, a=1.0),
+    CarColorType.F1_CAR_7102BB.value: ColorRGBA(r=0.443, g=0.007, b=0.733, a=1.0),
+    CarColorType.F1_CAR_CF15FC.value: ColorRGBA(r=0.811, g=0.082, b=0.988, a=1.0),
+    CarColorType.F1_CAR_EB0000.value: ColorRGBA(r=0.921, g=0.000, b=0.000, a=1.0),
+    CarColorType.F1_CAR_FF9900.value: ColorRGBA(r=1.000, g=0.600, b=0.000, a=1.0),
+    CarColorType.F1_CAR_FFFE01.value: ColorRGBA(r=1.000, g=0.996, b=0.003, a=1.0),
+    CarColorType.F1_CAR_9EFC03.value: ColorRGBA(r=0.619, g=0.988, b=0.011, a=1.0),
+    CarColorType.F1_CAR_1BD900.value: ColorRGBA(r=0.105, g=0.850, b=0.000, a=1.0),
+    CarColorType.F1_CAR_73FDF9.value: ColorRGBA(r=0.450, g=0.992, b=0.976, a=1.0),
+    CarColorType.F1_CAR_000000.value: ColorRGBA(r=0.000, g=0.000, b=0.000, a=1.0),
+    CarColorType.F1_CAR_BCCACC.value: ColorRGBA(r=0.737, g=0.792, b=0.800, a=1.0),
+    CarColorType.F1_CAR_FFFFFF.value: ColorRGBA(r=1.000, g=1.000, b=1.000, a=1.0)
 }

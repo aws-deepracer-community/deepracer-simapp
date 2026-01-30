@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """Image editing class for head to head where there are multiple agents
 """
@@ -20,7 +7,8 @@ import datetime
 from collections import OrderedDict
 import threading
 import logging
-import rospy
+import rclpy
+from rclpy.node import Node
 import cv2
 import numpy as np
 from sensor_msgs.msg import Image as ROSImg
@@ -31,6 +19,7 @@ from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
 from markov.reset.constants import RaceType
 from markov.utils import get_racecar_idx
+from markov.world_config import WorldConfig
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   RACE_TYPE_TO_VIDEO_TEXT_MAPPING, SCALE_RATIO,
@@ -51,13 +40,15 @@ class F1ImageEditing(ImageEditingInterface):
     _leader_percentage_completion = list()
     _leader_elapsed_time = list()
 
-    def __init__(self, racecar_name, racecars_info, race_type):
+    def __init__(self, racecar_name, racecars_info, race_type, node=None):
         """ This class is used for head to head racing where there are more than one agent
         Args:
             racecar_name (str): The agent name with 45degree camera view
             racecars_info (dict): All the agents information
             race_type (str): The type of race. This is used to know if its race type or evaluation
+            node (Node): ROS 2 node for parameter access (optional)
         """
+        self._node = node
         self.racecar_name = racecar_name
         self.racecars_info = racecars_info
         racecar_index = get_racecar_idx(racecar_name)
@@ -71,9 +62,20 @@ class F1ImageEditing(ImageEditingInterface):
         self.formula1_display_wide_12px = utils.get_font('Formula1-Display-Wide', 12)
         self.formula1_display_bold_16px = utils.get_font('Formula1-Display-Bold', 16)
 
-        self.total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
-        self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
-        self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
+        # Parameter access with fallback
+        if self._node is not None:
+            self._node.declare_parameter('NUMBER_OF_TRIALS', 0)
+            self._node.declare_parameter('LEADERBOARD_TYPE', '')
+            self._node.declare_parameter('LEADERBOARD_NAME', '')
+            
+            self.total_laps = int(self._node.get_parameter('NUMBER_OF_TRIALS').get_parameter_value().integer_value)
+            self.is_league_leaderboard = self._node.get_parameter('LEADERBOARD_TYPE').get_parameter_value().string_value == "LEAGUE"
+            self.leaderboard_name = self._node.get_parameter('LEADERBOARD_NAME').get_parameter_value().string_value
+        else:
+            # Fallback to world config
+            self.total_laps = int(WorldConfig.get_param('NUMBER_OF_TRIALS', 0))
+            self.is_league_leaderboard = WorldConfig.get_param('LEADERBOARD_TYPE', '') == "LEAGUE"
+            self.leaderboard_name = WorldConfig.get_param('LEADERBOARD_NAME', '')
 
         # The track image as iconography
         self.track_icongraphy_img = utils.get_track_iconography_image()
@@ -117,7 +119,10 @@ class F1ImageEditing(ImageEditingInterface):
 
         # Top camera information
         top_camera_info = utils.get_top_camera_info()
-        self.edited_topview_pub = rospy.Publisher('/deepracer/topview_stream', ROSImg, queue_size=1)
+        if self._node is not None:
+            self.edited_topview_pub = self._node.create_publisher(ROSImg, '/deepracer/topview_stream', 10)
+        else:
+            self.edited_topview_pub = None  # Fallback when no node available
         self.top_view_graphics = TopViewGraphics(top_camera_info.horizontal_fov, top_camera_info.padding_pct,
                                                  top_camera_info.image_width, top_camera_info.image_height,
                                                  racecars_info, race_type)

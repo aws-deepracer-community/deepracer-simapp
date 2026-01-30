@@ -1,16 +1,6 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /* 
@@ -39,13 +29,46 @@
 VOID onConnectionStateChange(UINT64 customData, RTC_PEER_CONNECTION_STATE newState)
 {
     PKvsWebRtcStreamingSession p_kvs_webrtc_streaming_session = (PKvsWebRtcStreamingSession) customData;
+    PKvsWebRtcConfiguration p_kvs_webrtc_configuration = p_kvs_webrtc_streaming_session->pKvsWebRtcConfiguration;
     AWS_LOGSTREAM_INFO(__func__, "New connection state " << newState);
 
     if (newState == RTC_PEER_CONNECTION_STATE_FAILED ||
         newState == RTC_PEER_CONNECTION_STATE_CLOSED ||
         newState == RTC_PEER_CONNECTION_STATE_DISCONNECTED) {
         ATOMIC_STORE_BOOL(&p_kvs_webrtc_streaming_session->terminateFlag, TRUE);
-        CVAR_BROADCAST(p_kvs_webrtc_streaming_session->pKvsWebRtcConfiguration->cvar);
+        
+        // Clean up the streaming session directly
+        MUTEX_LOCK(p_kvs_webrtc_configuration->configurationObjLock);
+        
+        // Find the streaming session in the list
+        for (UINT32 i = 0; i < p_kvs_webrtc_configuration->streamingSessionCount; ++i) {
+            if (p_kvs_webrtc_configuration->streamingSessionList[i] == p_kvs_webrtc_streaming_session) {
+                ATOMIC_STORE_BOOL(&p_kvs_webrtc_configuration->updatingStreamingSessionList, TRUE);
+                
+                AWS_LOGSTREAM_INFO(__func__, "Ending streaming session for peer " << p_kvs_webrtc_streaming_session->peerId);
+                
+                // Wait for any threads reading the list to finish
+                while (ATOMIC_LOAD(&p_kvs_webrtc_configuration->streamingSessionListReadingThreadCount) != 0) {
+                    // busy loop until all media thread stopped reading stream session list
+                    THREAD_SLEEP(5 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
+                }
+                
+                // Swap with last element and decrement count
+                p_kvs_webrtc_configuration->streamingSessionCount--;
+                p_kvs_webrtc_configuration->streamingSessionList[i] = 
+                    p_kvs_webrtc_configuration->streamingSessionList[p_kvs_webrtc_configuration->streamingSessionCount];
+                
+                ATOMIC_STORE_BOOL(&p_kvs_webrtc_configuration->updatingStreamingSessionList, FALSE);
+                
+                // Don't free the session here as we're still in its callback
+                break;
+            }
+        }
+        
+        MUTEX_UNLOCK(p_kvs_webrtc_configuration->configurationObjLock);
+        
+        // Signal any waiting threads
+        CVAR_BROADCAST(p_kvs_webrtc_configuration->cvar);
     }
 }
 
@@ -682,65 +705,61 @@ CleanUp:
     return retStatus;
 }
 
-STATUS sessionCleanupWait(PKvsWebRtcConfiguration pKvsWebRtcConfiguration)
+
+// Function to check and recreate signaling client if needed
+STATUS checkAndRecreateSignalingClient(PKvsWebRtcConfiguration pKvsWebRtcConfiguration)
+{
+    STATUS retStatus = STATUS_SUCCESS;
+    SIGNALING_CLIENT_STATE signalingClientState;
+
+    CHK(pKvsWebRtcConfiguration != NULL, STATUS_NULL_ARG);
+
+    // Check if we need to re-create the signaling client on-the-fly
+    if (ATOMIC_LOAD_BOOL(&pKvsWebRtcConfiguration->recreateSignalingClient) &&
+        STATUS_SUCCEEDED(freeSignalingClient(&pKvsWebRtcConfiguration->signalingClientHandle)) &&
+        STATUS_SUCCEEDED(createSignalingClientSync(&pKvsWebRtcConfiguration->clientInfo, &pKvsWebRtcConfiguration->channelInfo,
+                                                   &pKvsWebRtcConfiguration->signalingClientCallbacks, pKvsWebRtcConfiguration->pCredentialProvider,
+                                                   &pKvsWebRtcConfiguration->signalingClientHandle))) {
+        // Re-set the variable again
+        ATOMIC_STORE_BOOL(&pKvsWebRtcConfiguration->recreateSignalingClient, FALSE);
+    }
+
+    // Check the signaling client state and connect if needed
+    if (IS_VALID_SIGNALING_CLIENT_HANDLE(pKvsWebRtcConfiguration->signalingClientHandle)) {
+        CHK_STATUS(signalingClientGetCurrentState(pKvsWebRtcConfiguration->signalingClientHandle, &signalingClientState));
+        if (signalingClientState == SIGNALING_CLIENT_STATE_READY) {
+            UNUSED_PARAM(signalingClientConnectSync(pKvsWebRtcConfiguration->signalingClientHandle));
+        }
+    }
+
+CleanUp:
+    return retStatus;
+}
+
+// Function to clean up terminated sessions
+STATUS cleanupTerminatedSessions(PKvsWebRtcConfiguration pKvsWebRtcConfiguration)
 {
     STATUS retStatus = STATUS_SUCCESS;
     PKvsWebRtcStreamingSession pKvsWebRtcStreamingSession = NULL;
-    UINT32 i;
     BOOL locked = FALSE;
-    SIGNALING_CLIENT_STATE signalingClientState;
 
     CHK(pKvsWebRtcConfiguration != NULL, STATUS_NULL_ARG);
 
     MUTEX_LOCK(pKvsWebRtcConfiguration->configurationObjLock);
     locked = TRUE;
-    while (!ATOMIC_LOAD_BOOL(&pKvsWebRtcConfiguration->interrupted)) {
-        // scan and cleanup terminated streaming session
-        for (UINT32 i = 0; i < pKvsWebRtcConfiguration->streamingSessionCount; ++i) {
-            if (ATOMIC_LOAD_BOOL(&pKvsWebRtcConfiguration->streamingSessionList[i]->terminateFlag)) {
-                pKvsWebRtcStreamingSession = pKvsWebRtcConfiguration->streamingSessionList[i];
-                ATOMIC_STORE_BOOL(&pKvsWebRtcConfiguration->updatingStreamingSessionList, TRUE);
-                AWS_LOGSTREAM_INFO(__func__, "Ending streaming session for peer " << pKvsWebRtcStreamingSession->peerId);
-                while (ATOMIC_LOAD(&pKvsWebRtcConfiguration->streamingSessionListReadingThreadCount) != 0) {
-                    // busy loop until all media thread stopped reading stream session list
-                    THREAD_SLEEP(5 * HUNDREDS_OF_NANOS_IN_A_MILLISECOND);
-                }
-                // swap with last element and decrement count
-                pKvsWebRtcConfiguration->streamingSessionCount--;
-                pKvsWebRtcConfiguration->streamingSessionList[i] = pKvsWebRtcConfiguration->streamingSessionList[pKvsWebRtcConfiguration->streamingSessionCount];
-                ATOMIC_STORE_BOOL(&pKvsWebRtcConfiguration->updatingStreamingSessionList, FALSE);
-                CHK_STATUS(freeKvsWebRtcStreamingSession(&pKvsWebRtcStreamingSession));
-            }
-        }
-        // periodically wake up and clean up terminated streaming session
-            CVAR_WAIT(pKvsWebRtcConfiguration->cvar, pKvsWebRtcConfiguration->configurationObjLock, 5 * HUNDREDS_OF_NANOS_IN_A_SECOND);
-            // Check if we need to re-create the signaling client on-the-fly
-            if (ATOMIC_LOAD_BOOL(&pKvsWebRtcConfiguration->recreateSignalingClient) &&
-                STATUS_SUCCEEDED(freeSignalingClient(&pKvsWebRtcConfiguration->signalingClientHandle)) &&
-                STATUS_SUCCEEDED(createSignalingClientSync(&pKvsWebRtcConfiguration->clientInfo, &pKvsWebRtcConfiguration->channelInfo,
-                                                           &pKvsWebRtcConfiguration->signalingClientCallbacks, pKvsWebRtcConfiguration->pCredentialProvider,
-                                                           &pKvsWebRtcConfiguration->signalingClientHandle))) {
-                // Re-set the variable again
-                ATOMIC_STORE_BOOL(&pKvsWebRtcConfiguration->recreateSignalingClient, FALSE);
-            }
 
-            // Check the signaling client state and connect if needed
-            if (IS_VALID_SIGNALING_CLIENT_HANDLE(pKvsWebRtcConfiguration->signalingClientHandle)) {
-                CHK_STATUS(signalingClientGetCurrentState(pKvsWebRtcConfiguration->signalingClientHandle, &signalingClientState));
-                if (signalingClientState == SIGNALING_CLIENT_STATE_READY) {
-                    UNUSED_PARAM(signalingClientConnectSync(pKvsWebRtcConfiguration->signalingClientHandle));
-                }
-            }
+    // scan and cleanup terminated streaming session
+    for (UINT32 i = 0; i < pKvsWebRtcConfiguration->streamingSessionCount; ++i) {
+        if (ATOMIC_LOAD_BOOL(&pKvsWebRtcConfiguration->streamingSessionList[i]->terminateFlag)) {
+            pKvsWebRtcStreamingSession = pKvsWebRtcConfiguration->streamingSessionList[i];
+            CHK_STATUS(freeKvsWebRtcStreamingSession(&pKvsWebRtcStreamingSession));
+        }
     }
 
 CleanUp:
-
-    CHK_LOG_ERR(retStatus);
-
     if (locked) {
         MUTEX_UNLOCK(pKvsWebRtcConfiguration->configurationObjLock);
     }
 
-    LEAVES();
     return retStatus;
 }

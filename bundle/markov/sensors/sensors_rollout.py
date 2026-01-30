@@ -16,10 +16,12 @@
 
 '''This module contains the available sensors for the sim app'''
 import logging
-import rospy
+import time
 import numpy as np
+
 from sensor_msgs.msg import Image as sensor_image
 from sensor_msgs.msg import LaserScan
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from PIL import Image
 from markov.sensors.utils import get_observation_space, get_front_camera_embedders, \
                                  get_left_camera_embedders, get_stereo_camera_embedders, \
@@ -31,11 +33,19 @@ from markov.log_handler.deepracer_exceptions import GenericRolloutException, Gen
 from markov import utils
 from markov.log_handler.logger import Logger
 from markov.log_handler.constants import SIMAPP_SIMULATION_WORKER_EXCEPTION
+from markov.rclpy_constants import SENSOR_ROS2_NODE_NAME
                                     
 
 LOGGER = Logger(__name__, logging.INFO).get_logger()
 
-class SensorFactory(object):
+# Common QoS profile for all sensor subscriptions
+SENSOR_QOS_PROFILE = QoSProfile(
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=10
+)
+
+class SensorFactory:
     '''This class implements a sensot factory and is used to create sensors per
        agent.
     '''
@@ -46,12 +56,17 @@ class SensorFactory(object):
             kwargs - Meta data, usually containing the topics to subscribe to, the
                      concrete sensor classes are responsible for checking the topics.
         '''
+        
         if sensor_type == Input.CAMERA.value:
             return Camera(racecar_name)
         elif sensor_type == Input.LEFT_CAMERA.value:
             return LeftCamera(racecar_name)
         elif sensor_type == Input.STEREO.value:
-            return DualCamera(racecar_name)
+            try:
+                dual_camera = DualCamera(racecar_name)
+                return dual_camera
+            except Exception as ex:
+                raise
         elif sensor_type == Input.LIDAR.value:
             return Lidar(racecar_name)
         elif sensor_type == Input.SECTOR_LIDAR.value:
@@ -63,7 +78,52 @@ class SensorFactory(object):
         else:
             raise GenericRolloutException("Unknown sensor")
 
-class Camera(SensorInterface):
+
+class SensorSubscriber:
+    """Base class for ROS2 sensor subscribers that uses the existing markov_scripts_node"""
+    
+    def __init__(self):
+        """Initialize the sensor subscriber - no separate node creation needed"""
+        # Subscribe to /clock topic to ensure proper timing synchronization
+        try:
+            from rosgraph_msgs.msg import Clock
+            
+            node = self.getNode()
+            if node:
+                self.clock_subscription = node.create_subscription(
+                    Clock,
+                    '/clock',
+                    self._clock_callback,
+                    10
+                )
+        except Exception as e:
+            LOGGER.error(f"Error in sensor initialization: {e}")
+    
+    def _clock_callback(self, msg):
+        """Callback for /clock topic - helps with timing synchronization"""
+        pass
+    
+    def getNode(self):
+        """Get the existing markov_scripts_node instead of creating a separate node"""
+        try:
+            import rclpy
+            
+            from markov.rclpy_wrappers import ROS2NodeManager
+            
+            # Use a global singleton to ensure we get the same instance
+            if not hasattr(SensorSubscriber, '_node_manager') or SensorSubscriber._node_manager is None:
+                SensorSubscriber._node_manager = ROS2NodeManager.get_instance(SENSOR_ROS2_NODE_NAME)
+            else:
+                LOGGER.debug("Node manager already exists")
+            
+            node = SensorSubscriber._node_manager.node
+            
+            return node
+        except Exception as ex:
+            raise GenericRolloutException("Failed to get ROS2 node: {}".format(ex))
+
+
+class Camera(SensorInterface, SensorSubscriber):
     '''Single camera sensor'''
     def __init__(self, racecar_name,  timeout=120.0):
         """Camera sensor constructor
@@ -74,8 +134,24 @@ class Camera(SensorInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(Camera, self).__init__()
         self.image_buffer = utils.DoubleBuffer()
-        rospy.Subscriber('/{}/camera/zed/rgb/image_rect_color'.format(racecar_name), sensor_image, self._camera_cb_)
+        
+        camera_topic = f'/{racecar_name}/camera/zed/rgb/image_rect_color'
+        
+        # Add debugging and error handling for subscription creation
+        try:
+            
+            self.subscription = self.getNode().create_subscription(
+                sensor_image, 
+                camera_topic, 
+                self._camera_cb_, 
+                SENSOR_QOS_PROFILE
+            )
+            
+        except Exception as ex:
+            raise GenericRolloutException("Failed to create camera subscription: {}".format(ex))
+            
         self.raw_data = None
         self.sensor_type = Input.CAMERA.value
         self.timeout = timeout
@@ -90,9 +166,9 @@ class Camera(SensorInterface):
 
     def get_state(self, block=True):
         try:
-            # Make sure the first image is the starting image
             image_data = self.image_buffer.get(block=block, timeout=self.timeout)
-            # Read the image and resize to get the state
+            if image_data is None:
+                raise GenericRolloutException("Camera image_data is None - camera not available")
             image = Image.frombytes('RGB', (image_data.width, image_data.height),
                                     image_data.data, 'raw', 'RGB', 0, 1)
             image = image.resize(TRAINING_IMAGE_SIZE, resample=2)
@@ -123,7 +199,7 @@ class Camera(SensorInterface):
         except Exception as ex:
             LOGGER.info("Unable to retrieve frame: %s", ex)
 
-class Observation(SensorInterface):
+class Observation(SensorInterface, SensorSubscriber):
     '''Single camera sensor that is compatible with simapp v1'''
     def __init__(self, racecar_name, timeout=120.0):
         """Observation sensor constructor
@@ -134,8 +210,10 @@ class Observation(SensorInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(Observation, self).__init__()
         self.image_buffer = utils.DoubleBuffer()
-        rospy.Subscriber('/{}/camera/zed/rgb/image_rect_color'.format(racecar_name), sensor_image, self._camera_cb_)
+        self.getNode().create_subscription(sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_, 
+                                          SENSOR_QOS_PROFILE)
         self.sensor_type = Input.OBSERVATION.value
         self.raw_data = None
         self.timeout = timeout
@@ -152,6 +230,9 @@ class Observation(SensorInterface):
         try:
             # Make sure the first image is the starting image
             image_data = self.image_buffer.get(block=block, timeout=self.timeout)
+            # Check if image_data is None
+            if image_data is None:
+                raise GenericRolloutException("Observation image_data is None - camera not available")
             # Read the image and resize to get the state
             image = Image.frombytes('RGB', (image_data.width, image_data.height),
                                     image_data.data, 'raw', 'RGB', 0, 1)
@@ -183,7 +264,7 @@ class Observation(SensorInterface):
         except Exception as ex:
             LOGGER.info("Unable to retrieve frame: %s", ex)
 
-class LeftCamera(SensorInterface):
+class LeftCamera(SensorInterface, SensorSubscriber):
     '''This class is specific to left camera's only, it used the same topic as
        the camera class but has a different observation space. If this changes in
        the future this class should be updated.
@@ -197,8 +278,10 @@ class LeftCamera(SensorInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(LeftCamera, self).__init__()
         self.image_buffer = utils.DoubleBuffer()
-        rospy.Subscriber('/{}/camera/zed/rgb/image_rect_color'.format(racecar_name), sensor_image, self._camera_cb_)
+        self.getNode().create_subscription(sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_, 
+                                          SENSOR_QOS_PROFILE)
         self.sensor_type = Input.LEFT_CAMERA.value
         self.raw_data = None
         self.timeout = timeout
@@ -215,6 +298,9 @@ class LeftCamera(SensorInterface):
         try:
             # Make sure the first image is the starting image
             image_data = self.image_buffer.get(block=block, timeout=self.timeout)
+            # Check if image_data is None
+            if image_data is None:
+                raise GenericRolloutException("LeftCamera image_data is None - camera not available")
             # Read the image and resize to get the state
             image = Image.frombytes('RGB', (image_data.width, image_data.height),
                                     image_data.data, 'raw', 'RGB', 0, 1)
@@ -246,7 +332,7 @@ class LeftCamera(SensorInterface):
         except Exception as ex:
             LOGGER.info("Unable to retrieve frame: %s", ex)
 
-class DualCamera(SensorInterface):
+class DualCamera(SensorInterface, SensorSubscriber):
     '''This class handles the data for dual cameras'''
     def __init__(self, racecar_name, timeout=120.0):
         """DualCamera sensor constructor
@@ -257,18 +343,26 @@ class DualCamera(SensorInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(DualCamera, self).__init__()
+
         # Queue used to maintain image consumption synchronicity
         self.image_buffer_left = utils.DoubleBuffer()
         self.image_buffer_right = utils.DoubleBuffer()
+
         # Set up the subscribers
-        rospy.Subscriber('/{}/camera/zed/rgb/image_rect_color'.format(racecar_name),
-                         sensor_image,
-                         self._left_camera_cb_)
-        rospy.Subscriber('/{}/camera/zed_right/rgb/image_rect_color_right'.format(racecar_name),
-                         sensor_image,
-                         self._right_camera_cb_)
+        left_topic = f'/{racecar_name}/camera/zed/rgb/image_rect_color'
+        right_topic = f'/{racecar_name}/camera/zed_right/rgb/image_rect_color_right'
+        
+        left_sub = self.getNode().create_subscription(sensor_image, left_topic, self._left_camera_cb_, 
+                                                     SENSOR_QOS_PROFILE)
+        right_sub = self.getNode().create_subscription(sensor_image, right_topic, self._right_camera_cb_, 
+                                                      SENSOR_QOS_PROFILE)
+        
         self.sensor_type = Input.STEREO.value
         self.timeout = timeout
+        self.topics_ready = False
+        self.left_topic = left_topic
+        self.right_topic = right_topic
 
     def get_observation_space(self):
         try:
@@ -278,23 +372,78 @@ class DualCamera(SensorInterface):
         except Exception as ex:
             raise GenericRolloutException('{}'.format(ex))
 
+    def _wait_for_topics(self, max_wait_time=90.0):
+        """Wait for camera topics to become available before trying to get images"""
+        
+        if self.topics_ready:
+            return True
+            
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait_time:
+            # Get list of available topics
+            topic_names_and_types = self.getNode().get_topic_names_and_types()
+            available_topics = [name for name, _ in topic_names_and_types]
+            
+            # Check if both camera topics are available
+            left_available = self.left_topic in available_topics
+            right_available = self.right_topic in available_topics
+            
+            if left_available and right_available:
+                self.topics_ready = True
+                return True
+                
+            # Wait a bit before checking again
+            time.sleep(1.0)
+            
+        return False
+
     def get_state(self, block=True):
-        try:
-            image_data = self.image_buffer_left.get(block=block, timeout=self.timeout)
-            left_img = Image.frombytes('RGB', (image_data.width, image_data.height),
-                                       image_data.data, 'raw', 'RGB', 0, 1)
-            left_img = left_img.resize(TRAINING_IMAGE_SIZE, resample=2).convert('L')
-
-            image_data = self.image_buffer_right.get(block=block, timeout=self.timeout)
-            right_img = Image.frombytes('RGB', (image_data.width, image_data.height),
-                                        image_data.data, 'raw', 'RGB', 0, 1)
-            right_img = right_img.resize(TRAINING_IMAGE_SIZE, resample=2).convert('L')
-
-            return {Input.STEREO.value: np.array(np.stack((left_img, right_img), axis=2))}
-        except utils.DoubleBuffer.Empty:
+        
+        # Wait for camera topics to become available first
+        if not self._wait_for_topics():
             return {}
+        
+        left_img = None
+        right_img = None
+        
+        # Single attempt - buffer timeout handles waiting
+        try:
+            left_image_data = self.image_buffer_left.get(block=block, timeout=self.timeout)
+            if left_image_data is not None:
+                left_img = Image.frombytes('RGB', (left_image_data.width, left_image_data.height),
+                                           left_image_data.data, 'raw', 'RGB', 0, 1)
+                left_img = left_img.resize(TRAINING_IMAGE_SIZE, resample=2).convert('L')
+        except utils.DoubleBuffer.Empty:
+            pass
         except Exception as ex:
-            raise GenericRolloutException("Unable to set state: {}".format(ex))
+            LOGGER.exception("Error getting left camera image: %s", ex)
+
+        try:
+            right_image_data = self.image_buffer_right.get(block=block, timeout=self.timeout)
+            if right_image_data is not None:
+                right_img = Image.frombytes('RGB', (right_image_data.width, right_image_data.height),
+                                            right_image_data.data, 'raw', 'RGB', 0, 1)
+                right_img = right_img.resize(TRAINING_IMAGE_SIZE, resample=2).convert('L')
+        except utils.DoubleBuffer.Empty:
+            pass
+        except Exception as ex:
+            LOGGER.exception("Error getting right camera image: %s", ex)
+
+        # Check what we got
+        if left_img is None and right_img is None:
+            return {}
+        elif left_img is None:
+            return {}
+        elif right_img is None:
+            return {}
+        else:
+            # Both cameras OK
+            try:
+                result = {Input.STEREO.value: np.array(np.stack((left_img, right_img), axis=2))}
+                return result
+            except Exception as ex:
+                return {}
 
     def reset(self):
         self.image_buffer_left.clear()
@@ -315,7 +464,7 @@ class DualCamera(SensorInterface):
         try:
             self.image_buffer_left.put(data)
         except Exception as ex:
-            LOGGER.info("Unable to retrieve frame: %s", ex)
+            LOGGER.error("Error in left camera callback: %s", ex)
 
     def _right_camera_cb_(self, data):
         ''' Callback for the right camera, this is triggered by ROS
@@ -324,10 +473,10 @@ class DualCamera(SensorInterface):
         try:
             self.image_buffer_right.put(data)
         except Exception as ex:
-            LOGGER.info("Unable to retrieve frame: %s", ex)
+            LOGGER.error("Error in right camera callback: %s", ex)
 
 
-class Lidar(LidarInterface):
+class Lidar(LidarInterface, SensorSubscriber):
     '''This class handles the data collection for lidar'''
     def __init__(self, racecar_name, timeout=120.0):
         """Lidar sensor constructor
@@ -338,8 +487,11 @@ class Lidar(LidarInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(Lidar, self).__init__()
+
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        rospy.Subscriber('/{}/scan'.format(racecar_name), LaserScan, self._scan_cb)
+        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
+                                          SENSOR_QOS_PROFILE)
         self.sensor_type = Input.LIDAR.value
         self.timeout = timeout
 
@@ -386,7 +538,7 @@ class Lidar(LidarInterface):
             LOGGER.info("Unable to retrieve state: %s", ex)
 
 
-class SectorLidar(LidarInterface):
+class SectorLidar(LidarInterface, SensorSubscriber):
     '''This class handles the data collection for sector lidar'''
     def __init__(self, racecar_name, timeout=120.0):
         """SectorLidar sensor constructor
@@ -397,8 +549,12 @@ class SectorLidar(LidarInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(SectorLidar, self).__init__()
+
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        rospy.Subscriber('/{}/scan'.format(racecar_name), LaserScan, self._scan_cb)
+        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
+                                          SENSOR_QOS_PROFILE)
+
         self.sensor_type = Input.SECTOR_LIDAR.value
         self.timeout = timeout
 
@@ -442,9 +598,9 @@ class SectorLidar(LidarInterface):
         try:
             self.data_buffer.put(np.array(data.ranges))
         except Exception as ex:
-            LOGGER.info("Unable to retrieve state: %s", ex)
+            LOGGER.error("[LIDAR DEBUG] SectorLidar._scan_cb ERROR: %s", ex)
 
-class DiscretizedSectorLidar(LidarInterface):
+class DiscretizedSectorLidar(LidarInterface, SensorSubscriber):
     '''This class handles the data collection for sector lidar'''
     def __init__(self, racecar_name, config, timeout=120.0):
         """DiscretizedSectorLidar sensor constructor
@@ -455,8 +611,11 @@ class DiscretizedSectorLidar(LidarInterface):
             The reason why using 120.0 as default value for sensor is
             because virtual event dynamic spawning for sensor can take up to 60.0 seconds to be alive.
         """
+        super(DiscretizedSectorLidar, self).__init__()
+
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        rospy.Subscriber('/{}/scan'.format(racecar_name), LaserScan, self._scan_cb)
+        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
+                                          SENSOR_QOS_PROFILE)
         self.sensor_type = Input.DISCRETIZED_SECTOR_LIDAR.value
         self.model_metadata = config["model_metadata"]
         self.timeout = timeout

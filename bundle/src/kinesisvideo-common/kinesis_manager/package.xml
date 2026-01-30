@@ -11,7 +11,7 @@
   <license>Apache 2.0</license>
 
   <buildtool_depend>cmake</buildtool_depend>
-  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
   <buildtool_depend>pkg-config</buildtool_depend>
 
   <depend>aws_common</depend>
@@ -20,10 +20,8 @@
   <depend>libssl-dev</depend>
   <depend>log4cplus</depend>
 
-<!--   <test_depend condition="$ROS_VERSION == 1">gtest</test_depend>
-  <test_depend condition="$ROS_VERSION == 1">google-mock</test_depend>
   <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>
-  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</test_depend> -->
+  <test_depend condition="$ROS_VERSION == 2">ament_cmake_gmock</test_depend>
 
   <export>
     <build_type>cmake</build_type>

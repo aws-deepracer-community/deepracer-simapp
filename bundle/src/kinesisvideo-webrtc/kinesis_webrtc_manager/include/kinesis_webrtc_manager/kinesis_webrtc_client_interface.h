@@ -1,16 +1,6 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 #include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h>
@@ -27,6 +17,7 @@ namespace Kinesis {
 class KinesisWebRtcClientInterface
 {
 public:
+  virtual ~KinesisWebRtcClientInterface() = default;
   /**
    * @brief Creates a Signaling client and returns a handle to it
    *
@@ -126,7 +117,6 @@ public:
   virtual STATUS WriteFrame(PRtcRtpTransceiver p_rtc_rtp_transceiver, PFrame p_frame) const = 0;
 protected:
   KinesisWebRtcClientInterface() = default;
-  virtual ~KinesisWebRtcClientInterface() = default;
 };
 
 class KinesisWebRtcClientImpl : public  KinesisWebRtcClientInterface

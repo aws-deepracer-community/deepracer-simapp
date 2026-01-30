@@ -1,21 +1,7 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 import numpy as np
-import rospy
 
 from collections import OrderedDict
 from threading import RLock
@@ -27,10 +13,13 @@ class VirtualEventVideoMetrics():
     """
     VirtualEventVideoMetrics class
     """
-    def __init__(self):
+    def __init__(self, node=None):
         """
         VirtualEventVideoMetrics constructor
+        Args:
+            node (Node): ROS 2 node for parameter access (optional)
         """
+        self._node = node
         self._lock = RLock()
         self.reset()
 
@@ -98,7 +87,14 @@ class VirtualEventVideoMetrics():
             self._racer_progresses = OrderedDict()
             self._lap = 0
             self._sim_time = 0.0
-            self._race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
+            if self._node is not None:
+                # ROS 2 approach
+                self._node.declare_parameter('RACE_DURATION', DEFAULT_RACE_DURATION)
+                self._race_duration = int(self._node.get_parameter('RACE_DURATION').get_parameter_value().integer_value) * 1000
+            else:
+                # Fallback approach
+                import os
+                self._race_duration = int(os.environ.get('RACE_DURATION', DEFAULT_RACE_DURATION)) * 1000
 
     def _calculate_sim_time(self):
         """

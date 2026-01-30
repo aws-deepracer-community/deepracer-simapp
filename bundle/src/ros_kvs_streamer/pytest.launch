@@ -1,4 +1,0 @@
-<launch>
-  <param name="test_module" value="."/>
-  <test test-name="ros_kvs_streamer" pkg="ros_kvs_streamer" type="pytest_runner.py" />
-</launch>

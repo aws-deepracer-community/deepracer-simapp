@@ -16,10 +16,14 @@
 
 '''Utility methods for the agent’s module'''
 from typing import List, Any
+import logging
 from markov.architecture.constants import EmbedderType, ActivationFunctions, NeuralNetwork, Input
 from markov.common import ObserverInterface
 from markov.architecture.custom_architectures import DEFAULT_MIDDLEWARE, VGG_MIDDLEWARE
 from markov.sensors.composite_sensor import CompositeSensor
+from markov.log_handler.logger import Logger
+
+logger = Logger(__name__, logging.INFO).get_logger()
 
 
 def construct_sensor(racecar_name, observation_list, factory, model_metadata_info=None):
@@ -36,7 +40,12 @@ def construct_sensor(racecar_name, observation_list, factory, model_metadata_inf
     if Input.LEFT_CAMERA.value in observation_list:
         sensor.add_sensor(factory.create_sensor(racecar_name, Input.LEFT_CAMERA.value, {}))
     if Input.STEREO.value in observation_list:
-        sensor.add_sensor(factory.create_sensor(racecar_name, Input.STEREO.value, {}))
+        try:
+            stereo_sensor = factory.create_sensor(racecar_name, Input.STEREO.value, {})
+            sensor.add_sensor(stereo_sensor)
+        except Exception as e:
+            logger.error("Error creating stereo sensor: %s", e)
+            raise
     if Input.CAMERA.value in observation_list:
         sensor.add_sensor(factory.create_sensor(racecar_name, Input.CAMERA.value, {}))
     if Input.LIDAR.value in observation_list:
@@ -48,6 +57,7 @@ def construct_sensor(racecar_name, observation_list, factory, model_metadata_inf
                                                 {"model_metadata": model_metadata_info}))
     if Input.OBSERVATION.value in observation_list:
         sensor.add_sensor(factory.create_sensor(racecar_name, Input.OBSERVATION.value, {}))
+    
     return sensor
 
 def get_network_settings(sensor, network):

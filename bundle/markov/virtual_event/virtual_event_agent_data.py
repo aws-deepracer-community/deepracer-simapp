@@ -18,7 +18,6 @@ import os
 import io
 import json
 import logging
-import rospy
 import botocore
 import tensorflow as tf
 
@@ -49,6 +48,7 @@ from markov.virtual_event.utils import (validate_json_input,
 from markov.virtual_event.virtual_event_json_schema import (
     SINGLE_RACER_INFO_JSON_SCHEMA,
     LIST_OF_RACERS_INFO_JSON_SCHEMA)
+from markov.world_config import WorldConfig
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -61,9 +61,9 @@ class VirtualEventAgentData():
         """
         VirtualEventAgentData constructor
         """
-        self._kvs_webrtc_names = rospy.get_param("KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME")
-        self._queue_url = str(rospy.get_param("SQS_QUEUE_URL", "sqs_queue_url"))
-        self._region = rospy.get_param("AWS_REGION", "us-east-1")
+        self._kvs_webrtc_names = WorldConfig.get_param("KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME")
+        self._queue_url = str(WorldConfig.get_param("SQS_QUEUE_URL", "sqs_queue_url"))
+        self._region = WorldConfig.get_param("AWS_REGION", "us-east-1")
         self._s3_client = S3Client(region_name=self._region)
         self._num_of_agents = 1
         if isinstance(self._kvs_webrtc_names, list):

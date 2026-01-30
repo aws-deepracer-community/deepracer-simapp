@@ -15,7 +15,7 @@
 #################################################################################
 
 ''' Iteration data that exposes all the S3 Upload job parameter as property'''
-class IterationData(object):
+class IterationData():
     """Iteration data that exposes all the S3 Upload job parameter as property
     """
     def __init__(self, job_name, s3_bucket, s3_prefix, aws_region, local_file):

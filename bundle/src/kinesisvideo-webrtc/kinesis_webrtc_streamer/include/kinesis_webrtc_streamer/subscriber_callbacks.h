@@ -1,49 +1,32 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 #include <string>
+#include <memory>
 
-#include <kinesis_video_msgs/KinesisVideoFrame.h>
+#include <kinesis_video_msgs/msg/kinesis_video_frame.hpp>
 #include <kinesis_webrtc_manager/kinesis_webrtc_manager.h>
+#include <std_msgs/msg/string.hpp>
 
 namespace Aws {
 namespace Kinesis {
 
 /**
- * ROS-specific callback that handles a kinesis_video_msgs::KinesisVideoFrame input and uses the
+ * ROS-specific callback that handles a kinesis_video_msgs::msg::KinesisVideoFrame input and uses the
  * stream manager to perform a PutFrame operation.
  * @param stream_manager
  * @param frame_msg
  */
-
-/*
 void KinesisVideoFrameTransportCallback(
   const KinesisWebRtcManagerInterface & webrtc_manager,
   const std::string & signaling_channel_name,
-  const kinesis_video_msgs::msg::KinesisVideoFrame::SharedPtr frame_msg
-);
-*/
-
-void KinesisVideoFrameTransportCallback(
-  const KinesisWebRtcManagerInterface & webrtc_manager,
-  const std::string & signaling_channel_name,
-  const kinesis_video_msgs::KinesisVideoFrame::ConstPtr & msg
+  const std::shared_ptr<kinesis_video_msgs::msg::KinesisVideoFrame> frame_msg
 );
 
 /**
- * ROS-specific callback that handles a std::string input and uses the
+ * ROS-specific callback that handles a std_msgs::msg::String input and uses the
  * webrtc manager to perform a SendDataMessage operation on the specified signaling channel name.
  * @param webrtc_manager
  * @param signaling_channel_name
@@ -52,7 +35,7 @@ void KinesisVideoFrameTransportCallback(
 void StringTransportCallback(
   const KinesisWebRtcManagerInterface & webrtc_manager,
   const std::string & signaling_channel_name,
-  const std::string & message
+  const std::shared_ptr<std_msgs::msg::String> message
 );
 
 } // namespace Kinesis

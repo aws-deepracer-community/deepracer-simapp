@@ -15,16 +15,13 @@
 #################################################################################
 
 from markov.cameras.utils import lerp
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.domain_randomizations.constants import GazeboServiceName
 from markov.visual_effects.abs_effect import AbstractEffect
 from markov.track_geom.track_data import TrackData
 from markov.gazebo_tracker.trackers.set_visual_transparency_tracker import SetVisualTransparencyTracker
-import rospy
-from gazebo_msgs.srv import GetModelProperties, GetModelPropertiesRequest
 
-from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
-                                GetVisuals, GetVisualsRequest, GetVisualsResponse)
+from deepracer_msgs.srv import GetVisualNames, GetModelProperties, GetVisuals
 
 
 class BlinkEffect(AbstractEffect):
@@ -65,20 +62,16 @@ class BlinkEffect(AbstractEffect):
         Lazy-initialize effect
         """
         # ROS Services Setup
-        rospy.wait_for_service(GazeboServiceName.GET_MODEL_PROPERTIES.value)
-        rospy.wait_for_service(GazeboServiceName.GET_VISUAL_NAMES.value)
-        rospy.wait_for_service(GazeboServiceName.GET_VISUALS.value)
-
         get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value, GetModelProperties)
         get_visual_names = ServiceProxyWrapper(GazeboServiceName.GET_VISUAL_NAMES.value, GetVisualNames)
         get_visuals = ServiceProxyWrapper(GazeboServiceName.GET_VISUALS.value, GetVisuals)
 
         # Get all model's link names
-        body_names = get_model_prop(GetModelPropertiesRequest(model_name=self.model_name)).body_names
+        body_names = get_model_prop(GetModelProperties.Request(model_name=self.model_name)).body_names
         link_names = ["%s::%s" % (self.model_name, b) for b in body_names]
 
-        res = get_visual_names(GetVisualNamesRequest(link_names=link_names))
-        get_visuals_req = GetVisualsRequest(link_names=res.link_names,
+        res = get_visual_names(GetVisualNames.Request(link_names=link_names))
+        get_visuals_req = GetVisuals.Request(link_names=res.link_names,
                                             visual_names=res.visual_names)
         self.orig_visuals = get_visuals(get_visuals_req)
 

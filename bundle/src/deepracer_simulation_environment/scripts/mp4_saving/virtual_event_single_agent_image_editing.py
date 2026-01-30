@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ Image editing class for virtual event only
 """
@@ -20,7 +7,6 @@
 import os
 import datetime
 import logging
-import rospy
 import cv2
 
 from markov.log_handler.logger import Logger
@@ -53,17 +39,30 @@ LOG = Logger(__name__, logging.INFO).get_logger()
 class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
     """ Image editing class for virtual event
     """
-    def __init__(self, racecar_name, racecar_info, race_type):
+    def __init__(self, racecar_name, racecar_info, race_type, node=None):
         """ Initializing the required data for the head to bot, time-trail. This is used for single agent
         Arguments:
             racecar_name (str): racecar name in string
-            racecars_info (list): list of dict having information of the agent
-            race_type (str): Since this class is reused for all the different race_type
+            racecar_info (dict): racecar information
+            race_type (str): race type
+            node (Node): ROS 2 node for parameter access (optional)
         """
-        # race duration in milliseconds
-        self._world_name = rospy.get_param("WORLD_NAME")
-        self.num_sectors = int(rospy.get_param("NUM_SECTORS", "3"))
-        self.race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
+        self._node = node
+        
+        # Parameter access with fallback
+        if self._node is not None:
+            self._node.declare_parameter('WORLD_NAME', 'default_track')
+            self._node.declare_parameter('NUM_SECTORS', 3)
+            self._node.declare_parameter('RACE_DURATION', DEFAULT_RACE_DURATION)
+            
+            self._world_name = self._node.get_parameter('WORLD_NAME').get_parameter_value().string_value
+            self.num_sectors = int(self._node.get_parameter('NUM_SECTORS').get_parameter_value().integer_value)
+            self.race_duration = int(self._node.get_parameter('RACE_DURATION').get_parameter_value().integer_value) * 1000
+        else:
+            # Fallback to environment variables
+            self._world_name = os.environ.get('WORLD_NAME', 'default_track')
+            self.num_sectors = int(os.environ.get('NUM_SECTORS', '3'))
+            self.race_duration = int(os.environ.get('RACE_DURATION', str(DEFAULT_RACE_DURATION))) * 1000
         self.racecar_info = racecar_info
         self.race_type = race_type
         racecar_index = get_racecar_idx(racecar_name)

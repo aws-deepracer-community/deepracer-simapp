@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ For the Head to head racing to identify which car is leading  and to provide enough
 information of the two cars some kind of marking is required. To solve this
@@ -22,8 +9,8 @@ circles by getting the agents (x,y) value.
 """
 import math
 import logging
+import os
 import numpy as np
-import rospy
 import cv2
 
 from markov.log_handler.logger import Logger
@@ -48,7 +35,8 @@ class TopViewGraphics(object):
     """
     def __init__(self, horizontal_fov, padding_percent, image_width, image_height, racecars_info,
                  race_type=None,
-                 is_virtual_event=False):
+                 is_virtual_event=False,
+                 node=None):
         """ Camera information is required to map the (x, y) value of the agent on the camera image.
         This is because each track will have its own FOV and padding percent because to avoid
         Z-fighting. Once the camera position, padding percentage is available. We can map the
@@ -63,7 +51,9 @@ class TopViewGraphics(object):
             racecars_info (list): This is the list of dicts of racecars on the track
             race_type (str): Type of the race, TT, H2B, OA, F1. (default: {None})
             is_virtual_event (bool): True if virtual event and False otherwise.
+            node (Node): ROS 2 node for parameter access (optional)
         """
+        self._node = node
         self.horizontal_fov = horizontal_fov
         self.padding_percent = padding_percent
         self.image_width = image_width
@@ -94,7 +84,11 @@ class TopViewGraphics(object):
         agent_imgs = list()
         agent_num_imgs = list()
         # Adding obstacles to the list
-        num_obstacles = int(rospy.get_param("NUMBER_OF_OBSTACLES", 0))
+        if self._node is not None:
+            self._node.declare_parameter('NUMBER_OF_OBSTACLES', 0)
+            num_obstacles = int(self._node.get_parameter('NUMBER_OF_OBSTACLES').get_parameter_value().integer_value)
+        else:
+            num_obstacles = int(os.environ.get('NUMBER_OF_OBSTACLES', 0))
         if num_obstacles:
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.
@@ -103,7 +97,11 @@ class TopViewGraphics(object):
                                                    IconographicImageSize.OBSTACLE_IMAGE_SIZE.value))
 
         # Adding bot cars to the list
-        num_bots = int(rospy.get_param("NUMBER_OF_BOT_CARS", 0))
+        if self._node is not None:
+            self._node.declare_parameter('NUMBER_OF_BOT_CARS', 0)
+            num_bots = int(self._node.get_parameter('NUMBER_OF_BOT_CARS').get_parameter_value().integer_value)
+        else:
+            num_bots = int(os.environ.get('NUMBER_OF_BOT_CARS', 0))
         if num_bots:
             # Other agents also come as object_locations so first plot all the obstacles and
             # Then overlay agents on top.

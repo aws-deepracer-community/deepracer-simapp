@@ -1,27 +1,31 @@
 #!/usr/bin/env bash
 
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
-set -ex
-
-#export PYTHONPATH=${COLCON_BUNDLE_PREFIX}/usr/local/lib/python3.6/dist-packages/:$PYTHONPATH
+set -e
 export PYTHONUNBUFFERED=1
 
+echo "Starting DeepRacer evaluation agent..."
+
+# Start node monitor in background
+echo "Starting DeepRacer node monitor..."
 python3 /opt/amazon/script/start_deepracer_node_monitor.py \
     --node_monitor_file_path /opt/amazon/src/deepracer_node_monitor/config/deepracer_node_monitor_list.txt 2>&1 &
 
+echo "Waiting for system to stabilize..."
+sleep 5
+
+echo "Starting markov evaluation worker..."
+
+# ESSENTIAL: Source ROS setup before activating conda to ensure ROS is available
+source /opt/ros/jazzy/setup.bash
+source /opt/amazon/install/setup.bash
+export PYTHONPATH=/opt/amazon:$PYTHONPATH
+source /root/anaconda/bin/activate sagemaker_env
+
+# Run the evaluation worker
 python3 -m markov.evaluation_worker
+
+echo "Markov evaluation worker completed successfully"
+echo "DeepRacer evaluation agent finished with exit code: $?"

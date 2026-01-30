@@ -1,41 +1,27 @@
 #!/usr/bin/env python3
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
-import time
-import sys
 import threading
 import cv2
-import rospy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION)
-from markov.utils import get_racecar_names
-from mp4_saving import utils
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
-class SaveToMp4(object):
+class SaveToMp4(Node):
     """ SaveToMp4 class is used to subscribe/unsubscribe to the camera Image topic and
     save the frame information to the disk
     """
     def __init__(self, camera_infos, fourcc, fps, frame_size):
+        super().__init__('save_to_mp4_node')
         self.camera_infos = camera_infos
         self.fourcc = fourcc
         self.fps = fps
@@ -88,9 +74,16 @@ class SaveToMp4(object):
                 self.cv2_video_writers[name] = cv2.VideoWriter(local_path, self.fourcc,
                                                                self.fps, self.frame_size)
                 if name not in self.mp4_subscription or self.mp4_subscription[name] is None:
-                    self.mp4_subscription[name] = rospy.Subscriber(topic_name, Image,
-                                                                   callback=self._subscribe_to_image_topic,
-                                                                   callback_args=name)
+                    self.mp4_subscription[name] = self.create_subscription(
+                        Image,
+                        topic_name,
+                        lambda msg, name=name: self._subscribe_to_image_topic(msg, name),
+                        QoSProfile(
+                            reliability=ReliabilityPolicy.BEST_EFFORT,
+                            history=HistoryPolicy.KEEP_LAST,
+                            depth=10,
+                        )
+                    )
                 if name not in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name] = threading.Lock()
                 else:

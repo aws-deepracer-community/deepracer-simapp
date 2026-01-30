@@ -2,7 +2,13 @@
 <robot name="racecar" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- f1 shell macros -->
   <xacro:macro name="f1_geometry"  params="body_shell_type">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <!-- if using amazon van, shift shell back in x axis by -0.26 to unblock camera sensor views -->
+    <xacro:if value="${'amazon_van' in body_shell_type}">
+      <origin xyz="-0.26 0 0" rpy="0 0 0" />
+    </xacro:if>
+    <xacro:unless value="${'amazon_van' in body_shell_type}">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:unless>
     <geometry>
       <mesh filename="package://deepracer_simulation_environment/meshes/f1/${body_shell_type}.dae"/>
     </geometry>

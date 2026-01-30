@@ -16,15 +16,13 @@
 
 import threading
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
-import rospy
 from collections import OrderedDict
 
 from markov.domain_randomizations.constants import GazeboServiceName
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 import markov.gazebo_tracker.constants as consts
-from deepracer_msgs.srv import (SetVisualColors, SetVisualColorsRequest,
-                                SetVisualColorResponse)
+from deepracer_msgs.srv import SetVisualColors
 
 
 class SetVisualColorTracker(AbstractTracker):
@@ -52,7 +50,6 @@ class SetVisualColorTracker(AbstractTracker):
         self.specular_map = OrderedDict()
         self.emissive_map = OrderedDict()
 
-        rospy.wait_for_service(GazeboServiceName.SET_VISUAL_COLORS.value)
         self.set_visual_colors = ServiceProxyWrapper(GazeboServiceName.SET_VISUAL_COLORS.value,
                                                      SetVisualColors)
 
@@ -71,9 +68,9 @@ class SetVisualColorTracker(AbstractTracker):
             emissive (ColorRBGA): emissive color
             blocking (bool): flag to block or not
         Returns:
-            msg (SetVisualColorResponse)
+            msg (SetVisualColor.Response)
         """
-        msg = SetVisualColorResponse()
+        msg = SetVisualColor.Response()
         msg.success = True
         key = (visual_name, link_name)
         with self.lock:
@@ -86,7 +83,7 @@ class SetVisualColorTracker(AbstractTracker):
                     del self.specular_map[key]
                     del self.emissive_map[key]
 
-                req = SetVisualColorsRequest()
+                req = SetVisualColors.Request()
                 req.visual_names = [visual_name]
                 req.link_names = [link_name]
                 req.ambients = [ambient]
@@ -115,7 +112,7 @@ class SetVisualColorTracker(AbstractTracker):
         """
         with self.lock:
             if self.visual_name_map.values():
-                req = SetVisualColorsRequest()
+                req = SetVisualColors.Request()
 
                 req.visual_names = self.visual_name_map.values()
                 req.link_names = self.link_name_map.values()

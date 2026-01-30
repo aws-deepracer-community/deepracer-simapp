@@ -37,3 +37,13 @@ class AbstractTracker(ABC):
             sim_time (Clock): simulation time
         """
         raise NotImplementedError('Tracker must be able to update')
+
+
+    def get_rostime(self):
+        """
+        Get current simulation time
+
+        Returns:
+            Clock: current simulation time
+        """
+        return TrackerManager.get_instance().get_rostime()

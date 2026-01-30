@@ -52,7 +52,7 @@ class SACPolicyHead(Head):
         self._build_continuous_net(input_layer, self.spaces.action)
 
     def _build_continuous_net(self, input_layer, action_space):
-        num_actions = action_space.shape[0]
+        num_actions = int(action_space.shape[0])
         # ----------DH:Dense(256) in middle ware + Dense(256) + separate dense layers for mu and logsig----
         mu_and_logsig = self.dense_layer(256)(input_layer, activation='relu')
         self.policy_mean = tf.identity(self.dense_layer(num_actions)(mu_and_logsig, name='policy_mean'), name="policy")

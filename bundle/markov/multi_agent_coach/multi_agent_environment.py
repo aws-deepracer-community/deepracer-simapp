@@ -175,6 +175,7 @@ class MultiAgentEnvironment(EnvironmentInterface):
         :param action: an action to use for stepping the environment. Should follow the definition of the action space.
         :return: the environment response as returned in get_last_env_response
         """
+        
         clipped_and_scaled_action = list()
         for agent_action, action_space in zip(force_list(action), force_list(self.action_space)):
             agent_action = action_space.clip_action_to_space(agent_action)
@@ -185,6 +186,7 @@ class MultiAgentEnvironment(EnvironmentInterface):
                 agent_action = action_space.scale_action_values(agent_action)
             clipped_and_scaled_action.append(agent_action)
         action = clipped_and_scaled_action
+        
         # store the last agent action done and allow passing None actions to repeat the previously done action
         if action is None:
             action = self.last_action
@@ -230,7 +232,7 @@ class MultiAgentEnvironment(EnvironmentInterface):
         :param force_environment_reset: forces environment reset even when the game did not end
         :return: A dictionary containing the observation, reward, done flag, action and measurements
         """
-
+        
         self._restart_environment_episode(force_environment_reset)
         self.last_episode_time = time.time()
 

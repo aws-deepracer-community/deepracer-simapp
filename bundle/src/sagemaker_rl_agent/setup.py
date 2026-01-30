@@ -14,15 +14,15 @@
 #   limitations under the License.                                              #
 #################################################################################
 """
-This python script will help you install all the python 3.5+ dependencies to the right place.
-So if you want to add a dependency for python 3.5+, add it to the install_requires list.
+This python script will help you install all the python 3.12+ dependencies to the right place.
+So if you want to add a dependency for python 3.12+, add it to the install_requires list.
 """
 from setuptools import setup, find_packages
-
+ 
 # Package meta-data.
 NAME = 'sagemaker_rl_agent'
-REQUIRES_PYTHON = '>=3.6.0'
-
+REQUIRES_PYTHON = '>=3.12.0'
+ 
 setup(
     name=NAME,
     version='0.0.1',
@@ -31,37 +31,35 @@ setup(
     package_data={'': ['/opt/amazon/markov/**']},
     python_requires=REQUIRES_PYTHON,
     install_requires=[
-        'annoy==1.8.3',
-        'Pillow==4.3.0',
-        'matplotlib==2.0.2',
-        'numpy==1.14.5',
-        'pandas==0.22.0',
-        'pygame==1.9.3',
-        'PyOpenGL==3.1.0',
-        'scipy==1.2.1',
-        'scikit-image==0.15.0',
-        'futures==3.1.1',
-        'boto3==1.9.23',
-        'minio==4.0.5',
-        'kubernetes==7.0.0',
-        'bokeh==1.4.0',
-        'rl-coach-slim==1.0.0',
-        'PyYAML==3.13',
-        'rospkg==1.1.7',
-        'shapely==1.6.4',
-        'h5py==2.10.0',
-        'protobuf==3.19.4',
-        'tensorflow==1.11',
-        'redis==3.2.1',
-        'opencv-python==4.1.1.26',
-        'python-dateutil==2.5.3',
-        'pytest==4.6.9',
-        'docutils==0.15.2',
-        'cryptography==3.2.1',
-        'importlib-metadata==0.23',
-        'jsonschema==3.2.0',
-        'pytz==2020.1',
-        'tokenize-rt==3.2.0'
+        'annoy==1.17.3',
+        'pillow==11.3.0',
+        'matplotlib==3.10.6',
+        'numpy==1.26.4',
+        'pandas==2.3.1',
+        'pygame==2.6.1',
+        'PyOpenGL==3.1.9',
+        'scipy==1.13.1',
+        'scikit-image==0.25.2',
+        'boto3==1.38.38',
+        'minio==7.2.15',
+        'kubernetes==33.1.0',
+        'bokeh==3.7.3',
+        'pyyaml==6.0.3',
+        'rospkg==1.6.0',
+        'shapely==2.0.2',
+        'h5py==3.14.0',
+        'protobuf==4.25.5',
+        'tensorflow==2.19.0',
+        'opencv-python==4.9.0.80',
+        'python-dateutil==2.8.2',
+        'pytest==8.3.4',
+        'docutils==0.21.2',
+        'cryptography==44.0.1',
+        'jsonschema==4.24.0',
+        'pytz==2025.2',
+        'tokenize-rt==6.2.0',
+        'redis==8.0.2',
+        'importlib-metadata==6.8.0'
     ],
     entry_points = {
         'console_scripts': [

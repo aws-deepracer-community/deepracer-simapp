@@ -1,9 +1,28 @@
-cmake_minimum_required(VERSION 3.0.2)
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
+cmake_minimum_required(VERSION 3.13)
 project(aws_common)
 
 SET(AWS_COMMON_VERSION 1.0.0)
 
-add_compile_options(-std=c++11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+add_compile_options(-std=c++17 -Wno-deprecated-declarations -Wno-array-parameter -Wno-array-bounds -Wno-stringop-overflow -Wno-stringop-overread -Wno-ignored-qualifiers)
 if (DEFINED ENV{ROS_DISTRO})
     add_definitions(-DCMAKE_ROS_DISTRO="$ENV{ROS_DISTRO}")
 else()
@@ -12,7 +31,7 @@ endif()
 if (DEFINED ENV{ROS_VERSION})
     add_definitions(-DCMAKE_ROS_VERSION="$ENV{ROS_VERSION}")
 else()
-    add_definitions(-DCMAKE_ROS_VERSION="1")
+    add_definitions(-DCMAKE_ROS_VERSION="2")
 endif()
 
 include(GNUInstallDirs)
@@ -20,11 +39,13 @@ if(NOT EXTERNAL_INSTALL_LOCATION)
   set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 endif()
 
+# Find required ROS 2 packages
+find_package(ament_cmake REQUIRED)
+
 ## Add AWS SDK libraries
-set(SERVICE "core" "logs" "monitoring" "s3" "kinesis" "iot" "lex" "polly")
-foreach(_service ${SERVICE})
-  list(APPEND ${PROJECT_NAME}_IMPORTED_LIBRARIES "aws-cpp-sdk-${_service}")
-endforeach()
+set(SERVICE "core" "logs" "kinesis")
+# Find the system-installed AWS SDK
+find_package(AWSSDK REQUIRED COMPONENTS ${SERVICE})
 add_subdirectory(awssdk)
 
 include_directories(include)
@@ -38,18 +59,8 @@ add_library(${PROJECT_NAME} SHARED
   src/fs_utils/wordexp_ros.cpp)
 add_dependencies(${PROJECT_NAME} AWS_SDK_IMPORT)
 
-foreach(_imported_lib ${${PROJECT_NAME}_IMPORTED_LIBRARIES})
-  if(NOT TARGET ${_imported_lib})
-    add_library(${_imported_lib} UNKNOWN IMPORTED)
-    set_target_properties(${_imported_lib} PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${EXTERNAL_INSTALL_LOCATION}/include")
-    set_target_properties(${_imported_lib} PROPERTIES
-      IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"
-      IMPORTED_LOCATION "${EXTERNAL_INSTALL_LOCATION}/${CMAKE_INSTALL_LIBDIR}/lib${_imported_lib}.so")
-    set_property(TARGET ${_imported_lib} APPEND PROPERTY
-      IMPORTED_CONFIGURATIONS RELEASE)
-  endif()
-endforeach()
+# Use the system AWS SDK libraries directly
+set(${PROJECT_NAME}_IMPORTED_LIBRARIES ${AWSSDK_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${${PROJECT_NAME}_IMPORTED_LIBRARIES})
@@ -62,43 +73,47 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 #############
 ### Tests ###
 #############
-# enable_testing()
-# include(${CMAKE_SOURCE_DIR}/cmake/DefineTestMacros.cmake)
+enable_testing()
+include(${CMAKE_SOURCE_DIR}/cmake/DefineTestMacros.cmake)
 # find_common_test_packages()
-# add_common_gtest(test_aws_log_system test/sdk_utils/logging/aws_log_system_test.cpp)
-# add_common_gtest(test_throttling_manager test/sdk_utils/throttling_manager_test.cpp)
-# add_common_gtest(test_client_configuration_provider test/sdk_utils/client_configuration_provider_test.cpp)
-# add_common_gtest(test_service_credentials_provider test/sdk_utils/auth/service_credentials_provider_test.cpp)
-# add_common_gtest(test_wordexp_ros test/fs_utils/wordexp_ros_test.cpp)
+# find_package(GTest REQUIRED)
+# set(GMOCK_LIBRARY \${GTEST_LIBRARIES})
+find_package(ament_cmake_gtest REQUIRED)
+find_package(ament_cmake_gmock REQUIRED)
+add_common_gtest(test_aws_log_system test/sdk_utils/logging/aws_log_system_test.cpp)
+add_common_gtest(test_throttling_manager test/sdk_utils/throttling_manager_test.cpp)
+add_common_gtest(test_client_configuration_provider test/sdk_utils/client_configuration_provider_test.cpp)
+add_common_gtest(test_service_credentials_provider test/sdk_utils/auth/service_credentials_provider_test.cpp)
+add_common_gtest(test_wordexp_ros test/fs_utils/wordexp_ros_test.cpp)
 
-# add_library(test_utils test/sdk_utils/parameter_reader_mock.cpp)
-# target_include_directories(test_utils PUBLIC ${PROJECT_SOURCE_DIR}/test/include)
+add_library(test_utils test/sdk_utils/parameter_reader_mock.cpp)
+target_include_directories(test_utils PUBLIC ${PROJECT_SOURCE_DIR}/test/include)
 
-# set(LIBS_FOR_TESTS
-#   ${PROJECT_NAME}
-#   test_utils
-#   ${aws_common_LIBRARIES}
-#   ${GMOCK_LIBRARY}
-#   pthread
-# )
+set(LIBS_FOR_TESTS
+  ${PROJECT_NAME}
+  test_utils
+  ${aws_common_LIBRARIES}
+  ${GMOCK_LIBRARY}
+  pthread
+)
 
-# set(HEADERS_FOR_TESTS
-#   ${aws_common_INCLUDE_DIRS}
-#   ${AWSSDK_INCLUDE_DIR}
-# )
+set(HEADERS_FOR_TESTS
+  ${aws_common_INCLUDE_DIRS}
+  ${AWSSDK_INCLUDE_DIR}
+)
 
-# macro(link_test_target target_name)
-#   if(TARGET ${target_name})
-#     target_include_directories("${target_name}" PRIVATE ${HEADERS_FOR_TESTS})
-#     target_link_libraries("${target_name}" ${LIBS_FOR_TESTS})
-#   endif()
-# endmacro()
+macro(link_test_target target_name)
+  if(TARGET ${target_name})
+    target_include_directories("${target_name}" PRIVATE ${HEADERS_FOR_TESTS})
+    target_link_libraries("${target_name}" ${LIBS_FOR_TESTS})
+  endif()
+endmacro()
 
-# link_test_target(test_aws_log_system)
-# link_test_target(test_throttling_manager)
-# link_test_target(test_client_configuration_provider)
-# link_test_target(test_service_credentials_provider)
-# link_test_target(test_wordexp_ros)
+link_test_target(test_aws_log_system)
+link_test_target(test_throttling_manager)
+link_test_target(test_client_configuration_provider)
+link_test_target(test_service_credentials_provider)
+link_test_target(test_wordexp_ros)
 
 #############
 ## Install ##
@@ -126,8 +141,15 @@ CONFIGURE_FILE(${PROJECT_NAME}Config.cmake.in
   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake @ONLY)
 CONFIGURE_FILE(${PROJECT_NAME}ConfigVersion.cmake.in
   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake @ONLY)
-INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/external/${CMAKE_INSTALL_LIBDIR}/cmake/AWSSDK/ DESTINATION share/${PROJECT_NAME}/cmake)
+# Install AWS SDK config file for downstream packages
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/awssdk/AWSSDKConfig.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/cmake/DefineTestMacros.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(EXPORT ${PROJECT_NAME}-targets DESTINATION share/${PROJECT_NAME}/cmake)
+
+# Add ament package export
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(${PROJECT_NAME}-targets)
+ament_package()

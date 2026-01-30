@@ -1,35 +1,27 @@
 #!/usr/bin/env python3
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ This script is to mock the camera images that we get when racecar is spawned.
 """
 import os
 import sys
-import rospkg
+import ament_index_python
 # This numpy.core.multiarray is required else cv2 will fail (https://github.com/opencv/opencv/issues/8139)
 import numpy.core.multiarray
 import cv2
-import rospy
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Image as ROSImg
 from cv_bridge import CvBridge, CvBridgeError
 from markov.utils import get_racecar_names
 
-rospack = rospkg.RosPack()
-DEEPRACER_SIM_PATH = rospack.get_path('deepracer_simulation_environment')
+# Get package path
+try:
+    DEEPRACER_SIM_PATH = ament_index_python.get_package_share_directory('deepracer_simulation_environment')
+except:
+    # Fallback for development
+    DEEPRACER_SIM_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
 
 TEST_FIXTURE_NODES_PATH = os.path.join(DEEPRACER_SIM_PATH, "tests")
 IMG_PATH = "{0}/test_data/camera_images".format(TEST_FIXTURE_NODES_PATH)
@@ -48,48 +40,72 @@ def get_racecar_camera_topics(racecar_name):
 
 def get_next_img(img_id):
     """ To fetch the cv2 image. I have added 20 images. The frames are published
-    to the Image topic using these images.
+    in a cyclic manner.
 
     Arguments:
-        img_id (int): The id of the image
-
-    Returns:
-        Image: cv2 image read from the local file system
+        img_id (int): The image id to fetch
     """
-    img_path = "{0}/out{1}.png".format(IMG_PATH, img_id)
-    return cv2.imread(img_path)
+    img_name = "img_{}.jpg".format(img_id)
+    img_path = os.path.join(IMG_PATH, img_name)
+    if os.path.exists(img_path):
+        return cv2.imread(img_path)
+    else:
+        # Return a default black image if test images don't exist
+        return cv2.imread(os.path.join(os.path.dirname(__file__), "default_test_image.jpg")) or \
+               (255 * np.ones((480, 640, 3), dtype=np.uint8))
 
-def main(racecar_names):
-    """ Read the images in the file and publish these to the image topic. 
-    The image topics are the actual topics that racecar agent publishes.
-    The images are rotated once all the images are read.
 
-    Arguments:
-        racecar_names (str): The name of the racecar
-    """
-    pub_list = list()
-    bridge = CvBridge()
-    for racecar_name in racecar_names:
-        camera_topics = get_racecar_camera_topics(racecar_name)
-        for topic in camera_topics:
-            pub_list.append(rospy.Publisher(topic, ROSImg, queue_size=1))
+class MockCameraNode(Node):
+    def __init__(self, racecar_names):
+        super().__init__('mock_camera_topic_nodes')
+        
+        self.bridge = CvBridge()
+        self.pub_list = []
+        
+        # Create publishers for each racecar's camera topics
+        for racecar_name in racecar_names:
+            camera_topics = get_racecar_camera_topics(racecar_name)
+            for topic in camera_topics:
+                pub = self.create_publisher(ROSImg, topic, 10)
+                self.pub_list.append(pub)
+        
+        # Create timer to publish at 15Hz
+        self.timer = self.create_timer(1.0/15.0, self.publish_frames)
+        self.img_id = 0
+        
+        self.get_logger().info(f'Mock camera node started for {len(racecar_names)} racecars')
 
-    # Publishing frames at 15Hz
-    rate = rospy.Rate(15)
-    img_id = 0
-    while not rospy.is_shutdown():
-        img = get_next_img(img_id)
-        img_id = (img_id + 1) % TOTAL_IMAGES
-        frame = bridge.cv2_to_imgmsg(img, "bgr8")
-        for pub in pub_list:
-            pub.publish(frame)
-        rate.sleep()
+    def publish_frames(self):
+        """Timer callback to publish camera frames"""
+        img = get_next_img(self.img_id)
+        self.img_id = (self.img_id + 1) % TOTAL_IMAGES
+        
+        try:
+            frame = self.bridge.cv2_to_imgmsg(img, "bgr8")
+            for pub in self.pub_list:
+                pub.publish(frame)
+        except CvBridgeError as e:
+            self.get_logger().error(f'CV Bridge error: {e}')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    
+    try:
+        RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        RACECAR_NAMES = get_racecar_names(RACER_NUM)
+        
+        node = MockCameraNode(RACECAR_NAMES)
+        rclpy.spin(node)
+        
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"Exception in mock camera node: {e}")
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
+
 
 if __name__ == '__main__':
-    try:
-        rospy.init_node('mock_camera_topic_nodes', anonymous=True)
-        RACER_NUM = int(sys.argv[1])
-        RACECAR_NAMES = get_racecar_names(RACER_NUM)
-        main(RACECAR_NAMES)
-    except rospy.ROSInterruptException:
-        pass
+    main()

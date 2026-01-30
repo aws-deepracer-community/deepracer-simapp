@@ -1,28 +1,11 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #include "kinesis_webrtc_manager/kinesis_webrtc_manager.h"
 
 #include <aws/core/client/AWSError.h>
 #include <aws/core/utils/logging/LogMacros.h>
-
-// Wrapper function to execute clean up for webrtc peers using pthread
-void * SessionCleanupWait(void *param) {
-  PKvsWebRtcConfiguration config = (PKvsWebRtcConfiguration) param;
-  STATUS ret = sessionCleanupWait(config);
-  return NULL;
-}
 
 namespace Aws {
 namespace Kinesis {
@@ -30,11 +13,7 @@ namespace Kinesis {
 KinesisWebRtcManager::~KinesisWebRtcManager()
 {
   STATUS status = STATUS_SUCCESS;
-  // Join the cleanup thread
-  status = pthread_join(cleanup_thread_id, NULL);
-  if (status != 0) {
-    AWS_LOG_ERROR(__func__, "Pthread join failed.");
-  }
+
   for (const auto &entry : kvs_webrtc_configurations_) {
     PKvsWebRtcConfiguration p_kvs_webrtc_configuration = entry.second;
 
@@ -132,13 +111,6 @@ KinesisWebRtcManagerStatus KinesisWebRtcManager::InitializeWebRtc(
     }
 
     kvs_webrtc_configurations_.insert({signaling_channel_name, p_kvs_webrtc_configuration});
-
-    //Launching cleanup in a separate thread
-    status = pthread_create(&cleanup_thread_id, NULL, SessionCleanupWait, (void *)p_kvs_webrtc_configuration);
-    if(status != 0) {
-      AWS_LOG_ERROR(__func__, "sessionCleanupWait(): Creating thread returned status code: 0x%08x", status);
-      return KinesisWebRtcManagerStatus::SESSIONCLEANUPWAIT_FAILED;
-    }
   }
   return KinesisWebRtcManagerStatus::SUCCESS;
 }
@@ -243,5 +215,21 @@ void KinesisWebRtcManager::OnDataChannelOpenSend(UINT64 custom_data, PRtcDataCha
     p_kvs_webrtc_streaming_session->pRtcDataChannel->name);
 }
 
+void KinesisWebRtcManager::CheckAndCleanupSessions()
+{
+  for (const auto &entry : kvs_webrtc_configurations_) {
+    PKvsWebRtcConfiguration p_kvs_webrtc_configuration = entry.second;
+    
+    if (p_kvs_webrtc_configuration != nullptr) {
+      // Check and recreate signaling client if needed
+      checkAndRecreateSignalingClient(p_kvs_webrtc_configuration);
+      
+      // Clean up terminated sessions
+      cleanupTerminatedSessions(p_kvs_webrtc_configuration);
+    }
+  }
+}
+
 }  // namespace Kinesis
 }  // namespace Aws
+

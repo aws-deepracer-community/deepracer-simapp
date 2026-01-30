@@ -1,22 +1,12 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #include "kinesis_webrtc_streamer/streamer_params.h"
 
 #include <aws/core/client/AWSError.h>
 #include <aws/core/utils/logging/LogMacros.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "read_option.h"
 
@@ -29,7 +19,7 @@ void ReadStreamerParams(const std::shared_ptr<Aws::Client::ParameterReaderInterf
   int stream_count;
   ReadOption<int>(
     param_reader,
-    {ros::this_node::getNamespace() + kWebRtcStreamerNamespacePrefix},
+    {kWebRtcStreamerNamespacePrefix},
     kStreamCountKey,
     kStreamCountDefault,
     stream_count
@@ -39,7 +29,7 @@ void ReadStreamerParams(const std::shared_ptr<Aws::Client::ParameterReaderInterf
     std::string stream_namespace = kStreamNamespacePrefix + std::to_string(i);
     
     std::vector<std::string> parameter_namespaces{
-      ros::this_node::getNamespace() + kWebRtcStreamerNamespacePrefix,
+      kWebRtcStreamerNamespacePrefix,
       stream_namespace
     };
 
@@ -77,13 +67,15 @@ void ReadStreamerParams(const std::shared_ptr<Aws::Client::ParameterReaderInterf
       params.back().publish_topic_
     );
 
+    int video_format_type;
     ReadOption<int>(
       param_reader,
       parameter_namespaces,
       kVideoFormatTypeKey,
-      static_cast<const int>(kVideoFormatTypeDefault),
-      reinterpret_cast<int &>(params.back().video_format_type_)
+      static_cast<int>(kVideoFormatTypeDefault),
+      video_format_type
     );
+    params.back().video_format_type_ = static_cast<VideoFormatType>(video_format_type);
   }
 }
 

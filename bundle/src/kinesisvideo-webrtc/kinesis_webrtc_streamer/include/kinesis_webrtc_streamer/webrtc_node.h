@@ -1,27 +1,19 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
-#include <aws_ros1_common/sdk_utils/ros1_node_parameter_reader.h>
-#include <kinesis_video_msgs/KinesisVideoFrame.h>
+#include <aws_ros2_common/sdk_utils/ros2_node_parameter_reader.h>
+#include <kinesis_video_msgs/msg/kinesis_video_frame.hpp>
 #include <kinesis_webrtc_manager/kinesis_webrtc_manager.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 
 #include "kinesis_webrtc_streamer/streamer_params.h"
 #include "kinesis_webrtc_streamer/subscriber_callbacks.h"
@@ -42,12 +34,12 @@ namespace Kinesis {
 void OnDataChannelMessage(UINT64 custom_data, PRtcDataChannel p_rtc_data_channel, BOOL is_binary, PBYTE p_message, UINT32 p_message_len);
 
 /**
- * ROS1 specific node that gets run to setup the WebRTC connection, ROS publishers, and ROS subscriptions.
+ * ROS2 specific node that gets run to setup the WebRTC connection, ROS publishers, and ROS subscriptions.
  */
-class WebRtcNode : public ros::NodeHandle
+class WebRtcNode : public rclcpp::Node
 {
 public:
-  WebRtcNode(const std::string & ns);
+  WebRtcNode(const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
   
   ~WebRtcNode() = default;
 
@@ -80,9 +72,9 @@ public:
     std::string signaling_channel_name_;
   };
 private:
-  std::unordered_map<std::string, ros::Subscriber> video_subscriptions_;
-  std::unordered_map<std::string, ros::Subscriber> data_subscriptions_;
-  std::unordered_map<std::string, ros::Publisher> publishers_;
+  std::unordered_map<std::string, rclcpp::Subscription<kinesis_video_msgs::msg::KinesisVideoFrame>::SharedPtr> video_subscriptions_;
+  std::unordered_map<std::string, rclcpp::Subscription<std_msgs::msg::String>::SharedPtr> data_subscriptions_;
+  std::unordered_map<std::string, rclcpp::Publisher<std_msgs::msg::String>::SharedPtr> publishers_;
   std::shared_ptr<KinesisWebRtcManagerInterface> webrtc_manager_;
 
   Aws::Client::ClientConfiguration aws_config_;

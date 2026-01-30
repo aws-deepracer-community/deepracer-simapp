@@ -14,6 +14,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 """A class for DeepRacerNodeMonitor."""
+
 import fnmatch
 import logging
 import os
@@ -22,17 +23,23 @@ import json
 from threading import RLock
 from typing import List, Set, Optional
 
-from node_monitor import NodeMonitor
-from node_monitor.node_monitor_observer_interface import NodeMonitorObserverInterface
-from deepracer_node_monitor.constants import (JobStatus,
-                                              JobStatusMsg)
-from deepracer_node_monitor.aws_utils.constants import (Boto3Client, CW_METRIC_NAMESPACE)
+from deepracer_node_monitor.node_monitor import NodeMonitor
+from deepracer_node_monitor.node_monitor_observer_interface import (
+    NodeMonitorObserverInterface,
+)
+from deepracer_node_monitor.constants import JobStatus, JobStatusMsg
+from deepracer_node_monitor.aws_utils.constants import Boto3Client, CW_METRIC_NAMESPACE
 from deepracer_node_monitor.aws_utils.job_utils import JobUtils
-from deepracer_node_monitor.aws_utils.cloudwatch_utils import CloudWatchJobStatusMetricDimensionData
+from deepracer_node_monitor.aws_utils.cloudwatch_utils import (
+    CloudWatchJobStatusMetricDimensionData,
+)
 from deepracer_node_monitor.aws_utils.s3_utils import S3Utils
 from deepracer_node_monitor.aws_utils.boto3_factory import Boto3Factory
-from markov.log_handler.constants import (EXCEPTION_HANDLER_SYNC_FILE,
-                                          SIMAPP_EVENT_ERROR_CODE_400)
+from markov.log_handler.constants import (
+    EXCEPTION_HANDLER_SYNC_FILE,
+    SIMAPP_EVENT_ERROR_CODE_400,
+)
+
 
 class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
     """
@@ -53,7 +60,9 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         self._job_status = JobStatus.INITIALIZING
         self._job_status_msg = JobStatusMsg.INITIALIZING
         self._is_heartbeat_s3_upload_enabled = S3Utils.get_s3_heartbeat_location_path()
-        self._is_heartbeat_cw_publisher_enabled = CloudWatchJobStatusMetricDimensionData.is_cloudwatch_heartbeat_enabled()
+        self._is_heartbeat_cw_publisher_enabled = (
+            CloudWatchJobStatusMetricDimensionData.is_cloudwatch_heartbeat_enabled()
+        )
 
     def _check_all_monitor_nodes_running(self, running_nodes: List[str]) -> bool:
         """
@@ -70,7 +79,9 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         for monitor_node in self._monitor_nodes:
             if monitor_node in running_nodes:
                 continue
-            is_monitor_node_in_running_nodes = any([fnmatch.fnmatch(node, monitor_node) for node in running_nodes])
+            is_monitor_node_in_running_nodes = any(
+                [fnmatch.fnmatch(node, monitor_node) for node in running_nodes]
+            )
             if not is_monitor_node_in_running_nodes:
                 return False
         return True
@@ -86,14 +97,23 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         if not self._is_heartbeat_s3_upload_enabled:
             logging.info("[DeepRacerNodeMonitor]: Skipping S3 upload")
             return
-        job_status_json = S3Utils.get_s3_heartbeat_file_content(job_status, job_status_msg)
+        job_status_json = S3Utils.get_s3_heartbeat_file_content(
+            job_status, job_status_msg
+        )
         s3_bucket, s3_key = S3Utils.get_heartbeat_s3_info()
         # Write to S3 only if JOB_STATUS_S3_LOCATION env is passed
         if s3_bucket and s3_key:
             s3_client = Boto3Factory.create_boto3_client(Boto3Client.S3)
-            s3_client.put_object(Bucket=s3_bucket, Key=s3_key,
-                                 Body=bytes(str(job_status_json), encoding="utf-8"))
-            logging.debug("[DeepRacerNodeMonitor]: Successfully uploaded file to s3 for job status: {}".format(job_status))
+            s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=s3_key,
+                Body=bytes(str(job_status_json), encoding="utf-8"),
+            )
+            logging.debug(
+                "[DeepRacerNodeMonitor]: Successfully uploaded file to s3 for job status: {}".format(
+                    job_status
+                )
+            )
 
     def _write_cw_metrics(self, job_status: str) -> None:
         """
@@ -110,15 +130,29 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         # Write cloudwatch metrics
         if simapp_id:
             # Metric with job status, simapp_id
-            dimenstion_data = CloudWatchJobStatusMetricDimensionData(job_status, simapp_id).to_cloudwatch_dict()
-            cw_client.put_metric_data(Namespace=CW_METRIC_NAMESPACE, MetricData=[dimenstion_data])
+            dimenstion_data = CloudWatchJobStatusMetricDimensionData(
+                job_status, simapp_id
+            ).to_cloudwatch_dict()
+            cw_client.put_metric_data(
+                Namespace=CW_METRIC_NAMESPACE, MetricData=[dimenstion_data]
+            )
         if job_status:
             # Metric with only job status
-            dimenstion_data = CloudWatchJobStatusMetricDimensionData(job_status).to_cloudwatch_dict()
-            cw_client.put_metric_data(Namespace=CW_METRIC_NAMESPACE, MetricData=[dimenstion_data])
-            logging.debug("[DeepRacerNodeMonitor]: Successfully written cloudwatch metrics for job status: {}".format(job_status))
+            dimenstion_data = CloudWatchJobStatusMetricDimensionData(
+                job_status
+            ).to_cloudwatch_dict()
+            cw_client.put_metric_data(
+                Namespace=CW_METRIC_NAMESPACE, MetricData=[dimenstion_data]
+            )
+            logging.debug(
+                "[DeepRacerNodeMonitor]: Successfully written cloudwatch metrics for job status: {}".format(
+                    job_status
+                )
+            )
 
-    def on_dead_node_update(self, node_monitor: NodeMonitor, dead_nodes: Set[str]) -> None:
+    def on_dead_node_update(
+        self, node_monitor: NodeMonitor, dead_nodes: Set[str]
+    ) -> None:
         """
         Callback function when set of dead nodes are updated. The first time dead node is called
         then alone S3 upload and cloudwatch metrics are written.
@@ -131,29 +165,52 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         with self._lock:
             # Updating s3 and cloudwatch metrics only first time a dead node is detected
             if not self._is_dead_node_detected:
-                logging.info("[DeepRacerNodeMonitor]: Dead nodes are {}".format(dead_nodes))
+                logging.info(
+                    "[DeepRacerNodeMonitor]: Dead nodes are {}".format(dead_nodes)
+                )
                 self._job_status = JobStatus.FAILED
-                self._job_status_msg = "{} Dead nodes are: {}".format(JobStatusMsg.FAILED, dead_nodes)
+                self._job_status_msg = "{} Dead nodes are: {}".format(
+                    JobStatusMsg.FAILED, dead_nodes
+                )
                 self._is_dead_node_detected = True
                 # Get the exception message from SimApp
-                if (os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE)):
+                if os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE):
                     try:
-                        with open(EXCEPTION_HANDLER_SYNC_FILE, 'r') as sync_file:
+                        with open(EXCEPTION_HANDLER_SYNC_FILE, "r") as sync_file:
                             captured_log = json.loads(sync_file.read())
-                        logging.info("[DeepRacerNodeMonitor] got a SimApp exception message: {}".format(captured_log['simapp_exception']['message']))
-                        self._job_status_msg = captured_log['simapp_exception']['message']
+                        logging.info(
+                            "[DeepRacerNodeMonitor] got a SimApp exception message: {}".format(
+                                captured_log["simapp_exception"]["message"]
+                            )
+                        )
+                        self._job_status_msg = captured_log["simapp_exception"][
+                            "message"
+                        ]
                         # Check that it should be 500 code error
-                        if(captured_log['simapp_exception']['errorCode'] == SIMAPP_EVENT_ERROR_CODE_400):
-                            logging.info("[DeepRacerNodeMonitor] Ignoring non 500 code errors")
-                            self._upload_s3_job_status(JobStatus.CLOSED, self._job_status_msg)
+                        if (
+                            captured_log["simapp_exception"]["errorCode"]
+                            == SIMAPP_EVENT_ERROR_CODE_400
+                        ):
+                            logging.info(
+                                "[DeepRacerNodeMonitor] Ignoring non 500 code errors"
+                            )
+                            self._upload_s3_job_status(
+                                JobStatus.CLOSED, self._job_status_msg
+                            )
                             self._write_cw_metrics(JobStatus.CLOSED)
                             return
                     except Exception as ex:
-                        logging.info("[DeepRacerNodeMonitor] Issue in parsing the exception handler file: {}".format(str(ex)))
+                        logging.info(
+                            "[DeepRacerNodeMonitor] Issue in parsing the exception handler file: {}".format(
+                                str(ex)
+                            )
+                        )
                 self._upload_s3_job_status(JobStatus.FAILED, self._job_status_msg)
                 self._write_cw_metrics(JobStatus.FAILED)
 
-    def on_running_node_update(self, node_monitor: NodeMonitor, running_nodes: Set[str]) -> None:
+    def on_running_node_update(
+        self, node_monitor: NodeMonitor, running_nodes: Set[str]
+    ) -> None:
         """
         Callback function when set of running nodes are updated. Updating S3 and cloudwatch
         metrics only when all the monitored nodes are running.
@@ -164,9 +221,13 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         """
         # To avoid double counting of RUNNING metrics
         with self._lock:
-            logging.info("[DeepRacerNodeMonitor]: Running nodes are {}".format(running_nodes))
+            logging.info(
+                "[DeepRacerNodeMonitor]: Running nodes are {}".format(running_nodes)
+            )
             # This also takes care of the case where self._monitor_nodes & running nodes are empty
-            is_all_monitor_node_running = self._check_all_monitor_nodes_running(running_nodes)
+            is_all_monitor_node_running = self._check_all_monitor_nodes_running(
+                running_nodes
+            )
             if is_all_monitor_node_running:
                 self._job_status = JobStatus.RUNNING
                 self._job_status_msg = JobStatusMsg.RUNNING
@@ -183,7 +244,9 @@ class DeepRacerNodeMonitor(NodeMonitorObserverInterface):
         # To avoid double counting of INITIALIZING metrics
         with self._lock:
             logging.info("[DeepRacerNodeMonitor]: NodeMonitor started running")
-            self._upload_s3_job_status(JobStatus.INITIALIZING, JobStatusMsg.INITIALIZING)
+            self._upload_s3_job_status(
+                JobStatus.INITIALIZING, JobStatusMsg.INITIALIZING
+            )
             self._write_cw_metrics(JobStatus.INITIALIZING)
 
     def on_job_successful_completion(self, node_monitor: NodeMonitor) -> None:

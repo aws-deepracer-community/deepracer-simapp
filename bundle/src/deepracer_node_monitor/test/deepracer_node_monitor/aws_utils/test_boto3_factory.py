@@ -16,19 +16,27 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch, call
 
-# rosnode is imported in NodeMonitor class, but this package is not a ROS environment.
-# Since this is missing the rosnode, mocking the rosnode module.
+# rclpy is imported in NodeMonitor class, but this package is not a ROS environment.
+# Since this is missing the rclpy, mocking the rclpy module.
 # https://stackoverflow.com/questions/8658043/how-to-mock-an-import
 import sys
-sys.modules['rosnode'] = MagicMock()
-sys.modules['botocore'] = MagicMock()
-sys.modules['boto3'] = MagicMock()
-sys.modules['markov.log_handler.constants'] = MagicMock()
-sys.modules['markov.log_handler.exception_handler'] = MagicMock()
+
+sys.modules["rclpy"] = MagicMock()
+sys.modules["rclpy.node"] = MagicMock()
+sys.modules["rclpy.parameter_service"] = MagicMock()
+sys.modules["rcl_interfaces.srv"] = MagicMock()
+sys.modules["botocore"] = MagicMock()
+sys.modules["boto3"] = MagicMock()
+sys.modules["markov.log_handler.constants"] = MagicMock()
+sys.modules["markov.log_handler.exception_handler"] = MagicMock()
+sys.modules["markov.utils"] = MagicMock()
+sys.modules["markov.constants"] = MagicMock()
 
 from deepracer_node_monitor.aws_utils.boto3_factory import Boto3Factory
 from deepracer_node_monitor.aws_utils.constants import (
-    BOTO_MAX_RETRY_ATTEMPTS, BOTO_RETRY_CONNECT_TIMEOUT)
+    BOTO_MAX_RETRY_ATTEMPTS,
+    BOTO_RETRY_CONNECT_TIMEOUT,
+)
 
 
 @patch("deepracer_node_monitor.aws_utils.boto3_factory.JobUtils.get_aws_region")
@@ -38,7 +46,15 @@ class Boto3FactoryTest(TestCase):
     def test_create_boto3_client(self, botocore_mock, boto3_mock, get_aws_region_mock):
         get_aws_region_mock.return_value = "us-east-1"
         Boto3Factory.create_boto3_client("test")
-        boto3_mock.Session().client.assert_has_calls([
-            call("test", region_name="us-east-1",
-                 config=botocore_mock.config.Config(retries=dict(max_attempts=BOTO_MAX_RETRY_ATTEMPTS),
-                                                    connect_timeout=BOTO_RETRY_CONNECT_TIMEOUT))])
+        boto3_mock.Session().client.assert_has_calls(
+            [
+                call(
+                    "test",
+                    region_name="us-east-1",
+                    config=botocore_mock.config.Config(
+                        retries=dict(max_attempts=BOTO_MAX_RETRY_ATTEMPTS),
+                        connect_timeout=BOTO_RETRY_CONNECT_TIMEOUT,
+                    ),
+                )
+            ]
+        )

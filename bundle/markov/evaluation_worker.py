@@ -21,7 +21,8 @@ import logging
 import os
 import time
 from threading import Thread
-import rospy
+import rclpy
+import markov.rollout_utils as rollout_utils
 
 from rl_coach.base_parameters import TaskParameters
 from rl_coach.core_types import EnvironmentSteps
@@ -44,9 +45,10 @@ from markov.metrics.iteration_data import IterationData
 from markov.metrics.constants import FirehoseStreamKeys, FirehoseUploadFrequency, MetricsS3Keys
 from markov.s3_boto_data_store import S3BotoDataStore, S3BotoDataStoreParameters
 from markov.sagemaker_graph_manager import get_graph_manager
-from markov.rollout_utils import (PhaseObserver, signal_robomaker_markov_package_ready,
-                                  configure_environment_randomizer, get_robomaker_profiler_env)
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rollout_utils import (PhaseObserver,
+                                  configure_environment_randomizer, get_robomaker_profiler_env,
+                                  signal_robomaker_markov_package_ready)
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import configure_camera
 from markov.track_geom.track_data import TrackData
 from markov.track_geom.utils import get_start_positions
@@ -67,11 +69,12 @@ from markov.boto.s3.files.simtrace_video import SimtraceVideo
 from markov.boto.s3.files.checkpoint import Checkpoint
 from markov.boto.s3.utils import get_s3_key
 from markov.reset.constants import RaceType
+from markov.world_config import WorldConfig
 
-from std_srvs.srv import Empty, EmptyRequest
+from std_srvs.srv import Empty
 
-enable_episode_simtrace = utils.str2bool(rospy.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
-enable_firehose_upload = utils.str2bool(rospy.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
+enable_episode_simtrace = utils.str2bool(WorldConfig.get_param("ENABLE_EPISODE_SIMTRACE", False)) # feature flag
+enable_firehose_upload = utils.str2bool(WorldConfig.get_param("ENABLE_FIREHOSE_UPLOAD", False)) # feature flag
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -108,32 +111,45 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
                                      else "racecar_{}".format(agent_param.name.split("_")[1])
             subscribe_to_save_mp4_topic.append("/{}/save_mp4/subscribe_to_save_mp4".format(racecar_name))
             unsubscribe_from_save_mp4_topic.append("/{}/save_mp4/unsubscribe_from_save_mp4".format(racecar_name))
+        
         graph_manager.data_store.wait_for_checkpoints()
         graph_manager.data_store.modify_checkpoint_variables()
 
         # Make the clients that will allow us to pause and unpause the physics
-        rospy.wait_for_service('/gazebo/pause_physics_dr')
-        rospy.wait_for_service('/gazebo/unpause_physics_dr')
-        pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty)
-        unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty)
+        pause_physics = ServiceProxyWrapper('/deepracer/pause_physics_dr')
+        unpause_physics = ServiceProxyWrapper('/deepracer/unpause_physics_dr')
 
         for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
-            rospy.wait_for_service(mp4_sub)
-            rospy.wait_for_service(mp4_unsub)
-        for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
-            subscribe_to_save_mp4.append(ServiceProxyWrapper(mp4_sub, Empty))
-            unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub, Empty),
-                                                    args=(EmptyRequest(), )))
+            subscribe_to_save_mp4.append(ServiceProxyWrapper(mp4_sub))
+            unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub),
+                                                    args=(Empty.Request(), )))
 
         graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,
-                                   start_physics=unpause_physics, empty_service_call=EmptyRequest)
-        logger.info("Graph manager successfully created the graph: Unpausing physics")
-        unpause_physics(EmptyRequest())
+                                   start_physics=unpause_physics, empty_service_call=Empty.Request)
+        unpause_physics(Empty.Request())
 
-        is_save_mp4_enabled = rospy.get_param('MP4_S3_BUCKET', None)
+        is_save_mp4_enabled = WorldConfig.get_param('MP4_S3_BUCKET', None)
         if is_save_mp4_enabled:
-            for subscribe_mp4 in subscribe_to_save_mp4:
-                subscribe_mp4(EmptyRequest())
+            
+            for i, subscribe_mp4 in enumerate(subscribe_to_save_mp4):
+                try:
+                    # Add timeout and retry logic
+                    max_retries = 3
+                    retry_delay = 2.0
+                    
+                    for retry in range(max_retries):
+                        try:
+                            subscribe_mp4(Empty.Request())
+                            break
+                        except Exception as service_error:
+                            if retry < max_retries - 1:
+                                time.sleep(retry_delay)
+                            else:
+                                logger.debug("Max retries reached")
+                                
+                except Exception as e:
+                    logger.error(f"Error in evaluation worker: {e}")
+            
 
         configure_environment_randomizer()
         track_data = TrackData.get_instance()
@@ -145,7 +161,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
             track_data.park_positions = park_positions
             graph_manager.evaluate(EnvironmentSteps(1))
         else:
-            for _ in range(number_of_trials):
+            for trial_idx in range(number_of_trials):
                 track_data.park_positions = park_positions
                 graph_manager.evaluate(EnvironmentSteps(1))
         if is_save_mp4_enabled:
@@ -157,7 +173,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
         for s3_writer in simtrace_video_s3_writers:
             s3_writer.persist(utils.get_s3_kms_extra_args())
         time.sleep(1)
-        pause_physics(EmptyRequest())
+        pause_physics(Empty.Request())
     handle_job_completion()
 
 def handle_job_completion():
@@ -176,20 +192,20 @@ def main():
                         help='list(string) S3 bucket',
                         type=str,
                         nargs='+',
-                        default=rospy.get_param("MODEL_S3_BUCKET", ["gsaur-test"]))
+                        default=WorldConfig.get_param("MODEL_S3_BUCKET", ["gsaur-test"]))
     parser.add_argument('--s3_prefix',
                         help='list(string) S3 prefix',
                         type=str,
                         nargs='+',
-                        default=rospy.get_param("MODEL_S3_PREFIX", ["sagemaker"]))
+                        default=WorldConfig.get_param("MODEL_S3_PREFIX", ["sagemaker"]))
     parser.add_argument('--aws_region',
                         help='(string) AWS region',
                         type=str,
-                        default=rospy.get_param("AWS_REGION", "us-east-1"))
+                        default=WorldConfig.get_param("AWS_REGION", "us-east-1"))
     parser.add_argument('--number_of_trials',
                         help='(integer) Number of trials',
                         type=int,
-                        default=int(rospy.get_param("NUMBER_OF_TRIALS", 10)))
+                        default=int(WorldConfig.get_param("NUMBER_OF_TRIALS", 10)))
     parser.add_argument('-c', '--local_model_directory',
                         help='(string) Path to a folder containing a checkpoint \
                              to restore the model from.',
@@ -198,40 +214,40 @@ def main():
     parser.add_argument('--number_of_resets',
                         help='(integer) Number of resets',
                         type=int,
-                        default=int(rospy.get_param("NUMBER_OF_RESETS", 0)))
+                        default=int(WorldConfig.get_param("NUMBER_OF_RESETS", 0)))
     parser.add_argument('--penalty_seconds',
                         help='(float) penalty second',
                         type=float,
-                        default=float(rospy.get_param("PENALTY_SECONDS", 2.0)))
+                        default=float(WorldConfig.get_param("PENALTY_SECONDS", 2.0)))
     parser.add_argument('--job_type',
                         help='(string) job type',
                         type=str,
-                        default=rospy.get_param("JOB_TYPE", "EVALUATION"))
+                        default=WorldConfig.get_param("JOB_TYPE", "EVALUATION"))
     parser.add_argument('--is_continuous',
                         help='(boolean) is continous after lap completion',
                         type=bool,
-                        default=utils.str2bool(rospy.get_param("IS_CONTINUOUS", False)))
+                        default=utils.str2bool(WorldConfig.get_param("IS_CONTINUOUS", False)))
     parser.add_argument('--race_type',
                         help='(string) Race type',
                         type=str,
-                        default=rospy.get_param("RACE_TYPE", "TIME_TRIAL"))
+                        default=WorldConfig.get_param("RACE_TYPE", "TIME_TRIAL"))
     parser.add_argument('--off_track_penalty',
                         help='(float) off track penalty second',
                         type=float,
-                        default=float(rospy.get_param("OFF_TRACK_PENALTY", 2.0)))
+                        default=float(WorldConfig.get_param("OFF_TRACK_PENALTY", 2.0)))
     parser.add_argument('--collision_penalty',
                         help='(float) collision penalty second',
                         type=float,
-                        default=float(rospy.get_param("COLLISION_PENALTY", 5.0)))
+                        default=float(WorldConfig.get_param("COLLISION_PENALTY", 5.0)))
 
     args = parser.parse_args()
     arg_s3_bucket = args.s3_bucket
     arg_s3_prefix = args.s3_prefix
     logger.info("S3 bucket: %s \n S3 prefix: %s", arg_s3_bucket, arg_s3_prefix)
 
-    metrics_s3_buckets = rospy.get_param('METRICS_S3_BUCKET')
-    metrics_s3_object_keys = rospy.get_param('METRICS_S3_OBJECT_KEY')
-    start_pos_offset = max(min(float(rospy.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
+    metrics_s3_buckets = WorldConfig.get_param('METRICS_S3_BUCKET', 'default_bucket')
+    metrics_s3_object_keys = WorldConfig.get_param('METRICS_S3_OBJECT_KEY', 'metrics.json')
+    start_pos_offset = max(min(float(WorldConfig.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
                            MIN_START_POS_OFFSET)
 
     arg_s3_bucket, arg_s3_prefix = utils.force_list(arg_s3_bucket), utils.force_list(arg_s3_prefix)
@@ -240,31 +256,38 @@ def main():
 
     validate_list = [arg_s3_bucket, arg_s3_prefix, metrics_s3_buckets, metrics_s3_object_keys]
 
-    simtrace_s3_bucket = rospy.get_param('SIMTRACE_S3_BUCKET', None)
-    mp4_s3_bucket = rospy.get_param('MP4_S3_BUCKET', None)
+    simtrace_s3_bucket = WorldConfig.get_param('SIMTRACE_S3_BUCKET', None)
+    mp4_s3_bucket = WorldConfig.get_param('MP4_S3_BUCKET', None)
     if simtrace_s3_bucket: 
-        simtrace_s3_object_prefix = rospy.get_param('SIMTRACE_S3_PREFIX') 
+        # OLD ROS1 style: simtrace_s3_object_prefix = WorldConfig.get_param('SIMTRACE_S3_PREFIX') 
+        # FIXED ROS2: Add required default_value parameter
+        simtrace_s3_object_prefix = WorldConfig.get_param('SIMTRACE_S3_PREFIX', '') 
         simtrace_s3_bucket = utils.force_list(simtrace_s3_bucket) 
         simtrace_s3_object_prefix = utils.force_list(simtrace_s3_object_prefix) 
         validate_list.extend([simtrace_s3_bucket, simtrace_s3_object_prefix]) 
         # Only enable this when the feature flag is on
         if enable_episode_simtrace: 
-            simtrace_episode_s3_object_prefix = rospy.get_param('SIMTRACE_EPISODE_S3_PREFIX') 
+            # OLD ROS1 style: simtrace_episode_s3_object_prefix = WorldConfig.get_param('SIMTRACE_EPISODE_S3_PREFIX') 
+            # FIXED ROS2: Add required default_value parameter
+            simtrace_episode_s3_object_prefix = WorldConfig.get_param('SIMTRACE_EPISODE_S3_PREFIX', '') 
             simtrace_episode_s3_object_prefix = utils.force_list(simtrace_episode_s3_object_prefix)
             validate_list.append(simtrace_episode_s3_object_prefix)
     if mp4_s3_bucket:
-        mp4_s3_object_prefix = rospy.get_param('MP4_S3_OBJECT_PREFIX')
+        # OLD ROS1 style: mp4_s3_object_prefix = WorldConfig.get_param('MP4_S3_OBJECT_PREFIX')
+        # FIXED ROS2: Add required default_value parameter
+        mp4_s3_object_prefix = WorldConfig.get_param('MP4_S3_OBJECT_PREFIX', '')
         mp4_s3_bucket = utils.force_list(mp4_s3_bucket)
         mp4_s3_object_prefix = utils.force_list(mp4_s3_object_prefix)
         validate_list.extend([mp4_s3_bucket, mp4_s3_object_prefix])
 
     if enable_firehose_upload:
-        firehose_s3_bucket = utils.force_list(rospy.get_param('FIREHOSE_S3_BUCKET', None))
+        firehose_s3_bucket = utils.force_list(WorldConfig.get_param('FIREHOSE_S3_BUCKET', None))
         if firehose_s3_bucket:
-            firehose_metrics_stream_names = utils.force_list(rospy.get_param('FIREHOSE_METRICS_STREAM_NAME'))
-            firehose_simtrace_stream_names = utils.force_list(rospy.get_param('FIREHOSE_SIMTRACE_STREAM_NAME'))
-            firehose_metrics_s3_prefixes = utils.force_list(rospy.get_param('FIREHOSE_METRICS_S3_PREFIX'))
-            firehose_simtrace_s3_prefixes = utils.force_list(rospy.get_param('FIREHOSE_SIMTRACE_S3_PREFIX'))
+            # ROS2: Add required default_value parameter
+            firehose_metrics_stream_names = utils.force_list(WorldConfig.get_param('FIREHOSE_METRICS_STREAM_NAME', ''))
+            firehose_simtrace_stream_names = utils.force_list(WorldConfig.get_param('FIREHOSE_SIMTRACE_STREAM_NAME', ''))
+            firehose_metrics_s3_prefixes = utils.force_list(WorldConfig.get_param('FIREHOSE_METRICS_S3_PREFIX', ''))
+            firehose_simtrace_s3_prefixes = utils.force_list(WorldConfig.get_param('FIREHOSE_SIMTRACE_S3_PREFIX', ''))
     
             validate_list.extend([firehose_metrics_stream_names, firehose_simtrace_stream_names, firehose_s3_bucket,
                                 firehose_metrics_s3_prefixes, firehose_simtrace_s3_prefixes])
@@ -273,7 +296,8 @@ def main():
         log_and_exit("Eval worker error: Incorrect arguments passed: {}"
                          .format(validate_list),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_500)
+                     SIMAPP_EVENT_ERROR_CODE_500,
+                     name="Eval worker")
     if args.number_of_resets != 0 and args.number_of_resets < MIN_RESET_COUNT:
         raise GenericRolloutException("number of resets is less than {}".format(MIN_RESET_COUNT))
 
@@ -291,8 +315,8 @@ def main():
     simtrace_video_s3_writers = []
     simtrace_episode_s3_writer = None
     start_positions = get_start_positions(len(arg_s3_bucket), start_pos_offset)
-    done_condition = utils.str_to_done_condition(rospy.get_param("DONE_CONDITION", any))
-    park_positions = utils.pos_2d_str_to_list(rospy.get_param("PARK_POSITIONS", []))
+    done_condition = utils.str_to_done_condition(WorldConfig.get_param("DONE_CONDITION", any))
+    park_positions = utils.pos_2d_str_to_list(WorldConfig.get_param("PARK_POSITIONS", []))
     # if not pass in park positions for all done condition case, use default
     if not park_positions:
         park_positions = [DEFAULT_PARK_POSITION for _ in arg_s3_bucket]
@@ -337,8 +361,8 @@ def main():
                     velocity_topic.replace('racecar', racecar_name) for velocity_topic in VELOCITY_TOPICS],
                 ConfigParams.STEERING_LIST.value: [
                     steering_topic.replace('racecar', racecar_name) for steering_topic in STEERING_TOPICS],
-                ConfigParams.CHANGE_START.value: utils.str2bool(rospy.get_param('CHANGE_START_POSITION', False)),
-                ConfigParams.ALT_DIR.value: utils.str2bool(rospy.get_param('ALTERNATE_DRIVING_DIRECTION', False)),
+                ConfigParams.CHANGE_START.value: utils.str2bool(WorldConfig.get_param('CHANGE_START_POSITION', False)),
+                ConfigParams.ALT_DIR.value: utils.str2bool(WorldConfig.get_param('ALTERNATE_DRIVING_DIRECTION', False)),
                 ConfigParams.MODEL_METADATA.value: model_metadata,
                 ConfigParams.REWARD.value: reward_function,
                 ConfigParams.AGENT_NAME.value: racecar_name,
@@ -355,21 +379,20 @@ def main():
 
         metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: metrics_s3_buckets[agent_index],
                              MetricsS3Keys.METRICS_KEY.value: metrics_s3_object_keys[agent_index],
-                             # Replaced rospy.get_param('AWS_REGION') to be equal to the argument being passed
-                             # or default argument set
                              MetricsS3Keys.REGION.value: args.aws_region}
 
         firehose_metrics_config = None
         firehose_simtrace_config= None
         # Only enable this when the feature flag is on
         if enable_firehose_upload:
-            firehose_upload_frequency = rospy.get_param('FIREHOSE_UPLOAD_FREQUENCY')
+            firehose_upload_frequency = WorldConfig.get_param('FIREHOSE_UPLOAD_FREQUENCY')
             if firehose_upload_frequency not in FirehoseUploadFrequency._value2member_map_:
                 log_and_exit("Eval worker error: Invalid FIREHOSE_UPLOAD_FREQUENCY: {}. "
                              "Expected one of: {}".format(firehose_upload_frequency, ", "
                                                           .join([e.value for e in FirehoseUploadFrequency])),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_500)
+                             SIMAPP_EVENT_ERROR_CODE_500,
+                             name="Eval Worker")
                 
             firehose_metrics_config = {FirehoseStreamKeys.FIREHOSE_DELIVERY_STREAM.value: firehose_metrics_stream_names[agent_index],
                                        FirehoseStreamKeys.FIREHOSE_S3_BUCKET.value: firehose_s3_bucket[agent_index],
@@ -380,7 +403,7 @@ def main():
                                         FirehoseStreamKeys.FIREHOSE_S3_PREFIX.value: firehose_simtrace_s3_prefixes[agent_index],
                                         FirehoseStreamKeys.REGION.value: args.aws_region}
                 
-        aws_region = rospy.get_param('AWS_REGION', args.aws_region)
+        aws_region = WorldConfig.get_param('AWS_REGION', args.aws_region)
         if simtrace_s3_bucket:
             # Only enable this when the feature flag is on
             if enable_episode_simtrace:
@@ -423,19 +446,18 @@ def main():
     agent_list.append(create_obstacles_agent())
     agent_list.append(create_bot_cars_agent())
 
-    # ROS service to indicate all the robomaker markov packages are ready for consumption
+    # FIXED: ROS service to indicate all the robomaker markov packages are ready for consumption
+    # This matches ROS1 pattern - called EARLY after agents created, not at the end
     signal_robomaker_markov_package_ready()
 
     PhaseObserver('/agent/training_phase', run_phase_subject)
-    enable_domain_randomization = utils.str2bool(rospy.get_param('ENABLE_DOMAIN_RANDOMIZATION', False))
+    enable_domain_randomization = utils.str2bool(WorldConfig.get_param('ENABLE_DOMAIN_RANDOMIZATION', False))
 
     sm_hyperparams_dict = {}
 
     # Make the clients that will allow us to pause and unpause the physics
-    rospy.wait_for_service('/gazebo/pause_physics_dr')
-    rospy.wait_for_service('/gazebo/unpause_physics_dr')
-    pause_physics = ServiceProxyWrapper('/gazebo/pause_physics_dr', Empty)
-    unpause_physics = ServiceProxyWrapper('/gazebo/unpause_physics_dr', Empty)
+    pause_physics = ServiceProxyWrapper('/deepracer/pause_physics_dr')
+    unpause_physics = ServiceProxyWrapper('/deepracer/unpause_physics_dr')
 
     graph_manager, _ = get_graph_manager(hp_dict=sm_hyperparams_dict, agent_list=agent_list,
                                          run_phase_subject=run_phase_subject,
@@ -454,6 +476,7 @@ def main():
     task_parameters = TaskParameters()
     task_parameters.checkpoint_restore_path = args.local_model_directory
 
+    
     evaluation_worker(
         graph_manager=graph_manager,
         number_of_trials=args.number_of_trials,
@@ -468,17 +491,30 @@ def main():
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('rl_coach', anonymous=True)
-        main()
+        rclpy.init()
+        node = rclpy.create_node('rl_coach')
+        
+        # Create the robomaker_markov_package_ready service immediately
+        rollout_utils._rl_coach_node = node  # Store node reference globally
+        signal_robomaker_markov_package_ready()
+        
+        try:
+            main()
+        except Exception as e:
+            raise
+        # service = node.create_service(EmptyService, '/robomaker_markov_package_ready', handle_robomaker_markov_package_ready)
+        # main()
     except ValueError as err:
         if utils.is_user_error(err):
             log_and_exit("User modified model/model_metadata: {}".format(err),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
+                         SIMAPP_EVENT_ERROR_CODE_500,
+                         name="Eval Worker")
         else:
             log_and_exit("Eval worker value error: {}".format(err),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                         SIMAPP_EVENT_ERROR_CODE_500)
+                         SIMAPP_EVENT_ERROR_CODE_500,
+                         name="Eval Worker")
     except GenericRolloutError as ex:
         ex.log_except_and_exit()
     except GenericRolloutException as ex:
@@ -486,4 +522,5 @@ if __name__ == '__main__':
     except Exception as ex:
         log_and_exit("Eval worker error: {}".format(ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_500)
+                     SIMAPP_EVENT_ERROR_CODE_500,
+                     name="Eval Worker")

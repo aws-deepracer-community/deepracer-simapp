@@ -14,10 +14,9 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-import rospy
-
 from markov import utils
 from markov.virtual_event.constants import DEFAULT_RACE_DURATION
+from markov.world_config import WorldConfig
 
 
 class VirtualEventRaceData():
@@ -28,15 +27,15 @@ class VirtualEventRaceData():
         """
         VirtualEventRaceData constructor
         """
-        self._region = rospy.get_param("AWS_REGION", "us-east-1")
-        self._race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION))
-        self._number_of_trials = int(rospy.get_param("NUMBER_OF_TRIALS", 3))
-        self._number_of_resets = int(rospy.get_param("NUMBER_OF_RESETS", 0))
-        self._penalty_seconds = float(rospy.get_param("PENALTY_SECONDS", 2.0))
-        self._off_track_penalty = float(rospy.get_param("OFF_TRACK_PENALTY", 2.0))
-        self._collision_penalty = float(rospy.get_param("COLLISION_PENALTY", 5.0))
-        self._is_continuous = utils.str2bool(rospy.get_param("IS_CONTINUOUS", False))
-        self._race_type = rospy.get_param("RACE_TYPE", "TIME_TRIAL")
+        self._region = WorldConfig.get_param("AWS_REGION", "us-east-1")
+        self._race_duration = int(WorldConfig.get_param("RACE_DURATION", DEFAULT_RACE_DURATION))
+        self._number_of_trials = int(WorldConfig.get_param("NUMBER_OF_TRIALS", 3))
+        self._number_of_resets = int(WorldConfig.get_param("NUMBER_OF_RESETS", 0))
+        self._penalty_seconds = float(WorldConfig.get_param("PENALTY_SECONDS", 2.0))
+        self._off_track_penalty = float(WorldConfig.get_param("OFF_TRACK_PENALTY", 2.0))
+        self._collision_penalty = float(WorldConfig.get_param("COLLISION_PENALTY", 5.0))
+        self._is_continuous = utils.str2bool(WorldConfig.get_param("IS_CONTINUOUS", False))
+        self._race_type = WorldConfig.get_param("RACE_TYPE", "TIME_TRIAL")
         self._done_condition = any
         self._enable_domain_randomization = False
 

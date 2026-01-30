@@ -1,0 +1,54 @@
+kinesis_webrtc_streamer:
+  ros__parameters:
+    aws_client_configuration:
+      # Specifies where you want the client to communicate. Examples include us-east-1 or us-west-2.
+      region: "us-west-2"
+
+      # Values that determine the length of time, in milliseconds, to wait before timing out a request. 
+      connect_timeout_ms: 5000
+      request_timeout_ms: 5000
+
+      # The maximum number of allowed connections to a single server for your HTTP communications. The default value is 25.
+      # You can set this value as high as you can support the bandwidth. We recommend a value around 25.
+      #maxConnections: 25
+
+      # The number of retries for connecting to AWS Services
+      max_retries: 10
+
+    webrtc_streamer_configuration:
+      
+      spinner_thread_count: 1
+
+      stream_count: 2
+
+      stream0:
+        # Kinesis Video Channel name. If a stream by the given name doesn't exist, it will be created.
+        signaling_channel_name: "sample_channel_name"
+
+        # Topic name to subscribe and receive the image/video data from.
+        # if blank, does NOT open video channel
+        video_subscription_topic: /video/encoded
+
+        # Topic name to subscribe and receieve string data from
+        # if blank, does NOT open a data channel
+        data_subscription_topic: /string/raw
+
+        # Topic name to publish and send messages to when receiving message over WebRTC
+        # if blank, does NOT open a return data channel
+        publish_topic: /webrtc/raw_string
+
+        # Video format type
+        # 0: H264
+        # 1: VP8
+        video_format_type: 0
+
+      stream1:
+        signaling_channel_name: "sample_channel_name1"
+
+        video_subscription_topic: /video/encoded1
+
+        data_subscription_topic: /string/raw1
+
+        publish_topic: /webrtc/raw_string1
+        video_format_type: 1
+      

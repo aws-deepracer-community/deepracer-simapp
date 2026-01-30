@@ -21,6 +21,19 @@ import logging
 import numpy as np
 import markov.agent_ctrl.constants as const
 
+# Try to import real ROS2 Float64, fallback to simple class for training worker
+try:
+    from std_msgs.msg import Float64, Float64MultiArray
+except ImportError as e:
+    # Fallback for environments without ROS2 (like SageMaker training worker)
+    class Float64:
+        def __init__(self):
+            self.data = 0.0
+    
+    class Float64MultiArray:
+        def __init__(self):
+            self.data = []
+
 from markov.metrics.constants import StepMetrics
 from markov.agent_ctrl.constants import RewardParam
 from markov.track_geom.constants import AgentPos, TrackNearDist, TrackNearPnts
@@ -177,11 +190,17 @@ def send_action(velocity_pub_dict, steering_pub_dict, steering_angle, speed):
        steering_angle - Desired amount, in radians, to move the movable joints by
        speed - Angular velocity which the velocity joints should rotate with
     '''
+    speed_msg = Float64MultiArray()
+    speed_msg.data = [float(speed)]
+    
+    steering_msg = Float64MultiArray()
+    steering_msg.data = [float(steering_angle)]
+    
     for _, pub in velocity_pub_dict.items():
-        pub.publish(speed)
+        pub.publish(speed_msg)
 
     for _, pub in steering_pub_dict.items():
-        pub.publish(steering_angle)
+        pub.publish(steering_msg)
 
 
 def load_action_space(model_metadata):

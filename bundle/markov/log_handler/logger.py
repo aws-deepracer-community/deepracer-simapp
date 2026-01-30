@@ -16,10 +16,9 @@
 
 # Logger class definition
 import logging
-import sys
 
 
-class Logger(object):
+class Logger():
     """
     Logger class for all DeepRacer Simulation Application logging
     """

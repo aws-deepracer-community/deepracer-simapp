@@ -1,18 +1,20 @@
-cmake_minimum_required(VERSION 3.10.3)
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.14.4)
 project(kinesis_webrtc_manager)
 set(KINESIS_WEBRTC_MANAGER_VERSION 0.1.0)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(ament_cmake REQUIRED)
 find_package(aws_common REQUIRED)
-find_package(aws_ros1_common REQUIRED)
-
-set(WEBRTCSDK_VERSION 1.0.0)
+find_package(aws_ros2_common REQUIRED)
 
 set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 
@@ -26,14 +28,15 @@ include(ExternalProject)
 
 ExternalProject_Add(WEBRTC_SDK_IMPORT
   GIT_REPOSITORY "https://github.com/awslabs/amazon-kinesis-video-streams-webrtc-sdk-c.git"
-  GIT_TAG "v1.5.0"
+  GIT_TAG "v1.12.0"
   SOURCE_DIR ${EXTERNAL_INSTALL_LOCATION}/src
   BINARY_DIR ${EXTERNAL_INSTALL_LOCATION}/build
-  PATCH_COMMAND
-    # Patch amazon-kinesis-video-streams-webrtc-sdk-c
-       cp ${CMAKE_CURRENT_SOURCE_DIR}/webrtc-patches/webrtc-sdk-c.patch ${EXTERNAL_INSTALL_LOCATION}/src
-    && cd ${EXTERNAL_INSTALL_LOCATION}/src
-    && git apply --ignore-space-change --ignore-whitespace ${EXTERNAL_INSTALL_LOCATION}/src/webrtc-sdk-c.patch
+  CMAKE_ARGS -DCMAKE_C_FLAGS="-Wno-enum-int-mismatch"
+  PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Checking if patch needs to be applied" && 
+              (git -C ${EXTERNAL_INSTALL_LOCATION}/src apply --check --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/webrtc-patches/webrtc-sdk-c.patch > /dev/null 2>&1 && 
+               ${CMAKE_COMMAND} -E echo "Applying patch" && 
+               git -C ${EXTERNAL_INSTALL_LOCATION}/src apply --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/webrtc-patches/webrtc-sdk-c.patch || 
+               ${CMAKE_COMMAND} -E echo "Patch already applied, skipping")
   INSTALL_COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/install-webrtc ${EXTERNAL_INSTALL_LOCATION}
     && chmod +x ${EXTERNAL_INSTALL_LOCATION}/install-webrtc
     && ${EXTERNAL_INSTALL_LOCATION}/install-webrtc ${EXTERNAL_INSTALL_LOCATION}
@@ -48,7 +51,7 @@ set(WEBRTCSDK_LIB_DIR ${CMAKE_BINARY_DIR}/external/lib)
 set(WEBRTCSDK_LIBS
   libkvsWebrtcClient.so
   libkvsWebrtcSignalingClient.so
-  libkvsCommonLws.a
+  libkvsCommonLws.so
 )
 
 foreach(_imported_lib ${WEBRTCSDK_LIBS})
@@ -81,16 +84,20 @@ add_library(${PROJECT_NAME} SHARED src/kinesis_webrtc_utils.cpp
 
 add_dependencies(${PROJECT_NAME} WEBRTC_SDK_IMPORT)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTCSDK_INCLUDE_DIR} ${KINESIS_WEBRTC_MANAGER_INCLUDE_DIR} )
+# Use target_include_directories with proper visibility
+target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTCSDK_INCLUDE_DIR})
 
-
-## Export source code as SHARED
+# Export source code as SHARED with proper BUILD_INTERFACE and INSTALL_INTERFACE
 target_include_directories(${PROJECT_NAME} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<BUILD_INTERFACE:${WEBRTCSDK_INCLUDE_DIR}>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
 
-target_link_libraries(${PROJECT_NAME} ${WEBRTCSDK_LIBS})
+target_link_libraries(${PROJECT_NAME} 
+  ${WEBRTCSDK_LIBS} 
+  aws_common
+)
 
 #############
 ## Install ##
@@ -107,13 +114,13 @@ install(TARGETS ${PROJECT_NAME}
 ## Mark cpp header files for installation
 install(
   DIRECTORY include/
-  DESTINATION include
+  DESTINATION include/${PROJECT_NAME}
 )
 
 # Export WEBRTC SDK artifacts
 install(
   DIRECTORY ${WEBRTCSDK_INCLUDE_DIR}/
-  DESTINATION include
+  DESTINATION include/${PROJECT_NAME}
 )
 
 
@@ -145,3 +152,46 @@ install(
   EXPORT ${PROJECT_NAME}-targets
   DESTINATION share/${PROJECT_NAME}/cmake
 )
+# Export dependencies for ROS 2
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(${PROJECT_NAME}-targets)
+ament_export_dependencies(aws_common aws_ros2_common)
+
+#############
+## Testing ##
+#############
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_gmock REQUIRED)
+
+  ament_add_gmock(test_kinesis_webrtc_manager
+    test/kinesis_webrtc_manager_test.cpp
+    TIMEOUT 10)  # Set a shorter timeout for faster test runs
+  
+  target_include_directories(test_kinesis_webrtc_manager PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${WEBRTCSDK_INCLUDE_DIR}>")
+  target_link_libraries(test_kinesis_webrtc_manager
+    ${PROJECT_NAME}
+    ${WEBRTCSDK_LIBS}
+    aws_common
+  )
+
+  ament_add_gmock(test_kinesis_webrtc_utils
+    test/kinesis_webrtc_utils_test.cpp)
+
+  target_include_directories(test_kinesis_webrtc_utils PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<BUILD_INTERFACE:${WEBRTCSDK_INCLUDE_DIR}>")
+  target_link_libraries(test_kinesis_webrtc_utils
+    ${PROJECT_NAME}
+    ${WEBRTCSDK_LIBS}
+    aws_common
+  )
+
+
+endif()
+
+# Add ament_package() at the end to properly register the package with ROS 2
+ament_package()

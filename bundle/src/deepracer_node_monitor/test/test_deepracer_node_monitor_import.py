@@ -15,13 +15,18 @@
 #################################################################################
 from unittest.mock import MagicMock
 
-# rosnode is imported in NodeMonitor class, but this package is not a ROS environment.
-# Since this is missing the rosnode, mocking the rosnode module.
+# rclpy is imported in NodeMonitor class, but this package is not a ROS environment.
+# Since this is missing the rclpy, mocking the rclpy module.
 # https://stackoverflow.com/questions/8658043/how-to-mock-an-import
 import sys
-sys.modules['rosnode'] = MagicMock()
-sys.modules['botocore'] = MagicMock()
-sys.modules['boto3'] = MagicMock()
+
+sys.modules["rclpy"] = MagicMock()
+sys.modules["botocore"] = MagicMock()
+sys.modules["boto3"] = MagicMock()
+sys.modules["markov.log_handler.constants"] = MagicMock()
+sys.modules["markov.log_handler.exception_handler"] = MagicMock()
+sys.modules["markov.utils"] = MagicMock()
+sys.modules["markov.constants"] = MagicMock()
 
 
 def test_deepracer_node_monitor_importable():

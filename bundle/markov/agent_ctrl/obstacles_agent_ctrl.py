@@ -18,16 +18,14 @@
 import numpy as np
 import os
 import random
-import rospkg
-import rospy
 
-from gazebo_msgs.msg import ModelState
-from gazebo_msgs.srv import SpawnModel
+from deepracer_msgs.msg import ModelState
+from deepracer_msgs.srv import SpawnModel
 from markov.agent_ctrl.constants import BOT_CAR_Z, OBSTACLE_Z, OBSTACLE_NAME_PREFIX, OBSTACLE_TYPE_LIST
 from markov.track_geom.constants import SPAWN_SDF_MODEL, SPAWN_URDF_MODEL, ObstacleDimensions
 from markov.track_geom.track_data import TrackData
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov import utils
 from markov.reset.constants import AgentInfo
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
@@ -35,19 +33,20 @@ from markov.domain_randomizations.randomizer_manager import RandomizerManager
 from markov.domain_randomizations.visual.model_visual_randomizer import ModelVisualRandomizer
 from markov.domain_randomizations.constants import ModelRandomizerType
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
+from markov.world_config import WorldConfig
 
 
 class ObstaclesCtrl(AgentCtrlInterface):
     def __init__(self):
         # Read ros parameters
         # OBJECT_POSITIONS will overwrite NUMBER_OF_OBSTACLES and RANDOMIZE_OBSTACLE_LOCATIONS
-        self.object_locations = rospy.get_param("OBJECT_POSITIONS", [])
-        self.num_obstacles = int(rospy.get_param("NUMBER_OF_OBSTACLES", 0)) \
+        self.object_locations = WorldConfig.get_param("OBJECT_POSITIONS", [])
+        self.num_obstacles = int(WorldConfig.get_param("NUMBER_OF_OBSTACLES", 0)) \
                              if not self.object_locations else len(self.object_locations)
-        self.min_obstacle_dist = float(rospy.get_param("MIN_DISTANCE_BETWEEN_OBSTACLES", 2.0))
-        self.randomize = utils.str2bool(rospy.get_param("RANDOMIZE_OBSTACLE_LOCATIONS", False))
-        self.use_bot_car = utils.str2bool(rospy.get_param("IS_OBSTACLE_BOT_CAR", False))
-        self.obstacle_type = str(rospy.get_param("OBSTACLE_TYPE", "box_obstacle"))
+        self.min_obstacle_dist = float(WorldConfig.get_param("MIN_DISTANCE_BETWEEN_OBSTACLES", 2.0))
+        self.randomize = utils.str2bool(WorldConfig.get_param("RANDOMIZE_OBSTACLE_LOCATIONS", False))
+        self.use_bot_car = utils.str2bool(WorldConfig.get_param("IS_OBSTACLE_BOT_CAR", False))
+        self.obstacle_type = str(WorldConfig.get_param("OBSTACLE_TYPE", "box_obstacle"))
         if self.obstacle_type not in OBSTACLE_TYPE_LIST:
             raise GenericRolloutException('Obstacle type {} is not supported'.\
                                             format(self.obstacle_type))
@@ -59,15 +58,16 @@ class ObstaclesCtrl(AgentCtrlInterface):
         self.track_data = TrackData.get_instance()
 
         # Wait for ros services
-        rospy.wait_for_service(SPAWN_SDF_MODEL)
-        rospy.wait_for_service(SPAWN_URDF_MODEL)
         self.spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel)
         self.spawn_urdf_model = ServiceProxyWrapper(SPAWN_URDF_MODEL, SpawnModel)
 
         # Load the obstacle sdf/urdf
         obstacle_model_folder = "bot_car" if self.use_bot_car else self.obstacle_type
-        rospack = rospkg.RosPack()
-        deepracer_path = rospack.get_path("deepracer_simulation_environment")
+        # OLD ROS1: rospack = rospkg.RosPack()
+        # OLD ROS1: deepracer_path = rospack.get_path("deepracer_simulation_environment")
+        # FIXED ROS2: Use get_package_share_directory instead of rospack
+        from ament_index_python.packages import get_package_share_directory
+        deepracer_path = get_package_share_directory("deepracer_simulation_environment")
         obstacle_sdf_path = os.path.join(deepracer_path, "models", obstacle_model_folder, "model.sdf")
         with open(obstacle_sdf_path, "r") as fp:
             self.obstacle_sdf = fp.read()
@@ -144,8 +144,13 @@ class ObstaclesCtrl(AgentCtrlInterface):
 
     def _spawn_obstacles(self):
         for obstacle_name, obstacle_pose in zip(self.obstacle_names, self.obstacle_poses):
-            self.spawn_sdf_model(obstacle_name, self.obstacle_sdf, '/{}'.format(obstacle_name),
-                                 obstacle_pose, '')
+            req = SpawnModel.Request()
+            req.model_name = obstacle_name
+            req.model_xml = self.obstacle_sdf
+            req.robot_namespace = '/{}'.format(obstacle_name)
+            req.initial_pose = obstacle_pose
+            req.reference_frame = ''
+            self.spawn_sdf_model(req)
             self.track_data.initialize_object(obstacle_name, obstacle_pose,
                                               self.obstacle_dimensions)
 
@@ -154,12 +159,12 @@ class ObstaclesCtrl(AgentCtrlInterface):
             obstacle_state = ModelState()
             obstacle_state.model_name = obstacle_name
             obstacle_state.pose = obstacle_pose
-            obstacle_state.twist.linear.x = 0
-            obstacle_state.twist.linear.y = 0
-            obstacle_state.twist.linear.z = 0
-            obstacle_state.twist.angular.x = 0
-            obstacle_state.twist.angular.y = 0
-            obstacle_state.twist.angular.z = 0
+            obstacle_state.twist.linear.x = 0.0
+            obstacle_state.twist.linear.y = 0.0
+            obstacle_state.twist.linear.z = 0.0
+            obstacle_state.twist.angular.x = 0.0
+            obstacle_state.twist.angular.y = 0.0
+            obstacle_state.twist.angular.z = 0.0
             SetModelStateTracker.get_instance().set_model_state(obstacle_state)
 
     def _update_track_data_object_poses(self):

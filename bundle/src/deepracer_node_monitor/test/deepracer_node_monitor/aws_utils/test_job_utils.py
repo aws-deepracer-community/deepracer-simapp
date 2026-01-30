@@ -16,15 +16,21 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-# rosnode is imported in NodeMonitor class, but this package is not a ROS environment.
-# Since this is missing the rosnode, mocking the rosnode module.
+# rclpy is imported in NodeMonitor class, but this package is not a ROS environment.
+# Since this is missing the rclpy, mocking the rclpy module.
 # https://stackoverflow.com/questions/8658043/how-to-mock-an-import
 import sys
-sys.modules['rosnode'] = MagicMock()
-sys.modules['botocore.config'] = MagicMock()
-sys.modules['boto3'] = MagicMock()
-sys.modules['markov.log_handler.constants'] = MagicMock()
-sys.modules['markov.log_handler.exception_handler'] = MagicMock()
+
+sys.modules["rclpy"] = MagicMock()
+sys.modules["rclpy.node"] = MagicMock()
+sys.modules["rclpy.parameter_service"] = MagicMock()
+sys.modules["rcl_interfaces.srv"] = MagicMock()
+sys.modules["botocore.config"] = MagicMock()
+sys.modules["boto3"] = MagicMock()
+sys.modules["markov.log_handler.constants"] = MagicMock()
+sys.modules["markov.log_handler.exception_handler"] = MagicMock()
+sys.modules["markov.utils"] = MagicMock()
+sys.modules["markov.constants"] = MagicMock()
 
 from deepracer_node_monitor.aws_utils.job_utils import JobUtils
 
@@ -36,12 +42,14 @@ class JobUtilsTest(TestCase):
         self.assertEqual("ROBOMAKER_ARN", JobUtils.get_simulation_arn())
 
     def test_get_simulation_arn_empty(self, os_mock):
-        os_mock.environ.get.return_value = ''
+        os_mock.environ.get.return_value = ""
         self.assertEqual("", JobUtils.get_simulation_arn())
 
     @patch("deepracer_node_monitor.aws_utils.job_utils.JobUtils.get_simulation_arn")
     def test_get_job_id(self, get_simulation_arn_mock, os_mock):
-        get_simulation_arn_mock.return_value = "arn:aws:robomaker:us-east-1:687392285187:simulation-job/sim-n3vp4ydpwkx8"
+        get_simulation_arn_mock.return_value = (
+            "arn:aws:robomaker:us-east-1:687392285187:simulation-job/sim-n3vp4ydpwkx8"
+        )
         self.assertEqual("sim-n3vp4ydpwkx8", JobUtils.get_job_id())
 
     def test_get_aws_region(self, os_mock):

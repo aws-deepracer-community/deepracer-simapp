@@ -1,38 +1,26 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
  */
-
-
 #include <aws/core/Aws.h>
 #include <aws/core/utils/logging/AWSLogging.h>
 #include <aws/core/utils/logging/LogLevel.h>
 #include <aws/core/utils/logging/LogMacros.h>
-#include <aws_ros1_common/sdk_utils/logging/aws_ros_logger.h>
-#include <aws_ros1_common/sdk_utils/ros1_node_parameter_reader.h>
-#include <ros/ros.h>
+#include <aws_ros2_common/sdk_utils/logging/aws_ros_logger.h>
+#include <aws_ros2_common/sdk_utils/ros2_node_parameter_reader.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "kinesis_webrtc_streamer/streamer_params.h"
 #include "kinesis_webrtc_streamer/webrtc_node.h"
 #include "read_option.h"
 
- #ifndef RETURN_CODE_MASK
- #define RETURN_CODE_MASK (0xff) /* Process exit code is in range (0, 255) */
- #endif
- 
- #ifndef UNKNOWN_ERROR_KINESIS_WEBRTC_EXIT_CODE
- #define UNKNOWN_ERROR_KINESIS_WEBRTC_EXIT_CODE (0xf0)
- #endif
+#ifndef RETURN_CODE_MASK
+#define RETURN_CODE_MASK (0xff) /* Process exit code is in range (0, 255) */
+#endif
+
+#ifndef UNKNOWN_ERROR_KINESIS_WEBRTC_EXIT_CODE
+#define UNKNOWN_ERROR_KINESIS_WEBRTC_EXIT_CODE (0xf0)
+#endif
 
 constexpr char kNodeName[] = "kinesis_webrtc_streamer";
 
@@ -46,40 +34,49 @@ int shutdown(Aws::SDKOptions options, int return_code) {
 int main(int argc, char ** argv)
 {
   int return_code = UNKNOWN_ERROR_KINESIS_WEBRTC_EXIT_CODE;
-  ros::init(argc, argv, kNodeName);
+  rclcpp::init(argc, argv);
 
   Aws::SDKOptions sdk_options;
   Aws::InitAPI(sdk_options);
 
   auto webrtc_node = std::make_shared<Aws::Kinesis::WebRtcNode>(kNodeName);
   
-  auto param_reader = std::make_shared<Aws::Client::Ros1NodeParameterReader>();
+  auto param_reader = std::make_shared<Aws::Client::Ros2NodeParameterReader>(webrtc_node);
 
-  Aws::Utils::Logging::InitializeAWSLogging(
-    Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(kNodeName));
+  // Initialize AWS logging with the ROS logger
+  auto aws_logger = Aws::MakeShared<Aws::Utils::Logging::AWSROSLogger>(
+    kNodeName, 
+    Aws::Utils::Logging::LogLevel::Info, 
+    std::weak_ptr<rclcpp::Node>(webrtc_node)
+  );
+  Aws::Utils::Logging::InitializeAWSLogging(aws_logger);
 
   Aws::Kinesis::KinesisWebRtcManagerStatus status = webrtc_node->Initialize(param_reader);
   if (Aws::Kinesis::KinesisWebRtcManagerStatusSucceeded(status)) {
-    AWS_LOGSTREAM_INFO(__func__, "Successfully initialized " << kNodeName);
+    RCLCPP_INFO(webrtc_node->get_logger(), "Successfully initialized %s", kNodeName);
+    
     int spinner_thread_count;
     Aws::Kinesis::ReadOption<int>(
       param_reader,
-      {ros::this_node::getNamespace() + Aws::Kinesis::kWebRtcStreamerNamespacePrefix},
+      {Aws::Kinesis::kWebRtcStreamerNamespacePrefix},
       Aws::Kinesis::kSpinnerThreadCountKey,
       Aws::Kinesis::kSpinnerThreadCountDefault,
       spinner_thread_count
     );
 
-
-    ros::MultiThreadedSpinner spinner(spinner_thread_count);
-
     AWS_LOG_INFO(__func__, "Starting Kinesis WebRTC Node...");
-    spinner.spin();
+    
+    // Create a multithreaded executor
+    rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), spinner_thread_count);
+    executor.add_node(webrtc_node);
+    executor.spin();
+    
     AWS_LOG_INFO(__func__, "Shutting down Kinesis WebRTC Node...");
   } else {
-    AWS_LOGSTREAM_ERROR(__func__, "Failed to initialize " << kNodeName);
+    RCLCPP_ERROR(webrtc_node->get_logger(), "Failed to initialize %s", kNodeName);
   }
   return_code = static_cast<int>(status);
 
+  rclcpp::shutdown();
   return shutdown(sdk_options, return_code);
 }

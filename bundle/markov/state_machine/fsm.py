@@ -19,7 +19,7 @@
 from markov.state_machine.abs_fsm_state import AbsFSMState
 
 
-class FSM(object):
+class FSM():
     """
     Finite State machine base class
     """

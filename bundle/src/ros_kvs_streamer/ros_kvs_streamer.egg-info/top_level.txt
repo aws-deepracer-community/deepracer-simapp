@@ -1,2 +1,0 @@
-ros_kvs_streamer
-test

@@ -14,17 +14,27 @@
 #   limitations under the License.                                              #
 #################################################################################
 
+import logging
 import threading
+import time
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
+from markov.log_handler.logger import Logger
 import copy
-import rospy
 
 from deepracer_msgs.srv import GetLinkStates
-from gazebo_msgs.srv import GetLinkStateResponse
 from markov.track_geom.constants import GET_LINK_STATES
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 import markov.gazebo_tracker.constants as consts
+
+logger = Logger(__name__, logging.INFO).get_logger()
+
+
+class GetLinkState_Response:
+    def __init__(self):
+        self.success = False
+        self.status_message = ''
+        self.link_state = None
 
 
 class GetLinkStateTracker(AbstractTracker):
@@ -49,7 +59,6 @@ class GetLinkStateTracker(AbstractTracker):
         self.link_names = []
         self.reference_frames = []
 
-        rospy.wait_for_service(GET_LINK_STATES)
         self._get_link_states = ServiceProxyWrapper(GET_LINK_STATES, GetLinkStates)
 
         GetLinkStateTracker._instance_ = self
@@ -68,14 +77,33 @@ class GetLinkStateTracker(AbstractTracker):
                               - Ignored if (model_name, relative_entity_name) pair is already using auto_sync
 
         Returns:
-            response msg (gazebo_msgs::GetLinkStateResponse)
+            response msg (GetLinkState_Response)
         """
-        msg = GetLinkStateResponse()
+        call_time = time.time()
+        
+        msg = GetLinkState_Response()
         msg.success = True
         key = (link_name, reference_frame)
         with self.lock:
             if blocking or key not in self.link_map:
-                res = self._get_link_states([key[0]], [key[1]])
+                # Create ROS2 service request object
+                request = GetLinkStates.Request()
+                request.link_names = [key[0]]
+                request.reference_frames = [key[1]]
+                res = self._get_link_states(request)
+                
+                # Debug the service response
+                if hasattr(res, 'link_states') and len(res.link_states) > 0:
+                    link_state = res.link_states[0]
+                    logger.debug("Link state position: x=%.3f, y=%.3f, z=%.3f",
+                               link_state.pose.position.x if link_state else 0.0,
+                               link_state.pose.position.y if link_state else 0.0, 
+                               link_state.pose.position.z if link_state else 0.0)
+                    
+                    # Check if position is at origin (indicates car not properly spawned)
+                    if link_state and link_state.pose.position.x == 0.0 and link_state.pose.position.y == 0.0:
+                        logger.warning("Link state at origin - car may not be properly spawned")
+                        
                 if res.success and res.status[0]:
                     msg.link_state = res.link_states[0]
                     if auto_sync or key in self.link_map:
@@ -100,8 +128,11 @@ class GetLinkStateTracker(AbstractTracker):
         """
         if self.link_names:
             with self.lock:
-                res = self._get_link_states(self.link_names,
-                                                    self.reference_frames)
+                # Create ROS2 service request object
+                request = GetLinkStates.Request()
+                request.link_names = self.link_names
+                request.reference_frames = self.reference_frames
+                res = self._get_link_states(request)
                 if res.success:
                     for link_state, status in zip(res.link_states, res.status):
                         if status:

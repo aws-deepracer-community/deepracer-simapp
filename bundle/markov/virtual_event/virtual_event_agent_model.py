@@ -15,7 +15,6 @@
 #################################################################################
 
 import os
-import rospkg
 import time
 import markov.rollout_constants as const
 
@@ -55,7 +54,8 @@ class VirtualEventAgentModel():
         self._hide_position = hide_position
         self._model_updater = ModelUpdater.get_instance()
         self._agent_model = AgentModel()
-        self._deepracer_path = rospkg.RosPack().get_path(DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT)
+        from ament_index_python.packages import get_package_share_directory
+        self._deepracer_path = get_package_share_directory(DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT)
         body_shell_path = os.path.join(self._deepracer_path, "meshes", "f1")
         self._valid_body_shells = \
             set(".".join(f.split(".")[:-1]) for f in os.listdir(body_shell_path) if os.path.isfile(

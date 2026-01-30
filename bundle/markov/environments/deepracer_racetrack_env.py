@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 '''This module defines the interface between rl coach and the agents enviroment'''
 from __future__ import print_function
@@ -21,6 +8,14 @@ from typing import List, Union, Dict
 from rl_coach.base_parameters import AgentParameters, VisualizationParameters
 from rl_coach.environments.environment import LevelSelection
 from rl_coach.filters.filter import NoInputFilter, NoOutputFilter
+
+# Conditional import for ROS - not available in Validation Lambda environment
+try:
+    from std_srvs.srv import Empty
+except ModuleNotFoundError:
+    class Empty:
+        class Request:
+            pass
 
 from markov.agents.agent import Agent
 from markov.agents.utils import RunPhaseSubject
@@ -151,6 +146,7 @@ class DeepRacerRacetrackEnv(MultiAgentEnvironment):
             self.state = list()
             self.reward = list()
             self.done = list()
+            
             # trainable agent physics: update agent status
             [self._agents_info_map.update(agent.update_agent(action)) for agent, action in zip(self.agent_list,
                                                                                                self.action_list)]
@@ -166,7 +162,7 @@ class DeepRacerRacetrackEnv(MultiAgentEnvironment):
                 # which is periodic, so our step duration will almost be consistent.
                 # - There still can be delay to retrieve the sensor data and to trigger the pause/unpause, so
                 #   the step duration won't be exactly same.
-                self.unpause_physics()
+                self.unpause_physics(Empty.Request())
 
             for agent, action in zip(self.agent_list, self.action_list):
                 next_state, reward, done = agent.judge_action(action, self._agents_info_map)
@@ -178,7 +174,7 @@ class DeepRacerRacetrackEnv(MultiAgentEnvironment):
                 # When judge_action returns, we know step had been taken and
                 # all new observation(s) are retrieved. We pause till next step to maintain step duration
                 # as much as consistent.
-                self.pause_physics()
+                self.pause_physics(Empty.Request())
 
             # non-trainable agent judge: for bot car and obstacles
             [agent.judge_action(action, self._agents_info_map) for agent in self.non_trainable_agents]
@@ -208,21 +204,23 @@ class DeepRacerRacetrackEnv(MultiAgentEnvironment):
             if self.unpause_physics and self.simapp_version >= SIMAPP_VERSION_4:
                 # Unpause the physics to rollout one step after reset of environment and to retrieve the latest
                 # observation(s).
-                self.unpause_physics()
+                self.unpause_physics(Empty.Request())
+            
             self.state = [agent.reset_agent() for agent in self.agent_list]
+            
             if self.pause_physics and self.simapp_version >= SIMAPP_VERSION_4:
                 # When reset_agent returns, we know all new observation(s) are retrieved.
                 # We pause till next step to maintain step duration as much as consistent.
-                self.pause_physics()
+                self.pause_physics(Empty.Request())
+            
             [agent.reset_agent() for agent in self.non_trainable_agents]
 
             # Reset state, reward, done flag
             self.reward = [0.0] * self.num_agents
             self.done = [False] * self.num_agents
+            
             if self.enable_domain_randomization:
                 RandomizerManager.get_instance().randomize()
-        except GenericTrainerException as ex:
-            ex.log_except_and_exit()
         except GenericRolloutException as ex:
             ex.log_except_and_exit()
         except Exception as ex:

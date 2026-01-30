@@ -1,0 +1,65 @@
+# DeepRacer Gazebo Harmonic Bridge Configuration
+
+# Clock synchronization
+- ros_topic_name: "clock"
+  gz_topic_name: "clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# LIDAR scan data
+- ros_topic_name: "/racecar/scan"
+  gz_topic_name: "/racecar/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# Camera images
+- ros_topic_name: "/racecar/camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar/camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar/camera/zed_right/rgb/image_rect_color_right"
+  gz_topic_name: "/racecar/camera/zed_right/rgb/image_rect_color_right"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar/main_camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar/main_camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/sub_camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/sub_camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+# Camera info topics
+- ros_topic_name: "/racecar/camera/zed/camera_info"
+  gz_topic_name: "/racecar/camera/zed/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar/camera/zed_right/camera_info"
+  gz_topic_name: "/racecar/camera/zed_right/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar/main_camera/zed/rgb/camera_info"
+  gz_topic_name: "/racecar/main_camera/zed/rgb/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/sub_camera/zed/rgb/camera_info"
+  gz_topic_name: "/sub_camera/zed/rgb/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS

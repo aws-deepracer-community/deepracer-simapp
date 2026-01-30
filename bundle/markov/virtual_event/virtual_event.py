@@ -18,7 +18,6 @@ import json
 import logging
 import os
 import time
-import rospy
 
 from markov import utils
 from markov.agents.utils import RunPhaseSubject
@@ -27,9 +26,7 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.deepracer_exceptions import GenericNonFatalException
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_VIRTUAL_EVENT_RACE_EXCEPTION)
-from markov.rollout_utils import (PhaseObserver,
-                                  configure_environment_randomizer,
-                                  signal_robomaker_markov_package_ready)
+from markov.rollout_utils import PhaseObserver, configure_environment_randomizer
 from markov.boto.s3.constants import (SECTOR_TIME_LOCAL_PATH,
                                       SECTOR_TIME_S3_POSTFIX,
                                       SECTOR_X_FORMAT)
@@ -49,6 +46,7 @@ from markov.virtual_event.virtual_event_race_data import VirtualEventRaceData
 from markov.virtual_event.virtual_event_graph_manager import VirtualEventGraphManager
 from markov.virtual_event.virtual_event_eval_metric import VirtualEventEvalMetric
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
+from markov.world_config import WorldConfig
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -82,7 +80,7 @@ class VirtualEvent():
                 race_data=self._virtual_event_race_data)
              for agent_name in self._virtual_event_agent_data.agent_names]
 
-        start_pos_offset = max(min(float(rospy.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
+        start_pos_offset = max(min(float(WorldConfig.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
                                MIN_START_POS_OFFSET)
 
         self._virtual_event_agent_camera_models = \
@@ -101,9 +99,6 @@ class VirtualEvent():
         self._virtual_event_top_camera_model.spawn()
 
         self._persist_initial_sector_time()
-
-        # ROS service to indicate all the RoboMaker Markov packages are ready for consumption
-        signal_robomaker_markov_package_ready()
 
         PhaseObserver('/agent/training_phase', self._run_phase_subject)
 
@@ -240,5 +235,5 @@ class VirtualEvent():
         if "Contents" not in response:
             virtual_event_best_sector_time.persist(body=json.dumps(
                 {SECTOR_X_FORMAT.format(idx + 1): float("inf")
-                 for idx in range(int(rospy.get_param("NUM_SECTORS", "3")))}),
+                 for idx in range(int(WorldConfig.get_param("NUM_SECTORS", "3")))}),
                 s3_kms_extra_args=utils.get_s3_kms_extra_args())
