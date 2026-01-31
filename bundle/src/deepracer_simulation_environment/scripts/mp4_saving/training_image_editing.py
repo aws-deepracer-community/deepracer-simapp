@@ -7,12 +7,11 @@ This module takes care of addressing each race type editting of images.
 import logging
 import cv2
 import datetime
-import os
-import rospy
 import numpy as np
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
+from markov.world_config import WorldConfig
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB, SCALE_RATIO, IconographicImageSize,
                                   XYPixelLoc, FrameQueueData)
@@ -66,7 +65,7 @@ class TrainingImageEditing(ImageEditingInterface):
         major_cv_image = utils.apply_gradient(major_cv_image, self.gradient_alpha_rgb_mul,
                                               self.one_minus_gradient_alpha)
         
-        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+        if WorldConfig.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             width, height = IconographicImageSize.FULL_IMAGE_SIZE.value
             major_cv_image = utils.plot_rectangle(major_cv_image, 0, 0, width, 85, RaceCarColorToRGB.Black.value )
             
