@@ -1,0 +1,1048 @@
+---
+ .../libkvsCommonLws-CMakeLists.txt            |   7 +-
+ CMake/Dependencies/libmbedtls-CMakeLists.txt  |  33 -
+ CMake/Dependencies/libopenssl-CMakeLists.txt  |  36 --
+ .../Dependencies/libwebsockets-CMakeLists.txt |   7 -
+ .../webrtc-sdk-c-streams-producer.patch       | 608 ++++++++++++++++++
+ CMakeLists.txt                                |  61 +-
+ README.md                                     |   2 +-
+ samples/Samples.h                             |   2 +-
+ samples/discoverNatBehavior.c                 |   2 +-
+ .../kinesis/video/webrtcclient/Include.h      |   8 +-
+ .../kinesis/video/webrtcclient/NullableDefs.h |   0
+ .../kinesis/video/webrtcclient/Stats.h        |   0
+ src/source/Include_i.h                        |   2 +-
+ .../PeerConnection/SessionDescription.c       |   3 +-
+ src/source/Sdp/Deserialize.c                  |   2 +-
+ src/source/Sdp/Sdp.h                          |   6 +-
+ tst/SdpApiTest.cpp                            |   2 +-
+ 17 files changed, 636 insertions(+), 145 deletions(-)
+ delete mode 100644 CMake/Dependencies/libmbedtls-CMakeLists.txt
+ delete mode 100644 CMake/Dependencies/libopenssl-CMakeLists.txt
+ create mode 100644 CMake/Dependencies/webrtc-sdk-c-streams-producer.patch
+ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/webrtcclient/Include.h (99%)
+ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h (100%)
+ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/webrtcclient/Stats.h (100%)
+
+diff --git a/CMake/Dependencies/libkvsCommonLws-CMakeLists.txt b/CMake/Dependencies/libkvsCommonLws-CMakeLists.txt
+index 2420be89b..eb3bc665a 100644
+--- a/CMake/Dependencies/libkvsCommonLws-CMakeLists.txt
++++ b/CMake/Dependencies/libkvsCommonLws-CMakeLists.txt
+@@ -8,6 +8,11 @@ ExternalProject_Add(libkvsCommonLws-download
+     GIT_REPOSITORY    https://github.com/awslabs/amazon-kinesis-video-streams-producer-c.git
+     GIT_TAG           d1095356712729d0489e56d1d0e27f5ce0a29fad
+     PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/build
++    PATCH_COMMAND
++      # Patch amazon-kinesis-video-streams-producer-c
++           cp ${CMAKE_CURRENT_BINARY_DIR}/../../CMake/Dependencies/webrtc-sdk-c-streams-producer.patch ${CMAKE_CURRENT_BINARY_DIR}/build/src/libkvsCommonLws-download
++        && cd ${CMAKE_CURRENT_BINARY_DIR}/build/src/libkvsCommonLws-download
++        && git apply --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_BINARY_DIR}/build/src/libkvsCommonLws-download/webrtc-sdk-c-streams-producer.patch
+     CMAKE_ARGS        
+       -DCMAKE_INSTALL_PREFIX=${OPEN_SRC_INSTALL_PREFIX}
+       -DBUILD_COMMON_LWS=ON
+@@ -15,8 +20,6 @@ ExternalProject_Add(libkvsCommonLws-download
+       -DBUILD_DEPENDENCIES=FALSE
+       -DOPEN_SRC_INSTALL_PREFIX=${OPEN_SRC_INSTALL_PREFIX}
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-      -DUSE_OPENSSL=${USE_OPENSSL}
+-      -DUSE_MBEDTLS=${USE_MBEDTLS}
+       -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+     BUILD_ALWAYS      TRUE
+     TEST_COMMAND      ""
+diff --git a/CMake/Dependencies/libmbedtls-CMakeLists.txt b/CMake/Dependencies/libmbedtls-CMakeLists.txt
+deleted file mode 100644
+index a2700eed4..000000000
+--- a/CMake/Dependencies/libmbedtls-CMakeLists.txt
++++ /dev/null
+@@ -1,33 +0,0 @@
+-cmake_minimum_required(VERSION 2.8)
+-
+-project(libmbedtls-download NONE)
+-
+-include(ExternalProject)
+-
+-if (BUILD_STATIC_LIBS)
+-  set(BUILD_SHARED 0)
+-else()
+-  set(BUILD_SHARED 1)
+-endif()
+-
+-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+-  set(CMAKE_MACOSX_RPATH 1)
+-else()
+-  set(CMAKE_MACOSX_RPATH 0)
+-endif()
+-
+-ExternalProject_Add(
+-  project_libmbedtls
+-  GIT_REPOSITORY  https://github.com/ARMmbed/mbedtls.git
+-  GIT_TAG         v2.25.0
+-  PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/build
+-  CMAKE_ARGS
+-    -DCMAKE_INSTALL_PREFIX=${OPEN_SRC_INSTALL_PREFIX}
+-    -DUSE_SHARED_MBEDTLS_LIBRARY=${BUILD_SHARED}
+-    -DCMAKE_BUILD_TYPE=Release
+-    -DCMAKE_MACOSX_RPATH=${CMAKE_MACOSX_RPATH}
+-    -DENABLE_TESTING=OFF
+-    -DENABLE_PROGRAMS=OFF
+-    -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+-  BUILD_ALWAYS    TRUE
+-  TEST_COMMAND    "")
+diff --git a/CMake/Dependencies/libopenssl-CMakeLists.txt b/CMake/Dependencies/libopenssl-CMakeLists.txt
+deleted file mode 100644
+index cf95d0122..000000000
+--- a/CMake/Dependencies/libopenssl-CMakeLists.txt
++++ /dev/null
+@@ -1,36 +0,0 @@
+-cmake_minimum_required(VERSION 2.8)
+-
+-project(libopenssl-download NONE)
+-
+-if (WIN32)
+-  find_program(MAKE_EXE NAMES nmake)
+-  SET(CONFIGURE_COMMAND perl ${CMAKE_CURRENT_BINARY_DIR}/build/src/project_libopenssl/Configure VC-WIN64A no-asm --prefix=${OPEN_SRC_INSTALL_PREFIX} --openssldir=${OPEN_SRC_INSTALL_PREFIX})
+-else()
+-  find_program(MAKE_EXE NAMES make)
+-  # OpenSSL takes a while to compile, so allow some parallelism.
+-  if (DEFINED ENV{CMAKE_BUILD_PARALLEL_LEVEL})
+-    list(APPEND MAKE_EXE "-j$ENV{CMAKE_BUILD_PARALLEL_LEVEL}")
+-  endif()
+-
+-  if (BUILD_STATIC_LIBS)
+-    SET(OPENSSL_EXTRA ${OPENSSL_EXTRA} no-shared no-dso)
+-  endif()
+-
+-  if (DEFINED BUILD_OPENSSL_PLATFORM AND NOT BUILD_OPENSSL_PLATFORM STREQUAL OFF)
+-    SET(CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/build/src/project_libopenssl/Configure ${OPENSSL_EXTRA} no-async --prefix=${OPEN_SRC_INSTALL_PREFIX} --openssldir=${OPEN_SRC_INSTALL_PREFIX} ${BUILD_OPENSSL_PLATFORM})
+-  else()
+-    SET(CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/build/src/project_libopenssl/config ${OPENSSL_EXTRA} --prefix=${OPEN_SRC_INSTALL_PREFIX} --openssldir=${OPEN_SRC_INSTALL_PREFIX})
+-  endif()
+-endif()
+-
+-include(ExternalProject)
+-ExternalProject_Add(project_libopenssl
+-    GIT_REPOSITORY    https://github.com/openssl/openssl.git
+-    GIT_TAG           OpenSSL_1_1_1g
+-    PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/build
+-    CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
+-    BUILD_COMMAND     ${MAKE_EXE}
+-    BUILD_IN_SOURCE   TRUE
+-    INSTALL_COMMAND   ${MAKE_EXE} install_sw
+-    TEST_COMMAND      ""
+-)
+diff --git a/CMake/Dependencies/libwebsockets-CMakeLists.txt b/CMake/Dependencies/libwebsockets-CMakeLists.txt
+index 4370e2410..8d26114c1 100644
+--- a/CMake/Dependencies/libwebsockets-CMakeLists.txt
++++ b/CMake/Dependencies/libwebsockets-CMakeLists.txt
+@@ -12,12 +12,6 @@ else()
+   set(LWS_WITH_SHARED 1)
+ endif()
+ 
+-if (USE_OPENSSL)
+-  set(LWS_WITH_MBEDTLS OFF)
+-else()
+-  set(LWS_WITH_MBEDTLS ON)
+-endif()
+-
+ ExternalProject_Add(project_libwebsockets
+     GIT_REPOSITORY    https://github.com/warmcat/libwebsockets.git
+     GIT_TAG           v3.2.3
+@@ -40,7 +34,6 @@ ExternalProject_Add(project_libwebsockets
+         -DLWS_STATIC_PIC=1
+         -DLWS_WITH_ZLIB=0
+         -DLWS_HAVE_EVENTFD=0
+-        -DLWS_WITH_MBEDTLS=${LWS_WITH_MBEDTLS}
+ # enable for debug output        -DCMAKE_BUILD_TYPE=DEBUG
+         -DOPENSSL_ROOT_DIR=${OPENSSL_DIR}
+         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+diff --git a/CMake/Dependencies/webrtc-sdk-c-streams-producer.patch b/CMake/Dependencies/webrtc-sdk-c-streams-producer.patch
+new file mode 100644
+index 000000000..ae08e721e
+--- /dev/null
++++ b/CMake/Dependencies/webrtc-sdk-c-streams-producer.patch
+@@ -0,0 +1,608 @@
++---
++ CMake/Dependencies/libkvspic-CMakeLists.txt   |  11 +-
++ .../webrtc-sdk-c-streams-pic.patch            | 415 ++++++++++++++++++
++ CMakeLists.txt                                |   6 +-
++ samples/KvsAacAudioVideoStreamingSample.c     |   2 +-
++ samples/KvsVideoOnlyStreamingSample.c         |   2 +-
++ .../amazonaws/kinesis/video/common/Include.h  |   4 +-
++ .../com/amazonaws/kinesis/video/common/jsmn.h |   0
++ .../kinesis/video/cproducer/Include.h         |   4 +-
++ src/source/Common/Include_i.h                 |   2 +-
++ src/source/Common/jsmn.c                      |   2 +-
++ src/source/Include_i.h                        |   4 +-
++ tst/ProducerTestFixture.h                     |   2 +-
++ 12 files changed, 435 insertions(+), 19 deletions(-)
++ create mode 100644 CMake/Dependencies/webrtc-sdk-c-streams-pic.patch
++ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/common/Include.h (96%)
++ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/common/jsmn.h (100%)
++ rename src/include/{ => webrtc}/com/amazonaws/kinesis/video/cproducer/Include.h (99%)
++
++diff --git a/CMake/Dependencies/libkvspic-CMakeLists.txt b/CMake/Dependencies/libkvspic-CMakeLists.txt
++index 14e6317..ac63759 100644
++--- a/CMake/Dependencies/libkvspic-CMakeLists.txt
+++++ b/CMake/Dependencies/libkvspic-CMakeLists.txt
++@@ -7,9 +7,14 @@ include(ExternalProject)
++ # clone repo only
++ ExternalProject_Add(libkvspic-download
++ 	GIT_REPOSITORY    https://github.com/awslabs/amazon-kinesis-video-streams-pic.git
++-    	GIT_TAG           df42dddc1d421d1e6bc47d5ebf7cd085446cbb69
++-    	SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/kvspic-src"
++-	BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/kvspic-build"
+++        GIT_TAG           df42dddc1d421d1e6bc47d5ebf7cd085446cbb69
+++        SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/kvspic-src"
+++    BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/kvspic-build"
+++    PATCH_COMMAND
+++        # Patch amazon-kinesis-video-streams-pic
+++           cp ${CMAKE_CURRENT_BINARY_DIR}/../../CMake/Dependencies/webrtc-sdk-c-streams-pic.patch ${CMAKE_CURRENT_BINARY_DIR}/kvspic-src
+++        && cd ${CMAKE_CURRENT_BINARY_DIR}/kvspic-src
+++        && git apply --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_BINARY_DIR}/kvspic-src/webrtc-sdk-c-streams-pic.patch
++ 	CMAKE_ARGS
++ 	  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
++ 	CONFIGURE_COMMAND ""
++diff --git a/CMake/Dependencies/webrtc-sdk-c-streams-pic.patch b/CMake/Dependencies/webrtc-sdk-c-streams-pic.patch
++new file mode 100644
++index 0000000..b216587
++--- /dev/null
+++++ b/CMake/Dependencies/webrtc-sdk-c-streams-pic.patch
++@@ -0,0 +1,415 @@
+++---
+++ src/CMakeLists.txt                                 |  2 +-
+++ .../com/amazonaws/kinesis/video/client/Include.h   | 14 +++++++-------
+++ src/client/src/Include_i.h                         |  2 +-
+++ src/client/tst/ClientTestFixture.h                 |  4 ++--
+++ .../amazonaws/kinesis/video/common/CommonDefs.h    |  0
+++ .../amazonaws/kinesis/video/common/PlatformUtils.h |  0
+++ .../kinesis/video/common/dlfcn_win_stub.h          |  0
+++ src/duration/src/Duration.h                        |  2 +-
+++ .../com/amazonaws/kinesis/video/heap/Include.h     |  6 +++---
+++ src/heap/src/Include_i.h                           |  2 +-
+++ .../com/amazonaws/kinesis/video/mkvgen/Include.h   |  6 +++---
+++ src/mkvgen/src/Include_i.h                         |  2 +-
+++ src/mkvgen/tst/MkvgenTestFixture.h                 |  4 ++--
+++ .../com/amazonaws/kinesis/video/state/Include.h    |  6 +++---
+++ src/state/src/Include_i.h                          |  2 +-
+++ src/state/tst/StateTestFixture.h                   |  6 +++---
+++ .../com/amazonaws/kinesis/video/trace/Include.h    |  6 +++---
+++ src/trace/src/Include_i.h                          |  2 +-
+++ .../com/amazonaws/kinesis/video/utils/Include.h    |  4 ++--
+++ src/utils/src/Include_i.h                          |  2 +-
+++ src/utils/tst/UtilTestFixture.h                    |  2 +-
+++ .../com/amazonaws/kinesis/video/view/Include.h     |  8 ++++----
+++ src/view/src/Include_i.h                           |  2 +-
+++ src/view/tst/ViewTestFixture.h                     |  4 ++--
+++ 24 files changed, 44 insertions(+), 44 deletions(-)
+++ rename src/client/include/{ => webrtc}/com/amazonaws/kinesis/video/client/Include.h (96%)
+++ rename src/common/include/{ => webrtc}/com/amazonaws/kinesis/video/common/CommonDefs.h (100%)
+++ rename src/common/include/{ => webrtc}/com/amazonaws/kinesis/video/common/PlatformUtils.h (100%)
+++ rename src/common/include/{ => webrtc}/com/amazonaws/kinesis/video/common/dlfcn_win_stub.h (100%)
+++ rename src/heap/include/{ => webrtc}/com/amazonaws/kinesis/video/heap/Include.h (96%)
+++ rename src/mkvgen/include/{ => webrtc}/com/amazonaws/kinesis/video/mkvgen/Include.h (96%)
+++ rename src/state/include/{ => webrtc}/com/amazonaws/kinesis/video/state/Include.h (90%)
+++ rename src/trace/include/{ => webrtc}/com/amazonaws/kinesis/video/trace/Include.h (96%)
+++ rename src/utils/include/{ => webrtc}/com/amazonaws/kinesis/video/utils/Include.h (99%)
+++ rename src/view/include/{ => webrtc}/com/amazonaws/kinesis/video/view/Include.h (94%)
+++
+++diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+++index 52bf849..3302f92 100644
+++--- a/src/CMakeLists.txt
++++++ b/src/CMakeLists.txt
+++@@ -1,6 +1,6 @@
+++ cmake_minimum_required(VERSION 2.8)
+++ 
+++-set(KINESIS_VIDEO_DOMAIN com/amazonaws/kinesis/video)
++++set(KINESIS_VIDEO_DOMAIN webrtc/com/amazonaws/kinesis/video)
+++ 
+++ function(kinesis_video_library_setup LIBRARY_NAME)
+++   set(LIBRARY_HEADERS_DIR include/${KINESIS_VIDEO_DOMAIN}/${LIBRARY_NAME})
+++diff --git a/src/client/include/com/amazonaws/kinesis/video/client/Include.h b/src/client/include/webrtc/com/amazonaws/kinesis/video/client/Include.h
+++similarity index 96%
+++rename from src/client/include/com/amazonaws/kinesis/video/client/Include.h
+++rename to src/client/include/webrtc/com/amazonaws/kinesis/video/client/Include.h
+++index fc334bb..1e3b12c 100644
+++--- a/src/client/include/com/amazonaws/kinesis/video/client/Include.h
++++++ b/src/client/include/webrtc/com/amazonaws/kinesis/video/client/Include.h
+++@@ -10,18 +10,18 @@
+++ extern "C" {
+++ #endif
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ // IMPORTANT! Some of the headers are not tightly packed!
+++ ////////////////////////////////////////////////////
+++ // Public headers
+++ ////////////////////////////////////////////////////
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/mkvgen/Include.h>
+++-#include <com/amazonaws/kinesis/video/view/Include.h>
+++-#include <com/amazonaws/kinesis/video/heap/Include.h>
+++-#include <com/amazonaws/kinesis/video/state/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/view/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/heap/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/state/Include.h>
+++ 
+++ /**
+++  * Device/Client state transitions
+++diff --git a/src/client/src/Include_i.h b/src/client/src/Include_i.h
+++index e4c611f..001660a 100644
+++--- a/src/client/src/Include_i.h
++++++ b/src/client/src/Include_i.h
+++@@ -13,7 +13,7 @@ extern "C" {
+++ ////////////////////////////////////////////////////
+++ // Project include files
+++ ////////////////////////////////////////////////////
+++-#include "com/amazonaws/kinesis/video/client/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/client/Include.h"
+++ 
+++ #define MAX_PIC_REENTRANCY_COUNT (1024 * 1024)
+++ 
+++diff --git a/src/client/tst/ClientTestFixture.h b/src/client/tst/ClientTestFixture.h
+++index e41c0cb..daf171d 100644
+++--- a/src/client/tst/ClientTestFixture.h
++++++ b/src/client/tst/ClientTestFixture.h
+++@@ -108,8 +108,8 @@
+++ #include <iostream>
+++ 
+++ #include "gtest/gtest.h"
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/client/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
+++ #include "src/client/src/Include_i.h"
+++ #include "src/client/src/Stream.h"
+++ #include "src/mkvgen/src/Include_i.h"
+++diff --git a/src/common/include/com/amazonaws/kinesis/video/common/CommonDefs.h b/src/common/include/webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h
+++similarity index 100%
+++rename from src/common/include/com/amazonaws/kinesis/video/common/CommonDefs.h
+++rename to src/common/include/webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h
+++diff --git a/src/common/include/com/amazonaws/kinesis/video/common/PlatformUtils.h b/src/common/include/webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h
+++similarity index 100%
+++rename from src/common/include/com/amazonaws/kinesis/video/common/PlatformUtils.h
+++rename to src/common/include/webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h
+++diff --git a/src/common/include/com/amazonaws/kinesis/video/common/dlfcn_win_stub.h b/src/common/include/webrtc/com/amazonaws/kinesis/video/common/dlfcn_win_stub.h
+++similarity index 100%
+++rename from src/common/include/com/amazonaws/kinesis/video/common/dlfcn_win_stub.h
+++rename to src/common/include/webrtc/com/amazonaws/kinesis/video/common/dlfcn_win_stub.h
+++diff --git a/src/duration/src/Duration.h b/src/duration/src/Duration.h
+++index 66142ce..40b0527 100644
+++--- a/src/duration/src/Duration.h
++++++ b/src/duration/src/Duration.h
+++@@ -10,7 +10,7 @@ extern "C" {
+++ 
+++ #pragma once
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
+++ 
+++ /**
+++  * Represents an invalid duration which might be returned from the parser
+++diff --git a/src/heap/include/com/amazonaws/kinesis/video/heap/Include.h b/src/heap/include/webrtc/com/amazonaws/kinesis/video/heap/Include.h
+++similarity index 96%
+++rename from src/heap/include/com/amazonaws/kinesis/video/heap/Include.h
+++rename to src/heap/include/webrtc/com/amazonaws/kinesis/video/heap/Include.h
+++index cca8acd..cfb77fa 100644
+++--- a/src/heap/include/com/amazonaws/kinesis/video/heap/Include.h
++++++ b/src/heap/include/webrtc/com/amazonaws/kinesis/video/heap/Include.h
+++@@ -9,9 +9,9 @@ extern "C" {
+++ #endif
+++ 
+++ #pragma once
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
+++ 
+++ /**
+++  * We define minimal heap size as 1 MB
+++diff --git a/src/heap/src/Include_i.h b/src/heap/src/Include_i.h
+++index 8190a50..afe43d3 100644
+++--- a/src/heap/src/Include_i.h
++++++ b/src/heap/src/Include_i.h
+++@@ -11,7 +11,7 @@ extern "C" {
+++ /**
+++  * Including the headers
+++  */
+++-#include "com/amazonaws/kinesis/video/heap/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/heap/Include.h"
+++ 
+++ /**
+++  * Invalid allocation value
+++diff --git a/src/mkvgen/include/com/amazonaws/kinesis/video/mkvgen/Include.h b/src/mkvgen/include/webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h
+++similarity index 96%
+++rename from src/mkvgen/include/com/amazonaws/kinesis/video/mkvgen/Include.h
+++rename to src/mkvgen/include/webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h
+++index a6c087f..0bd4bf0 100644
+++--- a/src/mkvgen/include/com/amazonaws/kinesis/video/mkvgen/Include.h
++++++ b/src/mkvgen/include/webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h
+++@@ -10,14 +10,14 @@
+++ extern "C" {
+++ #endif
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ // IMPORTANT! Some of the headers are not tightly packed!
+++ ////////////////////////////////////////////////////
+++ // Public headers
+++ ////////////////////////////////////////////////////
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
+++ 
+++ ////////////////////////////////////////////////////
+++ // Status return codes
+++diff --git a/src/mkvgen/src/Include_i.h b/src/mkvgen/src/Include_i.h
+++index f8da065..12b40a2 100644
+++--- a/src/mkvgen/src/Include_i.h
++++++ b/src/mkvgen/src/Include_i.h
+++@@ -13,7 +13,7 @@ extern "C" {
+++ ////////////////////////////////////////////////////
+++ // Project include files
+++ ////////////////////////////////////////////////////
+++-#include "com/amazonaws/kinesis/video/mkvgen/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h"
+++ 
+++ ////////////////////////////////////////////////////
+++ // Packager version
+++diff --git a/src/mkvgen/tst/MkvgenTestFixture.h b/src/mkvgen/tst/MkvgenTestFixture.h
+++index efa0404..61046ef 100644
+++--- a/src/mkvgen/tst/MkvgenTestFixture.h
++++++ b/src/mkvgen/tst/MkvgenTestFixture.h
+++@@ -3,8 +3,8 @@
+++ #endif
+++ 
+++ #include "gtest/gtest.h"
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/mkvgen/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h>
+++ 
+++ #include "src/mkvgen/src/Include_i.h"
+++ 
+++diff --git a/src/state/include/com/amazonaws/kinesis/video/state/Include.h b/src/state/include/webrtc/com/amazonaws/kinesis/video/state/Include.h
+++similarity index 90%
+++rename from src/state/include/com/amazonaws/kinesis/video/state/Include.h
+++rename to src/state/include/webrtc/com/amazonaws/kinesis/video/state/Include.h
+++index b5929e0..5bd6821 100644
+++--- a/src/state/include/com/amazonaws/kinesis/video/state/Include.h
++++++ b/src/state/include/webrtc/com/amazonaws/kinesis/video/state/Include.h
+++@@ -10,14 +10,14 @@
+++ extern "C" {
+++ #endif
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ // IMPORTANT! Some of the headers are not tightly packed!
+++ ////////////////////////////////////////////////////
+++ // Public headers
+++ ////////////////////////////////////////////////////
+++-#include <com/amazonaws/kinesis/video/mkvgen/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/mkvgen/Include.h>
+++ 
+++ ////////////////////////////////////////////////////
+++ // Status return codes
+++diff --git a/src/state/src/Include_i.h b/src/state/src/Include_i.h
+++index 5ab2979..fb5e9f8 100644
+++--- a/src/state/src/Include_i.h
++++++ b/src/state/src/Include_i.h
+++@@ -13,7 +13,7 @@ extern "C" {
+++ ////////////////////////////////////////////////////
+++ // Project include files
+++ ////////////////////////////////////////////////////
+++-#include "com/amazonaws/kinesis/video/state/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/state/Include.h"
+++ 
+++ ////////////////////////////////////////////////////
+++ // General defines and data structures
+++diff --git a/src/state/tst/StateTestFixture.h b/src/state/tst/StateTestFixture.h
+++index 573e6fc..f587c1a 100644
+++--- a/src/state/tst/StateTestFixture.h
++++++ b/src/state/tst/StateTestFixture.h
+++@@ -1,7 +1,7 @@
+++ #include "gtest/gtest.h"
+++-#include <com/amazonaws/kinesis/video/client/Include.h>
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/state/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/state/Include.h>
+++ 
+++ #include "src/state/src/Include_i.h"
+++ 
+++diff --git a/src/trace/include/com/amazonaws/kinesis/video/trace/Include.h b/src/trace/include/webrtc/com/amazonaws/kinesis/video/trace/Include.h
+++similarity index 96%
+++rename from src/trace/include/com/amazonaws/kinesis/video/trace/Include.h
+++rename to src/trace/include/webrtc/com/amazonaws/kinesis/video/trace/Include.h
+++index 826bd8b..50014fc 100644
+++--- a/src/trace/include/com/amazonaws/kinesis/video/trace/Include.h
++++++ b/src/trace/include/webrtc/com/amazonaws/kinesis/video/trace/Include.h
+++@@ -9,8 +9,8 @@ extern "C" {
+++ #endif
+++ 
+++ #pragma once
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ /**
+++  * Definition of the handles
+++@@ -189,7 +189,7 @@ PUBLIC_API DEFINE_TRACE_STOP(traceStop);
+++ /**
+++  * Including the headers
+++  */
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
+++ 
+++ #ifdef __cplusplus
+++ }
+++diff --git a/src/trace/src/Include_i.h b/src/trace/src/Include_i.h
+++index 92ec2b6..82c5bb7 100644
+++--- a/src/trace/src/Include_i.h
++++++ b/src/trace/src/Include_i.h
+++@@ -13,7 +13,7 @@ extern "C" {
+++ /**
+++  * Including the headers
+++  */
+++-#include "com/amazonaws/kinesis/video/trace/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/trace/Include.h"
+++ 
+++ /**
+++  * Minimum number of traces we should be able to store
+++diff --git a/src/utils/include/com/amazonaws/kinesis/video/utils/Include.h b/src/utils/include/webrtc/com/amazonaws/kinesis/video/utils/Include.h
+++similarity index 99%
+++rename from src/utils/include/com/amazonaws/kinesis/video/utils/Include.h
+++rename to src/utils/include/webrtc/com/amazonaws/kinesis/video/utils/Include.h
+++index 0b61032..a001371 100644
+++--- a/src/utils/include/com/amazonaws/kinesis/video/utils/Include.h
++++++ b/src/utils/include/webrtc/com/amazonaws/kinesis/video/utils/Include.h
+++@@ -10,8 +10,8 @@ extern "C" {
+++ 
+++ #pragma once
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ #define MAX_STRING_CONVERSION_BASE 36
+++ 
+++diff --git a/src/utils/src/Include_i.h b/src/utils/src/Include_i.h
+++index 07ceca8..4a2d673 100644
+++--- a/src/utils/src/Include_i.h
++++++ b/src/utils/src/Include_i.h
+++@@ -10,7 +10,7 @@ extern "C" {
+++ 
+++ #pragma once
+++ 
+++-#include "com/amazonaws/kinesis/video/utils/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/utils/Include.h"
+++ 
+++ /**
+++  * Thread wrapper for Windows
+++diff --git a/src/utils/tst/UtilTestFixture.h b/src/utils/tst/UtilTestFixture.h
+++index 47499a5..3056fed 100644
+++--- a/src/utils/tst/UtilTestFixture.h
++++++ b/src/utils/tst/UtilTestFixture.h
+++@@ -1,6 +1,6 @@
+++ 
+++ #include "gtest/gtest.h"
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
+++ #include <src/utils/src/Include_i.h>
+++ 
+++ //
+++diff --git a/src/view/include/com/amazonaws/kinesis/video/view/Include.h b/src/view/include/webrtc/com/amazonaws/kinesis/video/view/Include.h
+++similarity index 94%
+++rename from src/view/include/com/amazonaws/kinesis/video/view/Include.h
+++rename to src/view/include/webrtc/com/amazonaws/kinesis/video/view/Include.h
+++index 3103794..3b01c92 100644
+++--- a/src/view/include/com/amazonaws/kinesis/video/view/Include.h
++++++ b/src/view/include/webrtc/com/amazonaws/kinesis/video/view/Include.h
+++@@ -10,15 +10,15 @@
+++ extern "C" {
+++ #endif
+++ 
+++-#include <com/amazonaws/kinesis/video/common/CommonDefs.h>
+++-#include <com/amazonaws/kinesis/video/common/PlatformUtils.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/CommonDefs.h>
++++#include <webrtc/com/amazonaws/kinesis/video/common/PlatformUtils.h>
+++ 
+++ // IMPORTANT! Some of the headers are not tightly packed!
+++ ////////////////////////////////////////////////////
+++ // Public headers
+++ ////////////////////////////////////////////////////
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/heap/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/heap/Include.h>
+++ 
+++ /**
+++  * Minimum number of items in the window
+++diff --git a/src/view/src/Include_i.h b/src/view/src/Include_i.h
+++index e3e5a96..b27af80 100644
+++--- a/src/view/src/Include_i.h
++++++ b/src/view/src/Include_i.h
+++@@ -13,7 +13,7 @@ extern "C" {
+++ ////////////////////////////////////////////////////
+++ // Project include files
+++ ////////////////////////////////////////////////////
+++-#include "com/amazonaws/kinesis/video/view/Include.h"
++++#include "webrtc/com/amazonaws/kinesis/video/view/Include.h"
+++ 
+++ ////////////////////////////////////////////////////
+++ // General defines and data structures
+++diff --git a/src/view/tst/ViewTestFixture.h b/src/view/tst/ViewTestFixture.h
+++index 1b1bc2b..76ce125 100644
+++--- a/src/view/tst/ViewTestFixture.h
++++++ b/src/view/tst/ViewTestFixture.h
+++@@ -3,8 +3,8 @@
+++ #endif
+++ 
+++ #include "gtest/gtest.h"
+++-#include <com/amazonaws/kinesis/video/utils/Include.h>
+++-#include <com/amazonaws/kinesis/video/view/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/utils/Include.h>
++++#include <webrtc/com/amazonaws/kinesis/video/view/Include.h>
+++ 
+++ #include "src/view/src/Include_i.h"
+++ 
+++-- 
+++2.25.0
+++
++diff --git a/CMakeLists.txt b/CMakeLists.txt
++index ee5169f..b5be30b 100644
++--- a/CMakeLists.txt
+++++ b/CMakeLists.txt
++@@ -7,7 +7,7 @@ project(KinesisVideoProducerC LANGUAGES C)
++ option(ADD_MUCLIBC "Add -muclibc c flag" OFF)
++ option(BUILD_STATIC "Static build" OFF)
++ option(BUILD_DEPENDENCIES "Whether or not to build depending libraries from source" ON)
++-option(USE_OPENSSL "Use openssl as crypto library" ON)
+++option(USE_OPENSSL "Use openssl as crypto library" OFF)
++ option(USE_MBEDTLS "Use mbedtls as crypto library" OFF)
++ option(BUILD_COMMON_LWS "Whether or not to build ProducerC libwebsockets common library" OFF)
++ option(BUILD_COMMON_CURL "Whether or not to build ProducerC curl common library" ON)
++@@ -67,8 +67,6 @@ if(BUILD_DEPENDENCIES)
++   elseif(USE_MBEDTLS)
++     set(BUILD_ARGS -DBUILD_STATIC=${BUILD_STATIC})
++     build_dependency(mbedtls ${BUILD_ARGS})
++-  else()
++-    message(FATAL_ERROR "No crypto library selected.")
++   endif()
++ 
++   if (BUILD_COMMON_LWS)
++@@ -121,8 +119,6 @@ if(USE_OPENSSL)
++ elseif(USE_MBEDTLS)
++   find_package(MbedTLS REQUIRED)
++   set(OPEN_SRC_INCLUDE_DIRS ${OPEN_SRC_INCLUDE_DIRS} ${MBEDTLS_INCLUDE_DIRS})
++-else()
++-  message(FATAL_ERROR "No crypto library selected.")
++ endif()
++ 
++ if(BUILD_COMMON_CURL)
++diff --git a/samples/KvsAacAudioVideoStreamingSample.c b/samples/KvsAacAudioVideoStreamingSample.c
++index 9d78570..4d6ac54 100644
++--- a/samples/KvsAacAudioVideoStreamingSample.c
+++++ b/samples/KvsAacAudioVideoStreamingSample.c
++@@ -1,4 +1,4 @@
++-#include <com/amazonaws/kinesis/video/cproducer/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/cproducer/Include.h>
++ 
++ #define DEFAULT_RETENTION_PERIOD     2 * HUNDREDS_OF_NANOS_IN_AN_HOUR
++ #define DEFAULT_BUFFER_DURATION      120 * HUNDREDS_OF_NANOS_IN_A_SECOND
++diff --git a/samples/KvsVideoOnlyStreamingSample.c b/samples/KvsVideoOnlyStreamingSample.c
++index feb9398..cc9e300 100644
++--- a/samples/KvsVideoOnlyStreamingSample.c
+++++ b/samples/KvsVideoOnlyStreamingSample.c
++@@ -1,4 +1,4 @@
++-#include <com/amazonaws/kinesis/video/cproducer/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/cproducer/Include.h>
++ 
++ #define DEFAULT_RETENTION_PERIOD          2 * HUNDREDS_OF_NANOS_IN_AN_HOUR
++ #define DEFAULT_BUFFER_DURATION           120 * HUNDREDS_OF_NANOS_IN_A_SECOND
++diff --git a/src/include/com/amazonaws/kinesis/video/common/Include.h b/src/include/webrtc/com/amazonaws/kinesis/video/common/Include.h
++similarity index 96%
++rename from src/include/com/amazonaws/kinesis/video/common/Include.h
++rename to src/include/webrtc/com/amazonaws/kinesis/video/common/Include.h
++index 06c269a..60ca1da 100644
++--- a/src/include/com/amazonaws/kinesis/video/common/Include.h
+++++ b/src/include/webrtc/com/amazonaws/kinesis/video/common/Include.h
++@@ -13,11 +13,11 @@ extern "C" {
++ ////////////////////////////////////////////////////
++ // Public headers
++ ////////////////////////////////////////////////////
++-#include <com/amazonaws/kinesis/video/client/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
++ #ifndef JSMN_HEADER
++ #define JSMN_HEADER
++ #endif
++-#include <com/amazonaws/kinesis/video/common/jsmn.h>
+++#include <webrtc/com/amazonaws/kinesis/video/common/jsmn.h>
++ 
++ ////////////////////////////////////////////////////
++ /// Common producer base return codes
++diff --git a/src/include/com/amazonaws/kinesis/video/common/jsmn.h b/src/include/webrtc/com/amazonaws/kinesis/video/common/jsmn.h
++similarity index 100%
++rename from src/include/com/amazonaws/kinesis/video/common/jsmn.h
++rename to src/include/webrtc/com/amazonaws/kinesis/video/common/jsmn.h
++diff --git a/src/include/com/amazonaws/kinesis/video/cproducer/Include.h b/src/include/webrtc/com/amazonaws/kinesis/video/cproducer/Include.h
++similarity index 99%
++rename from src/include/com/amazonaws/kinesis/video/cproducer/Include.h
++rename to src/include/webrtc/com/amazonaws/kinesis/video/cproducer/Include.h
++index 682a2e8..5c26897 100644
++--- a/src/include/com/amazonaws/kinesis/video/cproducer/Include.h
+++++ b/src/include/webrtc/com/amazonaws/kinesis/video/cproducer/Include.h
++@@ -13,8 +13,8 @@ extern "C" {
++ ////////////////////////////////////////////////////
++ // Public headers
++ ////////////////////////////////////////////////////
++-#include <com/amazonaws/kinesis/video/client/Include.h>
++-#include <com/amazonaws/kinesis/video/common/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/common/Include.h>
++ 
++ ////////////////////////////////////////////////////
++ /// Producer base return codes
++diff --git a/src/source/Common/Include_i.h b/src/source/Common/Include_i.h
++index 56ae2ae..97f71df 100644
++--- a/src/source/Common/Include_i.h
+++++ b/src/source/Common/Include_i.h
++@@ -44,7 +44,7 @@ extern "C" {
++ #include <curl/curl.h>
++ #endif
++ 
++-#include <com/amazonaws/kinesis/video/common/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/common/Include.h>
++ 
++ /**
++  * Opaque struct for OpenSSL locking
++diff --git a/src/source/Common/jsmn.c b/src/source/Common/jsmn.c
++index afa6450..6c68a25 100644
++--- a/src/source/Common/jsmn.c
+++++ b/src/source/Common/jsmn.c
++@@ -1,4 +1,4 @@
++ /*
++  *	This file contains jsmn implementation
++  */
++-#include <com/amazonaws/kinesis/video/common/jsmn.h>
+++#include <webrtc/com/amazonaws/kinesis/video/common/jsmn.h>
++diff --git a/src/source/Include_i.h b/src/source/Include_i.h
++index b99b1c6..3daf94c 100644
++--- a/src/source/Include_i.h
+++++ b/src/source/Include_i.h
++@@ -21,8 +21,8 @@ typedef StreamLatencyStateMachine* PStreamLatencyStateMachine;
++ ////////////////////////////////////////////////////
++ // Project include files
++ ////////////////////////////////////////////////////
++-#include <com/amazonaws/kinesis/video/cproducer/Include.h>
++-#include <com/amazonaws/kinesis/video/common/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/cproducer/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/common/Include.h>
++ 
++ #include <curl/curl.h>
++ 
++diff --git a/tst/ProducerTestFixture.h b/tst/ProducerTestFixture.h
++index 8d38a4d..1646dc4 100644
++--- a/tst/ProducerTestFixture.h
+++++ b/tst/ProducerTestFixture.h
++@@ -1,5 +1,5 @@
++ #include "gtest/gtest.h"
++-#include <com/amazonaws/kinesis/video/cproducer/Include.h>
+++#include <webrtc/com/amazonaws/kinesis/video/cproducer/Include.h>
++ #include <src/source/Include_i.h>
++ #include "RotatingStaticAuthCallbacks.h"
++ 
++-- 
++2.25.0
++
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 37c6eb9ee..3accba087 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,7 +9,6 @@ project(KinesisVideoWebRTCClient LANGUAGES C)
+ # User Flags
+ option(ADD_MUCLIBC "Add -muclibc c flag" OFF)
+ option(BUILD_DEPENDENCIES "Whether or not to build depending libraries from source" ON)
+-option(USE_OPENSSL "Use openssl as crypto library" ON)
+ option(USE_MBEDTLS "Use mbedtls as crypto library" OFF)
+ option(BUILD_STATIC_LIBS "Build all libraries statically. (This includes third-party libraries.)" OFF)
+ option(BUILD_OPENSSL_PLATFORM "If buildng OpenSSL what is the target platform" OFF)
+@@ -70,15 +69,7 @@ message(STATUS "dependencies install path is ${OPEN_SRC_INSTALL_PREFIX}")
+ # pass ca cert location to sdk
+ add_definitions(-DKVS_CA_CERT_PATH="${CMAKE_SOURCE_DIR}/certs/cert.pem")
+ add_definitions(-DCMAKE_DETECTED_CACERT_PATH)
+-
+-if(USE_OPENSSL)
+-  add_definitions(-DKVS_USE_OPENSSL)
+-elseif(USE_MBEDTLS)
+-  add_definitions(-DKVS_USE_MBEDTLS)
+-  # FIXME: there's probably a better way to inject MBEDTLS_USER_CONFIG_FILE flag without mutating the global CMAKE_C_FLAGS and CMAKE_CXX_FLAGS
+-  set(CMAKE_C_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/configs -DMBEDTLS_USER_CONFIG_FILE='<config_mbedtls.h>' ${CMAKE_C_FLAGS}")
+-  set(CMAKE_CXX_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/configs -DMBEDTLS_USER_CONFIG_FILE='<config_mbedtls.h>' ${CMAKE_CXX_FLAGS}")
+-endif()
++add_definitions(-DKVS_USE_OPENSSL)
+ 
+ if(BUILD_DEPENDENCIES)
+   set(OPEN_SRC_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/open-source)
+@@ -91,40 +82,16 @@ if(BUILD_DEPENDENCIES)
+ 
+   message(STATUS "Begin building dependencies.")
+ 
+-  set(SSL_OPTIONS USE_OPENSSL USE_MBEDTLS)
+-  count_true(ENABLED_SSL_OPTION_COUNT ${SSL_OPTIONS})
+-
+-  if(ENABLED_SSL_OPTION_COUNT GREATER "1")
+-    message(FATAL_ERROR "Only one of ${SSL_OPTIONS} can be enabled")
+-  endif()
+-
+-  if (USE_OPENSSL)
+-    set(BUILD_ARGS -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
+-                   -DBUILD_OPENSSL_PLATFORM=${BUILD_OPENSSL_PLATFORM}
+-                   -DOPENSSL_EXTRA=${OPENSSL_EXTRA})
+-    build_dependency(openssl ${BUILD_ARGS})
+-    set(OPENSSL_ROOT_DIR ${OPEN_SRC_INSTALL_PREFIX})
+-  elseif(USE_MBEDTLS)
+-    set(BUILD_ARGS -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
+-                   -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS})
+-    build_dependency(mbedtls ${BUILD_ARGS})
+-  endif()
+-
+ 
+   set(BUILD_ARGS -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
+-                 -DOPENSSL_DIR=${OPEN_SRC_INSTALL_PREFIX}
+-                 -DUSE_OPENSSL=${USE_OPENSSL}
+-                 -DUSE_MBEDTLS=${USE_MBEDTLS}
+-                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS})
++                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
++                 -DOPENSSL_DIR=${OPEN_SRC_INSTALL_PREFIX})
+   build_dependency(websockets ${BUILD_ARGS})
+ 
+   set(BUILD_ARGS
+       -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
+-      -DOPENSSL_DIR=${OPEN_SRC_INSTALL_PREFIX}
+       -DBUILD_LIBSRTP_HOST_PLATFORM=${BUILD_LIBSRTP_HOST_PLATFORM}
+       -DBUILD_LIBSRTP_DESTINATION_PLATFORM=${BUILD_LIBSRTP_DESTINATION_PLATFORM}
+-      -DUSE_OPENSSL=${USE_OPENSSL}
+-      -DUSE_MBEDTLS=${USE_MBEDTLS}
+   )
+   build_dependency(srtp ${BUILD_ARGS})
+ 
+@@ -144,8 +111,6 @@ if(BUILD_DEPENDENCIES)
+   # building kvsCommonLws also builds kvspic
+   set(BUILD_ARGS
+       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-      -DUSE_OPENSSL=${USE_OPENSSL}
+-      -DUSE_MBEDTLS=${USE_MBEDTLS}
+       -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS})
+   build_dependency(kvsCommonLws ${BUILD_ARGS})
+ 
+@@ -156,13 +121,9 @@ endif()
+ 
+ find_package(Threads)
+ find_package(PkgConfig REQUIRED)
+-if (USE_OPENSSL)
+-  find_package(OpenSSL REQUIRED)
+-  set(OPEN_SRC_INCLUDE_DIRS ${OPEN_SRC_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+-else()
+-  find_package(MbedTLS REQUIRED)
+-  set(OPEN_SRC_INCLUDE_DIRS ${OPEN_SRC_INCLUDE_DIRS} ${MBEDTLS_INCLUDE_DIRS})
+-endif()
++
++find_package(OpenSSL REQUIRED)
++set(OPEN_SRC_INCLUDE_DIRS ${OPEN_SRC_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+ 
+ if (OPEN_SRC_INSTALL_PREFIX)
+   find_library(SRTP_LIBRARIES srtp2 REQUIRED PATHS ${OPEN_SRC_INSTALL_PREFIX})
+@@ -285,12 +246,7 @@ file(
+   "src/source/Sctp/*.c"
+   "src/source/Metrics/*.c")
+ 
+-if (USE_OPENSSL)
+-  list(FILTER WEBRTC_CLIENT_SOURCE_FILES EXCLUDE REGEX ".*_mbedtls\\.c")
+-elseif (USE_MBEDTLS)
+-  list(FILTER WEBRTC_CLIENT_SOURCE_FILES EXCLUDE REGEX ".*_openssl\\.c")
+-endif()
+-
++list(FILTER WEBRTC_CLIENT_SOURCE_FILES EXCLUDE REGEX ".*_mbedtls\\.c")
+ file(GLOB WEBRTC_SIGNALING_CLIENT_SOURCE_FILES "src/source/Signaling/*.c")
+ 
+ 
+@@ -310,7 +266,6 @@ target_link_libraries(
+           ${OPENSSL_CRYPTO_LIBRARY}
+           ${SRTP_LIBRARIES}
+           ${Usrsctp}
+-          ${MBEDTLS_LIBRARIES}
+           ${GPERFTOOLS_MALLOC_LIBRARIES}
+           ${GPERFTOOLS_PROFILER_LIBRARIES}
+           ${EXTRA_DEPS})
+@@ -320,8 +275,8 @@ add_library(kvsWebrtcSignalingClient ${LINKAGE} ${WEBRTC_SIGNALING_CLIENT_SOURCE
+ target_link_libraries(
+   kvsWebrtcSignalingClient
+   PUBLIC
+-        kvsCommonLws
+         ${LIBWEBSOCKETS_LIBRARIES} 
++        kvsCommonLws
+   PRIVATE kvspicUtils
+          kvspicState
+          ${CMAKE_THREAD_LIBS_INIT}
+diff --git a/README.md b/README.md
+index 99cee30bd..e4d3282b9 100644
+--- a/README.md
++++ b/README.md
+@@ -275,7 +275,7 @@ Similar to the heap profile, you only need to specify the following environment
+ More information about what environment variables you can configure can be found [here](https://gperftools.github.io/gperftools/cpuprofile.html)
+ 
+ ## Documentation
+-All Public APIs are documented in our [Include.h](https://github.com/awslabs/amazon-kinesis-video-streams-webrtc-sdk-c/blob/master/src/include/com/amazonaws/kinesis/video/webrtcclient/Include.h), we also generate a [Doxygen](https://awslabs.github.io/amazon-kinesis-video-streams-webrtc-sdk-c/) each commit for easier navigation.
++All Public APIs are documented in our [Include.h](https://github.com/awslabs/amazon-kinesis-video-streams-webrtc-sdk-c/blob/master/src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h), we also generate a [Doxygen](https://awslabs.github.io/amazon-kinesis-video-streams-webrtc-sdk-c/) each commit for easier navigation.
+ 
+ Refer to [related](#related) for more about WebRTC and KVS.
+ 
+diff --git a/samples/Samples.h b/samples/Samples.h
+index a8d609526..03fd785c6 100644
+--- a/samples/Samples.h
++++ b/samples/Samples.h
+@@ -10,7 +10,7 @@ Shared include file for the samples
+ extern "C" {
+ #endif
+ 
+-#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
++#include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h>
+ 
+ #define NUMBER_OF_H264_FRAME_FILES               1500
+ #define NUMBER_OF_OPUS_FRAME_FILES               618
+diff --git a/samples/discoverNatBehavior.c b/samples/discoverNatBehavior.c
+index bed2d1e7b..55dd7240c 100644
+--- a/samples/discoverNatBehavior.c
++++ b/samples/discoverNatBehavior.c
+@@ -1,4 +1,4 @@
+-#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
++#include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h>
+ 
+ #define NETWORK_INTERFACE_NAME_PARAM "-i"
+ #define STUN_HOSTNAME_PARAM          "-s"
+diff --git a/src/include/com/amazonaws/kinesis/video/webrtcclient/Include.h b/src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h
+similarity index 99%
+rename from src/include/com/amazonaws/kinesis/video/webrtcclient/Include.h
+rename to src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h
+index bb2414a79..8f0856793 100644
+--- a/src/include/com/amazonaws/kinesis/video/webrtcclient/Include.h
++++ b/src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h
+@@ -17,10 +17,10 @@ extern "C" {
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+ #endif
+-#include <com/amazonaws/kinesis/video/client/Include.h>
+-#include <com/amazonaws/kinesis/video/common/Include.h>
+-#include <com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h>
+-#include <com/amazonaws/kinesis/video/webrtcclient/Stats.h>
++#include <webrtc/com/amazonaws/kinesis/video/client/Include.h>
++#include <webrtc/com/amazonaws/kinesis/video/common/Include.h>
++#include <webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h>
++#include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h>
+ #if defined(__clang__)
+ #pragma clang diagnostic pop
+ #endif
+diff --git a/src/include/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h b/src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h
+similarity index 100%
+rename from src/include/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h
+rename to src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h
+diff --git a/src/include/com/amazonaws/kinesis/video/webrtcclient/Stats.h b/src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h
+similarity index 100%
+rename from src/include/com/amazonaws/kinesis/video/webrtcclient/Stats.h
+rename to src/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h
+diff --git a/src/source/Include_i.h b/src/source/Include_i.h
+index d767ed668..917c80e0b 100644
+--- a/src/source/Include_i.h
++++ b/src/source/Include_i.h
+@@ -24,7 +24,7 @@ extern "C" {
+ ////////////////////////////////////////////////////
+ // Project include files
+ ////////////////////////////////////////////////////
+-#include <com/amazonaws/kinesis/video/webrtcclient/Include.h>
++#include <webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h>
+ 
+ #ifdef KVS_USE_OPENSSL
+ #include <openssl/bio.h>
+diff --git a/src/source/PeerConnection/SessionDescription.c b/src/source/PeerConnection/SessionDescription.c
+index a57ec31c9..c5a4a7a1a 100644
+--- a/src/source/PeerConnection/SessionDescription.c
++++ b/src/source/PeerConnection/SessionDescription.c
+@@ -151,7 +151,8 @@ STATUS setPayloadTypesFromOffer(PHashTable codecTable, PHashTable rtxTable, PSes
+     ENTERS();
+     STATUS retStatus = STATUS_SUCCESS;
+     PSdpMediaDescription pMediaDescription = NULL;
+-    UINT8 currentMedia, currentAttribute;
++    UINT8 currentAttribute;
++    UINT16 currentMedia;
+     PCHAR attributeValue, end;
+     UINT64 parsedPayloadType, hashmapPayloadType, fmtpVal, aptVal;
+     UINT16 aptFmtpVals[MAX_SDP_FMTP_VALUES];
+diff --git a/src/source/Sdp/Deserialize.c b/src/source/Sdp/Deserialize.c
+index c5cb84db4..c3762b6c9 100644
+--- a/src/source/Sdp/Deserialize.c
++++ b/src/source/Sdp/Deserialize.c
+@@ -48,7 +48,7 @@ STATUS parseMediaAttributes(PSessionDescription pSessionDescription, PCHAR pch,
+     ENTERS();
+     STATUS retStatus = STATUS_SUCCESS;
+     PCHAR search;
+-    UINT8 currentMediaAttributesCount;
++    INT16 currentMediaAttributesCount;
+ 
+     currentMediaAttributesCount = pSessionDescription->mediaDescriptions[pSessionDescription->mediaCount - 1].mediaAttributesCount;
+ 
+diff --git a/src/source/Sdp/Sdp.h b/src/source/Sdp/Sdp.h
+index af1cae5e1..c156e8035 100644
+--- a/src/source/Sdp/Sdp.h
++++ b/src/source/Sdp/Sdp.h
+@@ -75,7 +75,7 @@ extern "C" {
+ #define MAX_SDP_SESSION_MEDIA_COUNT   5
+ #define MAX_SDP_MEDIA_BANDWIDTH_COUNT 2
+ 
+-#define MAX_SDP_ATTRIBUTES_COUNT 128
++#define MAX_SDP_ATTRIBUTES_COUNT 256
+ 
+ /*
+  * c=<nettype> <addrtype> <connection-address>
+@@ -198,9 +198,9 @@ typedef struct {
+ 
+     SdpMediaDescription mediaDescriptions[MAX_SDP_SESSION_MEDIA_COUNT];
+ 
+-    UINT8 sessionAttributesCount;
++    UINT16 sessionAttributesCount;
+ 
+-    UINT8 mediaCount;
++    UINT16 mediaCount;
+ 
+     UINT8 timezoneCount;
+ 
+diff --git a/tst/SdpApiTest.cpp b/tst/SdpApiTest.cpp
+index b9b470ea2..b83b42682 100644
+--- a/tst/SdpApiTest.cpp
++++ b/tst/SdpApiTest.cpp
+@@ -232,7 +232,7 @@ s=-
+ t=0 0
+ )";
+ 
+-    for (auto i = 0; i < 250; i++) {
++    for (auto i = 0; i <= MAX_SDP_ATTRIBUTES_COUNT + 1; i++) {
+         sessionDescriptionNoMedia += "a=b\n";
+     }
+ 
+-- 
+2.25.0
+
