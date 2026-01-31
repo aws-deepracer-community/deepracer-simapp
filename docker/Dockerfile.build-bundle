@@ -4,8 +4,8 @@ FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle
 
-RUN rosdep update --rosdistro=noetic -q && rosdep install --rosdistro=noetic --from-paths src --ignore-src -r -y 
-RUN bash -c "source /opt/ros/noetic/setup.bash && colcon build"
+RUN rosdep update --rosdistro=jazzy -q && rosdep install --rosdistro=jazzy --from-paths src --ignore-src -r -y 
+RUN bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
 
 ENTRYPOINT ["/simulation-entrypoint.sh"]
 CMD ["bash"]

@@ -1,49 +1,38 @@
-FROM ros:noetic-robot
+FROM ros:jazzy-ros-base
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ENV DEBIAN_FRONTEND="noninteractive" 
+ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore:::setuptools.command.install"
+
+RUN apt update && apt install -y --no-install-recommends \
     sudo \
     curl \
     wget \
     apt-utils \
     git
 
-RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
-
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN curl -s http://packages.osrfoundation.org/gazebo.key | apt-key add -
-
-ENV DEBIAN_FRONTEND="noninteractive" 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    gazebo11 \
+RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
     libcurl4-openssl-dev \
-    libgazebo11-dev \
-    libignition-math4 \
-    libignition-math4-dev \
-    liblog4cplus-dev \
-    libx264-dev \
-    python \
-    python3 \
-    python3-colcon-common-extensions \
-    python3-jsonschema \
     python3-pip \
-    python3-scipy \
-    python3-shapely \
-    ros-noetic-controller-manager \
-    ros-noetic-gazebo-plugins \
-    ros-noetic-gazebo-ros-control \
-    ros-noetic-ros-control \
-    ros-noetic-ros-controllers \
-    rviz \
-    x264 
+    python3-colcon-common-extensions \
+    x264 \
+    libx264-dev \
+    libgmock-dev \
+    ros-jazzy-ros-gz 
 
-# Link AWS CPP libraries
-RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
-    ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
+# Build AWS SDK C++ with Kinesis, S3, and CloudWatch Logs support
+RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
+    cd aws-sdk-cpp && \
+    mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_ONLY="kinesis;s3;logs" -DENABLE_TESTING=OFF && \
+    cmake --build . --config=Release && \
+    cmake --install .  --config=Release && \
+    ldconfig
 
+# Copy Bundle
 COPY bundle/ /opt/bundle
 WORKDIR /opt/bundle
 
-RUN rosdep update --rosdistro=noetic && rosdep install --rosdistro=noetic --from-paths src --ignore-src -r -y 
+RUN rosdep update --rosdistro=jazzy && rosdep install --rosdistro=jazzy --from-paths src --ignore-src -r -y 
 
 ADD docker/files/ml-code/simulation-entrypoint.sh /
 ENTRYPOINT ["/simulation-entrypoint.sh"]
