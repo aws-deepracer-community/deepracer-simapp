@@ -137,7 +137,7 @@ def generate_launch_description():
         ]))
     )
     
-    # Include H264 video encoder when streaming to Kinesis is enabled
+    # Include H264 video encoder when streaming to Kinesis is enabled AND stream name is provided
     h264_encoder_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
@@ -154,10 +154,13 @@ def generate_launch_description():
             ('image_transport', 'raw'),
             ('racecar_name', LaunchConfiguration('racecar_name'))
         ],
-        condition=IfCondition(LaunchConfiguration('publish_to_kinesis_stream'))
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('publish_to_kinesis_stream'), "'.lower() == 'true' and '",
+            LaunchConfiguration('kinesis_video_stream_name'), "' != ''"
+        ]))
     )
     
-    # Include Kinesis video streamer when streaming is enabled
+    # Include Kinesis video streamer when streaming is enabled AND stream name is provided
     kinesis_streamer_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([
@@ -180,7 +183,10 @@ def generate_launch_description():
             ('racecar_name', LaunchConfiguration('racecar_name')),
             ('subscription_topic', [LaunchConfiguration('racecar_name'), '/b9/kvs/video/encoded'])
         ],
-        condition=IfCondition(LaunchConfiguration('publish_to_kinesis_stream'))
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('publish_to_kinesis_stream'), "'.lower() == 'true' and '",
+            LaunchConfiguration('kinesis_video_stream_name'), "' != ''"
+        ]))
     )
     
     return LaunchDescription([

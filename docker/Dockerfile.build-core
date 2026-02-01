@@ -28,11 +28,21 @@ RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
     cmake --install .  --config=Release && \
     ldconfig
 
-# Copy Bundle
-COPY bundle/ /opt/bundle
-WORKDIR /opt/bundle
+# Install Redis.
+RUN cd /tmp && \
+    wget https://download.redis.io/releases/redis-8.0.4.tar.gz && \
+    tar xvzf redis-8.0.4.tar.gz && \
+    cd redis-8.0.4 && \
+    make && \
+    make install && \
+    rm -rf /tmp/redis*
 
-RUN rosdep update --rosdistro=jazzy && rosdep install --rosdistro=jazzy --from-paths src --ignore-src -r -y 
+# Copy Bundle
+COPY bundle/ /opt/amazon
+WORKDIR /opt/amazon
+COPY docker/files/ml-code/ /opt/ml/code
+
+RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages.sh"
 
 ADD docker/files/ml-code/simulation-entrypoint.sh /
 ENTRYPOINT ["/simulation-entrypoint.sh"]

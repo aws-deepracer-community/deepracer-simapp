@@ -1,11 +1,11 @@
 ARG CORE_PREFIX=awsdeepracercommunity
 FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
 
-COPY bundle/ /opt/bundle
-WORKDIR /opt/bundle
+COPY bundle/ /opt/amazon
+COPY docker/files/ml-code/ /opt/ml/code
+WORKDIR /opt/amazon
 
-RUN rosdep update --rosdistro=jazzy -q && rosdep install --rosdistro=jazzy --from-paths src --ignore-src -r -y 
-RUN bash -c "source /opt/ros/jazzy/setup.bash && colcon build"
+RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages.sh"
 
 ENTRYPOINT ["/simulation-entrypoint.sh"]
 CMD ["bash"]

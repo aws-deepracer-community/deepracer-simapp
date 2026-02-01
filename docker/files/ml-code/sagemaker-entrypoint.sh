@@ -15,17 +15,7 @@
 #   See the License for the specific language governing permissions and         #
 #   limitations under the License.                                              #
 #################################################################################
-  
-echo "Starting sage-train.sh"
 
-set -e
-
-COACH_EXP_NAME=sagemaker_rl
-cd /opt/amazon/
-
-export PYTHONUNBUFFERED=1
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
-
-# Start the redis server and Coach training worker
-redis-server /etc/redis/redis.conf & (sleep 5 && \
-python3.12 /opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/markov/training_worker.py $@ 2>&1)
+source /root/anaconda/bin/activate sagemaker_env
+echo "Executing sagemaker-entrypoint.sh script"
+exec "${@:1}"

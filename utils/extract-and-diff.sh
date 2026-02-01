@@ -6,8 +6,8 @@ mkdir -p /tmp/bundle-src
 
 docker pull public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.0
 docker run -d -i --rm --name deepracer-simapp public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.0 bash
-# docker export deepracer-simapp | tar xf - opt/amazon --exclude=/opt/amazon/build --exclude=/opt/amazon/install --exclude=/opt/amazon/log
 docker cp deepracer-simapp:/opt/amazon /tmp/bundle-src
+docker cp deepracer-simapp:/opt/ml /tmp/bundle-src
 docker stop deepracer-simapp
 
 cd /tmp/bundle-src/amazon

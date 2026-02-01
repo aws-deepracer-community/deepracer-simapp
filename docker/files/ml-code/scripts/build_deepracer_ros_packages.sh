@@ -35,7 +35,7 @@ apt-get update && rosdep update && rosdep install --from-paths src --ignore-src 
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ldconfig
 
-rm -rf build/ install/
+# rm -rf build/ install/
 echo "Doing colcon build"
 # Build core packages first
 colcon build --packages-select aws_common aws_ros2_common --parallel-workers 1 --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"
@@ -43,7 +43,7 @@ colcon build --packages-select aws_common aws_ros2_common --parallel-workers 1 -
 # Build the rest with retry logic for intermittent failures
 for i in {1..3}; do
     echo "Build attempt $i"
-    if colcon build --parallel-workers 1 --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"; then
+    if colcon build --parallel-workers 2 --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"; then
         echo "Build successful on attempt $i"
         break
     else

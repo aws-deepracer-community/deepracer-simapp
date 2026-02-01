@@ -1,0 +1,9 @@
+name: coach_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - zip
+  - pip:
+      - sagemaker==2.232.2

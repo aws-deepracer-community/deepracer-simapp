@@ -17,7 +17,7 @@ In DeepRacer-for-Cloud this single image is being used for three purposes:
 The code in `bundle/` is primarily provided by AWS, and is closely matching the code that is running in the AWS DeepRacer console. Work is based on the information
 provided in [Guidance for training an AWS DeepRacer model using Amazon Sagemaker](https://github.com/aws-solutions-library-samples/guidance-for-training-an-aws-deepracer-model-using-amazon-sagemaker).
 
-The source is taken from the [deepracer-sim-public Container](https://gallery.ecr.aws/k1d3r4z1/deepracer-sim-public), and is replicated here in the `upstream` branch.
+The source is taken from the [deepracer-on-aws-simapp Container](https://gallery.ecr.aws/aws-solutions/deepracer-on-aws-simapp), and is replicated here in the `upstream` branch.
 
 ## Single image
 
@@ -30,13 +30,13 @@ is built into the single image, and RL coach does not inject code anymore.
 ## Core Technologies / Technology Stack
 
 Installed core technologies are:
- - Ubuntu 20.04
- - Python 3.8
- - Tensorflow 2.13
- - CUDA 11.8 (GPU only)
- - REDIS 6.2.7
- - ROS Noetic
- - Gazebo 11
+ - Ubuntu 24.04
+ - Python 3.12
+ - Tensorflow 2.19
+ - CUDA 13.1 (GPU only)
+ - Redis 8.0.4
+ - ROS 2 Jazzy
+ - Gazebo Harmonic
 
 ## Available pre-built versions
 

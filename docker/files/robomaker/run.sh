@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
+set -e
+
+# ros jazzy
+export ROS_DISTRO=jazzy
+export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
+export TF_CPP_MIN_LOG_LEVEL=3
+export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+export DEEPRACER_JOB_TYPE_ENV="LOCAL"
+
+export PATH="/opt/ml/:$PATH"
+source /opt/ros/${ROS_DISTRO}/setup.bash
+source /opt/amazon/install/setup.bash
+source /root/anaconda/bin/activate sagemaker_env
 
 # Ensure we have a roll-out index; also when we have only one worker
 if [ -z "$ROLLOUT_IDX" ]; then
@@ -34,13 +47,11 @@ if [ "$1" == "multi" ]; then
 
 fi
 
-export DEEPRACER_JOB_TYPE_ENV="LOCAL"
-
 # Check if we have an RTF_OVERRIDE to change the RTF - change the world file.
 if [[ -n "${RTF_OVERRIDE}" ]]; then
 	echo "Setting RTF to ${RTF_OVERRIDE} for ${WORLD_NAME}"
 	RTF_UPDATE_RATE=$(awk -v rtf=$RTF_OVERRIDE 'BEGIN{ update_rate=rtf*1000; printf "%0.6f", update_rate}')
-	WORLD_FILE="/opt/simapp/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
+	WORLD_FILE="/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/worlds/${WORLD_NAME}.world"
 	xmlstarlet ed -L -s '/sdf/world' -t elem -n physics $WORLD_FILE 
 	xmlstarlet ed -L -a '/sdf/world/physics' -t attr -n type -v ode $WORLD_FILE 
 	xmlstarlet ed -L -s '/sdf/world/physics' -t elem -n max_step_size -v 0.001000 $WORLD_FILE 
@@ -57,16 +68,14 @@ if [[ "${DEBUG_REWARD,,}" == "true" ]]; then
 fi
 
 # If no run-option given then use the distributed training
-if [ -z ${2+x} ]; then
-	$2 = "distributed_training.launch"
-	exit
-
+if [ -z "${2+x}" ]; then
+	LAUNCH_FILE="distributed_training.launch.py"
+else
+	LAUNCH_FILE="$2"
 fi
 
 # Initialize ROS & the Bundle
-export IGN_IP=127.0.0.1
-source /opt/ros/${ROS_DISTRO}/setup.bash
-source setup.bash
+export GZ_IP=127.0.0.1
 
 # Start an X server if we do not have one
 if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
@@ -81,13 +90,12 @@ else
 fi
 
 # Start the training
-roslaunch deepracer_simulation_environment $2 &
+ros2 launch deepracer_simulation_environment $LAUNCH_FILE &
 
 # If GUI is desired then also start RQT and RVIZ
-if [[ "${ENABLE_GUI,,}" == "true" ]];
-then
-	rqt &
-	rviz &
+if [[ "${ENABLE_GUI,,}" == "true" ]]; then
+	ros2 run rqt_gui rqt_gui &
+	rviz2 &
 fi
 
 sleep 1

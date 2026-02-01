@@ -23,6 +23,7 @@ from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
 import markov.rollout_constants as const
 from markov import utils
+from markov.world_config import WorldConfig
 from markov.utils import force_list, str2bool
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
@@ -93,8 +94,8 @@ class DeepRacerNode(Node):
 
         # Place the car at the starting point facing the forward direction
         # Instantiate cameras
-        camera_main_enable = str2bool(rclpy.get_param("CAMERA_MAIN_ENABLE", "True"))
-        camera_sub_enable = str2bool(rclpy.get_param("CAMERA_SUB_ENABLE", "True"))
+        camera_main_enable = str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
+        camera_sub_enable = str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
 
         if camera_main_enable or camera_sub_enable:
             main_cameras, sub_camera = configure_camera(namespaces=racecar_names)

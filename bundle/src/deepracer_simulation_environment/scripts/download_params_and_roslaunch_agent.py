@@ -36,33 +36,22 @@ from markov.log_handler.logger import Logger
 from markov.world_config import WorldConfig
 
 
-LOG = Logger(__name__, logging.INFO).get_logger() 
- 
-# Amount of time to wait to guarantee that RoboMaker's network configuration is ready.
-WAIT_FOR_ROBOMAKER_TIME = 10
- 
-# User alias for F1 shell
-F1_SHELL_USERS_LIST = ["TataCalde", "RIC3", "SheBangsTheDrums1989"]
+LOG = Logger(__name__, logging.INFO).get_logger()
+
 
 def main():
     """ Main function for downloading yaml params """
-
     # parse argument
     s3_region = sys.argv[1]
     s3_bucket = sys.argv[2]
     s3_prefix = sys.argv[3]
     s3_yaml_name = sys.argv[4]
     launch_name = sys.argv[5]
-    yaml_key = os.path.normpath(os.path.join(s3_prefix, s3_yaml_name))
 
     try:
 
         s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
         
-        if s3_endpoint_url is not None:
-            logging.info('Endpoint URL {}'.format(s3_endpoint_url))
-            rclpy.set_param('S3_ENDPOINT_URL', s3_endpoint_url)
-
         if AgentType.ROLLOUT.value in launch_name:
             # For rollout, launch_name is "rollout_rl_agent.launch"
             agent_type = AgentType.ROLLOUT.value
@@ -71,7 +60,7 @@ def main():
             agent_type = AgentType.EVALUATION.value
         elif AgentType.VIRTUAL_EVENT.value in launch_name:
             # For virtual event, launch_name is "virtual_event_rl_agent.launch"
-            agent_type = AgentType.VIRTUAL_EVENT.value            
+            agent_type = AgentType.VIRTUAL_EVENT.value
         else:
             log_and_exit("Unknown agent type in launch file: {}".format(launch_name),
                          SIMAPP_SIMULATION_WORKER_EXCEPTION,
@@ -88,6 +77,10 @@ def main():
         yaml_file.get_yaml_values()
 
         WorldConfig.get_instance().set_local_yaml_config_file(yaml_file.local_path)
+
+        if s3_endpoint_url is not None:
+            logging.info('Endpoint URL {}'.format(s3_endpoint_url))
+            WorldConfig.get_instance().set_param('S3_ENDPOINT_URL', s3_endpoint_url)
 
         if not agent_type == AgentType.VIRTUAL_EVENT.value:
             # List of racecar names that should include second camera while launching
@@ -137,12 +130,10 @@ def main():
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
                             "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
-
         Popen(cmd, shell=True, executable="/bin/bash")
-    
     except botocore.exceptions.ClientError as ex:
         log_and_exit("Download params and launch of agent node S3 ClientError: s3_bucket: {}, yaml_key: {}, {}"
-                         .format(s3_bucket, yaml_key, ex), 
+                         .format(s3_bucket, yaml_key, ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     except botocore.exceptions.EndpointConnectionError:
@@ -155,7 +146,7 @@ def main():
                      SIMAPP_EVENT_ERROR_CODE_500)
     except Exception as ex:
         log_and_exit("Download params and launch of agent node failed: s3_bucket: {}, yaml_key: {}, {}"
-                         .format(s3_bucket, yaml_key, ex), 
+                         .format(s3_bucket, yaml_key, ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
 

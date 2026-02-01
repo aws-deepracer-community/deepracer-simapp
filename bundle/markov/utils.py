@@ -121,7 +121,7 @@ def cancel_simulation_job():
             logger.info("Successfully cancelled the simulation job")
         else:
             logger.info("AWS_ROBOMAKER_SIMULATION_JOB_ARN environment variable not set.")
-            subprocess.run(["/opt/simapp/shutdown.sh"])
+            subprocess.run(["/opt/ml/code/shutdown.sh"])
             logger.info("Shutdown initiated")
             exit(0)            
 
