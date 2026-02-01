@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 """
 Upload CloudWatch Logs to log streams.
 """
@@ -27,7 +44,7 @@ class CloudWatchUploader(object):
             cw_log_stream_name (str): cloudwatch stream name
             log_file_path (str): log file path to monitor
         """
-        self._cw_client = CloudWatchClient()
+        self._cw_client = CloudWatchClient(region_name=os.environ.get("APP_REGION", "us-east-1"))
         self._cw_log_group_name = cw_log_group_name
         self._cw_log_stream_name = cw_log_stream_name
         self._log_symlink_file_path = log_symlink_file_path
@@ -136,7 +153,7 @@ class CloudWatchUploader(object):
         """Monitor the log file.
 
         When the below command gets executed, all the output goes to .log file
-        roslaunch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE > /opt/ml/simapp.log
+        ros2 launch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE > /opt/ml/simapp.log
 
         The way it works is, /opt/ml/simapp.log is no more an actual file, its a symlink to other log file. Lets say
         /opt/ml/simapp.log -> /opt/ml/simapp_20210721_1015_0000.log

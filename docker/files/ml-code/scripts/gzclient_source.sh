@@ -1,9 +1,26 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
+ROS_DISTRO=jazzy
+
 if [ ! -z $GAZEBO_MASTER_URI ]; then
     tmp_GAZEBO_MASTER_URI=$GAZEBO_MASTER_URI
 fi
 
-source /opt/ros/noetic/setup.bash
-source /usr/share/gazebo-11/setup.sh
+source /opt/ros/$ROS_DISTRO/setup.bash
 
 if [ ! -z $tmp_GAZEBO_MASTER_URI ]; then
     export GAZEBO_MASTER_URI=$tmp_GAZEBO_MASTER_URI

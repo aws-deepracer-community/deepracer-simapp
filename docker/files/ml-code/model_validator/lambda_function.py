@@ -1,14 +1,28 @@
-# This is the file that implements a flask server to do inferences.
-from gevent import monkey
-monkey.patch_all()
-import os
-import flask
-import shutil
-import logging
-from flask import request, json
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
 
-from .utils import extract_custom_attributes, run_cmd
-from .response_handlers import ResponseHandler
+import os
+import shutil
+import json
+import subprocess
+import uuid
+import logging
+
+from utils import build_validation_worker_cmd, run_cmd
+from response_handler import ResponseHandler
 response_handler = ResponseHandler
 
 # The logger object
@@ -18,54 +32,30 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
 )
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-
-MODEL_DATA_PATH = '/model_data'
+MODEL_DATA_PATH = '/tmp/model_data'
 S3_KMS_CMK_ARN_ENV = 'S3_KMS_CMK_ARN_ENV'
 IS_MODEL_VALIDATION = 'IS_MODEL_VALIDATION'
 
 
-# The flask app for serving inference
-app = flask.Flask(__name__)
-
-
-@app.route('/ping', methods=['GET'])
-def ping():
-    """Determine if the container is working and healthy."""
-    return response_handler.ping()
-
-
-def build_validation_worker_cmd_args(s3_bucket, s3_prefix, aws_region):
-    return ['python', '/opt/amazon/markov/validation_worker.py',
-            '--s3_bucket', s3_bucket,
-            '--s3_prefix', s3_prefix,
-            '--aws_region', aws_region]
-
-
-@app.route('/invocations', methods=['POST'])
-def validate():
+def lambda_handler(event, context):
     """Validate user trained model located at given S3 location.
     """
-    session_info = extract_custom_attributes(flask.request.headers.get('X-Amzn-SageMaker-Custom-Attributes'))
-    if request.content_type != 'application/json':
-        return response_handler.unsupported_datatype(flask.request.content_type, session_info)
-
-    logger.info("The header info was extracted [header={}, session_info={}]"
-                .format(flask.request.headers, session_info))
-
-    request_args = request.get_json()
-    logger.info("Request received [session_info={}, content_type={}, args={}]".format(session_info,
-                                                                                      flask.request.content_type,
-                                                                                      request_args))
-
     try:
-        s3_bucket = request_args['s3_bucket']
-        s3_prefix = request_args['s3_prefix']
-        aws_region = request_args['aws_region']
+        # Fetch the session data
+        session_info = dict()
+        session_info['requestId'] = context.aws_request_id
+        session_info['processId'] = os.getpid()
+        s3_bucket = event.get('s3_bucket')
+        s3_prefix = event.get('s3_prefix')
+        aws_region = event.get('aws_region')
+        if not s3_bucket or not s3_prefix or not aws_region:
+            raise Exception("s3_bucket, s3_prefix or aws_region not passed in.")
         subprocess_env = os.environ.copy()
-        if 'sse_key_id' in request_args and request_args['sse_key_id']:
-            subprocess_env[S3_KMS_CMK_ARN_ENV] = request_args['sse_key_id']
-            logger.info("S3_KMS_CMK_ARN_ENV set as {}".format(request_args['sse_key_id']))
+        if 'sse_key_id' in event and event.get('sse_key_id'):
+            subprocess_env[S3_KMS_CMK_ARN_ENV] = event.get('sse_key_id')
+            logger.info("S3_KMS_CMK_ARN_ENV set as {}".format(event.get('sse_key_id')))
         # This is required to have a separate flow during log_and_exit for model validation subprocess
         # such that we do not write any physical sync files on disk and return the subprocess execution
         # with an appropriate return code 0/1 based on success / failure.
@@ -73,17 +63,17 @@ def validate():
     except Exception as ex:
         return response_handler.argument_error(ex, session_info)
 
-    custom_files_path = os.path.join(MODEL_DATA_PATH, session_info['traceId'])
-
     try:
-        validator_cmd = build_validation_worker_cmd_args(s3_bucket=s3_bucket,
-                                                         s3_prefix=s3_prefix,
-                                                         aws_region=aws_region)
-        logger.info("Executing {} [session_info={}]".format(" ".join(map(str, validator_cmd)), session_info))
+        # Create a separate directory for every model validation call
+        custom_files_path = os.path.join(MODEL_DATA_PATH, session_info['requestId'])
         if not os.path.exists(custom_files_path):
+            logger.info("Creating custom file path {} for the model validation request {}".format(custom_files_path, session_info))
             os.makedirs(custom_files_path)
         else:
             raise Exception("Custom Files Path already exists!: {}".format(custom_files_path))
+        # Build the validation worker cmd
+        validator_cmd = build_validation_worker_cmd(s3_bucket=s3_bucket, s3_prefix=s3_prefix, aws_region=aws_region)
+        logger.info("Executing {} [session_info={}]".format(" ".join(map(str, validator_cmd)), session_info))
         return_code, _, stderr = run_cmd(cmd_args=validator_cmd,
                                          change_working_directory=custom_files_path,
                                          shell=False,
@@ -96,6 +86,7 @@ def validate():
         # The return code is set by simapp to 1 in case there is any exception logged during the code execution.
         # and the process is exited manually during the log_and_exit flow.
         if return_code != 0:
+            # Parse through the stderr to match with the correct error classification.
             for line in stderr_lines:
                 if 'simapp_exception' in line:
                     err_json_string = line

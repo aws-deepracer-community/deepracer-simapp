@@ -1,15 +1,18 @@
-# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"). You
-# may not use this file except in compliance with the License. A copy of
-# the License is located at
-#
-#     http://aws.amazon.com/apache2.0/
-#
-# or in the "license" file accompanying this file. This file is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
-# ANY KIND, either express or implied. See the License for the specific
-# language governing permissions and limitations under the License.
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
 
 from __future__ import absolute_import
 
@@ -119,13 +122,13 @@ def get_env_variables(user_args_dict, is_sageonly=False):
         env["HEARTBEAT_CLOUDWATCH_METRICS"] = user_args_dict.get("--heartbeat_cloudwatch_metrics", "0")
         env["HEARTBEAT_S3_LOCATION"] = user_args_dict.get("--heartbeat_s3_location")
         env["SERVICE_TYPE"] = "SAGEMAKER"
-        if env["SIMULATION_LAUNCH_FILE"] == "distributed_training.launch":
+        if env["SIMULATION_LAUNCH_FILE"] == "distributed_training.launch.py":
             env["JOB_TYPE"] = "training"
-        elif env["SIMULATION_LAUNCH_FILE"] == "evaluation.launch":
+        elif env["SIMULATION_LAUNCH_FILE"] == "evaluation.launch.py":
             env["JOB_TYPE"] = "evaluation"
             env["MODEL_S3_BUCKET"] = user_args_dict["--s3_bucket"]
             env["MODEL_S3_PREFIX"] = user_args_dict["--s3_prefix"]
-        elif env["SIMULATION_LAUNCH_FILE"] == "virtual_event.launch":
+        elif env["SIMULATION_LAUNCH_FILE"] == "virtual_event.launch.py":
             env["JOB_TYPE"] = "evaluation"
             env["YAML_S3_BUCKET"] = user_args_dict["--s3_bucket"]
             env["YAML_S3_PREFIX"] = user_args_dict["--s3_prefix"]
@@ -185,9 +188,9 @@ def sageonly():
 
     LOG.info("Arguments to sageonly: %s", hyperparams)
 
-    if env_args["SIMULATION_LAUNCH_FILE"] == "distributed_training.launch":
+    if env_args["SIMULATION_LAUNCH_FILE"] == "distributed_training.launch.py":
         base_cmd = "/opt/ml/code/sageonly.sh"
-    elif env_args["SIMULATION_LAUNCH_FILE"] == "evaluation.launch" or env_args["SIMULATION_LAUNCH_FILE"] == "virtual_event.launch":
+    elif env_args["SIMULATION_LAUNCH_FILE"] == "evaluation.launch.py" or env_args["SIMULATION_LAUNCH_FILE"] == "virtual_event.launch.py":
         base_cmd = "/opt/ml/code/sageonly_evals.sh"
     cmd = "%s %s" % (base_cmd, hyperparams)
     run_command(cmd, env_args)
