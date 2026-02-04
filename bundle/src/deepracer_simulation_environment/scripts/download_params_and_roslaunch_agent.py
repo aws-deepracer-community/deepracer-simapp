@@ -33,7 +33,6 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT, MODEL_ME
                                       AgentType, YamlKey, ModelMetadataKeys)
 from markov.boto.s3.utils import get_s3_key
 from markov.log_handler.logger import Logger
-from markov.world_config import WorldConfig
 
 
 LOG = Logger(__name__, logging.INFO).get_logger()
@@ -75,12 +74,6 @@ def main():
                              s3_endpoint_url=s3_endpoint_url,
                              local_path=YAML_LOCAL_PATH_FORMAT.format(s3_yaml_name))
         yaml_file.get_yaml_values()
-
-        WorldConfig.get_instance().set_local_yaml_config_file(yaml_file.local_path)
-
-        if s3_endpoint_url is not None:
-            logging.info('Endpoint URL {}'.format(s3_endpoint_url))
-            WorldConfig.get_instance().set_param('S3_ENDPOINT_URL', s3_endpoint_url)
 
         if not agent_type == AgentType.VIRTUAL_EVENT.value:
             # List of racecar names that should include second camera while launching
