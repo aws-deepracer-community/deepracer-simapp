@@ -751,7 +751,7 @@ def main():
                          region_name=args.aws_region,
                          s3_endpoint_url=args.s3_endpoint_url,       
                          local_path=IP_ADDRESS_LOCAL_PATH.format('agent'))
-    redis_ip = '127.0.0.1'
+    redis_ip = ip_config.get_ip_config()
 
     # Download hyperparameters from SageMaker shared s3 bucket
     # TODO: replace 'agent' with name of each agent

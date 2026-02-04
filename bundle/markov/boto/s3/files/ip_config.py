@@ -184,4 +184,4 @@ class IpConfig():
             log_and_exit(error_string,
                          SIMAPP_ENVIRONMENT_EXCEPTION,
                          SIMAPP_EVENT_ERROR_CODE_500)
-        return '127.0.0.1'
+        return ip_address
