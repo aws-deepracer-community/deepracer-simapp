@@ -73,11 +73,11 @@ class ROS2NodeManager:
                 # Based on: https://github.com/ros2/rclpy/issues/1547
                 self.executor.spin_once(timeout_sec=0.01)
                 # Yield GIL to improve performance
-                time.sleep(0.01)
+                time.sleep(0.001)
             except Exception as ex:
                 logger.error(f"Error in ROS2 executor: {ex}")
                 # Brief sleep to avoid tight error loop
-                time.sleep(0.01)
+                time.sleep(0.001)
 
     def get_node(self):
         """Get the ROS2 node"""
@@ -179,9 +179,9 @@ class ServiceProxyWrapper:
                 timeout_start = time.time()
                 while not future.done() and rclpy.ok():
                     # Check for overall timeout (e.g., 30 seconds)
-                    if time.time() - timeout_start > 30.0:
+                    if time.time() - timeout_start > 1.0:
                         raise Exception(f"Service call to {self._service_name} timed out")
-                    time.sleep(0.05)  # Wait for executor thread to process the response
+                    time.sleep(0.002)  # Wait for executor thread to process the response
                 
                 # Check why the loop exited
                 if not rclpy.ok():

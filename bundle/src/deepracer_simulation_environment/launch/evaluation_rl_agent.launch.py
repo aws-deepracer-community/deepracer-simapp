@@ -27,6 +27,7 @@ def generate_launch_description():
                                                           default_value=EnvironmentVariable('KINESIS_VIDEO_STREAM_NAME', default_value=''))
     f1_arg = DeclareLaunchArgument('f1', default_value='false')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
+    gui_arg = DeclareLaunchArgument('gui', default_value='false')
     
     # TODO: Load YAML parameters - ROS 2 equivalent of <rosparam file="$(arg local_yaml_path)" command="load"/>
     # This requires implementing parameter loading from YAML file in ROS 2
@@ -49,7 +50,8 @@ def generate_launch_description():
             ('body_shell_types', LaunchConfiguration('body_shell_types')),
             ('simapp_versions', LaunchConfiguration('simapp_versions')),
             ('multicar', LaunchConfiguration('multicar')),
-            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
+            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
+            ('gui', LaunchConfiguration('gui'))
         ],
         condition=UnlessCondition(LaunchConfiguration('f1'))
     )
@@ -72,7 +74,8 @@ def generate_launch_description():
             ('body_shell_types', LaunchConfiguration('body_shell_types')),
             ('simapp_versions', LaunchConfiguration('simapp_versions')),
             ('multicar', LaunchConfiguration('multicar')),
-            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
+            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
+            ('gui', LaunchConfiguration('gui'))
         ],
         condition=IfCondition(LaunchConfiguration('f1'))
     )
@@ -96,6 +99,7 @@ def generate_launch_description():
         kinesis_video_stream_names_arg,
         f1_arg,
         publish_to_kinesis_stream_arg,
+        gui_arg,
         
         # Launch includes
         racetrack_launch,

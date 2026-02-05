@@ -11,7 +11,7 @@ set -e
 PREFIX="awsdeepracercommunity"
 ARCH="cpu gpu"
 
-while getopts ":a:fp:" opt; do
+while getopts ":a:fcp:" opt; do
     case $opt in
     a)
         ARCH="$OPTARG"
@@ -21,6 +21,9 @@ while getopts ":a:fp:" opt; do
         ;;
     f)
         OPT_NOCACHE="--no-cache"
+        ;;
+    c)
+        OPT_CORE="yes"
         ;;
     \?)
         echo "Invalid option -$OPTARG" >&2
@@ -32,7 +35,7 @@ done
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 VERSION=$(cat $DIR/VERSION)
 
-if [ "$(docker images -q ${PREFIX}/deepracer-simapp-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
+if [ "$(docker images -q ${PREFIX}/deepracer-simapp-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ] || [ -n "${OPT_CORE}" ]; then
     echo "Preparing core builder image ${PREFIX}/deepracer-simapp-build-core:latest..."
     docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-simapp-build-core:latest -f docker/Dockerfile.build-core .
 else
@@ -47,8 +50,8 @@ echo "Preparing docker images for [$ARCH]"
 for a in $ARCH; do
     case $a in
     gpu)
-        CORE_IMG="nvidia/cuda:13.1.1-cudnn-runtime-ubuntu24.04"
-        NVCC_VER="cuda-nvcc-13-1"
+        CORE_IMG="nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04"
+        NVCC_VER="cuda-nvcc-12-8"
         ;;
     cpu)
         CORE_IMG="ubuntu:24.04"

@@ -113,7 +113,8 @@ def main():
                             "car_colors:={} ".format(','.join(yaml_file.car_colors)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={} ".format(yaml_file.is_f1),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS"))),
+                            "gui:={} ".format('true' if os.environ.get("ENABLE_GUI", None) == "True" else 'false')))]
         else:
             # Note: SimApp Version is default to 6.0: virtual event only have a single body_shell_types
             cmd = [''.join(("ros2 launch deepracer_simulation_environment {} ".format(launch_name),

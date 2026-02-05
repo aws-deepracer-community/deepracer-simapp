@@ -19,14 +19,23 @@ RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
     libgmock-dev \
     ros-jazzy-ros-gz 
 
-# Build AWS SDK C++ with Kinesis, S3, and CloudWatch Logs support
+# Build and install AWS SDK C++
 RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
-    cd aws-sdk-cpp && \
+    cd aws-sdk-cpp && git checkout --recurse-submodules tags/1.11.664 && \
     mkdir build && cd build && \
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_ONLY="kinesis;s3;logs" -DENABLE_TESTING=OFF && \
-    cmake --build . --config=Release && \
-    cmake --install .  --config=Release && \
-    ldconfig
+    cmake .. \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCPP_STANDARD=17 \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DBUILD_SHARED_LIBS=ON \
+      -DENABLE_TESTING=OFF \
+      -DBUILD_ONLY="core;logs;kinesis" \
+      -DMINIMIZE_SIZE=ON && \
+    make -j2 && \
+    make install && \
+    ldconfig && \
+    cd ../.. && rm -rf aws-sdk-cpp
 
 # Install Redis.
 RUN cd /tmp && \
@@ -36,11 +45,6 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/redis*
-   
-# Copy Bundle
-COPY bundle/ /opt/amazon
-WORKDIR /opt/amazon
-COPY docker/files/ml-code/ /opt/ml/code
 
 # Install Miniconda
 RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
@@ -48,6 +52,11 @@ RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_6
     rm /tmp/miniconda.sh && \
     /root/anaconda/bin/conda init bash && \
     /root/anaconda/bin/conda clean -afy
+
+# Copy Bundle
+COPY bundle/ /opt/amazon
+WORKDIR /opt/amazon
+COPY docker/files/ml-code/ /opt/ml/code
 
 # Create sagemaker_env conda environment from environment.yml
 RUN /root/anaconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \

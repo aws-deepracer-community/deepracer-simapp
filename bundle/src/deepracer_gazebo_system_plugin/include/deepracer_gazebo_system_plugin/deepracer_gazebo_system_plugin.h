@@ -54,6 +54,7 @@
 
 // ROS 2 includes
 #include <rclcpp/rclcpp.hpp>
+#include <rcutils/logging.h>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
