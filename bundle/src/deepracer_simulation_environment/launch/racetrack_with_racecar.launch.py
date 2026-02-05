@@ -48,7 +48,7 @@ def generate_launch_description():
     
     gui_arg = DeclareLaunchArgument(
         'gui', 
-        default_value='false',
+        default_value='true',
         description='Launch GUI'
     )
     

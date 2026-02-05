@@ -36,13 +36,28 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/redis*
-
+   
 # Copy Bundle
 COPY bundle/ /opt/amazon
 WORKDIR /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code
 
-RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages.sh"
+# Install Miniconda
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /root/anaconda && \
+    rm /tmp/miniconda.sh && \
+    /root/anaconda/bin/conda init bash && \
+    /root/anaconda/bin/conda clean -afy
+
+# Create sagemaker_env conda environment from environment.yml
+RUN /root/anaconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    /root/anaconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment.yml -n sagemaker_env --yes && \
+    /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment_coach.yml -n coach_env --yes && \
+    /root/anaconda/bin/conda clean -afy && \
+    /root/anaconda/bin/conda config --set auto_activate_base false
+
+RUN apt-get update && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 
 ADD docker/files/ml-code/simulation-entrypoint.sh /
 ENTRYPOINT ["/simulation-entrypoint.sh"]

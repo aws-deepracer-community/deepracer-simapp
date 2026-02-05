@@ -860,6 +860,8 @@ if __name__ == '__main__':
     except GenericRolloutException as ex:
         ex.log_except_and_exit()
     except Exception as ex:
+        import traceback
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
         log_and_exit("Rollout worker exited with exception: {}".format(ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)

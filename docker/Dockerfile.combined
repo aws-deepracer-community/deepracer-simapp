@@ -1,5 +1,5 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
-ARG CORE_IMG=ubuntu:20.04
+ARG CORE_IMG=ubuntu:24.04
 
 FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:latest AS bundle
 FROM ${CORE_IMG}
@@ -108,34 +108,18 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
 RUN apt update && apt install --no-install-recommends -y docker-ce-cli && apt clean && rm -rf /var/lib/apt/lists/*
 RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
 
-# Install Miniconda
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -b -p /root/anaconda && \
-    rm /tmp/miniconda.sh && \
-    /root/anaconda/bin/conda init bash && \
-    /root/anaconda/bin/conda clean -afy
-
+# Copy installed libraries (Redis + AWS CPP + Conda)
+COPY --from=bundle /usr/local/ /usr/local/
+COPY --from=bundle /root/anaconda/ /root/anaconda/
 # Copy compiled bundle
-COPY --from=bundle  /opt/amazon/install /opt/amazon/install
+COPY --from=bundle /opt/amazon/install /opt/amazon/install
 # Copy configurations and scripts
-COPY --from=bundle  /opt/amazon/configs /opt/amazon/configs
-# Copy RL Coach source code
-COPY --from=bundle  /opt/amazon/rl_coach /opt/amazon/rl_coach
-# Copy installed libraries (Redis + AWS CPP)
-COPY --from=bundle  /usr/local/ /usr/local/
+COPY --from=bundle /opt/amazon/configs /opt/amazon/configs
 # Copy deepracer_node_monitor script and config files
-COPY --from=bundle  /opt/amazon/script /opt/amazon/script
-COPY --from=bundle  /opt/amazon/src/deepracer_node_monitor/config/*.txt /opt/amazon/script/config/
+COPY --from=bundle /opt/amazon/script /opt/amazon/script
+COPY --from=bundle /opt/amazon/src/deepracer_node_monitor/config/*.txt /opt/amazon/script/config/
 
 WORKDIR /opt/ml/code
-
-# Create sagemaker_env conda environment from environment.yml
-RUN /root/anaconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    /root/anaconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
-    /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment.yml -n sagemaker_env --yes && \
-    /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment_coach.yml -n coach_env --yes && \
-    /root/anaconda/bin/conda clean -afy && \
-    /root/anaconda/bin/conda config --set auto_activate_base false
 
 # Install ROS dependencies
 RUN apt update -y && rosdep init && rosdep update --rosdistro=jazzy -q && \

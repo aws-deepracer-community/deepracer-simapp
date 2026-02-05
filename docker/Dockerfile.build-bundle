@@ -5,7 +5,7 @@ COPY bundle/ /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code
 WORKDIR /opt/amazon
 
-RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages.sh"
+RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages_lite.sh"
 
 ENTRYPOINT ["/simulation-entrypoint.sh"]
 CMD ["bash"]

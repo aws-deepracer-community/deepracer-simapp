@@ -100,3 +100,4 @@ DEEPRACER_JOB_TYPE_ENV = "DEEPRACER_JOB_TYPE_ENV"
 class DeepRacerJobType(Enum):
     ''' This enum has the keys of all the Deepracer job types '''
     SAGEONLY = "SAGEONLY"
+    LOCAL = "LOCAL"

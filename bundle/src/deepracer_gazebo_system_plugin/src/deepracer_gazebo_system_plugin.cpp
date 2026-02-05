@@ -1669,7 +1669,7 @@ void DeepRacerGazeboSystemPlugin::getModelStatesCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetModelStates::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetModelStates::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getModelStates service called for %zu models", 
+    RCLCPP_DEBUG(node_->get_logger(), "getModelStates service called for %zu models", 
                 request->model_names.size());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -1782,7 +1782,7 @@ void DeepRacerGazeboSystemPlugin::getModelStatesCallback(
         response->success = true;
         response->status_message = "GetModelStates: got properties";
         
-        RCLCPP_INFO(node_->get_logger(), "Retrieved %zu model states from cache", response->model_states.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Retrieved %zu model states from cache", response->model_states.size());
         
     } catch (const std::runtime_error &e) {
         response->success = false;
