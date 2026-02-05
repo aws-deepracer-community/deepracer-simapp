@@ -6,7 +6,6 @@ export ROS_DISTRO=jazzy
 export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
 export TF_CPP_MIN_LOG_LEVEL=3
-export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
 export DEEPRACER_JOB_TYPE_ENV="LOCAL"
 
 export PATH="/opt/ml/:$PATH"
@@ -46,6 +45,10 @@ if [ "$1" == "multi" ]; then
 	echo "Starting as worker $ROLLOUT_IDX, using world $WORLD_NAME and configuration $S3_YAML_NAME."
 
 fi
+
+# Set unique ROS_DOMAIN_ID per worker to prevent cross-talk between ROS domains
+export ROS_DOMAIN_ID=$ROLLOUT_IDX
+echo "Using ROS_DOMAIN_ID=$ROS_DOMAIN_ID for worker $ROLLOUT_IDX"
 
 # Check if we have an RTF_OVERRIDE to change the RTF - change the world file.
 if [[ -n "${RTF_OVERRIDE}" ]]; then
