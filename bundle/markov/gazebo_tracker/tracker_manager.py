@@ -91,6 +91,10 @@ class TrackerManager:
             sim_time (Clock): simulation time
         """
         
+        # Skip if rclpy is shutting down
+        if not rclpy.ok():
+            return
+        
         # ROS2 Clock message format: sim_time.clock.sec and sim_time.clock.nanosec
         curr_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
         if self.last_time is None:

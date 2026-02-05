@@ -9,6 +9,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, EnvironmentVariable
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from markov.world_config import WorldConfig
 
 def generate_launch_description():
     """
@@ -28,9 +29,6 @@ def generate_launch_description():
     f1_arg = DeclareLaunchArgument('f1', default_value='false')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
     gui_arg = DeclareLaunchArgument('gui', default_value='false')
-    
-    # TODO: Load YAML parameters - ROS 2 equivalent of <rosparam file="$(arg local_yaml_path)" command="load"/>
-    # This requires implementing parameter loading from YAML file in ROS 2
     
     # Include racetrack_with_racecar.launch (unless f1)
     racetrack_launch = IncludeLaunchDescription(
@@ -100,6 +98,9 @@ def generate_launch_description():
         f1_arg,
         publish_to_kinesis_stream_arg,
         gui_arg,
+        
+        # Load YAML parameters
+        WorldConfig.get_launch_parameter(),
         
         # Launch includes
         racetrack_launch,

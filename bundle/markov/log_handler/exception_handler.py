@@ -259,11 +259,11 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
             # wait for monitoring to detect the dead node
             time.sleep(5)
 
-        # for non exception and live races, just normally stop
-        if stopRosNodeMonitor:
-            # Don't change this line. Place it here to use delayed import and avoid circular import
-            from markov.utils import stop_ros_node_monitor
-            stop_ros_node_monitor()
+    # for non exception and live races, just normally stop
+    if stopRosNodeMonitor:
+        # Don't change this line. Place it here to use delayed import and avoid circular import
+        from markov.utils import stop_ros_node_monitor
+        stop_ros_node_monitor()
 
 # the global variable for upload_to_s3
 is_upload_to_s3_called = False

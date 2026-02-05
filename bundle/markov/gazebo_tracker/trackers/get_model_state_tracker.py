@@ -147,6 +147,9 @@ class GetModelStateTracker(AbstractTracker):
                     request.relative_entity_names = self.relative_entity_names
                     
                     response = self.get_model_states(request)
+                    # Check for None response (can happen during shutdown)
+                    if response is None:
+                        return
                     if response.success:
                         for model_state, status in zip(response.model_states, response.status):
                             if status:

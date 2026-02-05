@@ -85,6 +85,9 @@ class SetModelStateTracker(AbstractTracker):
                 # Call the service
                 try:
                     response = self.set_model_states(request)
+                    # Check for None response (can happen during shutdown)
+                    if response is None:
+                        return False
                     if hasattr(response, 'status') and len(response.status) > 0:
                         # Match ROS1 logic: check both success AND status
                         final_success = response.success and response.status[0]

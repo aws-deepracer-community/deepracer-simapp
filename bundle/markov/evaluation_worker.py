@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 import time
 from threading import Thread
 import rclpy
@@ -29,9 +30,10 @@ from rl_coach.core_types import EnvironmentSteps
 from rl_coach.data_stores.data_store import SyncFiles
 from markov import utils
 from markov.log_handler.logger import Logger
-from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.exception_handler import log_and_exit, simapp_exit_gracefully
 from markov.log_handler.constants import (SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                                          SIMAPP_EVENT_ERROR_CODE_500)
+                                          SIMAPP_EVENT_ERROR_CODE_500,
+                                          SIMAPP_DONE_EXIT)
 from markov.constants import (SIMAPP_VERSION_2, DEFAULT_PARK_POSITION,
                               ROLLOUT_WORKER_PROFILER_PATH)
 from markov.agent_ctrl.constants import ConfigParams
@@ -178,7 +180,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
 
 def handle_job_completion():
     logger.info("Evaluation job complete")
-    utils.stop_ros_node_monitor()
+    simapp_exit_gracefully(simapp_exit=SIMAPP_DONE_EXIT, name='Eval Worker')
 
 def main():
     """ Main function for evaluation worker """
@@ -320,6 +322,9 @@ def main():
     # Instantiate Cameras
     camera_main_enable = utils.str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
     camera_sub_enable = utils.str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
+
+    # Wait for car spawn delay (racecar_control_kinematics.launch.py has 30s TimerAction before spawning controllers)
+    time.sleep(30)
 
     if camera_main_enable:
         if len(arg_s3_bucket) == 1:
@@ -542,8 +547,10 @@ if __name__ == '__main__':
             main()
         except Exception as e:
             raise
-        # service = node.create_service(EmptyService, '/robomaker_markov_package_ready', handle_robomaker_markov_package_ready)
-        # main()
+        
+        # Successful completion - log and exit
+        logger.info("Markov evaluation worker completed successfully")
+        sys.exit(0)
     except ValueError as err:
         if utils.is_user_error(err):
             log_and_exit("User modified model/model_metadata: {}".format(err),

@@ -75,9 +75,12 @@ class ROS2NodeManager:
                 # Yield GIL to improve performance
                 time.sleep(0.001)
             except Exception as ex:
+                # Ignore shutdown-related errors - they're expected during cleanup
+                if "shutdown" in str(ex).lower() or not rclpy.ok():
+                    break
                 logger.error(f"Error in ROS2 executor: {ex}")
                 # Brief sleep to avoid tight error loop
-                time.sleep(0.001)
+                time.sleep(0.1)
 
     def get_node(self):
         """Get the ROS2 node"""
@@ -206,6 +209,11 @@ class ServiceProxyWrapper:
                              SIMAPP_EVENT_ERROR_CODE_500,
                              name=str(err))
             except Exception as ex:
+                # If rclpy is shutting down, don't retry or log_and_exit - just return quietly
+                if not rclpy.ok() or "shutdown" in str(ex).lower():
+                    logger.info(f"Service call to {self._service_name} aborted due to shutdown")
+                    return None
+                
                 try_count += 1
                 if try_count > self._max_retry_attempts:
                     time.sleep(ROBOMAKER_CANCEL_JOB_WAIT_TIME)
