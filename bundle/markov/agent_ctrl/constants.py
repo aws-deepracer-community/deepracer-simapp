@@ -133,6 +133,7 @@ class RewardParam(Enum):
     OBJECT_CENTERLINE_PROJECTION_DISTANCES = ['objects_distance', []]   # list of float: list of object distance projected on the centerline
     CRASHED = ['is_crashed', False]                                     # boolean: crashed into an object or bot car
     OFFTRACK = ['is_offtrack', False]                                   # boolean: all four wheels went off-track
+    SIM_TIME = ['sim_time', 0.0]                                        # float: simulation time in seconds
 
     @classmethod
     def make_default_param(cls):

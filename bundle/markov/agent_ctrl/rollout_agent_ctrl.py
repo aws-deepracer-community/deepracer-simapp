@@ -647,6 +647,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                                self._agent_name_, pos_dict, self._track_data_,
                                self._data_dict_, action, self._model_metadata_.get_action_dict(action),
                                current_car_pose)
+        # Set simulation time in reward params
+        self._reward_params_[const.RewardParam.SIM_TIME.value[0]] = self._current_sim_time
         prev_pnt_dist = min(model_point.distance(self._prev_waypoints_['prev_point']),
                             model_point.distance(self._prev_waypoints_['prev_point_2']))
         self._data_dict_['current_progress'] = self._reward_params_[const.RewardParam.PROG.value[0]]
