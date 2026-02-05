@@ -1,31 +1,35 @@
-import json
-import os
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
 import subprocess
-import uuid
 
-DEFAULT_AWS_CUSTOMER_ID = "unknown_customer_id"
-DEFAULT_REQUEST_ID = "unknown_request_id"
-
-
-def extract_custom_attributes(custom_attributes_string):
+def build_validation_worker_cmd(s3_bucket, s3_prefix, aws_region):
     """
-    Extract session information from the header
+    Function used to build the validation worker python command.
+    Arguments:
+        s3_bucket (string): S3 bucket to fetch model from.
+        s3_prefix (string): S3 prefix to fetch model from.
+        aws_region (string): AWS region.
+    Returns:
+        (string) - Validation worker python command
     """
-    session_info = dict()
-    session_info['requestId'] = DEFAULT_REQUEST_ID
-    session_info['awsAccountId'] = DEFAULT_AWS_CUSTOMER_ID
-    session_info['traceId'] = str(uuid.uuid4())
-    session_info['processId'] = os.getpid()
-
-    if custom_attributes_string:
-        custom_attributes = json.loads(custom_attributes_string)
-        if 'requestId' in custom_attributes:
-            session_info['requestId'] = custom_attributes['requestId']
-
-        if 'awsAccountId' in custom_attributes:
-            session_info['awsAccountId'] = custom_attributes['awsAccountId']
-
-    return session_info
+    return ['python', '/var/task/markov/validation_worker.py',
+            '--s3_bucket', s3_bucket,
+            '--s3_prefix', s3_prefix,
+            '--aws_region', aws_region]
 
 
 def run_cmd(cmd_args, change_working_directory="./", shell=False,
