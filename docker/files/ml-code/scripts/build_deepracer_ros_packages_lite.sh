@@ -46,7 +46,7 @@ for i in {1..3}; do
     echo "Build attempt $i"
     if colcon build --packages-up-to deepracer_gazebo_system_plugin deepracer_simulation_environment sagemaker_rl_agent deepracer_node_monitor kinesis_video_streamer h264_video_encoder \
         --parallel-workers 2 \
-        --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"; then
+        --cmake-args "-DCMAKE_BUILD_TYPE=Release"; then
         echo "Build successful on attempt $i"
         break
     else
