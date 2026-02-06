@@ -666,9 +666,22 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                 light.SetDirection(gz::math::Vector3d(
                     cmd.direction.x, cmd.direction.y, cmd.direction.z));
                 
+                // Update Light component for state consistency
                 lightComp->Data() = light;
                 _ecm.SetChanged(lightEntity, components::Light::typeId,
                                ComponentState::OneTimeChange);
+                
+                // Use LightCmd to notify rendering system of the update
+                // (Light component alone doesn't trigger visual refresh)
+                gz::msgs::Light lightMsg = gz::sim::convert<gz::msgs::Light>(light);
+                auto lightCmdComp = _ecm.Component<components::LightCmd>(lightEntity);
+                if (lightCmdComp) {
+                    lightCmdComp->Data() = lightMsg;
+                    _ecm.SetChanged(lightEntity, components::LightCmd::typeId,
+                                   ComponentState::OneTimeChange);
+                } else {
+                    _ecm.CreateComponent(lightEntity, components::LightCmd(lightMsg));
+                }
                 
                 gz::math::Vector3d pos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
                 gz::math::Quaterniond rot(cmd.pose.orientation.w, cmd.pose.orientation.x,
