@@ -760,6 +760,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             RewardFunctionError: Reward function exception
             GenericRolloutException: reward is nan or inf
         '''
+        cur_time = self._current_sim_time
         # check agent status to update reward and done flag
         reset_rules_status = self._reset_rules_manager.get_dones()
         self._reward_params_[const.RewardParam.CRASHED.value[0]] = \
@@ -785,6 +786,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             # for passing control from the virtual event console
             reward, episode_status = self._judge_action_at_manual_pause_phase(done=done)
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.PREPARE.value:
+            self._metrics.reset(cur_time=cur_time)  # reset metrics at the beginning of prepare phase to make sure the metrics are clean when agent starts to run
             reward, episode_status = self._judge_action_at_prepare_phase()
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.PARK.value:
             self._park_car_model()
@@ -796,7 +798,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # update and upload metrics
         self._step_metrics_[StepMetrics.REWARD.value] = reward
         self._step_metrics_[StepMetrics.DONE.value] = done
-        self._step_metrics_[StepMetrics.TIME.value] = self._current_sim_time
+        self._step_metrics_[StepMetrics.TIME.value] = cur_time
         self._step_metrics_[StepMetrics.EPISODE_STATUS.value] = episode_status
         self._step_metrics_[StepMetrics.PAUSE_DURATION.value] = self._pause_duration
         self._step_metrics_[StepMetrics.OBSTACLE_CRASH_COUNTER.value] = self.current_obstacle_crash_count
@@ -810,11 +812,11 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             self._data_dict_['current_progress'] = 0.0
         self._metrics.upload_step_metrics(self._step_metrics_)
         if self._is_continuous and self._reward_params_[const.RewardParam.PROG.value[0]] == 100:
-            self._metrics.append_episode_metrics()
-            self._metrics.reset()
+            self._metrics.append_episode_metrics(cur_time=cur_time)
+            self._metrics.reset(cur_time=cur_time)
             self._reset_rules_manager.reset()
         if episode_status == EpisodeStatus.TIME_UP.value:
-            self._metrics.append_episode_metrics(is_complete=False)
+            self._metrics.append_episode_metrics(cur_time=cur_time, is_complete=False)
         self._metrics.update_mp4_video_metrics(self._step_metrics_)
         return reward, done, self._step_metrics_
 
