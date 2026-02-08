@@ -4,10 +4,11 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.23.2
+  - nginx
   - zip
   - wget
   - curl==8.18.0
+  - pyqt=5
   - pip:
       - pygame==2.6.1
       - shapely==2.0.2
@@ -54,4 +55,3 @@ dependencies:
       - catkin_pkg==1.0.0
       - pytelegraf
       - sagemaker-training
-      - PyQt5
