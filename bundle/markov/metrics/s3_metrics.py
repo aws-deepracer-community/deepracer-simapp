@@ -430,7 +430,6 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         if self._agent_xy:
             # Speed = Distance/Time
             delta_time = cur_time - self._prev_step_time
-            actual_speed = 0
             if delta_time:
                 actual_speed = math.sqrt((self._agent_xy[0] - agent_x) ** 2 +
                                          (self._agent_xy[1] - agent_y) ** 2) / delta_time
@@ -445,6 +444,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value] = 0
 
         self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value] = 0
+        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
         self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
         self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
         self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
@@ -737,7 +737,6 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         if self._agent_xy:
             # Speed = Distance/Time
             delta_time = cur_time - self._prev_step_time
-            actual_speed = 0
             if delta_time:
                 actual_speed = math.sqrt((self._agent_xy[0] - agent_x) ** 2 +
                                          (self._agent_xy[1] - agent_y) ** 2) / delta_time
