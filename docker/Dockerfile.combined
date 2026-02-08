@@ -133,7 +133,7 @@ RUN apt update -y && rosdep init && rosdep update --rosdistro=jazzy -q && \
     cd /opt/amazon/install && \
     rosdep install --rosdistro=jazzy --from-paths . --ignore-src -r -y && \
     apt clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && ldconfig
 
 # Copy Sagemaker and misc files
 COPY ./docker/files/ml-code /opt/ml/code
