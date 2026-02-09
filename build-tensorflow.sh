@@ -111,6 +111,7 @@ if [ ! -f "${DOCKERFILE}" ]; then
 fi
 
 docker buildx build \
+    --progress=plain \
     --platform linux/arm64 \
     -f "${DOCKERFILE}" \
     --build-arg BASE_IMG="ubuntu:24.04" \
