@@ -79,7 +79,7 @@ class SaveToMp4(Node):
                         topic_name,
                         lambda msg, name=name: self._subscribe_to_image_topic(msg, name),
                         QoSProfile(
-                            reliability=ReliabilityPolicy.BEST_EFFORT,
+                            reliability=ReliabilityPolicy.RELIABLE,
                             history=HistoryPolicy.KEEP_LAST,
                             depth=10,
                         )
