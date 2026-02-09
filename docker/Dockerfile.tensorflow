@@ -54,12 +54,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Install Clang/LLVM ───────────────────────────────────────────────────────
-RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /usr/share/keyrings/llvm.gpg && \
-    CODENAME=$(lsb_release -cs) && \
-    echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${CLANG_VERSION} main" \
-        > /etc/apt/sources.list.d/llvm.list && \
-    apt-get update && \
+# ── Install Clang/LLVM (shipped in Ubuntu 24.04 repos) ────────────────────────
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         clang-${CLANG_VERSION} \
         lld-${CLANG_VERSION} \
