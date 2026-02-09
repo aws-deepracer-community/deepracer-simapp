@@ -132,11 +132,11 @@ RUN BAZEL_OPTS="" && \
     bazel build \
         ${BAZEL_OPTS} \
         --config=opt \
-        --config=cuda \
         --config=cuda_wheel \
         --config=mkl_aarch64_threadpool \
         --repo_env=USE_PYWRAP_RULES=1 \
         --repo_env=WHEEL_NAME=tensorflow \
+        --repo_env=HERMETIC_PYTHON_VERSION=${PYTHON_VERSION} \
         --action_env=CLANG_COMPILER_PATH=/usr/bin/clang-${CLANG_VERSION} \
         --action_env=CC=/usr/bin/clang-${CLANG_VERSION} \
         --copt=-march=armv8.2-a \
