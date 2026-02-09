@@ -40,7 +40,6 @@ function ctrl_c() {
 TF_VERSION="2.19.0"
 TF_GIT_TAG="v${TF_VERSION}"
 PYTHON_VERSION="3.12"
-BAZEL_VERSION="6.5.0"
 CLANG_VERSION="18"
 CUDA_COMPUTE_CAPABILITIES="7.5"   # T4G GPU
 PARALLEL_JOBS=""                   # Empty = auto (Bazel default)
@@ -93,7 +92,6 @@ echo "  GPU:               NVIDIA T4G (sm_75)"
 echo "  CUDA:              12.5 (hermetic)"
 echo "  cuDNN:             9.3 (hermetic)"
 echo "  Python:            ${PYTHON_VERSION}"
-echo "  Bazel:             ${BAZEL_VERSION}"
 echo "  Clang:             ${CLANG_VERSION}"
 echo "  Compute cap:       ${CUDA_COMPUTE_CAPABILITIES}"
 echo "  Output dir:        ${OUTPUT_DIR}"
@@ -117,7 +115,6 @@ docker buildx build \
     -f "${DOCKERFILE}" \
     --build-arg BASE_IMG="ubuntu:24.04" \
     --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
-    --build-arg BAZEL_VERSION="${BAZEL_VERSION}" \
     --build-arg CLANG_VERSION="${CLANG_VERSION}" \
     --build-arg TF_GIT_TAG="${TF_GIT_TAG}" \
     --build-arg CUDA_COMPUTE_CAPABILITIES="${CUDA_COMPUTE_CAPABILITIES}" \
