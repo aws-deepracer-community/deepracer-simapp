@@ -102,6 +102,14 @@ WORKDIR /tensorflow_src
 RUN git clone --depth 1 --branch ${TF_GIT_TAG} \
         https://github.com/tensorflow/tensorflow.git .
 
+# ── Patch h5py version to fix Cython/NumPy 2.x build failure on aarch64 ──────
+# The pinned h5py in TF's requirements is too old for NumPy 2.x Cython API.
+# h5py>=3.12 has the fix. We update the lock file so Bazel's hermetic Python
+# picks up a compatible version.
+RUN sed -i 's/h5py==.*/h5py>=3.12.1/' requirements_lock_3_9.txt \
+        requirements_lock_3_10.txt requirements_lock_3_11.txt \
+        requirements_lock_3_12.txt 2>/dev/null || true
+
 # ── Configure TensorFlow build ────────────────────────────────────────────────
 ENV TF_NEED_CUDA=1
 ENV TF_CUDA_COMPUTE_CAPABILITIES=${CUDA_COMPUTE_CAPABILITIES}
