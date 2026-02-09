@@ -1,0 +1,155 @@
+#
+# Dockerfile.tensorflow
+#
+# Builds TensorFlow 2.19.0 from source with CUDA/GPU support
+# for ARM64 (aarch64) — targeting AWS g5g instances (NVIDIA T4G).
+#
+# Tested build configuration (from tensorflow.org):
+#   TF 2.19.0 | Python 3.9-3.12 | Clang 18.1.8 | Bazel 6.5.0 | cuDNN 9.3 | CUDA 12.5
+#
+# CUDA and cuDNN are downloaded automatically by Bazel (hermetic build).
+# No GPU or NVIDIA driver is required on the build machine.
+#
+# Usage:
+#   docker buildx build --platform linux/arm64 \
+#       -f docker/Dockerfile.tensorflow \
+#       -t tf-builder-arm64-cuda:2.19.0 \
+#       --load .
+#
+#   # Extract the wheel:
+#   docker create --name tf-out tf-builder-arm64-cuda:2.19.0
+#   docker cp tf-out:/output/. ./tensorflow-wheels/
+#   docker rm tf-out
+#
+
+ARG BASE_IMG=ubuntu:24.04
+FROM ${BASE_IMG}
+
+ARG PYTHON_VERSION=3.12
+ARG BAZEL_VERSION=6.5.0
+ARG CLANG_VERSION=18
+ARG TF_GIT_TAG=v2.19.0
+ARG CUDA_COMPUTE_CAPABILITIES=7.5
+ARG PARALLEL_JOBS=""
+ARG RAM_RESOURCES=""
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# ── System dependencies ──────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        git \
+        gnupg \
+        lsb-release \
+        openjdk-21-jdk-headless \
+        patchelf \
+        pkg-config \
+        software-properties-common \
+        unzip \
+        wget \
+        zlib1g-dev \
+        libhdf5-dev \
+        liblzma-dev \
+        libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Install Clang/LLVM ───────────────────────────────────────────────────────
+RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /usr/share/keyrings/llvm.gpg && \
+    CODENAME=$(lsb_release -cs) && \
+    echo "deb [signed-by=/usr/share/keyrings/llvm.gpg] https://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${CLANG_VERSION} main" \
+        > /etc/apt/sources.list.d/llvm.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        clang-${CLANG_VERSION} \
+        lld-${CLANG_VERSION} \
+        llvm-${CLANG_VERSION} \
+        libc++-${CLANG_VERSION}-dev \
+        libc++abi-${CLANG_VERSION}-dev \
+    && rm -rf /var/lib/apt/lists/* && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${CLANG_VERSION} 100 && \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_VERSION} 100
+
+# ── Install Python ────────────────────────────────────────────────────────────
+RUN add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-dev \
+        python${PYTHON_VERSION}-venv \
+        python${PYTHON_VERSION}-distutils || true \
+    && rm -rf /var/lib/apt/lists/* && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 100 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 100
+
+RUN python3 -m ensurepip 2>/dev/null || true && \
+    python3 -m pip install --upgrade pip setuptools wheel
+
+# ── Install Bazelisk (auto-downloads correct Bazel version) ───────────────────
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fSL "https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-${ARCH}" \
+        -o /usr/local/bin/bazel && \
+    chmod +x /usr/local/bin/bazel
+
+# ── Python build dependencies for TensorFlow ─────────────────────────────────
+RUN python3 -m pip install --no-cache-dir \
+        numpy \
+        packaging \
+        requests \
+        setuptools \
+        wheel \
+        keras-applications \
+        keras-preprocessing \
+        h5py \
+        six
+
+# ── Clone TensorFlow source ──────────────────────────────────────────────────
+WORKDIR /tensorflow_src
+RUN git clone --depth 1 --branch ${TF_GIT_TAG} \
+        https://github.com/tensorflow/tensorflow.git .
+
+# ── Configure TensorFlow build ────────────────────────────────────────────────
+ENV TF_NEED_CUDA=1
+ENV TF_CUDA_COMPUTE_CAPABILITIES=${CUDA_COMPUTE_CAPABILITIES}
+ENV TF_NEED_TENSORRT=0
+ENV TF_NEED_ROCM=0
+ENV TF_NEED_OPENCL_SYCL=0
+ENV TF_NEED_MPI=0
+ENV TF_SET_ANDROID_WORKSPACE=0
+ENV TF_DOWNLOAD_CLANG=0
+ENV TF_NEED_CLANG=1
+ENV CLANG_COMPILER_PATH=/usr/bin/clang-${CLANG_VERSION}
+ENV CC=/usr/bin/clang-${CLANG_VERSION}
+ENV BAZEL_COMPILER=/usr/bin/clang-${CLANG_VERSION}
+ENV PYTHON_BIN_PATH=/usr/bin/python3
+ENV USE_DEFAULT_PYTHON_LIB_PATH=1
+ENV TF_CONFIGURE_IOS=0
+
+RUN yes "" | ./configure || true
+
+# ── Build TensorFlow wheel ────────────────────────────────────────────────────
+RUN BAZEL_OPTS="" && \
+    if [ -n "${PARALLEL_JOBS}" ]; then \
+        BAZEL_OPTS="${BAZEL_OPTS} --jobs=${PARALLEL_JOBS}"; \
+    fi && \
+    if [ -n "${RAM_RESOURCES}" ]; then \
+        BAZEL_OPTS="${BAZEL_OPTS} --local_ram_resources=${RAM_RESOURCES}"; \
+    fi && \
+    bazel build \
+        ${BAZEL_OPTS} \
+        --config=opt \
+        --config=cuda \
+        --config=cuda_wheel \
+        --config=mkl_aarch64_threadpool \
+        --repo_env=USE_PYWRAP_RULES=1 \
+        --repo_env=WHEEL_NAME=tensorflow \
+        --action_env=CLANG_COMPILER_PATH=/usr/bin/clang-${CLANG_VERSION} \
+        --action_env=CC=/usr/bin/clang-${CLANG_VERSION} \
+        --copt=-march=armv8.2-a \
+        //tensorflow/tools/pip_package:wheel
+
+# ── Copy wheel to /output for easy extraction ────────────────────────────────
+RUN mkdir -p /output && \
+    cp bazel-bin/tensorflow/tools/pip_package/wheel_house/tensorflow*.whl /output/
