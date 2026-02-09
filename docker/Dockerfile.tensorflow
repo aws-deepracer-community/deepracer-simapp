@@ -140,7 +140,6 @@ RUN BAZEL_OPTS="" && \
     bazel build \
         ${BAZEL_OPTS} \
         --config=opt \
-        --config=cuda_wheel \
         --config=mkl_aarch64_threadpool \
         --repo_env=USE_PYWRAP_RULES=1 \
         --repo_env=WHEEL_NAME=tensorflow \
