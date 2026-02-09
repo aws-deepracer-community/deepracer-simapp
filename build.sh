@@ -50,8 +50,8 @@ echo "Preparing docker images for [$ARCH]"
 for a in $ARCH; do
     case $a in
     gpu)
-        CORE_IMG="nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04"
-        NVCC_VER="cuda-nvcc-12-8"
+        CORE_IMG="nvcr.io/nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04"
+        NVCC_VER="cuda-nvcc-12-6"
         ;;
     cpu)
         CORE_IMG="ubuntu:24.04"
