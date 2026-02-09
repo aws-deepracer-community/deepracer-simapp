@@ -59,7 +59,6 @@ COPY docker/files/ml-code/ /opt/ml/code
 
 # Create sagemaker_env conda environment from environment.yml
 RUN /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment.yml -n sagemaker_env --yes && \
-    # /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment_coach.yml -n coach_env --yes && \
     /root/anaconda/bin/conda clean -afy && \
     /root/anaconda/bin/conda config --set auto_activate_base false
 
