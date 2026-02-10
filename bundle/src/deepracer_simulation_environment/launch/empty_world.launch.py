@@ -81,11 +81,29 @@ def generate_launch_description():
             # Server mode
             '-s' ,
             PythonExpression([
-            '"-r" if "', LaunchConfiguration('paused'), '" == "false" else ""'
-        ])
+                '"-r" if "', LaunchConfiguration('paused'), '" == "false" else ""'
+            ])
         ],
         output=LaunchConfiguration('output'),
-        name='gazebo_server'
+        name='gazebo_server',
+        condition=IfCondition(LaunchConfiguration('gui'))
+    )
+
+    # Gazebo server (gz sim) 
+    gazebo_server_hl = ExecuteProcess(
+        cmd=[
+            'gz', 'sim',
+            world_file_path,
+            # Server mode
+            '-s' ,
+            PythonExpression([
+                '"-r" if "', LaunchConfiguration('paused'), '" == "false" else ""'
+            ]),
+            "--headless-render"
+        ],
+        output=LaunchConfiguration('output'),
+        name='gazebo_server',
+        condition=UnlessCondition(LaunchConfiguration('gui'))
     )
     
     # Gazebo client (gz sim -g)
@@ -159,6 +177,7 @@ def generate_launch_description():
         
         # Processes
         gazebo_server,
+        gazebo_server_hl,
         gazebo_client,
 
         # Nodes

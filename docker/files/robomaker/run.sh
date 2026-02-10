@@ -80,15 +80,18 @@ fi
 # Initialize ROS & the Bundle
 export GZ_IP=127.0.0.1
 
-# Start an X server if we do not have one
-if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
-	export DISPLAY=:0 # Select screen 0 by default.
-	xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
-	x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
-# Ensure DISPLAY is defined
-else
-	if [ -z "$DISPLAY" ]; then
-		export DISPLAY=:$(ls /tmp/.X11-unix/ | cut -c2 | head -1)
+# Start an X server if we do not have one, and GUI is needed
+if [[ "${ENABLE_GUI,,}" == "true" ]]; then
+	# GUI is enabled, but do we have an external X server or should we start one?
+	if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
+		export DISPLAY=:0 # Select screen 0 by default.
+		xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
+		x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
+	# Ensure DISPLAY is defined
+	else
+		if [ -z "$DISPLAY" ]; then
+			export DISPLAY=:$(ls /tmp/.X11-unix/ | cut -c2 | head -1)
+		fi
 	fi
 fi
 
