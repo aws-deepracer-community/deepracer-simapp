@@ -44,6 +44,7 @@ RUN apt update && \
     python3-dev \
     python3-opengl \
     python3-pip \
+    python3-venv \
     tzdata \
     uuid-dev \
     wget \
@@ -114,6 +115,11 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
 	 echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
 RUN apt update && apt install --no-install-recommends -y docker-ce-cli && apt clean && rm -rf /var/lib/apt/lists/*
 RUN curl -L "https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+
+# Create Python virtual environment and install SageMaker SDK
+RUN python3 -m venv /root/sagemaker-venv && \
+    /root/sagemaker-venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /root/sagemaker-venv/bin/pip install --no-cache-dir "sagemaker<3"
 
 # Copy installed libraries (Redis + AWS CPP + Conda)
 COPY --from=bundle /usr/local/ /usr/local/

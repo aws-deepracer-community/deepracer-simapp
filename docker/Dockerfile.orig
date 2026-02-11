@@ -1,5 +1,5 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.1
-# Image ID: 8bfd914fcbfb
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.4
+# Image ID: fd9321ac1738
 # Base: Ubuntu 24.04 (Noble)
 # Built: January 26, 2026
 # Optimized: February 8, 2026
@@ -13,8 +13,8 @@ ENV ROS_SNAPSHOT_DATE=2025-11-19
 # Set non-interactive frontend for apt
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Install base system packages, Python, development tools, and Xvfb in one layer
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+# Install base system packages
+RUN apt-get update && apt-get install -y \
     git \
     curl \
     lsb-release \
@@ -27,30 +27,31 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     locales \
     software-properties-common \
     sudo \
-    # Python and pip
-    python3-pip \
-    python3-apt \
-    gpg \
-    # AWS CLI dependencies
-    unzip \
-    # Xvfb and window manager
-    xvfb \
-    jwm \
-    x11-apps \
     && rm -rf /var/lib/apt/lists/*
 
-# Install AWS CLI v2
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf aws awscliv2.zip
+# Install Python and apt helpers
+RUN apt-get update && apt-get install -y python3-pip python3-apt gpg
+
+# Install AWS CLI v2 prerequisites and AWS CLI v2
+RUN apt-get update && apt-get install -y unzip curl \
+    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf aws awscliv2.zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Xvfb and window manager
+RUN apt-get update && apt-get install -y xvfb jwm x11-apps \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python 3.12 and all development dependencies in one layer
 RUN apt-get update && apt-get install -y \
     python3.12 \
     python3.12-dev \
     python3.12-venv \
+    python3-pip \
     python3-venv \
+    build-essential \
     checkinstall \
     libreadline-dev \
     libncursesw5-dev \
@@ -72,17 +73,29 @@ RUN apt-get update && apt-get install -y \
 # Remove EXTERNALLY-MANAGED file to allow pip installs system-wide
 RUN rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED
 
-# Add ROS 2 and Gazebo repository keys
+# Upgrade selected system libs
+RUN apt-get update && apt-get install -y --only-upgrade \
+    libgnutls30t64 \
+    libpam-modules \
+    libpam-modules-bin \
+    libpam-runtime \
+    libpam0g \
+    libpng16-16t64 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add ROS 2 repository keys
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
     gpg --keyserver keyserver.ubuntu.com --recv-keys AD19BAB3CBF125EA && \
-    gpg --export AD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg && \
-    curl -sSL https://packages.osrfoundation.org/gazebo.gpg -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+    gpg --export AD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg
+
+# Add Gazebo repository key
+RUN curl -sSL https://packages.osrfoundation.org/gazebo.gpg -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
 
 # Add ROS 2 and Gazebo repositories
 RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://snapshots.ros.org/$ROS_DISTRO/$ROS_SNAPSHOT_DATE/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list' && \
     sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/gazebo-stable.list'
 
-# Install ROS 2 Jazzy, Gazebo Harmonic, and all related packages in one layer
+# Install ROS 2 Jazzy packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # ROS 2 Jazzy packages
     ros-$ROS_DISTRO-ros-base \
@@ -98,39 +111,43 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-$ROS_DISTRO-xacro \
     ros-$ROS_DISTRO-desktop \
     ros-$ROS_DISTRO-image-transport \
-    ros-$ROS_DISTRO-ament-package \
-    ros-$ROS_DISTRO-rosidl-typesupport-c \
     # Python packages for ROS
     python3-colcon-common-extensions \
     python3-rosdep \
     python3-psutil \
     && rm -rf /var/lib/apt/lists/*
 
-# Create all required directories in one command
+# Install Gazebo Harmonic
+RUN apt-get update && apt-get install -y gz-harmonic \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS extras
+RUN apt-get update && apt-get install -y \
+    ros-$ROS_DISTRO-ament-package \
+    ros-$ROS_DISTRO-rosidl-typesupport-c \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create required directories
 RUN mkdir -p /root/.gazebo/models \
-             /root/.gazebo/worlds \
-             /opt/ml/code \
-             /opt/amazon
+    /root/.gazebo/worlds
+RUN mkdir -p /opt/ml/code
+RUN mkdir -p /opt/amazon
 
 # Configure ROS and Gazebo environment in bashrc
-RUN cat >> ~/.bashrc <<'EOF'
-source /opt/ros/$ROS_DISTRO/setup.bash
-export GZ_VERSION=harmonic
-export GZ_RESOURCE_PATH=/usr/share/gz/gz-harmonic/
-export GZ_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/gz-sim-8/plugins
-export GZ_SIM_RESOURCE_PATH=/usr/share/gz/gz-sim8
-export GZ_SIM_SYSTEM_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/gz-sim-8/plugins
-EOF
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
+RUN echo "export GZ_VERSION=harmonic" >> ~/.bashrc && \
+    echo "export GZ_RESOURCE_PATH=/usr/share/gz/gz-harmonic/" >> ~/.bashrc && \
+    echo "export GZ_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/gz-sim-8/plugins" >> ~/.bashrc && \
+    echo "export GZ_SIM_RESOURCE_PATH=/usr/share/gz/gz-sim8" >> ~/.bashrc && \
+    echo "export GZ_SIM_SYSTEM_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/gz-sim-8/plugins" >> ~/.bashrc
 
 # Install CMake 3.20.6
-RUN version=3.20; build=6; mkdir ~/temp; cd ~/temp && \
-    wget https://cmake.org/files/v$version/cmake-$version.$build.tar.gz && \
-    tar -xzvf cmake-$version.$build.tar.gz && \
-    cd cmake-$version.$build/ && \
-    ./bootstrap && \
-    make -j4 && \
-    make install && \
-    rm -rf ~/temp
+RUN version=3.20; build=6; mkdir ~/temp; cd ~/temp; \
+    wget https://cmake.org/files/v$version/cmake-$version.$build.tar.gz; \
+    tar -xzvf cmake-$version.$build.tar.gz; \
+    cd cmake-$version.$build/; \
+    ./bootstrap; make -j4; make install
+RUN rm -rf ~/temp
 
 # Build and install AWS SDK C++
 RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
@@ -161,7 +178,8 @@ RUN cd /tmp && \
     rm -rf redis-8.0.4 redis-8.0.4.tar.gz
 
 # Install Python dependencies
-RUN python3 -m pip install --no-cache-dir --ignore-installed zipp \
+RUN python3 -m pip install --no-cache-dir --ignore-installed \
+    zipp \
     pygame==2.6.1 \
     shapely==2.0.2 \
     pyparsing==3.2.5 \
@@ -193,11 +211,13 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed zipp \
     pytest-rerunfailures==14.0 \
     pytz==2025.2 \
     zipp==3.20.2 \
-    tensorflow==2.19.0 \
+    tensorflow==2.20.0 \
     tensorflow-probability==0.25.0 \
+    protobuf==6.33.5 \
     lark==1.2.2 \
     catkin_pkg==1.0.0 \
-    typeguard==4.4.4
+    typeguard==4.4.4 \
+    && rm -rf /usr/local/lib/python3.12/dist-packages/protobuf-5.29.5*
 
 # Copy DeepRacer source code and assets
 COPY ./bundle/markov /opt/amazon/markov
@@ -244,17 +264,20 @@ ENTRYPOINT ["/bin/bash", "-c"]
 WORKDIR /opt/ml/code/
 
 # Anaconda/Miniconda setup
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-$(uname -m).sh -O ~/miniconda.sh && \
-    /bin/bash ~/miniconda.sh -b -p /root/anaconda/ && \
-    rm ~/miniconda.sh
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /root/anaconda/
 
 # Add Conda to PATH
-ENV PATH=/root/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/root/anaconda//bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Update Conda and create environment
-RUN /bin/bash -c "conda update -y conda" && \
-    conda env create -f /opt/amazon/configs/environment.yml && \
-    /bin/bash -c "conda init bash"
+RUN /bin/bash -c "conda update -y conda"
+RUN conda env create -f /opt/amazon/configs/environment.yml && \
+    /bin/bash -c "conda init bash" && \
+    /bin/bash -c "source /root/.bashrc" && \
+    rm -rf /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/jaraco.context-5.3.0* && \
+    rm -rf /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.43.0* && \
+    rm -rf /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/protobuf-5.29.5*
 
 # Install security updates via conda
 RUN /root/anaconda/bin/conda install -y \
@@ -262,39 +285,28 @@ RUN /root/anaconda/bin/conda install -y \
     curl==8.16.0 \
     libcurl==8.16.0 \
     urllib3==2.6.3 \
-    requests==2.32.5
+    requests==2.32.5 \
+    && /root/anaconda/bin/conda clean -afy
+
+# Upgrade OpenSSL
+RUN apt-get update && apt-get install --only-upgrade -y libssl3t64 openssl && \
+    rm -rf /var/lib/apt/lists/*
 
 # Configure sagemaker_env environment PYTHONPATH
 RUN mkdir -p /root/anaconda/envs/sagemaker_env/etc/conda/activate.d && \
     echo 'export PYTHONPATH=/opt/ros/jazzy/lib/python3.12/site-packages:/opt/ros/jazzy/local/lib/python3.12/dist-packages:$PYTHONPATH' > /root/anaconda/envs/sagemaker_env/etc/conda/activate.d/env_vars.sh
 
-# Install wheel and jaraco-context in both conda environments
-RUN for env in base sagemaker_env; do \
-        /bin/bash -c "source /root/anaconda/bin/activate $env && \
-        pip install --no-cache-dir jaraco-context==6.1.0 wheel==0.46.3"; \
-    done
-
-# Install cryptography and setuptools updates in base environment
-RUN /bin/bash -c "source /root/anaconda/bin/activate && \
-    pip install --no-cache-dir cryptography==44.0.1 setuptools==80.10.1"
-
-# Comprehensive cleanup of all duplicate and vulnerable packages
-RUN rm -rf /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/jaraco.context-5.3.0* \
-           /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.43.0* \
-           /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.45.1* \
-           /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/setuptools/_vendor/jaraco.context-5.3.0* \
-           /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.43.0* \
-           /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.45.1* \
-           /root/anaconda/pkgs/setuptools-*/site-packages/setuptools/_vendor/wheel-0.45.1* \
-           /root/anaconda/pkgs/setuptools-*/site-packages/setuptools/_vendor/wheel-0.43.0* \
-           /root/anaconda/pkgs/setuptools-*/site-packages/setuptools/_vendor/jaraco.context-5.3.0* \
-           /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/tensorflow/include/external/curl \
-           /usr/local/lib/python3.12/dist-packages/tensorflow/include/external/curl \
-           /root/anaconda/pkgs/setuptools-72.1.0-* \
-           /root/anaconda/pkgs/anaconda-anon-usage-* \
-           /usr/local/aws-cli/v2/*/dist/wheel* \
-           /usr/local/lib/python3.12/dist-packages/setuptools/_vendor/wheel* && \
-    pip uninstall -y anaconda-anon-usage || true
+# Install wheel and setuptools in base environment
+RUN /bin/bash -c "source /root/anaconda/bin/activate && pip install --no-cache-dir wheel==0.46.3"
+RUN /bin/bash -c "source /root/anaconda/bin/activate && pip install --no-cache-dir setuptools==80.10.2" && \
+    rm -rf /root/anaconda/lib/python3.12/site-packages/setuptools/_vendor/wheel-0.45.1* && \
+    pip uninstall -y anaconda-anon-usage || true && \
+    rm -rf /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/tensorflow/include/external/curl && \
+    rm -rf /usr/local/lib/python3.12/dist-packages/tensorflow/include/external/curl && \
+    rm -rf /root/anaconda/pkgs/setuptools-72.1.0-* && \
+    rm -rf /root/anaconda/pkgs/anaconda-anon-usage-* && \
+    rm -rf /usr/local/aws-cli/v2/*/dist/wheel* && \
+    rm -rf /usr/local/lib/python3.12/dist-packages/setuptools/_vendor/wheel*
 
 # Restore interactive debconf frontend
 RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
