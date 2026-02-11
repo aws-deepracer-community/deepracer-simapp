@@ -54,7 +54,7 @@ class ROS2NodeManager:
             # Use MultiThreadedExecutor to allow service client callbacks to be processed
             # while other callbacks are pending. SingleThreadedExecutor can cause deadlocks
             # with MutuallyExclusiveCallbackGroup service clients.
-            self.executor = rclpy.executors.MultiThreadedExecutor()
+            self.executor = rclpy.executors.MultiThreadedExecutor(num_threads=4)
             self.executor.add_node(self.node)
             self.executor_thread = threading.Thread(target=self._spin_executor, daemon=True)
             self.executor_thread.start()
@@ -181,9 +181,9 @@ class ServiceProxyWrapper:
                 # Based on: https://github.com/ros2/rclpy/issues/1223
                 timeout_start = time.time()
                 while not future.done() and rclpy.ok():
-                    # Check for overall timeout (e.g., 30 seconds)
-                    if time.time() - timeout_start > 1.0:
-                        raise Exception(f"Service call to {self._service_name} timed out")
+                    # Check for overall timeout using configurable timeout_sec
+                    if time.time() - timeout_start > self._timeout_sec:
+                        raise Exception(f"Service call to {self._service_name} timed out after {self._timeout_sec}s")
                     time.sleep(0.002)  # Wait for executor thread to process the response
                 
                 # Check why the loop exited
