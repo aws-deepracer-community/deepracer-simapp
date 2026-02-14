@@ -24,6 +24,7 @@ import markov.agent_ctrl.constants as const
 # Try to import real ROS2 Float64, fallback to simple class for training worker
 try:
     from std_msgs.msg import Float64, Float64MultiArray
+    from control_msgs.msg import MultiDOFCommand
 except ImportError as e:
     # Fallback for environments without ROS2 (like SageMaker training worker)
     class Float64:
@@ -33,6 +34,15 @@ except ImportError as e:
     class Float64MultiArray:
         def __init__(self):
             self.data = []
+    
+    class MultiDOFCommand:
+        def __init__(self):
+            self.dof_names = []
+            self.values = []
+    
+    class MultiArrayDimension:
+        def __init__(self):
+            pass
 
 from markov.metrics.constants import StepMetrics
 from markov.agent_ctrl.constants import RewardParam
@@ -190,14 +200,19 @@ def send_action(velocity_pub_dict, steering_pub_dict, steering_angle, speed):
        steering_angle - Desired amount, in radians, to move the movable joints by
        speed - Angular velocity which the velocity joints should rotate with
     '''
-    speed_msg = Float64MultiArray()
-    speed_msg.data = [float(speed)]
+    # Create separate MultiDOFCommand messages for each wheel with proper joint names
+    for topic, pub in velocity_pub_dict.items():
+        # Extract joint name from topic (e.g., "/racecar/left_rear_wheel_velocity_controller/reference" -> "left_rear_wheel_joint")
+        joint_name = topic.split('/')[-2].replace('_velocity_controller', '_joint')
+        
+        speed_msg = MultiDOFCommand()
+        speed_msg.dof_names = [joint_name]
+        speed_msg.values = [abs(float(speed))]  # Ensure positive velocity (no reverse)
+        pub.publish(speed_msg)
     
     steering_msg = Float64MultiArray()
     steering_msg.data = [float(steering_angle)]
     
-    for _, pub in velocity_pub_dict.items():
-        pub.publish(speed_msg)
 
     for _, pub in steering_pub_dict.items():
         pub.publish(steering_msg)

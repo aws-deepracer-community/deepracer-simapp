@@ -27,6 +27,7 @@ import time
 from threading import RLock
 from deepracer_msgs.msg import ModelState
 from std_msgs.msg import Float64, Float64MultiArray, String
+from control_msgs.msg import MultiDOFCommand
 from shapely.geometry import Point
 
 from markov import utils
@@ -136,7 +137,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         if RolloutCtrl._rollout_ctrl_node is None:
             RolloutCtrl._rollout_ctrl_node = rclpy.create_node('MarkovRolloutCtrlNode')
         for topic in config_dict[const.ConfigParams.VELOCITY_LIST.value]:
-            self._velocity_pub_dict_[topic] = RolloutCtrl._rollout_ctrl_node.create_publisher(Float64MultiArray, topic, 1)
+            self._velocity_pub_dict_[topic] = RolloutCtrl._rollout_ctrl_node.create_publisher(MultiDOFCommand, topic, 1)
         for topic in config_dict[const.ConfigParams.STEERING_LIST.value]:
             self._steering_pub_dict_[topic] = RolloutCtrl._rollout_ctrl_node.create_publisher(Float64MultiArray, topic, 1)
 

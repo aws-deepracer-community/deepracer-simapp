@@ -94,6 +94,9 @@
     <limit
       effort="10"
       velocity="100" />
+    <dynamics
+      damping="0.008"
+      friction="0.9" />
   </joint>
   <link
     name="right_rear_wheel">
@@ -147,6 +150,9 @@
     <limit
       effort="10"
       velocity="100" />
+    <dynamics
+      damping="0.008"
+      friction="0.9" />
   </joint>
   <link
     name="left_steering_hinge">
@@ -246,6 +252,9 @@
     <limit
       effort="10"
       velocity="100" />
+    <dynamics
+      damping="0.008"
+      friction="0.9" />
   </joint>
   <link
     name="right_steering_hinge">
@@ -345,6 +354,9 @@
     <limit
       effort="10"
       velocity="100" />
+    <dynamics
+      damping="0.008"
+      friction="0.9" />
   </joint>
   <link
     name="zed_camera_link_leftcam">

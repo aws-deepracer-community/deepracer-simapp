@@ -32,10 +32,10 @@ LINK_NAMES = ['left_rear_wheel', 'left_front_wheel',
               'right_rear_wheel', 'right_front_wheel']
 
 # List of required velocity topics, one topic per wheel
-VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/commands',
-                   '/racecar/right_rear_wheel_velocity_controller/commands',
-                   '/racecar/left_front_wheel_velocity_controller/commands',
-                   '/racecar/right_front_wheel_velocity_controller/commands']
+VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/reference',
+                   '/racecar/right_rear_wheel_velocity_controller/reference',
+                   '/racecar/left_front_wheel_velocity_controller/reference',
+                   '/racecar/right_front_wheel_velocity_controller/reference']
 
 # List of required steering hinges
 STEERING_TOPICS = ['/racecar/left_steering_hinge_position_controller/commands',
