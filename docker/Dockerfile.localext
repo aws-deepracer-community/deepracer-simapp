@@ -15,6 +15,7 @@ FROM ${BUNDLE_PREFIX}/deepracer-simapp:${TAG}
 COPY bundle/markov /opt/amazon/markov
 COPY bundle/src/deepracer_simulation_environment /opt/amazon/src/deepracer_simulation_environment
 COPY bundle/src/sagemaker_rl_agent /opt/amazon/src/sagemaker_rl_agent
+COPY bundle/urdf /opt/amazon/urdf
 
 # Rebuild the modified packages
 WORKDIR /opt/amazon
