@@ -36,8 +36,9 @@ dependencies:
       - h5py==3.14.0
       - pytest==8.3.4
       - pytest-cov==6.0.0
-      - tensorflow==2.19.0
+      - tensorflow==2.20.0
       - tensorflow-probability==0.25.0
+      - protobuf==6.33.5
       - pyparsing==3.2.5
       - requests==2.32.5
       - urllib3==2.6.3
@@ -57,3 +58,4 @@ dependencies:
       - sagemaker-training
       - sagemaker
       - argcomplete
+      - setuptools==80.10.2
