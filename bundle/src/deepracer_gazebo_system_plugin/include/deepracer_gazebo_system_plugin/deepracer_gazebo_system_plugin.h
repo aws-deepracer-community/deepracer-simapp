@@ -402,8 +402,15 @@ namespace gz::sim::systems
             /// - Callbacks: shared_lock (concurrent reads)
             mutable std::shared_mutex snapshot_mtx_;
             
-            /// \brief Mutex for command queue access
-            std::mutex command_queue_mtx_;
+            /// \brief Per-queue mutexes to reduce contention between callbacks
+            std::mutex model_state_commands_mtx_;
+            std::mutex link_state_commands_mtx_;
+            std::mutex visual_color_commands_mtx_;
+            std::mutex visual_transparency_commands_mtx_;
+            std::mutex visual_visible_commands_mtx_;
+            std::mutex visual_pose_commands_mtx_;
+            std::mutex visual_mesh_commands_mtx_;
+            std::mutex light_commands_mtx_;
             
             // ========== STATE CACHING (Built in PostUpdate, Read in Callbacks) ==========
             
@@ -412,6 +419,10 @@ namespace gz::sim::systems
             
             /// \brief Link state cache (world frame positions and velocities)
             std::unordered_map<std::string, LinkStateSnapshot> link_states_cache_;
+
+            /// \brief Throttle PostUpdate work to every N simulation steps
+            std::size_t post_update_step_count_{0};
+            static constexpr std::size_t post_update_stride_ = 10;
             
             // ========== COMMAND QUEUES (Written in Callbacks, Read in PreUpdate) ==========
             

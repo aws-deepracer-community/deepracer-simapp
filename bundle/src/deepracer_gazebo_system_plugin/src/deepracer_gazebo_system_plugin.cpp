@@ -70,15 +70,16 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
     }
 
     // Handle pause request
-    if (pause_req_.exchange(false)) {
+    if (pause_req_.load(std::memory_order_relaxed)) {
         const std::string svc = "/world/" + world_name_ + "/control";
         gz::msgs::WorldControl req;
         req.set_pause(true);
         gz::msgs::Boolean rep;
         bool result = false;
         
-        bool ok = gz_node_.Request(svc, req, 1000, rep, result);
+        bool ok = gz_node_.Request(svc, req, 100, rep, result);
         if (ok && result) {
+            pause_req_.store(false, std::memory_order_relaxed);
             RCLCPP_INFO(node_->get_logger(), "Physics paused successfully via service %s", svc.c_str());
         } else {
             RCLCPP_ERROR(node_->get_logger(), "WorldControl pause request failed for %s", svc.c_str());
@@ -103,7 +104,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS MODEL STATE COMMANDS (FROM ROS CALLBACKS) ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(model_state_commands_mtx_);
         
         if (!model_state_commands_.empty()) {
             RCLCPP_INFO(node_->get_logger(), "PreUpdate: Processing %zu queued model state commands", 
@@ -217,7 +218,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
     
     // ========== PROCESS LINK STATE COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(link_state_commands_mtx_);
         
         if (!link_state_commands_.empty()) {
             // Build entity maps once for all link commands
@@ -326,7 +327,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS VISUAL COLOR COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(visual_color_commands_mtx_);
         
         if (!visual_color_commands_.empty()) {
             // Build link entity map once for all visual commands
@@ -412,7 +413,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS VISUAL TRANSPARENCY COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(visual_transparency_commands_mtx_);
         
         if (!visual_transparency_commands_.empty()) {
             std::unordered_map<std::string, Entity> linkEntityMap;
@@ -484,7 +485,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS VISUAL VISIBILITY COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(visual_visible_commands_mtx_);
         
         if (!visual_visible_commands_.empty()) {
             std::unordered_map<std::string, Entity> linkEntityMap;
@@ -525,7 +526,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS VISUAL POSE COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(visual_pose_commands_mtx_);
         
         if (!visual_pose_commands_.empty()) {
             std::unordered_map<std::string, Entity> linkEntityMap;
@@ -572,7 +573,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS VISUAL MESH COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(visual_mesh_commands_mtx_);
         
         if (!visual_mesh_commands_.empty()) {
             std::unordered_map<std::string, Entity> linkEntityMap;
@@ -625,7 +626,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 
     // ========== PROCESS LIGHT COMMANDS ==========
     {
-        std::lock_guard<std::mutex> lock(command_queue_mtx_);
+        std::lock_guard<std::mutex> lock(light_commands_mtx_);
         
         if (!light_commands_.empty()) {
             // Build light entity map once for all commands
@@ -693,6 +694,10 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
 void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
                                             const EntityComponentManager &_ecm)
 {
+    if ((post_update_step_count_++ % post_update_stride_) != 0) {
+        return;
+    }
+
     // ========== BUILD SNAPSHOT FOR ROS CALLBACKS (SIMULATION THREAD) ==========
     std::unique_lock<std::shared_mutex> lk(snapshot_mtx_);
     
@@ -724,13 +729,13 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
         children_.emplace(p->Data(), e);
         return true;
     });
-
+    
     // Build model map and cache states
     _ecm.Each<components::Model, components::Name>(
         [&](const Entity e, const components::Model*, const components::Name *n) {
             models_.insert(e);
             model_by_name_[n->Data()] = e;
-            
+
             // Cache model state with WORLD-frame velocities
             ModelStateSnapshot snapshot;
             
@@ -1070,7 +1075,9 @@ void DeepRacerGazeboSystemPlugin::executorThread()
 {
     RCLCPP_INFO(node_->get_logger(), "Starting ROS 2 executor thread");
     
-    rclcpp::executors::MultiThreadedExecutor executor;
+    // Use 4 threads instead of hardware_concurrency() (typically 8-32 threads)
+    // Service calls don't need massive parallelism - 4 threads handle concurrent requests efficiently
+    rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 4);
     executor.add_node(node_);
     
     while (executor_running_ && rclcpp::ok())
@@ -1318,7 +1325,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualColor service called for link: %s, visual: %s", 
                 request->link_name.c_str(), request->visual_name.c_str());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_color_commands_mtx_);
     
     try {
         SetVisualColorCommand cmd;
@@ -1351,7 +1358,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorsCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualColors service called for %zu visuals", 
                 request->link_names.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_color_commands_mtx_);
     
     try {
         if (request->link_names.size() != request->visual_names.size() ||
@@ -1395,7 +1402,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparencyCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualTransparency service called for link: %s, visual: %s, transparency: %f", 
                 request->link_name.c_str(), request->visual_name.c_str(), request->transparency);
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_transparency_commands_mtx_);
     
     try {
         SetVisualTransparencyCommand cmd;
@@ -1425,7 +1432,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparenciesCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualTransparencies service called for %zu visuals", 
                 request->link_names.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_transparency_commands_mtx_);
     
     try {
         if (request->link_names.size() != request->visual_names.size() ||
@@ -1464,7 +1471,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisibleCallback(
                 request->link_name.c_str(), request->visual_name.c_str(), 
                 request->visible ? "true" : "false");
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_visible_commands_mtx_);
     
     try {
         SetVisualVisibleCommand cmd;
@@ -1495,7 +1502,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisiblesCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualVisibles service called for %zu visuals", 
                 request->link_names.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_visible_commands_mtx_);
     
     try {
         if (request->link_names.size() != request->visual_names.size() ||
@@ -1536,7 +1543,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPoseCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualPose service called for link: %s, visual: %s", 
                 request->link_name.c_str(), request->visual_name.c_str());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_pose_commands_mtx_);
     
     try {
         SetVisualPoseCommand cmd;
@@ -1566,7 +1573,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPosesCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualPoses service called for %zu visual pose updates", 
                 request->link_names.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_pose_commands_mtx_);
     
     try {
         if (request->link_names.size() != request->visual_names.size() ||
@@ -1604,7 +1611,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualMesh service called for link: %s, visual: %s, mesh: %s", 
                 request->link_name.c_str(), request->visual_name.c_str(), request->filename.c_str());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_mesh_commands_mtx_);
     
     try {
         SetVisualMeshCommand cmd;
@@ -1635,7 +1642,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshesCallback(
     RCLCPP_INFO(node_->get_logger(), "setVisualMeshes service called for %zu visual mesh updates", 
                 request->link_names.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(visual_mesh_commands_mtx_);
     
     try {
         if (request->link_names.size() != request->visual_names.size() ||
@@ -1816,7 +1823,7 @@ void DeepRacerGazeboSystemPlugin::setModelStatesCallback(
     RCLCPP_INFO(node_->get_logger(), "setModelStates service called for %zu models", 
                 request->model_states.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(model_state_commands_mtx_);
     
     try {
         response->status.resize(request->model_states.size());
@@ -1988,7 +1995,7 @@ void DeepRacerGazeboSystemPlugin::setLinkStatesCallback(
     RCLCPP_INFO(node_->get_logger(), "setLinkStates service called for %zu links", 
                 request->link_states.size());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(link_state_commands_mtx_);
     
     try {
         response->status.resize(request->link_states.size());
@@ -2222,7 +2229,7 @@ void DeepRacerGazeboSystemPlugin::setLightPropertiesCallback(
     RCLCPP_INFO(node_->get_logger(), "setLightProperties service called for light: %s",
                 request->light_name.c_str());
     
-    std::lock_guard<std::mutex> lock(command_queue_mtx_);
+    std::lock_guard<std::mutex> lock(light_commands_mtx_);
     
     try {
         SetLightPropertiesCommand cmd;
@@ -2285,10 +2292,10 @@ void DeepRacerGazeboSystemPlugin::spawnSDFModelCallback(
             req.set_name(request->model_name);
         }
         
-        gz::transport::Node transportNode;
+        // Reuse existing gz_node_ instead of creating new transport node
         gz::msgs::Boolean result;
         bool success = false;
-        bool executed = transportNode.Request(serviceTopic, req, 5000, result, success);
+        bool executed = gz_node_.Request(serviceTopic, req, 5000, result, success);
         
         if (executed && success && result.data()) {
             RCLCPP_INFO(node_->get_logger(), "Model spawned successfully: %s", request->model_name.c_str());
@@ -2339,11 +2346,10 @@ void DeepRacerGazeboSystemPlugin::deleteModelCallback(
         req.set_name(request->model_name);
         req.set_type(gz::msgs::Entity::MODEL);
         
-        // Call service
-        gz::transport::Node transportNode;
+        // Call service - reuse existing gz_node_ instead of creating new transport node
         gz::msgs::Boolean result;
         bool success = false;
-        bool executed = transportNode.Request(serviceTopic, req, 5000, result, success);
+        bool executed = gz_node_.Request(serviceTopic, req, 5000, result, success);
         
         if (executed && success) {
             RCLCPP_INFO(node_->get_logger(), "Model '%s' deletion requested successfully", 
