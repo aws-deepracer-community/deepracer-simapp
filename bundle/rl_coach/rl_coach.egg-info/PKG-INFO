@@ -7,9 +7,10 @@ Author: Intel AI Lab
 Author-email: coach@intel.com
 Requires-Python: >=3.12
 License-File: LICENSE
-Requires-Dist: tensorflow==2.19.0
+Requires-Dist: tensorflow==2.20.0
 Requires-Dist: tensorflow-probability==0.25.0
-Requires-Dist: tf_keras==2.19.0
+Requires-Dist: tf_keras==2.20.1
+Requires-Dist: protobuf==6.33.5
 Requires-Dist: keras==3.13.1
 Requires-Dist: numpy==1.26.4
 Requires-Dist: scipy==1.13.1
