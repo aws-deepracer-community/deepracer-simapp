@@ -58,3 +58,4 @@ dependencies:
       - sagemaker-training
       - sagemaker
       - argcomplete
+      - setuptools==80.10.2
