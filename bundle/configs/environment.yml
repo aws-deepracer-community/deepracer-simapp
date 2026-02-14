@@ -56,6 +56,5 @@ dependencies:
       - catkin_pkg==1.0.0
       - pytelegraf
       - sagemaker-training
-      - sagemaker
       - argcomplete
       - setuptools==80.10.2
