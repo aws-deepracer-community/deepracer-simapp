@@ -86,6 +86,7 @@ class HyperParameterKeys(Enum):
     NUM_EPISODES_BETWEEN_TRAINING = 'num_episodes_between_training'
     TERMINATION_CONDITION_MAX_EPISODES = 'term_cond_max_episodes'
     TERMINATION_CONDITION_AVG_SCORE = 'term_cond_avg_score'
+    TERMINATION_CONDITION_MIN_ENTROPY = 'term_cond_min_entropy'
     SAC_ALPHA = 'sac_alpha'
 
 

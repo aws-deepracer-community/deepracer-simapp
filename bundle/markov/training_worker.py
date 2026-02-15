@@ -70,8 +70,12 @@ SM_MODEL_OUTPUT_DIR = os.environ.get("SM_MODEL_DIR", "/opt/ml/model")
 
 IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = utils.get_sagemaker_profiler_env()
 
+# Number of recent rollouts to average over for avg score termination
+AVG_SCORE_WINDOW_SIZE = 10
+
 def training_worker(graph_manager, task_parameters, user_batch_size,
-                    user_episode_per_rollout, training_algorithm):
+                    user_episode_per_rollout, training_algorithm,
+                    min_entropy_threshold=0.0, avg_score_threshold=0.0):
     try:
         logger.debug("DEBUG: training_worker function started")
         try:
@@ -104,6 +108,9 @@ def training_worker(graph_manager, task_parameters, user_batch_size,
 
         # To handle SIGTERM
         door_man = utils.DoorMan()
+
+        # Rolling window of per-rollout mean episode rewards for avg score termination
+        avg_score_window = []
 
         while steps < graph_manager.improve_steps.num_steps:
             logger.debug("DEBUG: Training loop iteration %s", steps)
@@ -177,6 +184,49 @@ def training_worker(graph_manager, task_parameters, user_batch_size,
                         log_and_exit("NaN detected in loss function, aborting training.",
                                      SIMAPP_TRAINING_WORKER_EXCEPTION,
                                      SIMAPP_EVENT_ERROR_CODE_500)
+
+                    # Compute per-episode total rewards from agent memory for avg score tracking
+                    if avg_score_threshold > 0.0:
+                        rollout_episode_rewards = []
+                        for level in graph_manager.level_managers:
+                            for agent in level.agents.values():
+                                if hasattr(agent.memory, 'get_all_complete_episodes'):
+                                    for episode in agent.memory.get_all_complete_episodes():
+                                        ep_reward = sum(t.reward for t in episode.transitions)
+                                        rollout_episode_rewards.append(ep_reward)
+                        if rollout_episode_rewards:
+                            rollout_mean = np.mean(rollout_episode_rewards)
+                            avg_score_window.append(rollout_mean)
+                            if len(avg_score_window) > AVG_SCORE_WINDOW_SIZE:
+                                avg_score_window.pop(0)
+                            running_avg = np.mean(avg_score_window)
+                            logger.info("Step %s - Rollout avg reward: %.2f, "
+                                        "Running avg (last %d): %.2f (threshold: %.2f)",
+                                        steps, rollout_mean, len(avg_score_window),
+                                        running_avg, avg_score_threshold)
+                            if len(avg_score_window) >= AVG_SCORE_WINDOW_SIZE and running_avg >= avg_score_threshold:
+                                logger.info("Average score %.2f reached threshold %.2f at step %s. "
+                                            "Saving checkpoint and terminating training.",
+                                            running_avg, avg_score_threshold, steps)
+                                graph_manager.save_checkpoint()
+                                graph_manager.data_store.upload_finished_file()
+                                return
+
+                    # Check entropy-based termination condition
+                    if min_entropy_threshold > 0.0:
+                        for level in graph_manager.level_managers:
+                            for agent in level.agents.values():
+                                if hasattr(agent, 'entropy') and len(agent.entropy.values) > 0:
+                                    mean_entropy = agent.entropy.get_mean()
+                                    logger.info("Step %s - Agent entropy: %.6f (threshold: %.6f)",
+                                                steps, mean_entropy, min_entropy_threshold)
+                                    if mean_entropy < min_entropy_threshold:
+                                        logger.info("Entropy %.6f fell below threshold %.6f at step %s. "
+                                                    "Saving checkpoint and terminating training.",
+                                                    mean_entropy, min_entropy_threshold, steps)
+                                        graph_manager.save_checkpoint()
+                                        graph_manager.data_store.upload_finished_file()
+                                        return
 
                     if graph_manager.agent_params.algorithm.distributed_coach_synchronization_type == DistributedCoachSynchronizationType.SYNC:
                         graph_manager.save_checkpoint()
@@ -442,12 +492,15 @@ def main():
         task_parameters.checkpoint_restore_path = args.pretrained_checkpoint_dir
     task_parameters.checkpoint_save_dir = args.checkpoint_dir
 
+    robomaker_hyperparams = json.loads(robomaker_hyperparams_json)
     training_worker(
         graph_manager=graph_manager,
         task_parameters=task_parameters,
-        user_batch_size=json.loads(robomaker_hyperparams_json)["batch_size"],
-        user_episode_per_rollout=json.loads(robomaker_hyperparams_json)["num_episodes_between_training"],
-        training_algorithm=training_algorithm
+        user_batch_size=robomaker_hyperparams["batch_size"],
+        user_episode_per_rollout=robomaker_hyperparams["num_episodes_between_training"],
+        training_algorithm=training_algorithm,
+        min_entropy_threshold=float(robomaker_hyperparams.get("term_cond_min_entropy", 0.0)),
+        avg_score_threshold=float(robomaker_hyperparams.get("term_cond_avg_score", 0.0))
     )
 
 

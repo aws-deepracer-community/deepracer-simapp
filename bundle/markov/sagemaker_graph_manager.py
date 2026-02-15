@@ -203,6 +203,8 @@ def get_updated_hyper_parameters(hp_dict, training_algorithm):
         int(hp_dict.get(HyperParameterKeys.TERMINATION_CONDITION_MAX_EPISODES.value, 100000))
     params[HyperParameterKeys.TERMINATION_CONDITION_AVG_SCORE.value] = \
         float(hp_dict.get(HyperParameterKeys.TERMINATION_CONDITION_AVG_SCORE.value, 100000))
+    params[HyperParameterKeys.TERMINATION_CONDITION_MIN_ENTROPY.value] = \
+        float(hp_dict.get(HyperParameterKeys.TERMINATION_CONDITION_MIN_ENTROPY.value, 0.0))
 
     ####################
     # Clipped PPO algo
