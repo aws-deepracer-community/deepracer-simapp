@@ -34,6 +34,8 @@ def generate_launch_description():
     use_clock_frequency_arg = DeclareLaunchArgument('use_clock_frequency', default_value='false')
     pub_clock_frequency_arg = DeclareLaunchArgument('pub_clock_frequency', default_value='100')
     make_required_arg = DeclareLaunchArgument('make_required', default_value='true')
+    rollout_idx_arg = DeclareLaunchArgument('rollout_idx', default_value=EnvironmentVariable('ROLLOUT_IDX', default_value='0'))
+    render_engine_arg = DeclareLaunchArgument('render_engine', default_value=EnvironmentVariable('GAZEBO_RENDER_ENGINE', default_value='ogre'))
     
     # Set use_sim_time parameter
     use_sim_time_param = SetParameter(name='use_sim_time', value=(LaunchConfiguration('use_sim_time') == 'true'))
@@ -76,40 +78,28 @@ def generate_launch_description():
     # Gazebo server (gz sim) 
     gazebo_server = ExecuteProcess(
         cmd=[
+            'taskset', '-c', PythonExpression([
+                'str(2 * int(', LaunchConfiguration('rollout_idx'), ')) + "," + ',
+                'str(2 * int(', LaunchConfiguration('rollout_idx'), ') + 1)'
+            ]),
             'gz', 'sim',
             world_file_path,
             # Server mode
             '-s' ,
+            '--render-engine', LaunchConfiguration('render_engine'),
             PythonExpression([
                 '"-r" if "', LaunchConfiguration('paused'), '" == "false" else ""'
             ])
         ],
         output=LaunchConfiguration('output'),
-        name='gazebo_server',
-        condition=IfCondition(LaunchConfiguration('gui'))
-    )
-
-    # Gazebo server (gz sim) 
-    gazebo_server_hl = ExecuteProcess(
-        cmd=[
-            'gz', 'sim',
-            world_file_path,
-            # Server mode
-            '-s' ,
-            PythonExpression([
-                '"-r" if "', LaunchConfiguration('paused'), '" == "false" else ""'
-            ]),
-            "--headless-render"
-        ],
-        output=LaunchConfiguration('output'),
-        name='gazebo_server',
-        condition=UnlessCondition(LaunchConfiguration('gui'))
+        name='gazebo_server'
     )
     
     # Gazebo client (gz sim -g)
     gazebo_client = ExecuteProcess(
         cmd=[
             'gz', 'sim', '-g',
+            '--render-engine', LaunchConfiguration('render_engine'),
             # Verbose flag (use -v instead of --verbose for compatibility)
             PythonExpression([
                 '"-v" if "', LaunchConfiguration('verbose'), '" == "true" else ""'
@@ -167,6 +157,8 @@ def generate_launch_description():
         use_clock_frequency_arg,
         pub_clock_frequency_arg,
         make_required_arg,
+        rollout_idx_arg,
+        render_engine_arg,
         
         # Environment variables
         gz_resource_path,
@@ -177,7 +169,6 @@ def generate_launch_description():
         
         # Processes
         gazebo_server,
-        gazebo_server_hl,
         gazebo_client,
 
         # Nodes

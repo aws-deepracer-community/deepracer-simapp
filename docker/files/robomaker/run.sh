@@ -81,7 +81,7 @@ fi
 export GZ_IP=127.0.0.1
 
 # Start an X server if we do not have one, and GUI is needed
-if [[ "${ENABLE_GUI,,}" == "true" ]]; then
+if [[ "${ENABLE_GUI,,}" == "true" ]] || [[ "${GAZEBO_RENDERING,,}" == "ogre" ]]; then
 	# GUI is enabled, but do we have an external X server or should we start one?
 	if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
 		export DISPLAY=:0 # Select screen 0 by default.
