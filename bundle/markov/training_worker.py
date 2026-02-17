@@ -20,6 +20,7 @@ import argparse
 import json
 import logging
 import math
+import time
 import botocore
 import warnings  
 warnings.filterwarnings("ignore",category=FutureWarning)
@@ -190,6 +191,10 @@ def training_worker(graph_manager, task_parameters, user_batch_size,
                     for agent in level.agents.values():
                         agent.ap.algorithm.num_consecutive_playing_steps.num_steps = user_episode_per_rollout
                         agent.ap.algorithm.num_steps_between_copying_online_weights_to_target.num_steps = user_episode_per_rollout
+
+                if not graph_manager.should_train():
+                    # Avoid busy-waiting when there's no training to do
+                    time.sleep(1)
 
                 if door_man.terminate_now:
                     log_and_exit("Received SIGTERM. Checkpointing before exiting.",
