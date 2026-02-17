@@ -19,6 +19,7 @@ import os
 import pickle
 import queue
 import logging
+import time
 import redis
 import uuid
 
@@ -113,7 +114,7 @@ class DeepRacerRolloutBackEnd(MemoryBackend):
         # Handle request via call back
         self.data_pubsub.subscribe(**{WORKER_CHANNEL + '_' + self.agent_name:
                                       self.data_req_handler})
-        self.data_pubsub.run_in_thread()
+        self.data_pubsub.run_in_thread(sleep_time=0.001)
 
     def data_req_handler(self, message):
         ''' Message handler for training worker request
@@ -230,7 +231,7 @@ class DeepRacerTrainerBackEnd(MemoryBackend):
             # Handle data returning from the rollout worker via callback
             subscriber = (lambda a: lambda m: self.data_handler(m, a))(agent_param.name)
             self.data_pubsubs[agent_param.name].subscribe(**{self.params.channel + '_' + agent_param.name: subscriber})
-            self.data_pubsubs[agent_param.name].run_in_thread()
+            self.data_pubsubs[agent_param.name].run_in_thread(sleep_time=0.001)
 
             # Use a seperate thread to request data
             publish_worker = (lambda a: lambda: self.publish_worker(a))(agent_param.name)
@@ -330,9 +331,13 @@ class DeepRacerTrainerBackEnd(MemoryBackend):
                     self.episode_req = 0
                     self.request_data = False
                     continue
+                else:
+                    # Data doesn't match expected episode - avoid busy-waiting
+                    time.sleep(0.01)
                 [event.set() for event in self.request_events.values()]
             except Exception as ex:
                 LOG.info("Trainer fetch error: %s", ex)
+                time.sleep(0.1)
                 continue
 
     def get_endpoint(self):
