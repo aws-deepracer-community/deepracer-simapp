@@ -113,7 +113,7 @@ def main():
                             "car_colors:={} ".format(','.join(yaml_file.car_colors)),
                             "simapp_versions:={} ".format(','.join(simapp_versions)),
                             "f1:={} ".format(yaml_file.is_f1),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS"))),
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS", "True"))),
                             "gui:={} ".format('true' if os.environ.get("ENABLE_GUI", None) == "True" else 'false')))]
         else:
             # Note: SimApp Version is default to 6.0: virtual event only have a single body_shell_types
@@ -123,7 +123,7 @@ def main():
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS")))))]
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS", "True")))))]
         Popen(cmd, shell=True, executable="/bin/bash")
     except botocore.exceptions.ClientError as ex:
         log_and_exit("Download params and launch of agent node S3 ClientError: s3_bucket: {}, yaml_key: {}, {}"
