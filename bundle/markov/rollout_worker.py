@@ -148,7 +148,9 @@ def exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
         
         if is_save_mp4_enabled:
             try:
-                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
+                # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
+                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                               timeout_sec=60.0)
                 unsubscribe_from_save_mp4(Empty.Request())
             except Exception as mp4_error:
                 logger.error("MP4 unsubscribe failed (exit_if_trainer_done): %s", mp4_error)
@@ -218,7 +220,9 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
             raise
         
         try:
-            unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
+            # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
+            unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                           timeout_sec=60.0)
         except Exception as e:
             logger.error(f"Error creating unsubscribe_from_save_mp4 service proxy: {e}")
             raise
