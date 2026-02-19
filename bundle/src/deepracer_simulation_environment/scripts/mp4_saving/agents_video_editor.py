@@ -213,7 +213,8 @@ class AgentsVideoEditor(Node):
                 ROSImg,
                 top_camera_topic,
                 self._top_camera_cb,
-                CAMERA_QOS
+                CAMERA_QOS,
+                callback_group=rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
             )
             self.top_camera_mp4_pub = self.create_publisher(
                 ROSImg,

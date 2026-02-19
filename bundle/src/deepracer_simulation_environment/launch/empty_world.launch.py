@@ -135,7 +135,7 @@ def generate_launch_description():
             'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.depth': 10,
 #            'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.depth': 10,
-            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
+#            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.depth': 10,
         }],
         output='screen'
