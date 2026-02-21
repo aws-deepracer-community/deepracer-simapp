@@ -15,7 +15,7 @@ scikit-image==0.25.2
 # Data Processing
 pandas==2.3.1
 matplotlib==3.10.6  # Allow system version compatibility
-pillow==11.3.0 # Allow system version compatibility
+pillow==12.1.1  # Allow system version compatibility - FIXED CVE-2026-25990
 
 # RL Environment
 gymnasium==1.2.0
