@@ -13,7 +13,7 @@ import rclpy
 import rclpy.callback_groups
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from rclpy.executors import MultiThreadedExecutor
+from rclpy.executors import MultiThreadedExecutor, ExternalShutdownException
 from std_srvs.srv import Empty
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
@@ -511,6 +511,9 @@ def get_racecars_info(node, racecar_names):
 def main(args=None):
     if not rclpy.ok():
         rclpy.init(args=args)
+    executor = None
+    temp_node = None
+    video_editor_nodes = []
     
     try:
         # comma separated racecar names passed as an argument to the node
@@ -527,8 +530,6 @@ def main(args=None):
         # Destroy temporary node
         temp_node.destroy_node()
         
-        # Store AgentsVideoEditor nodes so we can spin them
-        video_editor_nodes = []
         for racecar in racecars_info:
             # Instantiate AgentCameraVideoEditor objects for each racecar
             video_editor = AgentsVideoEditor(racecar['name'], racecars_info, PUBLISH_TO_KVS_STREAM)
@@ -543,15 +544,42 @@ def main(args=None):
         try:
             # Keep the nodes alive to handle service calls
             executor.spin()
+        except (KeyboardInterrupt, ExternalShutdownException):
+            LOG.info("agents_video_editor shutdown requested")
         except Exception as spin_error:
             LOG.error("Error in executor spin: %s", spin_error)
             raise
         
+    except (KeyboardInterrupt, ExternalShutdownException):
+        LOG.info("agents_video_editor shutdown requested")
     except Exception as err_msg:
         log_and_exit("Exception in Kinesis Video camera ros node: {}".format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        if executor is not None:
+            try:
+                executor.shutdown(timeout_sec=2.0)
+            except Exception:
+                pass
+
+        if temp_node is not None:
+            try:
+                temp_node.destroy_node()
+            except Exception:
+                pass
+
+        for video_editor in video_editor_nodes:
+            try:
+                if hasattr(video_editor, 'save_to_mp4_obj') and video_editor.save_to_mp4_obj is not None:
+                    video_editor.save_to_mp4_obj.destroy_node()
+            except Exception:
+                pass
+            try:
+                video_editor.destroy_node()
+            except Exception:
+                pass
+
         if rclpy.ok():
             rclpy.shutdown()
 

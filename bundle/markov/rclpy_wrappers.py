@@ -221,6 +221,7 @@ class ServiceProxyWrapper:
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500,
                                  name=str(ex))
+                    return None
                 
                 error_message = ROS_SERVICE_ERROR_MSG_FORMAT.format(self._service_name,
                                                                     str(try_count),

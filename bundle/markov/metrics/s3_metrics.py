@@ -29,7 +29,7 @@ import boto3
 import botocore
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 from deepracer_simulation_environment.srv import VideoMetricsSrv, VideoMetricsSrv_Response
 from geometry_msgs.msg import Point32
 from markov.constants import BEST_CHECKPOINT, LAST_CHECKPOINT, METRICS_VERSION
@@ -169,6 +169,8 @@ class MarkovVideoMetrics(Node):
                     executor = SingleThreadedExecutor()
                     executor.add_node(self)
                     executor.spin()
+                except ExternalShutdownException:
+                    LOGGER.info("Video metrics node shutdown requested")
                 except Exception as e:
                     LOGGER.error("Node spinning error: %s", e)
 
