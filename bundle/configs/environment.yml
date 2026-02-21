@@ -12,7 +12,7 @@ dependencies:
       - pygame==2.6.1
       - shapely==2.0.2
       - annoy==1.17.3
-      - pillow==11.3.0
+      - pillow==12.1.1
       - matplotlib==3.10.6
       - numpy==1.26.4
       - pandas==2.3.1
@@ -21,7 +21,7 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==44.0.1
+      - cryptography==46.0.5
       - kubernetes==33.1.0
       - opencv-python==4.9.0.80
       - bokeh==3.7.3
