@@ -87,7 +87,8 @@ class SaveToMp4(Node):
                 if name not in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name] = threading.Lock()
                 else:
-                    self.mp4_subscription_lock_map[name].release()
+                    if self.mp4_subscription_lock_map[name].locked():
+                        self.mp4_subscription_lock_map[name].release()
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}".format(err_msg),
                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,

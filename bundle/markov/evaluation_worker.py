@@ -123,7 +123,7 @@ def evaluation_worker(graph_manager, number_of_trials, task_parameters, simtrace
 
         for mp4_sub, mp4_unsub in zip(subscribe_to_save_mp4_topic, unsubscribe_from_save_mp4_topic):
             subscribe_to_save_mp4.append(ServiceProxyWrapper(mp4_sub))
-            unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub, timeout_sec=10.0),
+            unsubscribe_from_save_mp4.append(Thread(target=ServiceProxyWrapper(mp4_unsub, timeout_sec=60.0),
                                                     args=(Empty.Request(), )))
 
         graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,

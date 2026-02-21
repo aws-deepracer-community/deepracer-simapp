@@ -6,7 +6,7 @@ import os
 import sys
 import time
 import logging
-from threading import Thread
+from threading import Thread, Lock
 import queue
 import cv2
 import rclpy
@@ -32,7 +32,8 @@ from markov.world_config import WorldConfig
 from deepracer_simulation_environment.srv import VideoMetricsSrv
 from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
-                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes)
+                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes,
+                                  METRICS_POLL_PERIOD_SEC)
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -74,6 +75,7 @@ class AgentsVideoEditor(Node):
             self._agents_metrics.append(self._agent_metrics_buffer)
             self.racecar_name = racecar_name
             self.racecars_info = racecars_info
+            self._latest_agent_metric_info = [None] * len(self.racecars_info)
             racecar_index = get_racecar_idx(racecar_name)
             self.racecar_index = racecar_index if racecar_index else 0
             self.agent_name = utils.racecar_name_to_agent_name(self.racecars_info, racecar_name)
@@ -84,6 +86,8 @@ class AgentsVideoEditor(Node):
 
         # init cv bridge
         self.bridge = CvBridge()
+        self._shutdown_requested = False
+        self._metrics_call_lock = Lock()
 
         # ROS2: Declare parameters
         try:
@@ -154,6 +158,8 @@ class AgentsVideoEditor(Node):
         # All Mp4 related initialization
         try:
             self._agent_frame_queue = queue.Queue()
+            self._agent_frame_queue_to_complete = 0
+            self._agent_frame_queue_lock = Lock()
             self._mp4_queue.append(self._agent_frame_queue)
             LOG.debug("DEBUG VideoEditor: mp4_queue initialized")
         except Exception as e:
@@ -174,17 +180,22 @@ class AgentsVideoEditor(Node):
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
                                          frame_size=Mp4Parameter.FRAME_SIZE.value)
+
+        self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
+        self._metrics_timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         
         self.subscribe_service = self.create_service(
             Empty, 
             f'/{self.racecar_name}/save_mp4/subscribe_to_save_mp4',
-            self.subscribe_to_save_mp4
+            self.subscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
         
         self.unsubscribe_service = self.create_service(
             Empty,
             f'/{self.racecar_name}/save_mp4/unsubscribe_from_save_mp4', 
-            self.unsubscribe_to_save_mp4
+            self.unsubscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
 
         # Publish to save mp4 topic
@@ -201,6 +212,9 @@ class AgentsVideoEditor(Node):
                                                          max_retry_attempts=30,
                                                          timeout_sec=2.0,
                                                          wait_for_service=True)
+        self._metrics_update_timer = self.create_timer(METRICS_POLL_PERIOD_SEC,
+                                                        self._update_racers_metrics,
+                                                        callback_group=self._metrics_timer_callback_group)
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited
@@ -247,6 +261,14 @@ class AgentsVideoEditor(Node):
                 1
             )
             Thread(target=self._kvs_publisher).start()
+
+    def request_shutdown(self):
+        self._shutdown_requested = True
+        try:
+            if hasattr(self, '_metrics_update_timer') and self._metrics_update_timer is not None:
+                self._metrics_update_timer.cancel()
+        except Exception:
+            pass
         
 
     def subscribe_to_save_mp4(self, req, response):
@@ -268,26 +290,36 @@ class AgentsVideoEditor(Node):
         Return:
             [] - Empty list else ros service throws exception
         """
-        self.is_save_mp4_enabled = False
-        # This is required because when unsubscribe call is made the frames in the queue will continue editing,
-        # but at this time the 45degree camera will continue to be subscribed and saved to mp4 which we do not want.
-        camera_topics_stop_immediately, camera_topics_stop_post_empty_queue = list(), list()
-        if not self.top_camera_mp4_pub:
-            camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value,
-                                              CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value]
-            camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_PIP_PARAMS.value]
-        else:
-            camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value]
-            camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
-                                                   CameraTypeParams.CAMERA_PIP_PARAMS.value]
+        while self._agent_frame_queue_lock.locked():
+            LOG.info("Waiting for lock to be released for racecar_{}...".format(self.racecar_index))
+            time.sleep(1.0)
+        if self.is_save_mp4_enabled == False:
+            LOG.info("Already unsubscribed from save_mp4 for racecar_{}. Ignoring duplicate unsubscribe call.".format(self.racecar_index))
+            return response
 
-        self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_immediately)
-        LOG.info("Waiting to flush the Mp4 queue for racecar_{}...".format(self.racecar_index))
-        while not self._agent_frame_queue.empty():
-            time.sleep(1)
-        LOG.info("Done flushing the Mp4 queue for racecar_{}...".format(self.racecar_index))
-        self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_post_empty_queue)
-        return response
+        with self._agent_frame_queue_lock:
+            self.is_save_mp4_enabled = False
+            self._agent_frame_queue_to_complete = self._agent_frame_queue.qsize() + 5
+            # This is required because when unsubscribe call is made the frames in the queue will continue editing,
+            # but at this time the 45degree camera will continue to be subscribed and saved to mp4 which we do not want.
+            camera_topics_stop_immediately, camera_topics_stop_post_empty_queue = list(), list()
+            if not self.top_camera_mp4_pub:
+                camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value,
+                                                CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value]
+                camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_PIP_PARAMS.value]
+            else:
+                camera_topics_stop_immediately = [CameraTypeParams.CAMERA_45DEGREE_PARAMS.value]
+                camera_topics_stop_post_empty_queue = [CameraTypeParams.CAMERA_TOPVIEW_PARAMS.value,
+                                                    CameraTypeParams.CAMERA_PIP_PARAMS.value]
+
+            self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_immediately)
+            LOG.info("Waiting to flush the Mp4 queue for racecar_{}...".format(self.racecar_index))
+            while not (self._agent_frame_queue.empty() or self._agent_frame_queue_to_complete == 0):
+                LOG.info("Frames still in the queue for racecar_{}: {}".format(self.racecar_index, self._agent_frame_queue.qsize()))
+                time.sleep(1)
+            LOG.info("Done flushing the Mp4 queue for racecar_{}...".format(self.racecar_index))
+            self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_post_empty_queue)
+            return response
 
     def _top_camera_cb(self, frame):
         '''Callback for the frames being publish by the top camera topic
@@ -323,9 +355,19 @@ class AgentsVideoEditor(Node):
     def _update_racers_metrics(self):
         """ Used to update the racers metric information
         """
-        if rclpy.ok():
+        if not rclpy.ok() or self._shutdown_requested:
+            return
+        if not self._metrics_call_lock.acquire(blocking=False):
+            return
+        try:
             video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrv.Request())
-            self._agent_metrics_buffer.put(video_metrics)
+            if not self._shutdown_requested:
+                self._agent_metrics_buffer.put(video_metrics)
+        except Exception:
+            if not self._shutdown_requested and rclpy.ok():
+                raise
+        finally:
+            self._metrics_call_lock.release()
 
     def _edit_main_camera_images(self, frame_data, metric_info, edited_frame_result):
         """ Thread to edit main camera frames
@@ -390,7 +432,24 @@ class AgentsVideoEditor(Node):
         Returns:
             queue_data (dict): Contains information of the frame, agent_metric_info, training_phase
         """
-        agent_metric_info = [metrics.get() for metrics in self._agents_metrics]
+        agent_metric_info = []
+        has_uninitialized_metric = False
+        for idx, metrics in enumerate(self._agents_metrics):
+            try:
+                latest_metric = metrics.get(block=False)
+                if latest_metric is not None:
+                    self._latest_agent_metric_info[idx] = latest_metric
+            except DoubleBuffer.Empty:
+                pass
+
+            cached_metric = self._latest_agent_metric_info[idx]
+            if cached_metric is None:
+                has_uninitialized_metric = True
+            agent_metric_info.append(cached_metric)
+
+        if has_uninitialized_metric:
+            return None
+
         queue_data = {
             FrameQueueData.FRAME.value: {
                 FrameTypes.MAIN_CAMERA_FRAME.value: self._main_camera_frame_buffer.get(),
@@ -411,11 +470,13 @@ class AgentsVideoEditor(Node):
             frame (cv2.ImgMsg): Image/Sensor topic of the camera image frame
         """
         if rclpy.ok():
-            self._update_racers_metrics()
             self._main_camera_frame_buffer.put(frame)
 
             # Get frame from main camera & agents metric information
             frame_metric_data = self.get_latest_frame_metric_data()
+
+            if frame_metric_data is None:
+                return
 
             # Queue frames if MP4 saving OR KVS streaming is enabled
             if self.is_save_mp4_enabled or self._is_publish_to_kvs_stream:
@@ -439,7 +500,9 @@ class AgentsVideoEditor(Node):
             if frame_data:
                 edited_frames = self._edit_camera_images(frame_data)
                 # Publish to MP4 topics only if MP4 saving is enabled
-                if self.is_save_mp4_enabled:
+                if self.is_save_mp4_enabled or self._agent_frame_queue_to_complete > 0:
+                    if self._agent_frame_queue_to_complete > 0:
+                        self._agent_frame_queue_to_complete -= 1
                     self.mp4_main_camera_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
                     if self.top_camera_mp4_pub:
                         self.top_camera_mp4_pub.publish(edited_frames[FrameTypes.TOP_CAMERA_FRAME.value])
@@ -557,6 +620,12 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        for video_editor in video_editor_nodes:
+            try:
+                video_editor.request_shutdown()
+            except Exception:
+                pass
+
         if executor is not None:
             try:
                 executor.shutdown(timeout_sec=2.0)
