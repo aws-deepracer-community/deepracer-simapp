@@ -87,6 +87,7 @@ Create a new repository with this minimal structure:
 my-deepracer-project/
 ├── reward.py
 ├── train.py
+├── requirements.txt
 ├── pyproject.toml
 └── Dockerfile
 ```
@@ -107,16 +108,27 @@ dependencies = [
 ]
 ```
 
+#### `requirements.txt`
+
+List the Python packages your training script directly imports e.g.:
+
+```
+stable-baselines3
+```
+
+Add any other packages your `train.py` requires (e.g. `numpy`, `pandas`, `wandb`).
+
 #### `Dockerfile`
 
-Extend the simulation image and install your project on top of it:
+Extend the simulation image, install your dependencies first, then install your project on top of it:
 
 ```dockerfile
 ARG SIMAPP_TAG=latest-cpu
 FROM awsdeepracercommunity/deepracer-env:${SIMAPP_TAG}
 
-# Copy and install your project
+# Copy and install your project and dependencies
 COPY . /workspace
+RUN pip install --no-cache-dir -r /workspace/requirements.txt
 RUN pip install -e /workspace
 
 # Default: run your training script
