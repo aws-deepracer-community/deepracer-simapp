@@ -1,0 +1,109 @@
+#################################################################################
+#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
+#                                                                               #
+#   Licensed under the Apache License, Version 2.0 (the "License").             #
+#   You may not use this file except in compliance with the License.            #
+#   You may obtain a copy of the License at                                     #
+#                                                                               #
+#       http://www.apache.org/licenses/LICENSE-2.0                              #
+#                                                                               #
+#   Unless required by applicable law or agreed to in writing, software         #
+#   distributed under the License is distributed on an "AS IS" BASIS,           #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
+#   See the License for the specific language governing permissions and         #
+#   limitations under the License.                                              #
+#################################################################################
+
+'''File to store all common constants required by markov'''
+from enum import Enum
+
+# SimApp Version
+SIMAPP_VERSION_5 = 5.0
+SIMAPP_VERSION_4 = 4.0
+SIMAPP_VERSION_3 = 3.0
+SIMAPP_VERSION_2 = 2.0
+SIMAPP_VERSION_1 = 1.0
+
+# Metrics Version
+METRICS_VERSION = 2.0
+
+DEFAULT_COLOR = "Black"
+# The robomaker team has asked us to wait 5 minutes to let their workflow cancel
+# the simulation job - change to 5 seconds in local.
+ROBOMAKER_CANCEL_JOB_WAIT_TIME = 5
+# The number of times to retry a failed boto call
+NUM_RETRIES = 5
+# The time in seconds till a timeout exception is thrown when attempting to make a connection
+# default is 60 seconds
+CONNECT_TIMEOUT = 120
+
+BEST_CHECKPOINT = 'best_checkpoint'
+LAST_CHECKPOINT = 'last_checkpoint'
+
+# default park position
+DEFAULT_PARK_POSITION = (0.0, 0.0)
+
+# KMS encryption for S3 uploads
+ROBOMAKER_S3_KMS_CMK_ARN = "S3_KMS_CMK_ARN"
+S3_KMS_CMK_ARN_ENV = "S3_KMS_CMK_ARN_ENV"
+
+# Profiler On/Off environment variables
+ROBOMAKER_IS_PROFILER_ON = 'IS_PROFILER_ON'
+ROBOMAKER_PROFILER_S3_BUCKET = 'PROFILER_S3_BUCKET'
+ROBOMAKER_PROFILER_S3_PREFIX = 'PROFILER_S3_PREFIX'
+
+class S3KmsEncryption(Enum):
+    """ S3 KMS encryption related attributes
+    """
+    SERVER_SIDE_ENCRYPTION = "ServerSideEncryption"
+    AWS_KMS = "aws:kms"
+    SSE_KMS_KEY_ID = "SSEKMSKeyId"
+    ACL = "ACL"
+    BUCKET_OWNER_FULL_CONTROL = "bucket-owner-full-control"
+
+
+class ExplorationTypes(Enum):
+    """ Exploration type values passed as part of the hyper parameter
+    """
+    CATEGORICAL = "categorical"
+    E_GREEDY = "e-greedy"
+
+
+class LossTypes(Enum):
+    """ Loss type values passed as part of the hyper parameter
+    """
+    MEAN_SQUARED_ERROR = "mean squared error"
+    HUBER = "huber"
+
+
+class HyperParameterKeys(Enum):
+    '''This enum contains the keys for the hyper parameters to be
+       fed into the agent params.
+    '''
+    BATCH_SIZE = 'batch_size'
+    NUM_EPOCHS = 'num_epochs'
+    STACK_SIZE = 'stack_size'
+    LEARNING_RATE = 'lr'
+    EXPLORATION_TYPE = 'exploration_type'
+    E_GREEDY_VALUE = 'e_greedy_value'
+    EPSILON_STEPS = 'epsilon_steps'
+    BETA_ENTROPY = 'beta_entropy'
+    DISCOUNT_FACTOR = 'discount_factor'
+    LOSS_TYPE = 'loss_type'
+    NUM_EPISODES_BETWEEN_TRAINING = 'num_episodes_between_training'
+    TERMINATION_CONDITION_MAX_EPISODES = 'term_cond_max_episodes'
+    TERMINATION_CONDITION_AVG_SCORE = 'term_cond_avg_score'
+    SAC_ALPHA = 'sac_alpha'
+
+
+# Profiler paths
+TRAINING_WORKER_PROFILER_PATH = "./training_worker_profiler.pstats"
+ROLLOUT_WORKER_PROFILER_PATH = "./rollout_worker_profiler.pstats"
+
+# SageOnly job type constants
+DEEPRACER_JOB_TYPE_ENV = "DEEPRACER_JOB_TYPE_ENV"
+
+
+class DeepRacerJobType(Enum):
+    ''' This enum has the keys of all the Deepracer job types '''
+    SAGEONLY = "SAGEONLY"

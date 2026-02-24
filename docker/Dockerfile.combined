@@ -127,6 +127,7 @@ RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
 
 # Copy compiled bundle
 COPY --from=bundle  /opt/bundle/install /opt/simapp
+COPY deepracer_env/ /opt/simapp/deepracer_env/
 WORKDIR /opt/simapp
 
 # Install ROS dependencies
@@ -143,10 +144,6 @@ ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
 COPY ./docker/files/ml-code /opt/ml/code
 COPY ./docker/files/sagemaker/start.sh /opt/ml/code/start.sh
 ENV SAGEMAKER_PROGRAM start.sh
-
-# Patch rl_coach
-COPY ./bundle/rl_coach.patch /opt/ml/code/rl_coach.patch
-RUN patch -p1 -N --directory=/usr/local/lib/python3.8/dist-packages/ < /opt/ml/code/rl_coach.patch
 
 # Copy Robomaker scripts and configuration files
 COPY ./docker/files/robomaker/run.sh run.sh

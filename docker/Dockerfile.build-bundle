@@ -2,6 +2,7 @@ ARG CORE_PREFIX=awsdeepracercommunity
 FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
 
 COPY bundle/ /opt/bundle
+COPY deepracer_env/ /opt/bundle/deepracer_env/
 WORKDIR /opt/bundle
 
 RUN rosdep update --rosdistro=noetic -q && rosdep install --rosdistro=noetic --from-paths src --ignore-src -r -y 

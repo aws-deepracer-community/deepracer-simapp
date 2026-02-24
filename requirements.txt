@@ -1,0 +1,7 @@
+# Runtime requirements for the deepracer-env gymnasium package.
+# For the full Docker/ROS simulation stack see docker/requirements.txt.
+gymnasium>=0.29.0
+numpy>=1.24
+scipy
+shapely>=1.6
+opencv-python>=4.9

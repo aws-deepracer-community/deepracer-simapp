@@ -10,8 +10,8 @@ import time
 import uuid
 from datetime import datetime
 from sys import getsizeof
-from markov.boto.cloudwatch.cloudwatch_client import CloudWatchClient
-from markov.log_handler.constants import (CLOUDWATCH_LOG_WORKER_SLEEP_TIME,
+from deepracer_env.boto.cloudwatch.cloudwatch_client import CloudWatchClient
+from deepracer_env.log_handler.constants import (CLOUDWATCH_LOG_WORKER_SLEEP_TIME,
                                           NUM_CHARACTERS_IN_CW_LOG,
                                           MAX_CLOUDWATCH_PUT_LOGS_BATCH_SIZE_BYTES,
                                           MAX_CLOUDWATCH_LOG_EVENT_BATCH_LENGTH,

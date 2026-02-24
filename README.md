@@ -1,68 +1,177 @@
-# AWS DeepRacer Simapp Image
+# deepracer-env
 
-This repository contains the extracts from the AWS DeepRacer Simapp; including
+A [Gymnasium](https://gymnasium.farama.org/) environment for the AWS DeepRacer
+autonomous-driving simulation, powered by **ROS Noetic** and **Gazebo 11**.
 
-- the environment and tracks
-- the robotics agent code ('markov')
-- Dockerfiles
+Instead of training against a fixed network with a plug-in reward function, this
+repository exposes the full simulation as a standard `gymnasium.Env` so you can
+bring any RL algorithm or neural-network architecture you like.
 
-In DeepRacer-for-Cloud this single image is being used for three purposes:
+## Repository structure
 
-- "Robomaker" container (1 or more) providing robotics simulation using ROS and Gazebo
-- "Sagemaker" container providing the model training job
-- "RL Coach" container which bootstraps the Sagemaker container, using the Sagemaker SDK and Sagemaker Local.
+```
+deepracer-env/
+├── deepracer_env/          # pip-installable Python package
+│   ├── __init__.py         # registers DeepRacer-v0 with Gymnasium
+│   ├── environments/       # DeepRacerEnv (gymnasium.Env subclass)
+│   ├── sensors/            # Camera, LIDAR, sector-LIDAR sensor drivers
+│   ├── agents/             # Agent (sensor + controller bundle)
+│   ├── agent_ctrl/         # RolloutCtrl — Gazebo/ROS action publisher
+│   ├── track_geom/         # Track geometry and waypoint utilities
+│   └── ...
+├── bundle/                 # ROS/Gazebo workspace (meshes, worlds, URDF, routes)
+│   ├── src/                # ROS colcon workspace source
+│   ├── meshes/
+│   ├── worlds/
+│   └── urdf/
+├── docker/                 # Dockerfiles and pip requirements for the container
+├── examples/
+│   └── train.py            # Minimal PPO training example (Stable-Baselines3)
+├── sample-config/          # Example reward function, robomaker.env, etc.
+├── pyproject.toml          # Package metadata and build config
+├── requirements.txt        # Minimal runtime dependencies
+└── VERSION
+```
 
-## Source
+## Prerequisites
 
-The code in `bundle/` is primarily provided by AWS, and is closely matching the code that is running in the AWS DeepRacer console. Work is based on the information
-provided in [Guidance for training an AWS DeepRacer model using Amazon Sagemaker](https://github.com/aws-solutions-library-samples/guidance-for-training-an-aws-deepracer-model-using-amazon-sagemaker).
+| Component | Version |
+|-----------|---------|
+| Ubuntu    | 20.04   |
+| Python    | 3.8+    |
+| ROS       | Noetic  |
+| Gazebo    | 11      |
 
-The source is taken from the [deepracer-sim-public Container](https://gallery.ecr.aws/k1d3r4z1/deepracer-sim-public), and is replicated here in the `upstream` branch.
+A running Gazebo + DeepRacer ROS stack is required at runtime:
 
-## Single image
+```bash
+roslaunch deepracer_simulation_environment deepracer_rl.launch
+```
 
-Up until Version 5.3 these docker containers were run backed by three different containers. As the actual prerequisites (Ubuntu and Python packages) converged
-over time, the images were content-wise very similar, but the same code was downloaded more than once increasing network and storage needs.
+## Installation
 
-Previous versions had the Markov code `bundle/markov` injected into Sagemaker containers via the RL coach container (where it was built in); now the codebase
-is built into the single image, and RL coach does not inject code anymore.
+```bash
+pip install -e .
+# or, to also install training dependencies:
+pip install -e .[examples]
+```
 
-## Core Technologies / Technology Stack
+## Quick start
 
-Installed core technologies are:
- - Ubuntu 20.04
- - Python 3.8
- - Tensorflow 2.13
- - CUDA 11.8 (GPU only)
- - REDIS 6.2.7
- - ROS Noetic
- - Gazebo 11
+```python
+import gymnasium
+import deepracer_env  # registers DeepRacer-v0
 
-## Available pre-built versions
+def my_reward(params: dict) -> float:
+    if not params["all_wheels_on_track"]:
+        return 1e-3
+    return float(params["progress"] * params["speed"] / 4.0)
 
-In most cases it will be sufficient to use one of our pre-built images:
+# Minimal — single camera sensor, all defaults
+env = gymnasium.make("DeepRacer-v0", reward_fn=my_reward)
 
-- CPU image support training using the CPU for inference. (Tag `VERSION-cpu`)
-- GPU image support training using CUDA GPU for inference. (Tag `VERSION-gpu`)
+# Or construct directly for more control
+from deepracer_env.environments.deepracer_env import DeepRacerEnv
+from deepracer_env.sensors.constants import Input
+import deepracer_env.agent_ctrl.constants as ctrl_const
 
-Both containers support OpenGL acceleration.
+env = DeepRacerEnv(
+    reward_fn=my_reward,
+    sensors=[Input.CAMERA.value, Input.LIDAR.value],
+    config={ctrl_const.ConfigParams.COLLISION_PENALTY.value: 5.0},
+)
 
-Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also [Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
+obs, info = env.reset()
+obs, reward, terminated, truncated, info = env.step(env.action_space.sample())
+```
 
-## Building the image
+See [examples/train.py](examples/train.py) for a complete Stable-Baselines3 training loop.
 
-A build script is available as `build.sh`. By default both images will be built (`cpu` and `gpu` for version `5.3`). Use the `-a` switch to limit number of images.
+## Action space
 
-- Clone this repo into the home directory of your Linux machine
-- run `./utils/extract-and-diff.sh` (which pulls changes from the AWS provided image into upstream branch)
-- Commit the changes to the upstream branch
-- Change to the branch you want to build from (e.g. dev or a branch created from dev)
-- Cherry pick changes from the commit in the upstream branch into the branch you want to build from (e.g. dev or a branch created from dev)
-- Login to dockerhub (permissions to push to the awsdeepracercommunity community  required)
-- update VERSION file in root of simapp repo to the correct version tag
-- run `./build.sh -f`
-- push images (e.g. `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-cpu` and `docker image push awsdeepracercommunity/deepracer-simapp:X.Y.Z-gpu`)
+`Box([-30, 0.1], [30, 4.0], dtype=float32)` — `[steering_angle_deg, speed_m_s]`
 
-## Development build
+## Observation space
 
-To get a folder compatible with DRfCs `DR_ROBOMAKER_MOUNT_SIMAPP_DIR` use the `build-dev-bundle.sh` script. Through using a build container it will create a `./install` directory that can be mounted in Robomaker.
+`Dict` — one entry per active sensor:
+
+| Sensor key | Shape | dtype |
+|------------|-------|-------|
+| `CAMERA` / `OBSERVATION` / `LEFT_CAMERA` | `(120, 160, 3)` | uint8 |
+| `STEREO` | `(120, 160, 2)` | uint8 |
+| `LIDAR` | `(64,)` | float32 |
+| `SECTOR_LIDAR` | `(8,)` | float32 |
+| `DISCRETIZED_SECTOR_LIDAR` | `(N×M,)` | float32 |
+
+## Reward function parameters
+
+The callable passed as `reward_fn` receives a `dict` with keys from
+`deepracer_env.agent_ctrl.constants.RewardParam`, including:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `all_wheels_on_track` | bool | All four wheels on track |
+| `progress` | float | Lap progress 0–100 % |
+| `speed` | float | Current speed m/s |
+| `steering_angle` | float | Current steering angle degrees |
+| `distance_from_center` | float | Distance from track centre line |
+| `is_left_of_center` | bool | Car is left of centre line |
+| `waypoints` | list | All track waypoints |
+| `closest_waypoints` | list[int] | Indices of previous and next waypoints |
+
+## Customisation
+
+### Sensors
+
+Pass a list of sensor keys from `deepracer_env.sensors.constants.Input`:
+
+```python
+from deepracer_env.sensors.constants import Input
+
+env = DeepRacerEnv(
+    reward_fn=my_reward,
+    sensors=[Input.CAMERA.value, Input.LIDAR.value],
+)
+```
+
+Available sensors: `CAMERA`, `LEFT_CAMERA`, `STEREO`, `LIDAR`, `SECTOR_LIDAR`,
+`DISCRETIZED_SECTOR_LIDAR`.
+
+### Config overrides
+
+```python
+import deepracer_env.agent_ctrl.constants as ctrl_const
+
+env = DeepRacerEnv(
+    reward_fn=my_reward,
+    config={
+        ctrl_const.ConfigParams.COLLISION_PENALTY.value: 5.0,
+        ctrl_const.ConfigParams.OFF_TRACK_PENALTY.value: 2.0,
+    },
+)
+```
+
+### Full control
+
+Pass a pre-built `Agent` instance to bypass all defaults:
+
+```python
+from deepracer_env.agents.agent import Agent
+
+env = DeepRacerEnv(agent=my_custom_agent)
+```
+
+## Building the Docker image
+
+```bash
+./build.sh
+```
+
+Uses Docker BuildKit multi-stage builds (`docker/Dockerfile.build-bundle` and
+`docker/Dockerfile.combined`). The `deepracer_env` Python package is copied into
+the image alongside the ROS colcon workspace. See `build.sh` for architecture
+flags (`-a cpu` / `-a gpu`).
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
