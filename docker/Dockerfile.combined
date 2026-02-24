@@ -149,8 +149,8 @@ ENV SAGEMAKER_PROGRAM start.sh
 COPY ./docker/files/robomaker/run.sh run.sh
 COPY ./docker/files/robomaker/debug-reward.diff debug-reward.diff
 COPY ./docker/files/robomaker/shutdown.sh shutdown.sh
-COPY ./bundle/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
-COPY ./bundle/src/deepracer_node_monitor/config/*.txt .
+COPY ./simulation/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
+COPY ./simulation/src/deepracer_node_monitor/config/*.txt .
 
 # Copy RL-Coach configuration files
 COPY ./docker/files/rl-coach/start.py /opt/code/ml/rl_coach/start.py

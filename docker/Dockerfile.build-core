@@ -40,7 +40,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
     ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
 
-COPY bundle/ /opt/bundle
+COPY simulation/ /opt/bundle
 WORKDIR /opt/bundle
 
 RUN rosdep update --rosdistro=noetic && rosdep install --rosdistro=noetic --from-paths src --ignore-src -r -y 
