@@ -34,13 +34,13 @@ VERSION=$(cat $DIR/VERSION)
 
 if [ "$(docker images -q ${PREFIX}/deepracer-simapp-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
     echo "Preparing core builder image ${PREFIX}/deepracer-simapp-build-core:latest..."
-    docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-simapp-build-core:latest -f docker/Dockerfile.build-core .
+    docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-simapp-build-core:latest -f docker/Dockerfile.base .
 else
     echo "Core builder image ${PREFIX}/deepracer-simapp-build-core:latest already exists."
 fi
 
 echo "Preparing bundle distribution..."
-docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-simapp-build-bundle:latest -f docker/Dockerfile.build-bundle --build-arg BUILDER_PREFIX=${PREFIX} .
+docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-simapp-build-bundle:latest -f docker/Dockerfile.build --build-arg BUILDER_PREFIX=${PREFIX} .
 
 echo "Preparing docker images for [$ARCH]"
 
@@ -59,7 +59,7 @@ for a in $ARCH; do
     esac
 
     set -x
-    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-simapp:${VERSION}-${a} -f docker/Dockerfile.combined \
+    docker buildx build . ${OPT_NOCACHE} -t $PREFIX/deepracer-simapp:${VERSION}-${a} -f docker/Dockerfile.runtime \
         --build-arg IMG_VERSION=${VERSION} \
         --build-arg BUNDLE_PREFIX=${PREFIX} \
         --build-arg CORE_IMG=${CORE_IMG} \

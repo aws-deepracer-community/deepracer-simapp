@@ -104,21 +104,6 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 ENV ROS_DISTRO=noetic
 
-# Install Redis.
-RUN cd /tmp && \
-    wget https://download.redis.io/releases/redis-6.2.7.tar.gz && \
-    tar xvzf redis-6.2.7.tar.gz && \
-    cd redis-6.2.7 && \
-    make && \
-    make install && \
-    rm -rf /tmp/redis*
-
-# Install docker
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
-	 echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
-RUN apt-get update && apt-get install --no-install-recommends -y docker-ce-cli && apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
-
 # Install Python PIP modules
 ADD docker/requirements.txt /
 RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
@@ -132,7 +117,7 @@ WORKDIR /opt/simapp
 
 # Install ROS dependencies
 RUN apt-get update -y && rosdep init && rosdep update --rosdistro=noetic -q && \
-    rosdep install --rosdistro=noetic --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment sagemaker_rl_agent && \
+    rosdep install --rosdistro=noetic --from-paths . --ignore-src -r -y deepracer_gazebo_system_plugin deepracer_msgs deepracer_simulation_environment && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -140,22 +125,11 @@ ENV COLCON_CURRENT_PREFIX="/opt/simapp"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
 
-# Copy Sagemaker and misc files
-COPY ./docker/files/ml-code /opt/ml/code
-COPY ./docker/files/sagemaker/start.sh /opt/ml/code/start.sh
-ENV SAGEMAKER_PROGRAM start.sh
-
-# Copy Robomaker scripts and configuration files
+# Copy simulation scripts
 COPY ./docker/files/robomaker/run.sh run.sh
-COPY ./docker/files/robomaker/debug-reward.diff debug-reward.diff
 COPY ./docker/files/robomaker/shutdown.sh shutdown.sh
 COPY ./simulation/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
 COPY ./simulation/src/deepracer_node_monitor/config/*.txt .
-
-# Copy RL-Coach configuration files
-COPY ./docker/files/rl-coach/start.py /opt/code/ml/rl_coach/start.py
-RUN mkdir -p /root/.sagemaker
-COPY ./docker/files/rl-coach/config.yaml /root/.sagemaker/config.yaml
 
 # Add labels
 COPY VERSION .
@@ -164,4 +138,4 @@ LABEL maintainer "AWS DeepRacer Community - deepracing.io"
 LABEL version $IMG_VERSION
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run distributed_training.launch"]
+CMD ["./run.sh run deepracer_rl.launch"]

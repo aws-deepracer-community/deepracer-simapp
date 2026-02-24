@@ -9,7 +9,7 @@ services:
   robomaker:
     build:
       context: .
-      dockerfile: Dockerfile.localuser
+      dockerfile: Dockerfile.dev-user
       args:
         FROM_IMG: awsdeepracercommunity/deepracer-simapp:${DR_SIMAPP_IMAGE}
         USERNAME: $USER
