@@ -167,7 +167,7 @@ docker build \
   -t my-deepracer-project:latest .
 
 docker run --rm \
-  -e WORLD_NAME=LGSWide \
+  -e WORLD_NAME=reinvent_base \
   -e ENABLE_GUI=False \
   my-deepracer-project:latest
 ```
@@ -177,7 +177,7 @@ over VNC:
 
 ```bash
 docker run --rm \
-  -e WORLD_NAME=LGSWide \
+  -e WORLD_NAME=reinvent_base \
   -e ENABLE_GUI=True \
   -p 5900:5900 \
   my-deepracer-project:latest
