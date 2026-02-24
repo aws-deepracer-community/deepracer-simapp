@@ -14,3 +14,6 @@
 #   limitations under the License.                                              #
 #################################################################################
 
+from markov.environments.deepracer_env import DeepRacerEnv, DEFAULT_ACTION_SPACE, DEFAULT_SENSORS
+
+__all__ = ['DeepRacerEnv', 'DEFAULT_ACTION_SPACE', 'DEFAULT_SENSORS']

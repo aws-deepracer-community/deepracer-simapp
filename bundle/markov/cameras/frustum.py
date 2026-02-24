@@ -18,7 +18,7 @@ import numpy as np
 import math
 import threading
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
-from markov.architecture.constants import Input
+from markov.sensors.constants import Input
 from markov.track_geom.utils import euler_to_quaternion, quaternion_to_euler, apply_orientation
 from markov.cameras.constants import GazeboWorld
 from markov.cameras.utils import normalize, project_to_2d, ray_plane_intersect

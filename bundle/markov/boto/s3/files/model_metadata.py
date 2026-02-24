@@ -24,7 +24,7 @@ from markov.log_handler.logger import Logger
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_WORKER_EXCEPTION)
 from markov.log_handler.exception_handler import log_and_exit
-from markov.architecture.constants import Input, NeuralNetwork
+from markov.sensors.constants import Input
 from markov.constants import SIMAPP_VERSION_2, SIMAPP_VERSION_1
 from markov.boto.s3.constants import (ModelMetadataKeys,
                                       TrainingAlgorithm,
@@ -290,7 +290,7 @@ class ModelMetadata():
                 if ModelMetadataKeys.NEURAL_NETWORK.value in data:
                     network = data[ModelMetadataKeys.NEURAL_NETWORK.value]
                 else:
-                    network = NeuralNetwork.DEEP_CONVOLUTIONAL_NETWORK_SHALLOW.value
+                    network = 'DEEP_CONVOLUTIONAL_NETWORK_SHALLOW'
                 training_algorithm = TrainingAlgorithm.CLIPPED_PPO.value
                 if ModelMetadataKeys.TRAINING_ALGORITHM.value in data:
                     data_training_algorithm = data[ModelMetadataKeys.TRAINING_ALGORITHM.value].lower().strip()

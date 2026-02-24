@@ -14,24 +14,30 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-'''This module contains the available sensors for the sim app'''
+'''Concrete sensor implementations for the DeepRacer Gazebo environment.
+
+Each sensor subscribes to a ROS topic pub by Gazebo, buffers incoming
+messages, and exposes them via the :class:`~markov.sensors.sensor_interface.SensorInterface`
+API.  The ``get_observation_space()`` method returns a ``gymnasium.spaces.Dict``
+whose single key is the sensor\\'s ``Input.value`` string, ready to be merged
+by :class:`~markov.sensors.composite_sensor.CompositeSensor`.
+'''
 import logging
 import rospy
 import numpy as np
 from sensor_msgs.msg import Image as sensor_image
 from sensor_msgs.msg import LaserScan
 from PIL import Image
-from markov.sensors.utils import get_observation_space, get_front_camera_embedders, \
-                                 get_left_camera_embedders, get_stereo_camera_embedders, \
-                                 get_lidar_embedders, get_observation_embedder
+
+from markov.sensors.utils import get_observation_space
 from markov.sensors.sensor_interface import SensorInterface, LidarInterface
+from markov.sensors.constants import Input
 from markov.environments.constants import TRAINING_IMAGE_SIZE
-from markov.architecture.constants import Input
 from markov.log_handler.deepracer_exceptions import GenericRolloutException, GenericError
 from markov import utils
 from markov.log_handler.logger import Logger
 from markov.log_handler.constants import SIMAPP_SIMULATION_WORKER_EXCEPTION
-                                    
+
 
 LOGGER = Logger(__name__, logging.INFO).get_logger()
 
@@ -106,14 +112,6 @@ class Camera(SensorInterface):
     def reset(self):
         self.image_buffer.clear()
 
-    def get_input_embedders(self, network_type):
-        try:
-            return get_front_camera_embedders(network_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
-
     def _camera_cb_(self, data):
         ''' Callback for the single camera, this is triggered by ROS
             data - Image data from the gazebo plugin, it is a sensor message
@@ -165,14 +163,6 @@ class Observation(SensorInterface):
 
     def reset(self):
         self.image_buffer.clear()
-
-    def get_input_embedders(self, network_type):
-        try:
-            return get_observation_embedder()
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
 
     def _camera_cb_(self, data):
         ''' Callback for the single camera, this is triggered by ROS
@@ -228,14 +218,6 @@ class LeftCamera(SensorInterface):
 
     def reset(self):
         self.image_buffer.clear()
-
-    def get_input_embedders(self, network_type):
-        try:
-            return get_left_camera_embedders(network_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
 
     def _camera_cb_(self, data):
         ''' Callback for the single camera, this is triggered by ROS
@@ -300,14 +282,6 @@ class DualCamera(SensorInterface):
         self.image_buffer_left.clear()
         self.image_buffer_right.clear()
 
-    def get_input_embedders(self, network_type):
-        try:
-            return get_stereo_camera_embedders(network_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
-
     def _left_camera_cb_(self, data):
         ''' Callback for the left camera, this is triggered by ROS
             data - Image data from the gazebo plugin, it is a sensor message
@@ -371,14 +345,6 @@ class Lidar(LidarInterface):
     def reset(self):
         self.data_buffer.clear()
 
-    def get_input_embedders(self, network_type):
-        try:
-            return get_lidar_embedders(network_type, self.sensor_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
-
     def _scan_cb(self, data):
         try:
             self.data_buffer.put(np.array(data.ranges))
@@ -430,14 +396,6 @@ class SectorLidar(LidarInterface):
     def reset(self):
         self.data_buffer.clear()
 
-    def get_input_embedders(self, network_type):
-        try:
-            return get_lidar_embedders(network_type, self.sensor_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
-
     def _scan_cb(self, data):
         try:
             self.data_buffer.put(np.array(data.ranges))
@@ -488,14 +446,6 @@ class DiscretizedSectorLidar(LidarInterface):
 
     def reset(self):
         self.data_buffer.clear()
-
-    def get_input_embedders(self, network_type):
-        try:
-            return get_lidar_embedders(network_type, self.sensor_type)
-        except GenericError as ex:
-            ex.log_except_and_exit(SIMAPP_SIMULATION_WORKER_EXCEPTION)
-        except Exception as ex:
-            raise GenericRolloutException('{}'.format(ex))
 
     def _scan_cb(self, data):
         try:

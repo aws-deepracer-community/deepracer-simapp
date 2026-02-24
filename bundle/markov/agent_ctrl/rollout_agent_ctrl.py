@@ -31,7 +31,7 @@ from markov import utils
 import markov.agent_ctrl.constants as const
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
 from markov.agent_ctrl.utils import (set_reward_and_metrics,
-                                     send_action, load_action_space, get_wheel_radius,
+                                     send_action, get_wheel_radius,
                                      get_normalized_progress, Logger,
                                      get_relative_pos)
 from markov.track_geom.constants import (AgentPos, TrackNearDist, ObstacleDimensions, ParkLocation)
@@ -41,45 +41,33 @@ from markov.metrics.constants import StepMetrics, EpisodeStatus
 from markov.cameras.camera_manager import CameraManager
 from markov.common import ObserverInterface
 from markov.log_handler.deepracer_exceptions import RewardFunctionError, GenericRolloutException
-from markov.reset.constants import AgentPhase, AgentCtrlStatus, AgentInfo, RaceCtrlStatus, ZERO_SPEED_AGENT_PHASES
+from markov.reset.constants import AgentPhase, AgentCtrlStatus, AgentInfo, ZERO_SPEED_AGENT_PHASES
 from markov.reset.utils import construct_reset_rules_manager
 from markov.utils import get_racecar_idx
-from markov.virtual_event.constants import (WebRTCCarControl, CarControlMode,
-                                            CarControlStatus,
-                                            CarControlTopic, WEBRTC_CAR_CTRL_FORMAT)
-from markov.visual_effects.effects.blink_effect import BlinkEffect
-from markov.constants import DEFAULT_PARK_POSITION, SIMAPP_VERSION_5
+from markov.constants import DEFAULT_PARK_POSITION
 from markov.gazebo_tracker.trackers.get_link_state_tracker import GetLinkStateTracker
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 from markov.gazebo_tracker.constants import TrackerPriority
 from markov.boto.s3.constants import ModelMetadataKeys
-from markov.virtual_event.constants import PAUSE_TIME_BEFORE_START
 
-from rl_coach.core_types import RunPhase
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
 
 class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
     '''Concrete class for an agent that drives forward'''
-    def __init__(self, config_dict, run_phase_sink, metrics):
+    def __init__(self, config_dict, metrics, is_training=False):
         '''config_dict (dict): containing all the keys in ConfigParams
-           run_phase_sink (RunPhaseSubject): Sink to receive notification of a change in run phase
            metrics (EvalMetrics/TrainingMetrics): Training or evaluation metrics
+           is_training (bool): True when running in training mode
         '''
         self._effect = None
         self._current_sim_time = 0
         self._ctrl_status = dict()
         self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.PREPARE.value
         self._pause_duration = 0.0
-        # virtual event
-        self._is_virtual_event = config_dict.get(const.ConfigParams.IS_VIRTUAL_EVENT.value, False)
-        self._speed_mode = CarControlMode.MODEL_SPEED.value
-        self._speed_value = 0.0
-        self._race_car_ctrl_status = CarControlStatus.RESUME.value
-        self._start_sim_time = None
         self._reset_behind_dist = float(rospy.get_param("RESET_BEHIND_DIST", const.DEFAULT_RESET_BEHIND_DIST))
         self._enable_mercy_reset = utils.str2bool(rospy.get_param("ENABLE_MERCY_RESET", False)) # feature flag
         self._reset_ahead_dist = float(rospy.get_param("RESET_AHEAD_DIST", const.DEFAULT_RESET_AHEAD_DIST))
@@ -101,9 +89,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._reset_count = 0
         self._curr_crashed_object_name = ''
         self._simapp_version_ = config_dict[const.ConfigParams.VERSION.value]
-        if self._is_virtual_event:
-            # If virtual event then override the simapp version to the latest version.
-            self._simapp_version_ = SIMAPP_VERSION_5
         # simapp_version speed scale
         self._wheel_radius_ = get_wheel_radius(self._simapp_version_)
         # Store the name of the agent used to set agents position on the track
@@ -168,16 +153,13 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                             'start_ndist': start_ndist,
                             'prev_car_pose': 0.0}
 
-        # Load the action space
-        self._model_metadata_ = config_dict[const.ConfigParams.MODEL_METADATA.value]
-        self._action_space_ = load_action_space(self._model_metadata_)
+        # Gymnasium action space – set by the environment, not managed here
+        self._action_space_ = config_dict.get(const.ConfigParams.ACTION_SPACE.value, None)
         #! TODO evaluate if this is the best way to reset the car
         # subscriber to time to update camera position
         self.camera_manager = CameraManager.get_instance()
         # True if the agent is in the training phase
-        self._is_training_ = False
-        # Register to the phase sink
-        run_phase_sink.register(self)
+        self._is_training_ = is_training
         # Make sure velocity and angle are set to 0
         send_action(self._velocity_pub_dict_, self._steering_pub_dict_, 0.0, 0.0)
 
@@ -197,17 +179,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # prepare pose for car at prepare state
         self._prepare_car_model_pose = self._track_data_.get_object_pose(self._agent_name_)
         self._park_position = DEFAULT_PARK_POSITION
-        if self._is_virtual_event:
-            # Subscriber to udpate car speed if it's virtual event
-            rospy.Subscriber(WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
-                                                           CarControlTopic.SPEED_CTRL.value),
-                             String,
-                             self._get_speed_mode_value)
-            # Subscriber to udpate car status if it's virtual event
-            rospy.Subscriber(WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
-                                                           CarControlTopic.STATUS_CTRL.value),
-                             String,
-                             self._update_car_status)
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
         self.current_obstacle_pose = None
         self.current_obstacle_crash_count = 0
@@ -227,10 +198,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
     @property
     def action_space(self):
         return self._action_space_
-
-    @property
-    def model_metadata(self):
-        return self._model_metadata_
 
     @property
     def simapp_version(self):
@@ -520,23 +487,20 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         return pose
 
     def send_action(self, action):
-        '''Publish action topic to gazebo to render
+        '''Publish action topic to gazebo to render.
 
         Args:
-            action (int or list): model metadata action_space index for discreet action spaces
-                                  or [steering, speed] float values for continuous action spaces
+            action (array-like): [steering_angle_deg (float), speed_m_s (float)]
 
         Raises:
             GenericRolloutException: Agent phase is not defined
         '''
         if self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.RUN.value:
-            json_action = self._model_metadata_.get_action_dict(action)
-
-            steering_angle = float(json_action[ModelMetadataKeys.STEERING_ANGLE.value])
-            # Clip the angle to be between min and max angle allowed
+            steering_angle = float(action[0])
             steering_angle = max(min(const.MAX_ANGLE, steering_angle), const.MIN_ANGLE)
             steering_angle = steering_angle * math.pi / 180.0
-            action_speed = self._update_speed(action)
+            speed = max(min(const.MAX_SPEED, float(action[1])), const.MIN_SPEED)
+            action_speed = speed / self._wheel_radius_
             send_action(self._velocity_pub_dict_, self._steering_pub_dict_,
                         steering_angle, action_speed)
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] in ZERO_SPEED_AGENT_PHASES:
@@ -585,9 +549,11 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         except Exception as ex:
             raise GenericRolloutException('Cannot find position: {}'.format(ex))
         # Set the reward and training metrics
+        json_action = {ModelMetadataKeys.STEERING_ANGLE.value: float(action[0]),
+                       ModelMetadataKeys.SPEED.value: float(action[1])}
         set_reward_and_metrics(self._reward_params_, self._step_metrics_,
                                self._agent_name_, pos_dict, self._track_data_,
-                               self._data_dict_, action, self._model_metadata_.get_action_dict(action),
+                               self._data_dict_, action, json_action,
                                current_car_pose)
         prev_pnt_dist = min(model_point.distance(self._prev_waypoints_['prev_point']),
                             model_point.distance(self._prev_waypoints_['prev_point_2']))
@@ -604,87 +570,10 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._ctrl_status[AgentCtrlStatus.START_NDIST.value] = self._data_dict_['start_ndist']
         self._ctrl_status[AgentCtrlStatus.X.value] = current_car_pose.position.x
         self._ctrl_status[AgentCtrlStatus.Y.value] = current_car_pose.position.y
-        # Sending race control status for virtual event
-        if self._is_virtual_event:
-            if self._start_sim_time is None:
-                self._start_sim_time = self._current_sim_time + PAUSE_TIME_BEFORE_START
-            self._ctrl_status[RaceCtrlStatus.RACE_START_TIME.value] = self._start_sim_time
-            self._ctrl_status[RaceCtrlStatus.RACE_CURR_TIME.value] = self._current_sim_time
         return {self._agent_name_: self._reset_rules_manager.update(self._ctrl_status)}
 
-    def _update_car_status(self, content):
-        """Update car status based on the car control ros message.
 
-        Args:
-            content (std_msgs.msg.String): The ros message as a json in String format.
-        """
-        LOG.info("[car control] Recevied status_ctrl data %s.", content.data)
-        msg_dict = json.loads(content.data)
-        new_status = msg_dict[WebRTCCarControl.STATUS_MODE.value]
-        with self._lock:
-            try:
-                self._race_car_ctrl_status = CarControlStatus(new_status).value
-            except ValueError as ex:
-                # If car_status is unknown, then defaulting to RESUME mode
-                # which will allow car to run without manual interference
-                # We don't expect unknown speed mode in normal situation,
-                # but as we receive this message directly from customer's browser,
-                # there is possibility that customer may tamper the message sent
-                # to SimApp. In such case, faulting and restarting SimApp will
-                # cause large delay to Virtual Event. Thus, log unknown mode
-                # for the debugging purpose and continue the event.
-                self._race_car_ctrl_status = CarControlStatus.RESUME.value
-                LOG.error("Unknow car control status received %s", ex)
 
-    def _get_speed_mode_value(self, content):
-        """Update car speed model and speed value based on the car control ros message.
-
-        Args:
-            content (std_msgs.msg.String): The ros message as a json in String format.
-        """
-        LOG.info("[car control] Recevied speed control data %s.", content.data)
-        msg_dict = json.loads(content.data)
-        with self._lock:
-            self._speed_mode = msg_dict[WebRTCCarControl.SPEED_MODE.value]
-            self._speed_value = float(msg_dict[WebRTCCarControl.SPEED_VALUE.value])
-
-    def _update_speed(self, action):
-        """Update the speed based on the speed mode and the speed value.
-
-        Args:
-            action (str): The action to look up from the json action dict.
-
-        Returns:
-            action_speed [float]: The next action speed.
-        """
-        with self._lock:
-            # if speed mode is not one of the enum values in CarControlMode.
-            # we take the speed specifed by the trained model and send action update to car.
-            json_action = self._model_metadata_.get_action_dict(action)
-            new_speed = float(json_action[ModelMetadataKeys.SPEED.value])
-            # check for which speed model we are in.
-            if self._speed_mode == CarControlMode.ABSOLUTE.value:
-                new_speed = float(self._speed_value)
-            elif self._speed_mode == CarControlMode.MULTIPLIER.value:
-                new_speed *= float(self._speed_value)
-            elif self._speed_mode == CarControlMode.PERCENT_MAX.value:
-                new_speed = float(const.MAX_SPEED * self._speed_value)
-            elif self._speed_mode == CarControlMode.OFFSET.value:
-                new_speed += float(self._speed_value)
-            elif self._speed_mode != CarControlMode.MODEL_SPEED.value:
-                # If speed_mode is unknown, then defaulting to MODEL_SPEED
-                # mode which is using speed from the model directly.
-                # We don't expect unknown speed mode in normal situation,
-                # but as we receive this message directly from customer's browser,
-                # there is possibility that customer may tamper the message sent to
-                # SimApp. In such case, faulting and restarting SimApp will
-                # cause large delay to Virtual Event. Thus, log unknown mode for the
-                # debugging purpose and continue the event by defaulting to MODEL_SPEED.
-                LOG.error("[car control] Unknown speed mode received %s", self._speed_mode)
-
-        # Clip the speed to be between min and max speed allowed.
-        new_speed = max(min(const.MAX_SPEED, new_speed), const.MIN_SPEED)
-        return float(new_speed / self._wheel_radius_)
 
     def judge_action(self, agents_info_map):
         '''Judge the action that agent just take
@@ -717,13 +606,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             self._reward_params_[const.RewardParam.CRASHED.value[0]] = False
         if self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.RUN.value:
             reward = self._judge_action_at_run_phase(episode_status=episode_status, pause=pause)
-            # for passing control from the virtual event console
-            self._check_for_ctrl_status_pause(is_car_in_pause_state=pause)
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.PAUSE.value:
             reward, episode_status = self._judge_action_at_pause_phase(episode_status=episode_status, done=done)
-        elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.MANUAL_PAUSE.value:
-            # for passing control from the virtual event console
-            reward, episode_status = self._judge_action_at_manual_pause_phase(done=done)
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.PREPARE.value:
             reward, episode_status = self._judge_action_at_prepare_phase()
         elif self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] == AgentPhase.PARK.value:
@@ -758,53 +642,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._metrics.update_mp4_video_metrics(self._step_metrics_)
         return reward, done, self._step_metrics_
 
-    def _check_for_ctrl_status_pause(self, is_car_in_pause_state):
-        """Check if we need to change to pause status because a maunal pause ctrl is sent.
 
-        Args:
-            is_car_in_pause_state (bool): Whether or not the car is already in pause state.
-        """
-        if is_car_in_pause_state:
-            # the off-track or crash pause behavior takes precedent of maunal pause
-            return
-        # Check for race car control status
-        with self._lock:
-            pause = self._race_car_ctrl_status == CarControlStatus.PAUSE.value
-        if pause:
-            LOG.info("[car control] Pausing because virtual event status: %s", self._race_car_ctrl_status)
-            current_car_pose = self._track_data_.get_object_pose(self._agent_name_)
-            self._pause_car_model_pose = current_car_pose
-            self._pause_car_model(car_model_pose=self._pause_car_model_pose,
-                                  should_reset_camera=False)
-            self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.MANUAL_PAUSE.value
-
-    def _judge_action_at_manual_pause_phase(self, done):
-        """If the current car control status received from customer has changed,
-        and it's set to not pause. We allow the car to run.
-
-        Args:
-            done (bool): If the episode is done.
-
-        Returns:
-            reward (float): The reward at maunal pause phase.
-            episode_status (str): The current episode status.
-        """
-        self._pause_car_model(car_model_pose=self._pause_car_model_pose)
-        with self._lock:
-            if self._race_car_ctrl_status == CarControlStatus.RESUME.value:
-                LOG.info("[car control] Unpausing because virtual event status: %s", self._race_car_ctrl_status)
-                self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.RUN.value
-        reward = const.ZERO_REWARD
-        if not done:
-            # When car is being paused on the track, there are two possible conditions of done
-            # 1. done: True, this means that the car that was being reset has "slipped" to more
-            # than 100% progress, we want to keep the EpisodeStatus that has been determined
-            # _check_for_episode_termination
-            # 2. done: False, _check_for_episode_termination will set the EpisodeStatus to
-            # IN_PROGRESS we want to overwrite it to EpisodeStatus.PAUSE so that the sim_trace
-            # does not confuse customers.
-            episode_status = EpisodeStatus.PAUSE.value
-        return reward, episode_status
 
     def _judge_action_at_run_phase(self, episode_status, pause):
         self._pause_duration = 0.0
@@ -836,12 +674,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             if episode_status == EpisodeStatus.CRASHED.value:
                 self._pause_duration += penalty
                 # add blink effect and remove current agent from collision list
-                if penalty > 0.0:
-                    self._effect = BlinkEffect(model_name=self._agent_name_,
-                                               min_alpha=const.BLINK_MIN_ALPHA,
-                                               interval=const.BLINK_INTERVAL,
-                                               duration=penalty)
-                    self._effect.attach()
                 # If crash into an static obstacle, reset first and then pause. This will prevent
                 # agent and obstacle wiggling around because bit mask is not used between agent
                 # and static obstacle
@@ -859,12 +691,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                      EpisodeStatus.IMMOBILIZED.value]:
                 self._pause_duration += penalty
                 # add blink effect and remove current agent from collision list
-                if penalty > 0.0:
-                    self._effect = BlinkEffect(model_name=self._agent_name_,
-                                               min_alpha=const.BLINK_MIN_ALPHA,
-                                               interval=const.BLINK_INTERVAL,
-                                               duration=penalty)
-                    self._effect.attach()
                 # When agent goes off track, current car pose might be closer
                 # to other part of the track. Therefore, instead of using
                 # current car pose to calculate reset position, the previous
@@ -933,10 +759,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         pause = False
         done = False
         if reset_rules_status.get(EpisodeStatus.TIME_UP.value, False):
-            # detach effect if virtual event time up during blink
-            if self._effect and self._pause_duration > 0:
-                self._effect.detach()
-                self._effect = None
             LOG.info("Issuing done because time is greater than race duration.")
             done = True
         # Note: check EPISODE_COMPLETE as the first item because agent might crash
@@ -1013,8 +835,6 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._pause_duration = 0.0
         self._reset_rules_manager.reset()
         self._ctrl_status[AgentCtrlStatus.AGENT_PHASE.value] = AgentPhase.PREPARE.value
-        if self._is_virtual_event:
-            self._pause_duration = PAUSE_TIME_BEFORE_START
         for key in self._prev_waypoints_:
             self._prev_waypoints_[key] = Point(0, 0)
         for key in self._data_dict_:
@@ -1022,4 +842,9 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                 self._data_dict_[key] = 0.0
 
     def update(self, data):
-        self._is_training_ = data == RunPhase.TRAIN
+        '''Called by RunPhaseSubject when training/evaluation phase changes.
+
+        Args:
+            data: True or any truthy value to enable training mode; False otherwise.
+        '''
+        self._is_training_ = bool(data)

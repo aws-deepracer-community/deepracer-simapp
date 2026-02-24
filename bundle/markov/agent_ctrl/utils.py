@@ -25,15 +25,10 @@ from markov.metrics.constants import StepMetrics
 from markov.agent_ctrl.constants import RewardParam
 from markov.track_geom.constants import AgentPos, TrackNearDist, TrackNearPnts
 from markov.log_handler.logger import Logger
-from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
-                                          SIMAPP_SIMULATION_WORKER_EXCEPTION)
-from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
-from markov.multi_agent_coach.action_space_configs import (ClippedPPOActionSpaceConfig,
-                                                           SACActionSpaceConfig)
 from scipy.spatial.transform import Rotation
 from markov.constants import SIMAPP_VERSION_1, SIMAPP_VERSION_2, SIMAPP_VERSION_3
-from markov.boto.s3.constants import ModelMetadataKeys, ActionSpaceTypes, TrainingAlgorithm
+from markov.boto.s3.constants import ModelMetadataKeys
 from markov.track_geom.utils import apply_orientation
 
 LOGGER = Logger(__name__, logging.INFO).get_logger()
@@ -184,29 +179,6 @@ def send_action(velocity_pub_dict, steering_pub_dict, steering_angle, speed):
         pub.publish(steering_angle)
 
 
-def load_action_space(model_metadata):
-    """Returns the action space object based on the training algorithm
-       and action space type values passed in the model_metadata.json file
-
-    Args:
-        model_metadata (ModelMetadata): ModelMetadata object containing the details in the model metadata json file
-
-    Returns:
-        ActionSpace: RL Coach ActionSpace object corresponding to the type of action space
-    """
-    # get the json_actions
-    json_actions = model_metadata.action_space
-    if model_metadata.training_algorithm == TrainingAlgorithm.CLIPPED_PPO.value:
-        action_space = ClippedPPOActionSpaceConfig(model_metadata.action_space_type).get_action_space(json_actions)
-    elif model_metadata.training_algorithm == TrainingAlgorithm.SAC.value:
-        action_space = SACActionSpaceConfig(model_metadata.action_space_type).get_action_space(json_actions)
-    else:
-        log_and_exit("Unknown training_algorithm value found while loading action space. \
-            training_algorithm: {}".format(model_metadata.training_algorithm),
-                     SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                     SIMAPP_EVENT_ERROR_CODE_500)
-    LOGGER.info("Action space from file: %s", json_actions)
-    return action_space
 
 
 def get_wheel_radius(version):

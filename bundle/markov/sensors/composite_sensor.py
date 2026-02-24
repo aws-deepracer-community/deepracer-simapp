@@ -14,69 +14,102 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-'''This module contains a composite sensor class for supporting agents with multiple sensors'''
-from rl_coach.spaces import StateSpace
+'''Composite sensor that aggregates multiple individual sensors into one.
+
+The resulting ``observation_space`` is a ``gymnasium.spaces.Dict`` whose
+keys match the ``Input.value`` strings of each constituent sensor. This
+makes the composite sensor a drop-in for the ``observation_space`` attribute
+of ``DeepRacerEnv``.
+'''
+from gymnasium import spaces
 
 from markov.sensors.sensor_interface import SensorInterface, LidarInterface
 
 
 class CompositeSensor(SensorInterface):
-    '''This class represents a composite sensor so that from the point of view of each agent there
-       is only one sensor interface
+    '''Aggregates several sensors into a single dictionary interface.
+
+    The ``get_observation_space()`` return value is a
+    ``gymnasium.spaces.Dict`` so that the gymnasium ``Env`` can expose a
+    single composite ``observation_space`` that covers all active sensors.
     '''
+
     def __init__(self):
-        self.sensors = list()
+        self.sensors = []
+
+    # ------------------------------------------------------------------
+    # Sensor management
+    # ------------------------------------------------------------------
 
     def add_sensor(self, sensor):
-        '''Adds a sensor to the sensor list
-           sensor - Sensor object to add to the sensor list
+        '''Append *sensor* to the list of active sensors.
+
+        Args:
+            sensor (SensorInterface): concrete sensor instance.
         '''
         self.sensors.append(sensor)
 
+    # ------------------------------------------------------------------
+    # SensorInterface implementation
+    # ------------------------------------------------------------------
+
     def get_observation_space(self):
-        observation_space = StateSpace({})
+        '''Return a ``gymnasium.spaces.Dict`` covering all sensors.
+
+        Returns:
+            gymnasium.spaces.Dict
+        '''
+        sub_spaces = {}
         for sensor in self.sensors:
-            observation_space.sub_spaces.update(sensor.get_observation_space().sub_spaces)
-        return observation_space
+            sub_space = sensor.get_observation_space()
+            # Each individual sensor returns a ``spaces.Dict({sensor_key: Box})``
+            # so we can simply merge the inner dicts here.
+            sub_spaces.update(sub_space.spaces)
+        return spaces.Dict(sub_spaces)
 
     def get_state(self, block=True):
-        state = dict()
+        '''Merge state dicts from all sensors into one flat dict.
 
-        # For blocking requests, run a blocking call on each sensor
+        LIDAR sensors are always read with ``block=False`` to avoid
+        stalling the control loop (LIDAR publishes at 10 Hz vs 15 Hz
+        for cameras).  A follow-up non-blocking read on every sensor
+        then ensures the freshest available data for everything.
+
+        Args:
+            block (bool): If True, block on camera-type sensors.
+
+        Returns:
+            dict: flat ``{sensor_key: np.ndarray}`` mapping.
+        '''
+        state = {}
+
         if block:
             for sensor in self.sensors:
-                # Lidar sensor update rate is 10 hz while camera sensor update rate is 15 hz.
-                # Due to slower Lidar sensor update rate, if the Lidar sensor is used,
-                # Lidar sensor data retrieval becomes bottleneck and makes the inference period to 10 hz.
-                # The latest Lidar sensor type is sector-lidar, due to limited number of sectors and binary type
-                # for sector-lidar state data, it is unlikely, that sector Lidar data change every steps.
-                # Thus, it is bit unnecessary to wait for Lidar data and slow everything down.
-                # We ignore blocking request to Lidar sensor update and follow-up non-blocking call below
-                # will use the latest Lidar data whether it was used previously or not.
                 if isinstance(sensor, LidarInterface):
+                    # LIDAR: skip blocking read – handled below
                     continue
-                state.update(sensor.get_state(block=block))
+                state.update(sensor.get_state(block=True))
 
-        # For all requests, follow-up with a non-blocking call
-        # This will ensure we have the latest for all sensors in the event that one of the
-        # earlier sensors in the list published new data while waiting on a blocking call above
+        # Non-blocking pass to pick up latest data from all sensors
+        # (also handles LIDAR which was skipped above)
         for sensor in self.sensors:
             state.update(sensor.get_state(block=False))
 
         return state
 
     def get_raw_state(self):
-        raw_data = dict()
+        '''Collect raw (unscaled) sensor payloads for debugging / logging.
+
+        Returns:
+            dict: ``{sensor_type: raw_data}``
+        '''
+        raw_data = {}
         for sensor in self.sensors:
             if hasattr(sensor, 'raw_data'):
                 raw_data[sensor.sensor_type] = sensor.raw_data
         return raw_data
 
     def reset(self):
-        [sensor.reset() for sensor in self.sensors]
-
-    def get_input_embedders(self, network_type):
-        input_embedders = dict()
+        '''Reset all sensors\' internal buffers.'''
         for sensor in self.sensors:
-            input_embedders = dict(input_embedders, **sensor.get_input_embedders(network_type))
-        return input_embedders
+            sensor.reset()

@@ -14,52 +14,69 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-'''This module contains the concrete implementations of the agent interface'''
-from markov.architecture.constants import Input
+'''Concrete agent implementation for the DeepRacer Gazebo environment.
+
+An ``Agent`` bundles a composite sensor and an agent controller.  It acts
+as the internal glue between the sensor data pipeline and the Gazebo/ROS
+action publishers, hiding those details from ``DeepRacerEnv``.
+'''
+from markov.sensors.constants import Input
+
 
 class Agent(object):
-    '''Concrete class for agents running in the rollout worker'''
-    def __init__(self, network_settings, sensor, ctrl):
-        '''network_settings - Dictionary containing the desired
-                              network configuration
-           sensor - Reference to the composite sensor object
-           ctrl - Reference to the car control object
-           metrics - Reference to the metrics object
-        '''
-        self._network_settings_ = network_settings
-        self._sensor_ = sensor
-        self._ctrl_ = ctrl
+    '''Bundles a composite sensor and a car-control object.
 
-    @property
-    def network_settings(self):
-        return self._network_settings_
+    The gymnasium ``DeepRacerEnv`` calls the methods on this class
+    rather than talking to sensors and controllers directly.
+    '''
+
+    def __init__(self, sensor, ctrl):
+        '''Construct an agent.
+
+        Args:
+            sensor: A :class:`~markov.sensors.composite_sensor.CompositeSensor`
+                    (or any ``SensorInterface`` implementation).
+            ctrl: An ``AgentCtrlInterface`` implementation (typically
+                  :class:`~markov.agent_ctrl.rollout_agent_ctrl.RolloutCtrl`).
+        '''
+        self._sensor_ = sensor
+        self._ctrl_   = ctrl
+
+    # ------------------------------------------------------------------
+    # Properties forwarded from the controller
+    # ------------------------------------------------------------------
 
     @property
     def ctrl(self):
         return self._ctrl_
 
+    # ------------------------------------------------------------------
+    # Gymnasium-facing helpers
+    # ------------------------------------------------------------------
+
     def get_observation_space(self):
-        '''Get the sensor obervation space
+        '''Return a ``gymnasium.spaces.Dict`` covering all active sensors.
+
+        Delegates to the sensor\'s :meth:`get_observation_space`.
         '''
         if self._sensor_ is not None:
             return self._sensor_.get_observation_space()
+        return None
 
     def get_action_space(self):
-        '''Get the control action space
-        '''
+        '''Return the gymnasium action space exposed by the controller.'''
         return self._ctrl_.action_space
 
+    # ------------------------------------------------------------------
+    # Episode control
+    # ------------------------------------------------------------------
+
     def reset_agent(self):
-        '''Reset agent control and metric instance
+        '''Reset sensor buffers and move the car to the start position.
 
-        The order is important for virtual event with
-        dynamic spawning, so do not change order.
-
-        During virtual event, agent might be deleted and respawn.
-        It might take a while for sensor topic to be ready. Therefore,
-        it is required to reset agent which reset all internal timer
-        for virtual event after sensor reset which wait for sensor topic
-        to be alive
+        Returns:
+            dict | None: initial sensor observation, or None when no sensor
+            is configured.
         '''
         sensor_state = None
         if self._sensor_ is not None:
@@ -69,52 +86,54 @@ class Agent(object):
         return sensor_state
 
     def finish_episode(self):
-        ''' Finish episode and update its metrics into s3 bucket
-        '''
+        '''Run end-of-episode housekeeping in the controller.'''
         self._ctrl_.finish_episode()
 
+    # ------------------------------------------------------------------
+    # Step-level control
+    # ------------------------------------------------------------------
+
     def send_action(self, action):
-        '''Publish action index to gazebo
+        '''Publish *action* to Gazebo via ROS.
 
         Args:
-            action (int or list): model metadata action_space index for discreet action spaces
-                                  or [steering, speed] float values for continuous action spaces
+            action (np.ndarray): ``[steering_deg, speed_m_s]`` for the
+                continuous action space, or an integer index for discrete.
         '''
         self._ctrl_.send_action(action)
 
     def update_agent(self, action):
-        '''Update agent status based on taken action and env change
+        '''Update the agent\'s internal state after the action has been sent.
 
         Args:
-            action: Interger with the desired action to take
+            action: Same type as passed to :meth:`send_action`.
 
         Returns:
-            dict: dictionary contains single agent info map after desired action is taken
-                  with key as each agent's name and value as each agent's info
+            dict: ``{agent_name: agent_info}`` mapping.
         '''
         return self._ctrl_.update_agent(action)
 
     def judge_action(self, action, agents_info_map):
-        '''Judge the taken action
+        '''Compute the next observation, reward, and done flag.
 
         Args:
-            action: Interger with the desired action to take
-            agents_info_map: dictionary contains all agents info map with key as
-                             each agent's name and value as each agent's info
+            action: Last action taken.
+            agents_info_map (dict): All agents\' current info (needed by
+                multi-agent reset rules).
 
         Returns:
-            tuple: tuple contains next state sensor observation, reward value, and done flag
+            tuple(dict, float, bool): ``(next_observation, reward, done)``.
         '''
-        if self._sensor_ is not None:
-            next_state = self._sensor_.get_state()
-        else:
-            next_state = None
+        next_state = self._sensor_.get_state() if self._sensor_ is not None else None
         reward, done, _ = self._ctrl_.judge_action(agents_info_map)
+
+        # Optional visualisation overlay (no-op when the controller does not
+        # expose a reward_data_pub).
         if hasattr(self._ctrl_, 'reward_data_pub') and self._ctrl_.reward_data_pub is not None:
             raw_state = self._sensor_.get_raw_state()
-            # More visualizations topics can be added here
-            if Input.CAMERA.value in raw_state and raw_state[Input.CAMERA.value] is not None:
-                self._ctrl_.reward_data_pub.publish_frame(raw_state[Input.CAMERA.value], action, reward)
-            elif Input.OBSERVATION.value in raw_state and raw_state[Input.OBSERVATION.value] is not None:
-                self._ctrl_.reward_data_pub.publish_frame(raw_state[Input.OBSERVATION.value], action, reward)
+            for key in (Input.CAMERA.value, Input.OBSERVATION.value):
+                if raw_state.get(key) is not None:
+                    self._ctrl_.reward_data_pub.publish_frame(raw_state[key], action, reward)
+                    break
+
         return next_state, reward, done
