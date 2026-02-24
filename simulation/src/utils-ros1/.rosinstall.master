@@ -1,4 +1,0 @@
-- git:
-    uri: https://github.com/aws-robotics/utils-common.git
-    local-name: utils-common
-    version: master
