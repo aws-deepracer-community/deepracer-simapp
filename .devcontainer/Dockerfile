@@ -60,7 +60,7 @@ RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
 ADD .devcontainer/requirements.txt /
 RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
     export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
-    pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil && \
+    pip3 install -U --no-cache-dir -r requirements.txt --ignore-installed psutil && \
     pip3 install -U --no-cache-dir "setuptools<46"
 
 # Patch RL Coach
