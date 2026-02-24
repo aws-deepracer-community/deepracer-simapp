@@ -29,26 +29,26 @@ from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import ModelState
 from std_msgs.msg import ColorRGBA
 from std_srvs.srv import Empty, EmptyRequest
-from markov.track_geom.track_data import FiniteDifference, TrackData
-from markov.track_geom.utils import get_start_positions
-from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
-import markov.rollout_constants as const
-from markov import utils
-from markov.utils import force_list, str2bool
-from markov.log_handler.logger import Logger
-from markov.log_handler.exception_handler import log_and_exit
-from markov.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
+from deepracer_env.track_geom.track_data import FiniteDifference, TrackData
+from deepracer_env.track_geom.utils import get_start_positions
+from deepracer_env.rospy_wrappers import ServiceProxyWrapper
+from deepracer_env.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
+import deepracer_env.rollout_constants as const
+from deepracer_env import utils
+from deepracer_env.utils import force_list, str2bool
+from deepracer_env.log_handler.logger import Logger
+from deepracer_env.log_handler.exception_handler import log_and_exit
+from deepracer_env.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
 
-from markov.domain_randomizations.constants import GazeboServiceName
-from markov.track_geom.constants import SET_MODEL_STATE, START_POS_OFFSET, MIN_START_POS_OFFSET, MAX_START_POS_OFFSET
+from deepracer_env.domain_randomizations.constants import GazeboServiceName
+from deepracer_env.track_geom.constants import SET_MODEL_STATE, START_POS_OFFSET, MIN_START_POS_OFFSET, MAX_START_POS_OFFSET
 from gazebo_msgs.srv import GetModelProperties, GetModelPropertiesRequest
 from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
                                 GetVisuals, GetVisualsRequest, GetVisualsResponse,
                                 SetVisualColors, SetVisualColorsRequest, SetVisualColorsResponse,
                                 SetVisualTransparencies, SetVisualTransparenciesRequest, SetVisualTransparenciesResponse,
                                 SetVisualVisibles, SetVisualVisiblesRequest, SetVisualVisiblesResponse)
-from markov.gazebo_utils.model_updater import ModelUpdater
+from deepracer_env.gazebo_utils.model_updater import ModelUpdater
 
 logger = Logger(__name__, logging.INFO).get_logger()
 

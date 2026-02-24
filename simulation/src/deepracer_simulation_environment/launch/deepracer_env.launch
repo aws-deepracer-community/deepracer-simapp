@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+  Minimal launch file for deepracer_env gymnasium usage.
+  Starts the Gazebo world and car without any AWS S3/Kinesis dependencies.
+  Required env vars: WORLD_NAME
+  Optional env vars: ENABLE_GUI (default: false)
+-->
+<launch>
+  <include file="$(find deepracer_simulation_environment)/launch/racetrack_with_racecar.launch">
+    <arg name="world_name"                   value="$(env WORLD_NAME)" />
+    <arg name="kinesis_video_stream_names"   value="" />
+    <arg name="body_shell_types"             value="deepracer" />
+    <arg name="simapp_versions"              value="5.0" />
+    <arg name="publish_to_kinesis_stream"    value="false" />
+    <arg name="gui"                          value="$(optenv ENABLE_GUI false)" />
+  </include>
+</launch>

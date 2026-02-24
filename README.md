@@ -136,7 +136,7 @@ RUN pip install --no-cache-dir -e /workspace
 
 # Default: run your training script
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run local_training.launch & sleep 5 && python3 /workspace/train.py"]
+CMD ["source /opt/ros/noetic/setup.bash && source /opt/simapp/setup.bash && ./run.sh run deepracer_env.launch & sleep 5 && python3 /workspace/train.py"]
 ```
 
 #### `train.py`
@@ -195,10 +195,10 @@ rebuilding:
 
 ```bash
 docker run --rm \
-  -e WORLD_NAME=LGSWide \
+  -e WORLD_NAME=reinvent_base \
   -v $(pwd):/workspace \
   my-deepracer-project:latest \
-  bash -c "pip install -q -e /workspace && ./run.sh run deepracer_rl.launch & sleep 5 && python /workspace/train.py"
+  bash -c "source /opt/ros/noetic/setup.bash && source /opt/simapp/setup.bash && ./run.sh run deepracer_env.launch & sleep 5 && python3 /workspace/train.py"
 ```
 
 ---

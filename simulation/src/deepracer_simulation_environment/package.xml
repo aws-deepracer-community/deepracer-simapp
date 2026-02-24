@@ -21,8 +21,6 @@
 
   <exec_depend>python3-defusedxml</exec_depend>
   <exec_depend>catkin</exec_depend>
-  <exec_depend>aws_cpp_sdk_logs</exec_depend>
-  <exec_depend>aws_cpp_sdk_kinesis</exec_depend>
   <exec_depend>controller_manager</exec_depend>
   <exec_depend>gazebo_ros_control</exec_depend>
   <exec_depend>gazebo_plugins</exec_depend>

@@ -2,7 +2,7 @@
 <launch>
   <arg name="world_name" />
   <arg name="gui" default="false" />
-  <arg name="kinesis_video_stream_names" />
+  <arg name="kinesis_video_stream_names" default=""/>
   <arg name="kinesis_video_stream_region" default="us-east-1" />
   <arg name="racecars_with_stereo_cameras" default="racecar" />
   <arg name="racecars_with_lidars" default="racecar" />
@@ -77,11 +77,6 @@
 
   <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="1" output="screen" required="$(arg make_required)" unless="$(arg multicar)"></node>
   <node pkg="deepracer_simulation_environment" type="car_node.py" name="car_reset_node" args="2" output="screen" required="$(arg make_required)" if="$(arg multicar)"></node>
-
-  <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="1 $(arg publish_to_kinesis_stream)" output="screen" required="$(arg make_required)" unless="$(arg multicar)">
-  </node>
-  <node pkg="deepracer_simulation_environment" type="agents_video_editor.py" name="agents_video_editor" args="2 $(arg publish_to_kinesis_stream)" output="screen" required="$(arg make_required)" if="$(arg multicar)">
-  </node>
 
   <!-- Enable local web server for video streaming -->
   <node pkg="web_video_server" type="web_video_server" name="web_video_server" output="screen" required="false" respawn="false"></node>
