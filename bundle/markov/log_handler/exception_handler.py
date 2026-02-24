@@ -187,19 +187,29 @@ def kill_sagemaker_simapp_jobs_by_pid():
     """This method reads from the simulation and training pid files and kills the processes one by one.
     """
     try: 
+        job_type = os.environ.get("JOB_TYPE", "").strip().lower()
+        wait_for_training_pid = job_type == "training"
         total_wait_time = 0
-        while not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
+        while (not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or
+               (wait_for_training_pid and not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))):
             if total_wait_time >= SAGEONLY_PID_FILE_NOT_PRESENT_TIME_OUT:
                 LOG.info("simapp_exit_gracefully - Stopped waiting. SimApp Pid Exists=%s, Training Pid Exists=%s.",
                         os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH),
                         os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))
                 return
-            LOG.info("simapp_exit_gracefully - Waiting for simapp and training job to come up.")
+            LOG.info("simapp_exit_gracefully - Waiting for simapp%s job to come up.",
+                     " and training" if wait_for_training_pid else "")
             time.sleep(SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME)
             total_wait_time += SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME
 
         simapp_pids = read_pids_from_file(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
-        training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
+        training_pids = []
+        if wait_for_training_pid and os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
+            training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
+        elif wait_for_training_pid:
+            LOG.info("simapp_exit_gracefully - Training pid file not found for training job type.")
+        else:
+            LOG.info("simapp_exit_gracefully - Training pid file not required for job type=%s.", job_type or "<unset>")
         LOG.info("simapp_exit_gracefully - SimApp pids=%s, Training pids=%s.", simapp_pids, training_pids)
 
         pids_to_kill = []
@@ -239,15 +249,16 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
     # - close the running processes
     # - upload simtrace data to S3
     LOG.info("simapp_exit_gracefully: simapp_exit-{}".format(simapp_exit))
-    LOG.info("Terminating simapp simulation...")
-    callstack_trace = ''.join(traceback.format_stack())
-    LOG.info("simapp_exit_gracefully - callstack trace=Traceback (callstack)\n{}".format(callstack_trace))
-    exception_trace = traceback.format_exc()
-    LOG.info("simapp_exit_gracefully - exception trace={}".format(exception_trace))
     upload_to_s3(json_log=json_log,
                  s3_crash_status_file_name=s3_crash_status_file_name)
 
     if simapp_exit == SIMAPP_ERROR_EXIT:
+        LOG.info("Terminating simapp simulation...")
+        callstack_trace = ''.join(traceback.format_stack())
+        LOG.info("simapp_exit_gracefully - callstack trace=Traceback (callstack)\n{}".format(callstack_trace))
+        exception_trace = traceback.format_exc()
+        LOG.info("simapp_exit_gracefully - exception trace={}".format(exception_trace))
+
         LOG.info("Calling cancel_simulation_job because of failure.")
         if hasSimAppExceptionOccured:
             import rclpy
@@ -257,13 +268,13 @@ def simapp_exit_gracefully(simapp_exit=SIMAPP_ERROR_EXIT, json_log=None,
             LOG.error(err_msg)
             rclpy.shutdown()
             # wait for monitoring to detect the dead node
-            time.sleep(5)
+            time.sleep(5)   
 
-        # for non exception and live races, just normally stop
-        if stopRosNodeMonitor:
-            # Don't change this line. Place it here to use delayed import and avoid circular import
-            from markov.utils import stop_ros_node_monitor
-            stop_ros_node_monitor()
+    # for non exception and live races, just normally stop
+    if stopRosNodeMonitor:
+        # Don't change this line. Place it here to use delayed import and avoid circular import
+        from markov.utils import stop_ros_node_monitor
+        stop_ros_node_monitor()
 
 # the global variable for upload_to_s3
 is_upload_to_s3_called = False
@@ -285,8 +296,9 @@ def upload_to_s3(json_log, s3_crash_status_file_name):
             # TODO: refactor this when we migrate entirely to python 3
             from markov import utils
             from markov.boto.s3.s3_client import S3Client
+            s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL", None)
             LOG.info("simapp_exit_gracefully - first time upload_to_s3 called.")
-            s3_client = S3Client()
+            s3_client = S3Client(s3_endpoint_url=s3_endpoint_url)
             s3_key = os.path.normpath(os.path.join(os.environ.get("YAML_S3_PREFIX", ''),
                                                    s3_crash_status_file_name))
             s3_client.upload_fileobj(bucket=os.environ.get("YAML_S3_BUCKET", ''),

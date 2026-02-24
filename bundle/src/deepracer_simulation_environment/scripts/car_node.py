@@ -11,6 +11,7 @@ import os
 import time
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 import logging
 from ament_index_python.packages import get_package_share_directory
 from deepracer_msgs.srv import SetModelStates
@@ -23,7 +24,8 @@ from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.camera_utils import (wait_for_model, WAIT_TO_PREVENT_SPAM, configure_camera)
 import markov.rollout_constants as const
 from markov import utils
-from markov.utils import force_list
+from markov.world_config import WorldConfig
+from markov.utils import force_list, str2bool
 from markov.log_handler.logger import Logger
 from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import SIMAPP_CAR_NODE_EXCEPTION, SIMAPP_EVENT_ERROR_CODE_500
@@ -93,10 +95,14 @@ class DeepRacerNode(Node):
 
         # Place the car at the starting point facing the forward direction
         # Instantiate cameras
-        main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
-        [camera.detach() for camera in main_cameras.values()]
-        sub_camera.detach()
-        
+        camera_main_enable = str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
+        camera_sub_enable = str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
+
+        if camera_main_enable or camera_sub_enable:
+            main_cameras, sub_camera = configure_camera(namespaces=racecar_names)
+            [camera.detach() for camera in main_cameras.values()]
+            sub_camera.detach()
+
         # Get the root directory of the ros package, this will contain the models
         deepracer_path = get_package_share_directory("deepracer_simulation_environment")
         
@@ -130,16 +136,18 @@ class DeepRacerNode(Node):
                 self.model_updater.update_color(visuals, self.car_colors[racecar_idx])
 
         # Spawn main cameras for each racecar (like ROS1)
-        for racecar_name, car_pose in zip(racecar_names, car_poses):
-            logger.debug("DEBUG: car_pose = %s", car_pose)
-            sdf_path = os.path.join(deepracer_path, "models", "camera", "model.sdf")
-            logger.info(f"Spawning main camera for {racecar_name}")
-            main_cameras[racecar_name].spawn_model(car_pose, sdf_path)
+        if camera_main_enable:
+            for racecar_name, car_pose in zip(racecar_names, car_poses):
+                logger.debug("DEBUG: car_pose = %s", car_pose)
+                sdf_path = os.path.join(deepracer_path, "models", "camera", "model.sdf")
+                logger.info(f"Spawning main camera for {racecar_name}")
+                main_cameras[racecar_name].spawn_model(car_pose, sdf_path)
         
-        sub_sdf_path = os.path.join(deepracer_path, "models", "top_camera", "model.sdf")
-        logger.info("Spawning sub camera model")
-        # Spawn the top camera model
-        sub_camera.spawn_model(None, sub_sdf_path)
+        if camera_sub_enable:
+            sub_sdf_path = os.path.join(deepracer_path, "models", "top_camera", "model.sdf")
+            logger.info("Spawning sub camera model")
+            # Spawn the top camera model
+            sub_camera.spawn_model(None, sub_sdf_path)
         
         logger.info("DeepRacerNode initialization complete")
 
@@ -155,10 +163,23 @@ class DeepRacerNode(Node):
 def main():
     if not rclpy.ok():
         rclpy.init()
-    RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
-    racecar_names = utils.get_racecar_names(RACER_NUM)
-    node = DeepRacerNode(racecar_names)
-    rclpy.spin(node)
+    node = None
+    try:
+        RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        racecar_names = utils.get_racecar_names(RACER_NUM)
+        node = DeepRacerNode(racecar_names)
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        logger.info("car_node shutdown requested")
+    except Exception as ex:
+        log_and_exit("car_node exited with exception: {}".format(ex),
+                     SIMAPP_CAR_NODE_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500)
+    finally:
+        if node is not None:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':

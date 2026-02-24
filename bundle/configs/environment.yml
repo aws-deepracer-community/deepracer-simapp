@@ -4,10 +4,11 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.23.2
+  - nginx
   - zip
   - wget
   - curl==8.18.0
+  - pyqt=5
   - pip:
       - pygame==2.6.1
       - shapely==2.0.2
@@ -25,7 +26,7 @@ dependencies:
       - kubernetes==33.1.0
       - opencv-python==4.9.0.80
       - bokeh==3.7.3
-      - -e /opt/amazon/rl_coach  # Install rl_coach from local source directory
+      - /opt/amazon/rl_coach  # Install rl_coach from local source directory
       - retrying==1.4.1
       - eventlet==0.40.3
       - flask==3.1.1
@@ -53,3 +54,7 @@ dependencies:
       - typeguard==4.4.4
       - lark==1.2.2
       - catkin_pkg==1.0.0
+      - pytelegraf
+      - sagemaker-training
+      - argcomplete
+      - setuptools==80.10.2

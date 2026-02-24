@@ -230,6 +230,14 @@ def generate_launch_description():
         output='screen'
     )
     
+    # Web video server for browser-based video streaming
+    web_video_server = Node(
+        package='web_video_server',
+        executable='web_video_server',
+        name='web_video_server',
+        output='screen'
+    )
+    
     return LaunchDescription([
         # Environment variables (must be first to affect all child processes)
         gz_resource_path,
@@ -257,4 +265,5 @@ def generate_launch_description():
         # Nodes
         car_reset_node,
         agents_video_editor,
+        web_video_server,
     ])
