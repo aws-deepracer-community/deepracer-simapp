@@ -1,5 +1,4 @@
 .venv/
-bundle-src/
-bundle/build/
-bundle/install/
-bundle/log/
+simulation/build/
+simulation/install/
+simulation/log/

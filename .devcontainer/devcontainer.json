@@ -38,11 +38,11 @@
                 "cmake.configureOnOpen": false,
                 "python.autoComplete.extraPaths": [
                     "/opt/ros/noetic/lib/python3/dist-packages/",
-                    "/workspaces/bundle/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
+                    "/workspaces/simulation/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
                 ],
                 "python.analysis.extraPaths": [
                     "/opt/ros/noetic/lib/python3/dist-packages/",
-                    "/workspaces/bundle/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
+                    "/workspaces/simulation/install/deepracer_msgs/lib/python3/dist-packages/deepracer_msgs"
                 ],
                 "files.associations": {
                     "condition_variable": "cpp",

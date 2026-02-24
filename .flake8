@@ -6,7 +6,7 @@ exclude =
     .git,
     # There's no value in checking cache directories
     __pycache__,
-    # This contains our built documentation
-    bundle/logs,
-    bundle/install,
-    bundle/build
+    # compiled colcon output
+    simulation/logs,
+    simulation/install,
+    simulation/build

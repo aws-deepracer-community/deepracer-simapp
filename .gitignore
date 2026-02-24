@@ -5,5 +5,5 @@ __pycache__/
 install/
 build/
 log/
-bundle/meshes/Singapore/textures/Singapore_Track_Pre-Production.psd
+simulation/meshes/Singapore/textures/Singapore_Track_Pre-Production.psd
 .vscode/
