@@ -11,7 +11,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev-user
       args:
-        FROM_IMG: awsdeepracercommunity/deepracer-simapp:${DR_SIMAPP_IMAGE}
+        FROM_IMG: awsdeepracercommunity/deepracer-env:${DR_SIMAPP_IMAGE}
         USERNAME: $USER
         USER_UID: $USER_UID
         USER_GID: $USER_GID

@@ -1,7 +1,7 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
 ARG CORE_IMG=ubuntu:20.04
 
-FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:latest AS bundle
+FROM ${BUNDLE_PREFIX}/deepracer-env-build-bundle:latest AS bundle
 FROM ${CORE_IMG}
 
 ARG NVCC_VER=""
@@ -112,7 +112,6 @@ RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
 
 # Copy compiled bundle
 COPY --from=bundle  /opt/bundle/install /opt/simapp
-COPY deepracer_env/ /opt/simapp/deepracer_env/
 WORKDIR /opt/simapp
 
 # Install ROS dependencies
@@ -124,6 +123,11 @@ RUN apt-get update -y && rosdep init && rosdep update --rosdistro=noetic -q && \
 ENV COLCON_CURRENT_PREFIX="/opt/simapp"
 ENV COLCON_PYTHON_EXECUTABLE="/usr/bin/python3"
 ENV _CATKIN_SETUP_DIR="/opt/ros/noetic"
+
+# Install deepracer_env as a proper pip package
+COPY deepracer_env/ /tmp/deepracer-env/deepracer_env/
+COPY pyproject.toml requirements.txt VERSION /tmp/deepracer-env/
+RUN pip3 install --no-cache-dir /tmp/deepracer-env && rm -rf /tmp/deepracer-env
 
 # Copy simulation scripts
 COPY ./docker/files/robomaker/run.sh run.sh

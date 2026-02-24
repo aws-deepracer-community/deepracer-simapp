@@ -7,6 +7,8 @@ Instead of training against a fixed network with a plug-in reward function, this
 repository exposes the full simulation as a standard `gymnasium.Env` so you can
 bring any RL algorithm or neural-network architecture you like.
 
+---
+
 ## Repository structure
 
 ```
@@ -19,79 +21,180 @@ deepracer-env/
 │   ├── agent_ctrl/         # RolloutCtrl — Gazebo/ROS action publisher
 │   ├── track_geom/         # Track geometry and waypoint utilities
 │   └── ...
-├── bundle/                 # ROS/Gazebo workspace (meshes, worlds, URDF, routes)
-│   ├── src/                # ROS colcon workspace source
+├── simulation/             # ROS/Gazebo workspace (meshes, worlds, URDF, routes)
+│   ├── src/                # ROS colcon workspace — built inside Docker
 │   ├── meshes/
 │   ├── worlds/
 │   └── urdf/
 ├── docker/                 # Dockerfiles and pip requirements for the container
+│   ├── Dockerfile.base     # OS + ROS Noetic + Gazebo 11 system dependencies
+│   ├── Dockerfile.build    # Compiles simulation/src/ with colcon
+│   ├── Dockerfile.runtime  # Final runnable image
+│   └── Dockerfile.dev-user # Dev variant: adds a non-root local user
 ├── examples/
 │   └── train.py            # Minimal PPO training example (Stable-Baselines3)
-├── sample-config/          # Example reward function, robomaker.env, etc.
-├── pyproject.toml          # Package metadata and build config
-├── requirements.txt        # Minimal runtime dependencies
+├── sample-config/          # Example reward function and model metadata
+├── pyproject.toml          # Package metadata and build configuration
+├── requirements.txt        # Minimal Python runtime dependencies
+├── build.sh                # Builds the Docker image chain
+├── build-dev-bundle.sh     # Developer workflow: colcon build into local volume
 └── VERSION
 ```
 
-## Prerequisites
+---
 
-| Component | Version |
-|-----------|---------|
-| Ubuntu    | 20.04   |
-| Python    | 3.8+    |
-| ROS       | Noetic  |
-| Gazebo    | 11      |
+## How this fits into your project
 
-A running Gazebo + DeepRacer ROS stack is required at runtime:
+**`deepracer_env` communicates with Gazebo exclusively through ROS**, which means
+it can only run inside an environment that has ROS Noetic installed.  It cannot
+be used as a standalone Python package on a bare machine.
 
-```bash
-roslaunch deepracer_simulation_environment deepracer_rl.launch
+The intended usage pattern is:
+
+```
+your-project/               ← your RL project repository
+├── reward.py
+├── train.py
+├── pyproject.toml          ← depends on deepracer-env
+└── Dockerfile              ← FROM the simulation image built here
 ```
 
-## Installation
+Your training code and `deepracer_env` both run **inside a container that extends
+the simulation image produced by this repository**.  You edit your code locally;
+the container provides the ROS + Gazebo infrastructure.
+
+---
+
+## Step-by-step: using deepracer-env in your project
+
+### Step 1 — Build the simulation image
+
+Clone this repository and build the runtime Docker image:
 
 ```bash
-pip install -e .
-# or, to also install training dependencies:
-pip install -e .[examples]
+git clone https://github.com/your-org/deepracer-env.git
+cd deepracer-env
+./build.sh -a cpu          # or -a gpu  for NVIDIA GPU support
 ```
 
-## Quick start
+This produces the image `awsdeepracercommunity/deepracer-env:<VERSION>-cpu`.
+
+### Step 2 — Create your project repository
+
+Create a new repository with this minimal structure:
+
+```
+my-deepracer-project/
+├── reward.py
+├── train.py
+├── pyproject.toml
+└── Dockerfile
+```
+
+#### `pyproject.toml`
+
+Declare `deepracer-env` as a dependency using a Git URL so it is always
+installed from a pinned commit or tag:
+
+```toml
+[project]
+name = "my-deepracer-project"
+version = "0.1.0"
+requires-python = ">=3.8"
+dependencies = [
+    "deepracer-env @ git+https://github.com/your-org/deepracer-env.git@main",
+    "stable-baselines3",
+]
+```
+
+#### `Dockerfile`
+
+Extend the simulation image and install your project on top of it:
+
+```dockerfile
+ARG SIMAPP_TAG=latest-cpu
+FROM awsdeepracercommunity/deepracer-env:${SIMAPP_TAG}
+
+# Copy and install your project
+COPY . /workspace
+RUN pip install -e /workspace
+
+# Default: run your training script
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["./run.sh run deepracer_rl.launch & sleep 5 && python /workspace/train.py"]
+```
+
+#### `train.py`
 
 ```python
-import gymnasium
-import deepracer_env  # registers DeepRacer-v0
+from deepracer_env.environments.deepracer_env import DeepRacerEnv
+from stable_baselines3 import PPO
 
-def my_reward(params: dict) -> float:
+
+def reward_function(params: dict) -> float:
     if not params["all_wheels_on_track"]:
         return 1e-3
     return float(params["progress"] * params["speed"] / 4.0)
 
-# Minimal — single camera sensor, all defaults
-env = gymnasium.make("DeepRacer-v0", reward_fn=my_reward)
 
-# Or construct directly for more control
-from deepracer_env.environments.deepracer_env import DeepRacerEnv
-from deepracer_env.sensors.constants import Input
-import deepracer_env.agent_ctrl.constants as ctrl_const
+env = DeepRacerEnv(reward_fn=reward_function)
 
-env = DeepRacerEnv(
-    reward_fn=my_reward,
-    sensors=[Input.CAMERA.value, Input.LIDAR.value],
-    config={ctrl_const.ConfigParams.COLLISION_PENALTY.value: 5.0},
-)
-
-obs, info = env.reset()
-obs, reward, terminated, truncated, info = env.step(env.action_space.sample())
+model = PPO("MultiInputPolicy", env, verbose=1)
+model.learn(total_timesteps=100_000)
+model.save("my_model")
+env.close()
 ```
 
-See [examples/train.py](examples/train.py) for a complete Stable-Baselines3 training loop.
+### Step 3 — Build and run your project image
 
-## Action space
+Inside your project repository:
+
+```bash
+docker build \
+  --build-arg SIMAPP_TAG=<VERSION>-cpu \
+  -t my-deepracer-project:latest .
+
+docker run --rm \
+  -e WORLD_NAME=LGSWide \
+  -e ENABLE_GUI=False \
+  my-deepracer-project:latest
+```
+
+Set `ENABLE_GUI=True` and expose port `5900` to view the Gazebo simulation
+over VNC:
+
+```bash
+docker run --rm \
+  -e WORLD_NAME=LGSWide \
+  -e ENABLE_GUI=True \
+  -p 5900:5900 \
+  my-deepracer-project:latest
+```
+
+Then connect any VNC viewer to `localhost:5900`.
+
+### Step 4 — Iterate without rebuilding the image
+
+Mount your project source as a volume to pick up code changes instantly without
+rebuilding:
+
+```bash
+docker run --rm \
+  -e WORLD_NAME=LGSWide \
+  -v $(pwd):/workspace \
+  my-deepracer-project:latest \
+  bash -c "pip install -q -e /workspace && ./run.sh run deepracer_rl.launch & sleep 5 && python /workspace/train.py"
+```
+
+---
+
+## API reference
+
+### Action space
 
 `Box([-30, 0.1], [30, 4.0], dtype=float32)` — `[steering_angle_deg, speed_m_s]`
 
-## Observation space
+### Observation space
 
 `Dict` — one entry per active sensor:
 
@@ -103,27 +206,22 @@ See [examples/train.py](examples/train.py) for a complete Stable-Baselines3 trai
 | `SECTOR_LIDAR` | `(8,)` | float32 |
 | `DISCRETIZED_SECTOR_LIDAR` | `(N×M,)` | float32 |
 
-## Reward function parameters
+### Reward function parameters
 
-The callable passed as `reward_fn` receives a `dict` with keys from
-`deepracer_env.agent_ctrl.constants.RewardParam`, including:
+The callable passed as `reward_fn` receives a `dict` with the following keys:
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `all_wheels_on_track` | bool | All four wheels on track |
 | `progress` | float | Lap progress 0–100 % |
 | `speed` | float | Current speed m/s |
-| `steering_angle` | float | Current steering angle degrees |
+| `steering_angle` | float | Current steering angle in degrees |
 | `distance_from_center` | float | Distance from track centre line |
 | `is_left_of_center` | bool | Car is left of centre line |
 | `waypoints` | list | All track waypoints |
 | `closest_waypoints` | list[int] | Indices of previous and next waypoints |
 
-## Customisation
-
-### Sensors
-
-Pass a list of sensor keys from `deepracer_env.sensors.constants.Input`:
+### Customising sensors
 
 ```python
 from deepracer_env.sensors.constants import Input
@@ -137,7 +235,7 @@ env = DeepRacerEnv(
 Available sensors: `CAMERA`, `LEFT_CAMERA`, `STEREO`, `LIDAR`, `SECTOR_LIDAR`,
 `DISCRETIZED_SECTOR_LIDAR`.
 
-### Config overrides
+### Customising controller parameters
 
 ```python
 import deepracer_env.agent_ctrl.constants as ctrl_const
@@ -147,30 +245,53 @@ env = DeepRacerEnv(
     config={
         ctrl_const.ConfigParams.COLLISION_PENALTY.value: 5.0,
         ctrl_const.ConfigParams.OFF_TRACK_PENALTY.value: 2.0,
+        ctrl_const.ConfigParams.NUMBER_OF_RESETS.value: 0,
     },
 )
 ```
 
-### Full control
+### Full control — bring your own Agent
 
-Pass a pre-built `Agent` instance to bypass all defaults:
+Build an `Agent` yourself and pass it directly; `reward_fn`, `sensors`, and
+`config` are then ignored:
 
 ```python
 from deepracer_env.agents.agent import Agent
+from deepracer_env.sensors.composite_sensor import CompositeSensor
+from deepracer_env.agent_ctrl.rollout_agent_ctrl import RolloutCtrl
 
-env = DeepRacerEnv(agent=my_custom_agent)
+sensor = CompositeSensor()
+ctrl   = RolloutCtrl(my_config, my_metrics, is_training=True)
+env    = DeepRacerEnv(agent=Agent(sensor, ctrl))
 ```
 
-## Building the Docker image
+---
+
+## Building the simulation image
 
 ```bash
-./build.sh
+./build.sh -a cpu    # CPU-only image
+./build.sh -a gpu    # NVIDIA GPU image (requires nvidia-docker)
+./build.sh -a "cpu gpu" -p myreeg  # both architectures, custom registry prefix
 ```
 
-Uses Docker BuildKit multi-stage builds (`docker/Dockerfile.build-bundle` and
-`docker/Dockerfile.combined`). The `deepracer_env` Python package is copied into
-the image alongside the ROS colcon workspace. See `build.sh` for architecture
-flags (`-a cpu` / `-a gpu`).
+The build chain:
+
+1. `Dockerfile.base` — installs ROS Noetic + Gazebo 11 into Ubuntu 20.04
+2. `Dockerfile.build` — compiles `simulation/src/` with colcon
+3. `Dockerfile.runtime` — assembles the final image
+
+## Developer workflow
+
+To compile the ROS packages locally (output on your disk rather than baked into
+an image):
+
+```bash
+./build-dev-bundle.sh          # compiles into ./install/
+./build-dev-bundle.sh -g       # also starts Gazebo (requires DR_SIMAPP_IMAGE and DR_WORLD_NAME)
+```
+
+---
 
 ## License
 

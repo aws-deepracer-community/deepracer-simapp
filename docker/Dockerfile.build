@@ -1,5 +1,5 @@
 ARG CORE_PREFIX=awsdeepracercommunity
-FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
+FROM $CORE_PREFIX/deepracer-env-build-core:latest
 
 COPY simulation/ /opt/bundle
 COPY deepracer_env/ /opt/bundle/deepracer_env/
