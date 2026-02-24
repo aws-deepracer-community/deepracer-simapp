@@ -94,8 +94,8 @@ my-deepracer-project/
 
 #### `pyproject.toml`
 
-Declare `deepracer-env` as a dependency using a Git URL so it is always
-installed from a pinned commit or tag:
+Do **not** list `deepracer-env` as a dependency here — it is already installed
+in the base simulation image. Only declare your own project's dependencies:
 
 ```toml
 [project]
@@ -103,7 +103,6 @@ name = "my-deepracer-project"
 version = "0.1.0"
 requires-python = ">=3.8"
 dependencies = [
-    "deepracer-env @ git+https://github.com/your-org/deepracer-env.git@main",
     "stable-baselines3",
 ]
 ```
@@ -120,20 +119,24 @@ Add any other packages your `train.py` requires (e.g. `numpy`, `pandas`, `wandb`
 
 #### `Dockerfile`
 
-Extend the simulation image, install your dependencies first, then install your project on top of it:
+Extend the simulation image, install your dependencies first (for better layer
+caching), then install your project on top of it:
 
 ```dockerfile
 ARG SIMAPP_TAG=latest-cpu
 FROM awsdeepracercommunity/deepracer-env:${SIMAPP_TAG}
 
-# Copy and install your project and dependencies
-COPY . /workspace
+# Install third-party dependencies first — cached unless requirements.txt changes
+COPY requirements.txt /workspace/requirements.txt
 RUN pip install --no-cache-dir -r /workspace/requirements.txt
-RUN pip install -e /workspace
+
+# Copy and install your project
+COPY . /workspace
+RUN pip install --no-cache-dir -e /workspace
 
 # Default: run your training script
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run deepracer_rl.launch & sleep 5 && python /workspace/train.py"]
+CMD ["./run.sh run local_training.launch & sleep 5 && python3 /workspace/train.py"]
 ```
 
 #### `train.py`

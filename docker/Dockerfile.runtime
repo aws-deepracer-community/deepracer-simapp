@@ -141,4 +141,4 @@ LABEL maintainer "AWS DeepRacer Community - deepracing.io"
 LABEL version $IMG_VERSION
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run deepracer_rl.launch"]
+CMD ["./run.sh run local_training.launch"]
