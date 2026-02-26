@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.4
-# Image ID: fd9321ac1738
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.6
+# Image ID: 071b2eba4a68
 # Base: Ubuntu 24.04 (Noble)
-# Built: January 26, 2026
-# Optimized: February 8, 2026
+# Built: February 23, 2026
+# Optimized: February 26, 2026
 
 FROM ubuntu:24.04
 
@@ -184,14 +184,14 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     shapely==2.0.2 \
     pyparsing==3.2.5 \
     python-dateutil==2.8.2 \
-    pillow==11.3.0 \
+    pillow==12.1.1 \
     pyyaml==6.0.3 \
     requests==2.32.5 \
     urllib3==2.6.3 \
     empy==4.2 \
     boto3==1.38.38 \
     bokeh==3.7.3 \
-    cryptography==44.0.1 \
+    cryptography==46.0.5 \
     docutils==0.21.2 \
     h5py==3.14.0 \
     jsonschema==4.24.0 \
@@ -286,7 +286,8 @@ RUN /root/anaconda/bin/conda install -y \
     libcurl==8.16.0 \
     urllib3==2.6.3 \
     requests==2.32.5 \
-    && /root/anaconda/bin/conda clean -afy
+    && /root/anaconda/bin/conda clean -afy \
+    && rm -rf /root/anaconda/lib/python3.12/site-packages/cryptography-42.0.5.dist-info
 
 # Upgrade OpenSSL
 RUN apt-get update && apt-get install --only-upgrade -y libssl3t64 openssl && \
