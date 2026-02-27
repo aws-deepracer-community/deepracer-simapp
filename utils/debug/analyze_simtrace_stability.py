@@ -15,10 +15,34 @@ import numpy as np
 TRANSITION_STATUSES = {"off_track", "pause", "prepare"}
 ITERATION_FILENAME_PATTERN = re.compile(r"^(?P<iteration>\d+)-iteration\.csv$")
 MS_PER_SECOND = 1000.0
+WALL_CLOCK_FIELD_CANDIDATES = ("wall_clock", "wallclock", "wall_time")
+
+
+def parse_wall_clock_seconds(value):
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def find_optional_field(fieldnames, candidates):
+    field_map = {name.lower(): name for name in (fieldnames or [])}
+    for candidate in candidates:
+        if candidate in field_map:
+            return field_map[candidate]
+    return None
 
 
 def load_step_deltas(trace_file):
     per_episode_timestamps = defaultdict(list)
+    sim_wall_points = []
 
     with open(trace_file, newline="", encoding="utf-8") as file_obj:
         reader = csv.DictReader(file_obj)
@@ -26,6 +50,7 @@ def load_step_deltas(trace_file):
         missing = required_fields - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"Missing required column(s): {', '.join(sorted(missing))}")
+        wall_clock_field = find_optional_field(reader.fieldnames, WALL_CLOCK_FIELD_CANDIDATES)
 
         for row in reader:
             status = (row.get("episode_status") or "").strip().lower()
@@ -36,6 +61,11 @@ def load_step_deltas(trace_file):
             tstamp = float(row["tstamp"])
             per_episode_timestamps[episode].append(tstamp)
 
+            if wall_clock_field:
+                wall_clock_seconds = parse_wall_clock_seconds(row.get(wall_clock_field))
+                if wall_clock_seconds is not None:
+                    sim_wall_points.append((tstamp, wall_clock_seconds))
+
     per_episode_deltas = {}
     for episode, timestamps in per_episode_timestamps.items():
         if len(timestamps) < 2:
@@ -43,7 +73,19 @@ def load_step_deltas(trace_file):
         deltas = np.diff(np.array(timestamps, dtype=np.float64))
         per_episode_deltas[episode] = deltas[deltas >= 0]
 
-    return per_episode_deltas
+    sim_delta_sum = 0.0
+    wall_delta_sum = 0.0
+    for index in range(1, len(sim_wall_points)):
+        prev_sim, prev_wall = sim_wall_points[index - 1]
+        curr_sim, curr_wall = sim_wall_points[index]
+        sim_delta = curr_sim - prev_sim
+        wall_delta = curr_wall - prev_wall
+        if sim_delta >= 0 and wall_delta > 0:
+            sim_delta_sum += sim_delta
+            wall_delta_sum += wall_delta
+
+    real_time_factor = (sim_delta_sum / wall_delta_sum) if wall_delta_sum > 0 else None
+    return per_episode_deltas, real_time_factor
 
 
 def summarize(values):
@@ -81,13 +123,18 @@ def parse_s3_uri(uri):
     return bucket, prefix
 
 
-def list_s3_keys(bucket, prefix):
+def create_s3_client(aws_profile=None, s3_endpoint_url=None):
     try:
         import boto3
     except ImportError as error:
         raise RuntimeError("boto3 is required for S3 input. Install with: pip install boto3") from error
 
-    client = boto3.client("s3")
+    session = boto3.session.Session(profile_name=aws_profile) if aws_profile else boto3.session.Session()
+    return session.client("s3", endpoint_url=s3_endpoint_url)
+
+
+def list_s3_keys(bucket, prefix, aws_profile=None, s3_endpoint_url=None):
+    client = create_s3_client(aws_profile=aws_profile, s3_endpoint_url=s3_endpoint_url)
     paginator = client.get_paginator("list_objects_v2")
     keys = []
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
@@ -99,18 +146,18 @@ def list_s3_keys(bucket, prefix):
     return sorted(keys)
 
 
-def download_s3_prefix(bucket, prefix, download_root):
-    try:
-        import boto3
-    except ImportError as error:
-        raise RuntimeError("boto3 is required for S3 input. Install with: pip install boto3") from error
-
-    keys = list_s3_keys(bucket, prefix)
+def download_s3_prefix(bucket, prefix, download_root, aws_profile=None, s3_endpoint_url=None):
+    keys = list_s3_keys(
+        bucket,
+        prefix,
+        aws_profile=aws_profile,
+        s3_endpoint_url=s3_endpoint_url,
+    )
     if not keys:
         return []
 
     print(f"Found {len(keys)} file(s) in s3://{bucket}/{prefix}")
-    client = boto3.client("s3")
+    client = create_s3_client(aws_profile=aws_profile, s3_endpoint_url=s3_endpoint_url)
 
     local_paths = []
     for index, key in enumerate(keys, start=1):
@@ -165,18 +212,20 @@ def print_iteration_table(iteration_rows):
     print("Per-iteration summary:")
     print(
         f"{'iteration':>9} {'steps':>10} {'avg_ms':>10} {'max_ms':>10} "
-        f"{'p95_ms':>10} {'std_ms':>10} {'file':<s}"
+        f"{'p95_ms':>10} {'std_ms':>10} {'rtf':>8} {'file':<s}"
     )
-    print("-" * 110)
+    print("-" * 120)
     for row in sorted(iteration_rows, key=lambda item: sort_key_for_file(item["file"])):
         iteration_label = str(row["iteration"]) if row["iteration"] is not None else "n/a"
         avg_ms = row["avg"] * MS_PER_SECOND
         max_ms = row["max"] * MS_PER_SECOND
         p95_ms = row["p95"] * MS_PER_SECOND
         std_ms = row["std"] * MS_PER_SECOND
+        rtf_label = f"{row['rtf']:.3f}" if row["rtf"] is not None else "n/a"
         print(
             f"{iteration_label:>9} {row['count']:>10d} {avg_ms:>10.1f} "
-            f"{max_ms:>10.1f} {p95_ms:>10.1f} {std_ms:>10.1f} {os.path.basename(row['file'])}"
+            f"{max_ms:>10.1f} {p95_ms:>10.1f} {std_ms:>10.1f} {rtf_label:>8} "
+            f"{os.path.basename(row['file'])}"
         )
 
 
@@ -187,7 +236,7 @@ def process_files(file_paths):
 
     for index, file_path in enumerate(file_paths, start=1):
         try:
-            per_episode_deltas = load_step_deltas(file_path)
+            per_episode_deltas, iteration_rtf = load_step_deltas(file_path)
         except Exception as error:
             print(f"Process [{index}/{len(file_paths)}]: skipped {file_path} ({error})")
             continue
@@ -211,6 +260,7 @@ def process_files(file_paths):
                 "max": file_stats["max"],
                 "p95": file_stats["p95"],
                 "std": file_stats["std"],
+                "rtf": iteration_rtf,
             }
         )
         file_avg_ms = file_stats["avg"] * MS_PER_SECOND
@@ -221,10 +271,11 @@ def process_files(file_paths):
         cumulative_max_ms = cumulative_stats["max"] * MS_PER_SECOND
         cumulative_p95_ms = cumulative_stats["p95"] * MS_PER_SECOND
         cumulative_std_ms = cumulative_stats["std"] * MS_PER_SECOND
+        rtf_suffix = f", rtf={iteration_rtf:.3f}" if iteration_rtf is not None else ""
         print(
             f"Process [{index}/{len(file_paths)}]: {file_path} | "
             f"file(avg_ms={file_avg_ms:.1f}, max_ms={file_max_ms:.1f}, "
-            f"p95_ms={file_p95_ms:.1f}, std_ms={file_std_ms:.1f}) | "
+            f"p95_ms={file_p95_ms:.1f}, std_ms={file_std_ms:.1f}{rtf_suffix}) | "
             f"cumulative(avg_ms={cumulative_avg_ms:.1f}, max_ms={cumulative_max_ms:.1f}, "
             f"p95_ms={cumulative_p95_ms:.1f}, std_ms={cumulative_std_ms:.1f})"
         )
@@ -367,6 +418,14 @@ def main():
             "If omitted, a timestamped directory is created in the current working directory."
         ),
     )
+    parser.add_argument(
+        "--s3-endpoint-url",
+        help="Custom S3 endpoint URL to use for S3 operations.",
+    )
+    parser.add_argument(
+        "--aws-profile",
+        help="AWS profile name to use for S3 operations.",
+    )
     args = parser.parse_args()
 
     if args.trace_source.startswith("s3://"):
@@ -379,7 +438,13 @@ def main():
             )
             os.makedirs(download_dir, exist_ok=True)
             print(f"Keeping downloaded files in: {download_dir}")
-            local_files = download_s3_prefix(bucket, prefix, download_dir)
+            local_files = download_s3_prefix(
+                bucket,
+                prefix,
+                download_dir,
+                aws_profile=args.aws_profile,
+                s3_endpoint_url=args.s3_endpoint_url,
+            )
             if not local_files:
                 print("No files found at S3 prefix.")
                 return
@@ -393,7 +458,13 @@ def main():
             print_summary("Overall", summarize(all_deltas))
         else:
             with tempfile.TemporaryDirectory(prefix="simtrace_s3_") as temp_dir:
-                local_files = download_s3_prefix(bucket, prefix, temp_dir)
+                local_files = download_s3_prefix(
+                    bucket,
+                    prefix,
+                    temp_dir,
+                    aws_profile=args.aws_profile,
+                    s3_endpoint_url=args.s3_endpoint_url,
+                )
                 if not local_files:
                     print("No files found at S3 prefix.")
                     return
@@ -425,7 +496,7 @@ def main():
         print_summary("Overall", summarize(all_deltas))
         return
 
-    per_episode_deltas = load_step_deltas(args.trace_source)
+    per_episode_deltas, _ = load_step_deltas(args.trace_source)
     if not per_episode_deltas:
         print("No valid in-episode step deltas found after filtering transition rows.")
         return

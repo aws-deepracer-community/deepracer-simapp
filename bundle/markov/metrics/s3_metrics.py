@@ -68,7 +68,7 @@ def sim_trace_log(sim_trace_dict):
        sim_trace_dict - Ordered dict containing the step metrics, note order must match
                         precision in the string
     '''
-    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d\n' % \
+    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d,%.4f' % \
         (tuple(sim_trace_dict.values())))
 
 
