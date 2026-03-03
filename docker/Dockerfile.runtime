@@ -56,10 +56,8 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
 # nvidia-container-runtime
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES \
-    ${NVIDIA_DRIVER_CAPABILITIES:-all}
+ENV NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:-all}
 
 COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
@@ -128,7 +126,9 @@ COPY deepracer_env/ /tmp/deepracer-env/deepracer_env/
 COPY pyproject.toml requirements.txt VERSION /tmp/deepracer-env/
 RUN pip3 install --no-cache-dir /tmp/deepracer-env && rm -rf /tmp/deepracer-env
 
-# Copy simulation scripts
+# Copy entrypoint and simulation scripts
+COPY ./docker/files/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 COPY ./docker/files/robomaker/run.sh run.sh
 COPY ./docker/files/robomaker/shutdown.sh shutdown.sh
 COPY ./simulation/script/start_deepracer_node_monitor.py start_deepracer_node_monitor.py
@@ -137,8 +137,8 @@ COPY ./simulation/src/deepracer_node_monitor/config/*.txt .
 # Add labels
 COPY VERSION .
 ARG IMG_VERSION
-LABEL maintainer "AWS DeepRacer Community - deepracing.io"
-LABEL version $IMG_VERSION
+LABEL maintainer="AWS DeepRacer Community - deepracing.io"
+LABEL version=$IMG_VERSION
 
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["source /opt/ros/noetic/setup.bash && source /opt/simapp/setup.bash && ./run.sh run deepracer_env.launch"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["./run.sh", "run", "deepracer_env.launch"]
