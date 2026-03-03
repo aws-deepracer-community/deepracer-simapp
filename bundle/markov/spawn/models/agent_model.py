@@ -17,12 +17,10 @@
 """this module handle all agent model spawn and delete"""
 
 import os
-import random
-import rospkg
-import rospy
 import rosnode
 import yaml
 import time
+import logging
 
 from markov.spawn.constants import (DeepRacerPackages)
 from markov.spawn.gazebo_model import GazeboModel
@@ -32,8 +30,11 @@ from geometry_msgs.msg import Pose
 from subprocess import Popen
 from typing import Optional
 from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.logger import Logger
 from markov.log_handler.constants import (SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                           SIMAPP_EVENT_ERROR_CODE_500)
+from markov.world_config import WorldConfig
+logger = Logger(__name__, logging.INFO).get_logger()
 
 
 class AgentModel(AbsModel):
@@ -48,8 +49,9 @@ class AgentModel(AbsModel):
         """
         super().__init__(max_retry_attempts=max_retry_attempts,
                          backoff_time_sec=backoff_time_sec)
+        from ament_index_python.packages import get_package_share_directory
         self._agent_file_path = os.path.join(
-            self._rospack.get_path(DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT),
+            get_package_share_directory(DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT),
             "urdf",
             "deepracer_kinematics",
             "racecar.xacro")
@@ -68,10 +70,10 @@ class AgentModel(AbsModel):
                                            racecar_name=self._model_name)
 
         # load robot_description into ros parameter server
-        rospy.set_param("/{}/robot_description".format(self._model_name), model_urdf)
+        WorldConfig.set_param("/{}/robot_description".format(self._model_name), model_urdf)
 
-        # roslaunch controller_manager and robot_state_publisher
-        Popen("roslaunch deepracer_simulation_environment racecar_control_kinematics.launch \
+        # ros2 launch controller_manager and robot_state_publisher
+        Popen("ros2 launch deepracer_simulation_environment racecar_control_kinematics.launch.py \
             racecar_name:={} make_required:={} __ns:={}".format(self._model_name,
                                                                 "false",
                                                                 self._model_name),
@@ -139,7 +141,7 @@ class AgentModel(AbsModel):
                 break
             try_count += 1
             if try_count > self._max_retry_attempts:
-                # Only reset model name to None is wait for roslaunch start failure.
+                # Only reset model name to None is wait for ros2 launch start failure.
                 # for rosnode kill failure, we should keep model name as it is before
                 if alive_nodes and not dead_nodes:
                     self._model_name = None
@@ -147,6 +149,6 @@ class AgentModel(AbsModel):
                              "or killing ros node {} failed".format(alive_nodes, dead_nodes),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
                              SIMAPP_EVENT_ERROR_CODE_500)
-            rospy.loginfo("[AgentModel]: _wait_for_rosnode starting ros node {} "
+            logger.info("[AgentModel]: _wait_for_rosnode starting ros node {} "
                           "or killing ros node {}".format(alive_nodes, dead_nodes))
             time.sleep(self._backoff_time_sec)

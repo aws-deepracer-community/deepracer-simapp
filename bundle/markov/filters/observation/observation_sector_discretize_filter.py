@@ -51,12 +51,17 @@ class ObservationSectorDiscretizeFilter(ObservationFilter):
             raise GenericRolloutException("Number of total lidar values is not divisible by number of values in each sector")
 
     def filter(self, observation: ObservationType, update_internal_state: bool = True) -> ObservationType:
+        # Replace infinity values with clipping distance before processing
+        observation = np.where(np.isinf(observation), self._clipping_dist, observation)
+        
         # Divide the raw lidar data into sectors and take the min from raw lidar data in each sector
         observation = np.min(observation.reshape(-1, int(observation.shape[0] / self._num_sectors)), axis=1)
         # Clip the observation data to clipping distance.
         np.minimum(observation, self._clipping_dist, out=observation)
         # Discretize the observation sector data
         observation = np.floor(observation / self._discrete_range).astype(int)
+        # Clamp observation values to valid range (allows num_values_per_sector for "no detection" case)
+        observation = np.clip(observation, 0, self._num_values_per_sector)
         # One hot encode the discretized observation sector data
         one_hot_encode = np.zeros((observation.size, self._num_values_per_sector + 1))
         one_hot_encode[np.arange(observation.size), observation] = 1

@@ -15,7 +15,8 @@
 #################################################################################
 
 '''This module is used to create agents for the rollout worker'''
-from markov.agent_ctrl.bot_cars_agent_ctrl import  BotCarsCtrl
+import logging
+from markov.log_handler.logger import Logger
 from markov.agent_ctrl.constants import ConfigParams
 from markov.agent_ctrl.rollout_agent_ctrl import RolloutCtrl
 from markov.agent_ctrl.obstacles_agent_ctrl import ObstaclesCtrl
@@ -25,6 +26,9 @@ from markov.sensors.sensors_rollout import SensorFactory
 from markov.cameras.frustum_manager import FrustumManager
 from markov.boto.s3.constants import ModelMetadataKeys
 
+# Logger object
+logger = Logger(__name__, logging.INFO).get_logger()
+
 
 def create_rollout_agent(agent_config, metrics, run_phase_subject):
     '''Returns an rollout agent object
@@ -32,22 +36,36 @@ def create_rollout_agent(agent_config, metrics, run_phase_subject):
        metrics - Metrics object for the agent
        run_phase_subject - Subject that notifies observers when the run phase changes
     '''
-    model_metadata = agent_config['model_metadata']
-    model_metadata_info = model_metadata.get_model_metadata_info()
-    observation_list = model_metadata_info[ModelMetadataKeys.SENSOR.value]
-    network = model_metadata_info[ModelMetadataKeys.NEURAL_NETWORK.value]
-    version = model_metadata_info[ModelMetadataKeys.VERSION.value]
-    agent_name = agent_config[ConfigParams.CAR_CTRL_CONFIG.value][ConfigParams.AGENT_NAME.value]
-    sensor = construct_sensor(agent_name, observation_list, SensorFactory, model_metadata_info)
-    network_settings = get_network_settings(sensor, network)
-    FrustumManager.get_instance().add(agent_name=agent_name,
-                                      observation_list=observation_list,
-                                      version=version)
+    
+    try:
+        model_metadata = agent_config['model_metadata']
+        
+        model_metadata_info = model_metadata.get_model_metadata_info()
+        
+        observation_list = model_metadata_info[ModelMetadataKeys.SENSOR.value]
+        network = model_metadata_info[ModelMetadataKeys.NEURAL_NETWORK.value]
+        version = model_metadata_info[ModelMetadataKeys.VERSION.value]
+        
+        agent_name = agent_config[ConfigParams.CAR_CTRL_CONFIG.value][ConfigParams.AGENT_NAME.value]
+        
+        sensor = construct_sensor(agent_name, observation_list, SensorFactory, model_metadata_info)
+        
+        network_settings = get_network_settings(sensor, network)
+        
+        FrustumManager.get_instance().add(agent_name=agent_name,
+                                          observation_list=observation_list,
+                                          version=version)
 
-    ctrl_config = agent_config[ConfigParams.CAR_CTRL_CONFIG.value]
-    ctrl = RolloutCtrl(ctrl_config, run_phase_subject, metrics)
+        ctrl_config = agent_config[ConfigParams.CAR_CTRL_CONFIG.value]
+        
+        ctrl = RolloutCtrl(ctrl_config, run_phase_subject, metrics)
 
-    return Agent(network_settings, sensor, ctrl)
+        agent = Agent(network_settings, sensor, ctrl)
+        return agent
+        
+    except Exception as e:
+        logger.error("Error creating rollout agent: %s", e)
+        raise
 
 def create_obstacles_agent():
     '''Returns an obstacle agent, such as a box. Will not be used for training'''
@@ -56,5 +74,15 @@ def create_obstacles_agent():
 
 def create_bot_cars_agent(pause_time_before_start=0.0):
     '''Returns a bot car agent. Will not be used for training'''
-    ctrl = BotCarsCtrl(pause_time_before_start=pause_time_before_start)
-    return Agent(None, None, ctrl)
+    
+    try:
+        from markov.agent_ctrl.bot_cars_agent_ctrl import BotCarsCtrl
+        
+        ctrl = BotCarsCtrl(pause_time_before_start=pause_time_before_start)
+        
+        agent = Agent(None, None, ctrl)
+        
+        return agent
+    except Exception as e:
+        logger.error("Error creating bot cars agent: %s", e)
+        raise

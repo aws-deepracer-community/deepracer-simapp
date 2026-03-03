@@ -1,39 +1,29 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
+import logging
 import time
-import rospy
 import markov.rollout_constants as const
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
+from markov.log_handler.logger import Logger
 from markov.domain_randomizations.constants import GazeboServiceName
-from markov.rospy_wrappers import ServiceProxyWrapper
-from markov.track_geom.constants import SET_MODEL_STATE
+from markov.rclpy_wrappers import ServiceProxyWrapper
+# OLD CODE - COMMENTED OUT: from markov.track_geom.constants import SET_MODEL_STATE
+# FIX: Use SET_MODEL_STATES (plural) to match available ROS2 service
+from markov.track_geom.constants import SET_MODEL_STATES
 from markov.track_geom.utils import euler_to_quaternion
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
 from std_msgs.msg import ColorRGBA
-from std_srvs.srv import Empty, EmptyRequest
+from std_srvs.srv import Empty
 from geometry_msgs.msg import Pose
-from gazebo_msgs.msg import ModelState
-from gazebo_msgs.srv import SetModelState, GetModelProperties, GetModelPropertiesRequest
-from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest,
-                                GetVisuals, GetVisualsRequest,
-                                SetVisualColors, SetVisualColorsRequest,
-                                SetVisualTransparencies, SetVisualTransparenciesRequest,
-                                SetVisualVisibles, SetVisualVisiblesRequest)
+from deepracer_msgs.msg import ModelState
+from deepracer_msgs.srv import (SetModelStates, GetModelProperties,
+                                GetVisualNames,
+                                GetVisuals, 
+                                SetVisualColors,
+                                SetVisualTransparencies,
+                                SetVisualVisibles)
 
 GAZEBO_SERVICES = ["PAUSE_PHYSICS", "UNPAUSE_PHYSICS",
                    "GET_MODEL_PROPERTIES",
@@ -43,8 +33,10 @@ GAZEBO_SERVICES = ["PAUSE_PHYSICS", "UNPAUSE_PHYSICS",
                    "SET_VISUAL_TRANSPARENCIES",
                    "SET_VISUAL_VISIBLES"]
 
+logger = Logger(__name__, logging.INFO).get_logger()
 
-class ModelUpdater(object):
+
+class ModelUpdater():
     """
     ModelUpdater class
     """
@@ -63,17 +55,20 @@ class ModelUpdater(object):
         Raises:
             GenericRolloutException: raise a GenericRolloutException if the object is no longer singleton.
         """
+        
         if ModelUpdater._instance_ is not None:
             raise GenericRolloutException("Attempting to construct multiple ModelUpdater")
 
         # Wait for required services to be available
-        rospy.wait_for_service(SET_MODEL_STATE)
         # Wait for gazebo plugin services to be available
         for service in GazeboServiceName:
             if service.name in GAZEBO_SERVICES:
-                rospy.wait_for_service(service.value)
-        # Gazebo service that allows us to position the car
-        self._model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelState)
+                # In ROS2, we don't need to explicitly wait for services as the ServiceProxyWrapper handles this
+                logger.debug(f"Service {service.name} is available")
+                
+        # OLD CODE - COMMENTED OUT: self._model_state_client = ServiceProxyWrapper(SET_MODEL_STATE, SetModelStates)
+        # FIX: Use SET_MODEL_STATES (plural) to match available ROS2 service
+        self._model_state_client = ServiceProxyWrapper(SET_MODEL_STATES, SetModelStates)
 
         self._get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value,
                                                    GetModelProperties)
@@ -141,21 +136,24 @@ class ModelUpdater(object):
             if "car_body_link" in visual_name:
                 visual_names.append(visual_name)
                 link_names.append(link_name)
-                ambient = ColorRGBA(const.COLOR_MAP[car_color].r * 0.1,
-                                    const.COLOR_MAP[car_color].g * 0.1,
-                                    const.COLOR_MAP[car_color].b * 0.1,
-                                    const.COLOR_MAP[car_color].a)
-                diffuse = ColorRGBA(const.COLOR_MAP[car_color].r * 0.35,
-                                    const.COLOR_MAP[car_color].g * 0.35,
-                                    const.COLOR_MAP[car_color].b * 0.35,
-                                    const.COLOR_MAP[car_color].a)
+                ambient = ColorRGBA()
+                ambient.r = const.COLOR_MAP[car_color].r * 0.1
+                ambient.g = const.COLOR_MAP[car_color].g * 0.1
+                ambient.b = const.COLOR_MAP[car_color].b * 0.1
+                ambient.a = const.COLOR_MAP[car_color].a
+                
+                diffuse = ColorRGBA()
+                diffuse.r = const.COLOR_MAP[car_color].r * 0.35
+                diffuse.g = const.COLOR_MAP[car_color].g * 0.35
+                diffuse.b = const.COLOR_MAP[car_color].b * 0.35
+                diffuse.a = const.COLOR_MAP[car_color].a
 
                 ambients.append(ambient)
                 diffuses.append(diffuse)
                 speculars.append(const.DEFAULT_COLOR)
                 emissives.append(const.DEFAULT_COLOR)
         if len(visual_names) > 0:
-            req = SetVisualColorsRequest()
+            req = SetVisualColors.Request()
             req.visual_names = visual_names
             req.link_names = link_names
             req.ambients = ambients
@@ -163,6 +161,9 @@ class ModelUpdater(object):
             req.speculars = speculars
             req.emissives = emissives
             self._set_visual_colors(req)
+            logger.info(f"Updated car color to {car_color} for {len(visual_names)} visuals")
+        else:
+            logger.warning(f"NO visuals matched 'car_body_link' filter!")
 
     def get_model_visuals(self, model_name):
         """Get the model visuals associated to the model name
@@ -175,12 +176,19 @@ class ModelUpdater(object):
             Visuals: The visuals of the current model.
         """
         # Get all model's link names
-        body_names = self._get_model_prop(GetModelPropertiesRequest(model_name=model_name)) \
-            .body_names
-        link_names = ["%s::%s" % (model_name, b) for b in body_names]
-        res = self._get_visual_names(GetVisualNamesRequest(link_names=link_names))
-        get_visuals_req = GetVisualsRequest(link_names=res.link_names,
-                                            visual_names=res.visual_names)
+        req = GetModelProperties.Request()
+        req.model_name = model_name
+        body_names = self._get_model_prop(req).body_names
+        # Fix: body_names already have model_name:: prefix in Gazebo Harmonic, don't double-prefix
+        link_names = [b if b.startswith(model_name + "::") else "%s::%s" % (model_name, b) for b in body_names]
+        
+        req = GetVisualNames.Request()
+        req.link_names = link_names
+        res = self._get_visual_names(req)
+        
+        get_visuals_req = GetVisuals.Request()
+        get_visuals_req.link_names = res.link_names
+        get_visuals_req.visual_names = res.visual_names
         visuals = self._get_visuals(get_visuals_req)
 
         return visuals
@@ -225,7 +233,7 @@ class ModelUpdater(object):
             visual_names ([str]): A list of visual names.
             block (bool, optional): Is the call is blocking. Defaults to True.
         """
-        req = SetVisualVisiblesRequest()
+        req = SetVisualVisibles.Request()
         req.link_names = link_names
         req.visual_names = visual_names
         req.visibles = [False] * len(link_names)
@@ -240,7 +248,7 @@ class ModelUpdater(object):
             visual_names ([str]): A list of visual names.
             block (bool, optional): Is the call is blocking. Defaults to True.
         """
-        req = SetVisualTransparenciesRequest()
+        req = SetVisualTransparencies.Request()
         req.link_names = link_names
         req.visual_names = visual_names
         req.transparencies = [1.0] * len(link_names)
@@ -259,8 +267,9 @@ class ModelUpdater(object):
         Returns:
             bool: If the visuals are hiddens
         """
-        get_visuals_req = GetVisualsRequest(link_names=link_names,
-                                            visual_names=visual_names)
+        get_visuals_req = GetVisuals.Request()
+        get_visuals_req.link_names = link_names
+        get_visuals_req.visual_names = visual_names
         visuals = self._get_visuals(get_visuals_req)
         # all transparency are 1.0
         all_transparent = (int(sum(visuals.transparencies)) == len(link_names))
@@ -300,12 +309,12 @@ class ModelUpdater(object):
         model_state = ModelState()
         model_state.model_name = model_name
         model_state.pose = model_pose
-        model_state.twist.linear.x = 0
-        model_state.twist.linear.y = 0
-        model_state.twist.linear.z = 0
-        model_state.twist.angular.x = 0
-        model_state.twist.angular.y = 0
-        model_state.twist.angular.z = 0
+        model_state.twist.linear.x = 0.0
+        model_state.twist.linear.y = 0.0
+        model_state.twist.linear.z = 0.0
+        model_state.twist.angular.x = 0.0
+        model_state.twist.angular.y = 0.0
+        model_state.twist.angular.z = 0.0
         return self.set_model_state(model_state, is_blocking)
 
     def set_model_state(self, model_state, is_blocking=False):
@@ -317,21 +326,38 @@ class ModelUpdater(object):
         Returns:
             ModelState: The latest model state of the robot.
         """
-        if is_blocking:
-            self._set_model_state_tracker.set_model_state(model_state, blocking=True)
-            self._get_model_state_tracker.get_model_state(model_state.model_name, '', blocking=True)
-        else:
-            self._model_state_client(model_state)
-        return model_state
+        
+        logger.debug("Setting model state for %s, blocking=%s", 
+                    model_state.model_name, is_blocking)
+        try:
+            if is_blocking:
+                self._set_model_state_tracker.set_model_state(model_state, blocking=True)
+                self._get_model_state_tracker.get_model_state(model_state.model_name, '', blocking=True)
+            else:
+                self._model_state_client([model_state])
+            return model_state
+        except Exception as e:
+            logger.error("Error updating model state: %s", e)
+            raise
 
     def pause_physics(self):
         """
         Pause the current gazebo environment physics.
         """
-        self._pause_physics(EmptyRequest())
+        try:
+            req = Empty.Request()
+            result = self._pause_physics(req)
+        except Exception as e:
+            logger.error(f"Error pausing physics: {e}")
+            raise
 
     def unpause_physics(self):
         """
         Pause the current gazebo environment physics.
         """
-        self._unpause_physics(EmptyRequest())
+        try:
+            req = Empty.Request()
+            result = self._unpause_physics(req)
+        except Exception as e:
+            logger.error(f"Error unpausing physics: {e}")
+            raise

@@ -20,6 +20,7 @@ import argparse
 import json
 import logging
 import math
+import time
 import botocore
 import warnings  
 warnings.filterwarnings("ignore",category=FutureWarning)
@@ -73,27 +74,51 @@ IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = utils.get_sagemaker_pro
 def training_worker(graph_manager, task_parameters, user_batch_size,
                     user_episode_per_rollout, training_algorithm):
     try:
-        # initialize graph
-        graph_manager.create_graph(task_parameters)
+        logger.debug("DEBUG: training_worker function started")
+        try:
+            graph_manager.create_graph(task_parameters)
+        except Exception as e:
+            logger.error("DEBUG: graph_manager.create_graph failed: %s", e)
+            raise
 
         # save initial checkpoint
-        graph_manager.save_checkpoint()
+        try:
+            graph_manager.save_checkpoint()
+        except Exception as e:
+            logger.error("Error saving initial checkpoint: %s", e)
+            raise
 
         # training loop
         steps = 0
 
-        graph_manager.setup_memory_backend()
-        graph_manager.signal_ready()
+        try:
+            graph_manager.setup_memory_backend()
+        except Exception as e:
+            logger.error("Error setting up memory backend: %s", e)
+            raise
+        
+        try:
+            graph_manager.signal_ready()
+        except Exception as e:
+            logger.error("Error signaling ready: %s", e)
+            raise
 
         # To handle SIGTERM
         door_man = utils.DoorMan()
 
         while steps < graph_manager.improve_steps.num_steps:
+            logger.debug("DEBUG: Training loop iteration %s", steps)
              # Collect profiler information only IS_PROFILER_ON is true
             with utils.Profiler(s3_bucket=PROFILER_S3_BUCKET, s3_prefix=PROFILER_S3_PREFIX,
                                 output_local_path=TRAINING_WORKER_PROFILER_PATH, enable_profiling=IS_PROFILER_ON):
                 graph_manager.phase = core_types.RunPhase.TRAIN
-                graph_manager.fetch_from_worker(graph_manager.agent_params.algorithm.num_consecutive_playing_steps)
+                
+                try:
+                    graph_manager.fetch_from_worker(graph_manager.agent_params.algorithm.num_consecutive_playing_steps)
+                except Exception as fetch_error:
+                    logger.error("Error fetching data from worker: %s", fetch_error)
+                    raise
+                    
                 graph_manager.phase = core_types.RunPhase.UNDEFINED
 
                 episodes_in_rollout = graph_manager.memory_backend.get_total_episodes_in_rollout()
@@ -166,6 +191,10 @@ def training_worker(graph_manager, task_parameters, user_batch_size,
                     for agent in level.agents.values():
                         agent.ap.algorithm.num_consecutive_playing_steps.num_steps = user_episode_per_rollout
                         agent.ap.algorithm.num_steps_between_copying_online_weights_to_target.num_steps = user_episode_per_rollout
+
+                if not graph_manager.should_train():
+                    # Avoid busy-waiting when there's no training to do
+                    time.sleep(1)
 
                 if door_man.terminate_now:
                     log_and_exit("Received SIGTERM. Checkpointing before exiting.",
@@ -271,6 +300,8 @@ def main():
                                           local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format('agent'))
     model_metadata_upload.persist(s3_kms_extra_args=utils.get_s3_kms_extra_args())
 
+    # Ensure SM_MODEL_OUTPUT_DIR exists as a directory before copying
+    os.makedirs(SM_MODEL_OUTPUT_DIR, exist_ok=True)
     shutil.copy2(model_metadata_download.local_path, SM_MODEL_OUTPUT_DIR)
 
     success_custom_preset = False

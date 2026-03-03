@@ -1,35 +1,90 @@
-# Publish all joint states -----------------------------------
-joint_state_controller:
-  type: joint_state_controller/JointStateController
-  publish_rate: 60
+/**/controller_manager:
+  ros__parameters:
+    use_sim_time: true
+    update_rate: 60
 
+    # Joint state broadcaster
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
 
-# Velocity Controllers ---------------------------------------
-left_rear_wheel_velocity_controller:
-  type: effort_controllers/JointVelocityController
-  joint: left_rear_wheel_joint
-  pid: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0}
-right_rear_wheel_velocity_controller:
-  type: effort_controllers/JointVelocityController
-  joint: right_rear_wheel_joint
-  pid: {p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0}
-left_front_wheel_velocity_controller:
-  type: effort_controllers/JointVelocityController
-  joint: left_front_wheel_joint
-  pid: {p: 0.5, i: 0.0, d: 0.0, i_clamp: 0.0}
-right_front_wheel_velocity_controller:
-  type: effort_controllers/JointVelocityController
-  joint: right_front_wheel_joint
-  pid: {p: 0.5, i: 0.0, d: 0.0, i_clamp: 0.0}
+    # Wheel velocity controllers with PID (effort-based for physics simulation)
+    left_rear_wheel_velocity_controller:
+      type: effort_controllers/JointGroupEffortController
+    right_rear_wheel_velocity_controller:
+      type: effort_controllers/JointGroupEffortController
+    left_front_wheel_velocity_controller:
+      type: effort_controllers/JointGroupEffortController
+    right_front_wheel_velocity_controller:
+      type: effort_controllers/JointGroupEffortController
 
+    # Steering position controllers
+    left_steering_hinge_position_controller:
+      type: position_controllers/JointGroupPositionController
+    right_steering_hinge_position_controller:
+      type: position_controllers/JointGroupPositionController
 
-# Position Controllers ---------------------------------------
-left_steering_hinge_position_controller:
-  joint: left_steering_hinge_joint
-  type: effort_controllers/JointPositionController
-  pid: {p: 1.0, i: 0.0, d: 0.5}
-right_steering_hinge_position_controller:
-  joint: right_steering_hinge_joint
-  type: effort_controllers/JointPositionController
-  pid: {p: 1.0, i: 0.0, d: 0.5}
+/**/joint_state_broadcaster:
+  ros__parameters:
+    update_rate: 60
 
+# Wheel velocity controllers with PID gains (effort-based)
+/**/left_rear_wheel_velocity_controller:
+  ros__parameters:
+    joints: [left_rear_wheel_joint]
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0
+
+/**/right_rear_wheel_velocity_controller:
+  ros__parameters:
+    joints: [right_rear_wheel_joint]
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.0
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0
+
+/**/left_front_wheel_velocity_controller:
+  ros__parameters:
+    joints: [left_front_wheel_joint]
+    pid:
+      p: 0.5
+      i: 0.0
+      d: 0.0
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0
+
+/**/right_front_wheel_velocity_controller:
+  ros__parameters:
+    joints: [right_front_wheel_joint]
+    pid:
+      p: 0.5
+      i: 0.0
+      d: 0.0
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0
+
+# Steering position controllers with PID gains
+/**/left_steering_hinge_position_controller:
+  ros__parameters:
+    joints: [left_steering_hinge_joint]
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.5
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0
+
+/**/right_steering_hinge_position_controller:
+  ros__parameters:
+    joints: [right_steering_hinge_joint]
+    pid:
+      p: 1.0
+      i: 0.0
+      d: 0.5
+      i_clamp_min: 0.0
+      i_clamp_max: 0.0

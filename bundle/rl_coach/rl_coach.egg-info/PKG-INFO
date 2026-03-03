@@ -1,0 +1,47 @@
+Metadata-Version: 2.4
+Name: rl-coach
+Version: 1.0.0
+Summary: Reinforcement Learning Coach enables easy experimentation with state of the art Reinforcement Learning algorithms.
+Home-page: https://github.com/NervanaSystems/coach
+Author: Intel AI Lab
+Author-email: coach@intel.com
+Requires-Python: >=3.12
+License-File: LICENSE
+Requires-Dist: tensorflow==2.20.0
+Requires-Dist: tensorflow-probability==0.25.0
+Requires-Dist: tf_keras==2.20.1
+Requires-Dist: protobuf==6.33.5
+Requires-Dist: keras==3.13.2
+Requires-Dist: numpy==1.26.4
+Requires-Dist: scipy==1.13.1
+Requires-Dist: scikit-learn==1.7.0
+Requires-Dist: scikit-image==0.25.2
+Requires-Dist: pandas==2.3.1
+Requires-Dist: matplotlib==3.10.6
+Requires-Dist: pillow==12.1.1
+Requires-Dist: gymnasium==1.2.0
+Requires-Dist: gymnasium[atari]==1.2.0
+Requires-Dist: ale-py==0.11.1
+Requires-Dist: pygame==2.6.1
+Requires-Dist: PyOpenGL==3.1.9
+Requires-Dist: annoy==1.17.3
+Requires-Dist: bokeh==3.7.3
+Requires-Dist: redis==6.2.0
+Requires-Dist: psutil==6.1.0
+Requires-Dist: kubernetes==33.1.0
+Requires-Dist: minio==7.2.15
+Requires-Dist: pytest==8.3.4
+Requires-Dist: pytest-cov==6.0.0
+Requires-Dist: tensorflow>=2.16.0
+Provides-Extra: mxnet
+Requires-Dist: mxnet>=1.9.0; extra == "mxnet"
+Provides-Extra: all
+Requires-Dist: mxnet>=1.9.0; extra == "all"
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

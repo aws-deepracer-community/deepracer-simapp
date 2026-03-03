@@ -1,25 +1,11 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """this module implements all virtual event state machine states"""
 
 import os
 import json
 import logging
-import rospy
 import cv2
 
 from threading import Thread
@@ -38,6 +24,7 @@ from markov.boto.s3.constants import (SECTOR_TIME_LOCAL_PATH,
                                       SECTOR_X_FORMAT,
                                       SECTOR_TIME_FORMAT_DICT)
 from markov.utils import get_s3_kms_extra_args
+from markov.world_config import WorldConfig
 from mp4_saving import utils
 from mp4_saving.constants import (VirtualEventMP4Params,
                                   VirtualEventXYPixelLoc,
@@ -57,7 +44,7 @@ class VirtualEventRunState(AbsFSMState):
         Args:
             current_sector (int): current sector index 0-based.
         """
-        self._total_sectors = int(rospy.get_param("NUM_SECTORS", "3"))
+        self._total_sectors = int(WorldConfig.get_param("NUM_SECTORS", "3"))
         if self._total_sectors == 0:
             log_and_exit("[virtual event]: Virtual event run state with 0 total sectors. \
                          This needs to be at least 1",
@@ -67,8 +54,8 @@ class VirtualEventRunState(AbsFSMState):
         # current sector index 0 is sector1 and so on so forth
         self._current_sector = current_sector % self._total_sectors
         self._target_progress = (100.00 / self._total_sectors) * (self._current_sector + 1)
-        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 3))
-        self._race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
+        self._total_laps = int(WorldConfig.get_param("NUMBER_OF_TRIALS", 3))
+        self._race_duration = int(WorldConfig.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
 
         # VirtualEventBestSectorTime S3 upload instance
         # use the s3 bucket and prefix for yaml file stored as environment variable because

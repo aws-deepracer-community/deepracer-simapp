@@ -19,7 +19,7 @@ import pytest
 
 # If it fails to import this package it will skip the complete module
 # Use this import if its a robomaker unit test
-rospy = pytest.importorskip("rospy")
+rclpy = pytest.importorskip("rclpy")
 
 from markov.metrics.iteration_data import IterationData
 

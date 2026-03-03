@@ -17,7 +17,7 @@
 import logging
 import numpy as np
 
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.domain_randomizations.abs_randomizer import AbstractRandomizer
 from markov.log_handler.logger import Logger
 from markov.domain_randomizations.constants import (ModelRandomizerType, GazeboServiceName,
@@ -25,11 +25,9 @@ from markov.domain_randomizations.constants import (ModelRandomizerType, GazeboS
                                                     RANGE_MIN, RANGE_MAX)
 from markov.gazebo_tracker.trackers.set_visual_color_tracker import SetVisualColorTracker
 
-import rospy
-from gazebo_msgs.srv import GetModelProperties, GetModelPropertiesRequest
 from std_msgs.msg import ColorRGBA
 
-from deepracer_msgs.srv import (GetVisualNames, GetVisualNamesRequest)
+from deepracer_msgs.srv import GetVisualNames, GetModelProperties
 
 
 logger = Logger(__name__, logging.INFO).get_logger()
@@ -77,14 +75,11 @@ class ModelVisualRandomizer(AbstractRandomizer):
             self.color_range.update(color_range)
 
         # ROS Services Setup
-        rospy.wait_for_service(GazeboServiceName.GET_MODEL_PROPERTIES.value)
-        rospy.wait_for_service(GazeboServiceName.GET_VISUAL_NAMES.value)
-
         get_model_prop = ServiceProxyWrapper(GazeboServiceName.GET_MODEL_PROPERTIES.value, GetModelProperties)
         get_visual_names = ServiceProxyWrapper(GazeboServiceName.GET_VISUAL_NAMES.value, GetVisualNames)
 
         # Get all model's link names
-        body_names = get_model_prop(GetModelPropertiesRequest(model_name=self.model_name)).body_names
+        body_names = get_model_prop(GetModelProperties.Request(model_name=self.model_name)).body_names
         link_names = ["%s::%s" % (model_name, b) for b in body_names]
 
         # Convert filters to sets
@@ -96,7 +91,7 @@ class ModelVisualRandomizer(AbstractRandomizer):
             link_names = [link_name for link_name in link_names if link_name in link_name_filter]
 
         self.link_visuals_map = {}
-        res = get_visual_names(GetVisualNamesRequest(link_names=link_names))
+        res = get_visual_names(GetVisualNames.Request(link_names=link_names))
         for idx, visual_name in enumerate(res.visual_names):
             if visual_name_filter is not None and visual_name not in visual_name_filter:
                 continue

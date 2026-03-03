@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ Each race type has its own metrics to be popullated on the image.
 This module takes care of addressing each race type editting of images.
@@ -20,12 +7,12 @@ This module takes care of addressing each race type editting of images.
 import logging
 import cv2
 import datetime
-import os
-import rospy
 import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
+from markov.world_config import WorldConfig
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB, SCALE_RATIO, IconographicImageSize,
                                   XYPixelLoc, FrameQueueData)
@@ -78,10 +65,14 @@ class TrainingImageEditing(ImageEditingInterface):
         # Applying gradient to whole major image and then writing text
         major_cv_image = utils.apply_gradient(major_cv_image, self.gradient_alpha_rgb_mul,
                                               self.one_minus_gradient_alpha)
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
         
-        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+        if WorldConfig.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             width, height = IconographicImageSize.FULL_IMAGE_SIZE.value
             major_cv_image = utils.plot_rectangle(major_cv_image, 0, 0, width, 85, RaceCarColorToRGB.Black.value )
+            pil_major_cv_image = Image.fromarray(major_cv_image)
+            draw = ImageDraw.Draw(pil_major_cv_image)
             
             # Top left location of the picture
             loc_x, loc_y = XYPixelLoc.SINGLE_AGENT_DISPLAY_NAME_LOC.value
@@ -94,10 +85,11 @@ class TrainingImageEditing(ImageEditingInterface):
                 datetime.timedelta(milliseconds=best_lap_time)) \
                 if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"    
             best_lap_time_text = "Best lap | {}".format(best_lap_time) 
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time_text,
                                                     loc=(width-180, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Last lap time
             last_lap_time = mp4_video_metrics_info[self.racecar_index].last_lap_time
@@ -107,46 +99,53 @@ class TrainingImageEditing(ImageEditingInterface):
                 datetime.timedelta(milliseconds=last_lap_time)) \
                 if last_lap_time != float("inf") and last_lap_time != 0 else "--:--.---"    
             last_lap_time_text = "Last lap | {}".format(last_lap_time) 
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=last_lap_time_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=last_lap_time_text,
                                                     loc=(width-180, loc_y+25), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Progress
             progress_text = "Progress | {:.2f}%".format(mp4_video_metrics_info[self.racecar_index].completion_percentage) 
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=progress_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=progress_text,
                                                     loc=(width-180, loc_y+50), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Steering Angle
             steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].steering)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Throttle
             loc_y += 25
             steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].throttle)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Speed
             loc_y += 25
             speed_text = "Speed | {} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].speed))
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
 
         # Add the label that lets the user know the training phase
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=cur_training_phase,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=cur_training_phase,
                                                    loc=XYPixelLoc.TRAINING_PHASE_LOC.value,
                                                    font=self.training_phase_font, font_color=None,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
+        major_cv_image = np.array(pil_major_cv_image)
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 

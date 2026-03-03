@@ -17,16 +17,24 @@
 import sys
 import math
 import logging
+import os
+import threading
 import xml.etree.ElementTree as ET
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 
-from deepracer_simulation_environment.srv import TopCamDataSrvResponse, TopCamDataSrv
-from gazebo_msgs.msg import ModelState
+try:
+    from deepracer_simulation_environment.srv import TopCamDataSrv
+except ImportError as e:
+    raise
+from deepracer_msgs.msg import ModelState
 from geometry_msgs.msg import Pose
 from markov.track_geom.track_data import TrackData
 from markov.track_geom.utils import euler_to_quaternion
 from markov.cameras.abs_camera import AbstractCamera
 from markov.cameras.constants import CameraSettings, PYTHON_2
+from markov.utils import get_node_name_suffix
 from markov.log_handler.logger import Logger
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
 
@@ -72,16 +80,68 @@ class TopCamera(AbstractCamera):
         self.camera_settings_dict[CameraSettings.IMG_WIDTH] = DEFAULT_RESOLUTION[0]
         self.camera_settings_dict[CameraSettings.IMG_HEIGHT] = DEFAULT_RESOLUTION[1]
 
-        rospy.Service('get_top_cam_data', TopCamDataSrv, self._handle_get_top_cam_data)
+        # FIX: Create service on a persistent global node (like ROS1 master)
+        # Instead of creating our own service_node, use a global persistent node
+        
+        try:
+            # Get or create a global persistent node for services
+            if not hasattr(TopCamera, '_global_service_node'):
+                
+                if not rclpy.ok():
+                    rclpy.init()
+                
+                # Create a global service node that persists beyond TopCamera object lifecycle
+                suffix = get_node_name_suffix()
+                TopCamera._global_service_node = Node(f'persistent_top_cam_service_{suffix}')
+            
+            # Create service on the persistent global node
+            TopCamera._global_service_node.create_service(TopCamDataSrv, 'get_top_cam_data', self._handle_get_top_cam_data)
+            
+            # Start a global executor if not already started
+            if not hasattr(TopCamera, '_global_executor_started'):
+                
+                TopCamera._global_executor = SingleThreadedExecutor()
+                TopCamera._global_executor.add_node(TopCamera._global_service_node)
+                TopCamera._global_executor_thread = threading.Thread(
+                    target=self._safe_global_executor_spin, daemon=False)
+                TopCamera._global_executor_thread.start()
+                TopCamera._global_executor_started = True
+            
+        except Exception as e:
+            LOG.error("Failed to create persistent service: %s", e)
+            # Don't raise - this would crash car_node
 
-    def _handle_get_top_cam_data(self, req):
+    def _safe_executor_spin(self):
+        """Safely spin the executor with error handling"""
+        try:
+            self.executor.spin()
+        except ExternalShutdownException:
+            LOG.info("Executor shutdown requested")
+        except Exception as e:
+            LOG.error("Executor spin error: %s", e)
+
+    def _safe_global_executor_spin(self):
+        """Safely spin the global executor with error handling"""
+        try:
+            TopCamera._global_executor.spin()
+        except ExternalShutdownException:
+            LOG.info("Top camera global executor shutdown requested")
+        except Exception as e:
+            LOG.error("Top camera global executor spin error: %s", e)
+
+    def _handle_get_top_cam_data(self, request, response):
         '''Response handler for clients requesting the camera settings data
            req - Client request, which should be an empty request
         '''
-        return TopCamDataSrvResponse(self.camera_settings_dict[CameraSettings.HORZ_FOV],
-                                     self.camera_settings_dict[CameraSettings.PADDING_PCT],
-                                     self.camera_settings_dict[CameraSettings.IMG_WIDTH],
-                                     self.camera_settings_dict[CameraSettings.IMG_HEIGHT])
+        try:
+            response.horizontal_fov = float(self.camera_settings_dict[CameraSettings.HORZ_FOV])
+            response.padding_pct = float(self.camera_settings_dict[CameraSettings.PADDING_PCT])
+            response.image_width = float(self.camera_settings_dict[CameraSettings.IMG_WIDTH])
+            response.image_height = float(self.camera_settings_dict[CameraSettings.IMG_HEIGHT])
+            return response
+        except Exception as e:
+            LOG.error("Error in _handle_get_top_cam_data: %s", e)
+            raise
 
     def _get_sdf_string(self, camera_sdf_path):
         """

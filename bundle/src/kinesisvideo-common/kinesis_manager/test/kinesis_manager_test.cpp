@@ -140,7 +140,7 @@ public:
     return result;
   }
 
-  AwsError ReadParam(const ParameterPath & param_path, string & out) const
+  AwsError ReadParam(const ParameterPath & param_path, std::string & out) const
   {
     AwsError result = AWS_ERR_NOT_FOUND;
     std::string name = FormatParameterPath(param_path);
@@ -151,7 +151,7 @@ public:
     return result;
   }
 
-  AwsError ReadParam(const ParameterPath & param_path, Aws::String & out) const
+  AwsError ReadParamAwsString(const ParameterPath & param_path, Aws::String & out) const
   {
     return AWS_ERR_EMPTY;
   }

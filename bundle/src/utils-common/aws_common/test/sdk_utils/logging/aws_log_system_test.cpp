@@ -37,6 +37,38 @@ public:
   explicit ClassUnderTest(Aws::Utils::Logging::LogLevel log_level) : AWSLogSystem(log_level) {}
 
   ~ClassUnderTest() = default;
+  
+  // Implement the pure virtual function from LogSystemInterface
+  // The actual logging is handled by the AWSLogSystem class
+  void vaLog(Aws::Utils::Logging::LogLevel logLevel, const char* tag, const char* formatStr, va_list args) override {
+    char message[DEFAULT_LOG_MESSAGE_SIZE_BYTES];
+    vsnprintf(message, DEFAULT_LOG_MESSAGE_SIZE_BYTES, formatStr, args);
+    
+    std::string messageStr(message);
+    
+    switch (logLevel) {
+      case Aws::Utils::Logging::LogLevel::Info:
+        LogInfo(tag, messageStr);
+        break;
+      case Aws::Utils::Logging::LogLevel::Debug:
+        LogDebug(tag, messageStr);
+        break;
+      case Aws::Utils::Logging::LogLevel::Trace:
+        LogTrace(tag, messageStr);
+        break;
+      case Aws::Utils::Logging::LogLevel::Warn:
+        LogWarn(tag, messageStr);
+        break;
+      case Aws::Utils::Logging::LogLevel::Error:
+        LogError(tag, messageStr);
+        break;
+      case Aws::Utils::Logging::LogLevel::Fatal:
+        LogFatal(tag, messageStr);
+        break;
+      default:
+        break;
+    }
+  }
 
   /*********************************
    * Overidden log methods to test *

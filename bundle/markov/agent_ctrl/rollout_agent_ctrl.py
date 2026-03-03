@@ -19,12 +19,14 @@ import copy
 from collections import OrderedDict
 import math
 import numpy as np
-import rospy
+import rclpy
+from rclpy.qos import QoSProfile
 import logging
 import json
+import time
 from threading import RLock
-from gazebo_msgs.msg import ModelState
-from std_msgs.msg import Float64, String
+from deepracer_msgs.msg import ModelState
+from std_msgs.msg import Float64, Float64MultiArray, String
 from shapely.geometry import Point
 
 from markov import utils
@@ -48,7 +50,7 @@ from markov.virtual_event.constants import (WebRTCCarControl, CarControlMode,
                                             CarControlStatus,
                                             CarControlTopic, WEBRTC_CAR_CTRL_FORMAT)
 from markov.visual_effects.effects.blink_effect import BlinkEffect
-from markov.constants import DEFAULT_PARK_POSITION, SIMAPP_VERSION_5
+from markov.constants import DEFAULT_PARK_POSITION, SIMAPP_VERSION_6
 from markov.gazebo_tracker.trackers.get_link_state_tracker import GetLinkStateTracker
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
@@ -56,6 +58,7 @@ from markov.gazebo_tracker.abs_tracker import AbstractTracker
 from markov.gazebo_tracker.constants import TrackerPriority
 from markov.boto.s3.constants import ModelMetadataKeys
 from markov.virtual_event.constants import PAUSE_TIME_BEFORE_START
+from markov.world_config import WorldConfig
 
 from rl_coach.core_types import RunPhase
 
@@ -64,6 +67,9 @@ LOG = Logger(__name__, logging.INFO).get_logger()
 
 class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
     '''Concrete class for an agent that drives forward'''
+
+    _rollout_ctrl_node = None
+
     def __init__(self, config_dict, run_phase_sink, metrics):
         '''config_dict (dict): containing all the keys in ConfigParams
            run_phase_sink (RunPhaseSubject): Sink to receive notification of a change in run phase
@@ -80,10 +86,10 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._speed_value = 0.0
         self._race_car_ctrl_status = CarControlStatus.RESUME.value
         self._start_sim_time = None
-        self._reset_behind_dist = float(rospy.get_param("RESET_BEHIND_DIST", const.DEFAULT_RESET_BEHIND_DIST))
-        self._enable_mercy_reset = utils.str2bool(rospy.get_param("ENABLE_MERCY_RESET", False)) # feature flag
-        self._reset_ahead_dist = float(rospy.get_param("RESET_AHEAD_DIST", const.DEFAULT_RESET_AHEAD_DIST))
-        self._max_reset_count_after_crash = int(rospy.get_param("MAX_RESETS_AFTER_CRASH", const.DEFAULT_MAX_RESETS_AFTER_CRASH))
+        self._reset_behind_dist = float(WorldConfig.get_param("RESET_BEHIND_DIST", const.DEFAULT_RESET_BEHIND_DIST))
+        self._enable_mercy_reset = utils.str2bool(WorldConfig.get_param("ENABLE_MERCY_RESET", False)) # feature flag
+        self._reset_ahead_dist = float(WorldConfig.get_param("RESET_AHEAD_DIST", const.DEFAULT_RESET_AHEAD_DIST))
+        self._max_reset_count_after_crash = int(WorldConfig.get_param("MAX_RESETS_AFTER_CRASH", const.DEFAULT_MAX_RESETS_AFTER_CRASH))
         # thread lock
         self._lock = RLock()
         # reset rules manager
@@ -103,7 +109,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._simapp_version_ = config_dict[const.ConfigParams.VERSION.value]
         if self._is_virtual_event:
             # If virtual event then override the simapp version to the latest version.
-            self._simapp_version_ = SIMAPP_VERSION_5
+            self._simapp_version_ = SIMAPP_VERSION_6
         # simapp_version speed scale
         self._wheel_radius_ = get_wheel_radius(self._simapp_version_)
         # Store the name of the agent used to set agents position on the track
@@ -126,20 +132,27 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # Create publishers for controlling the car
         self._velocity_pub_dict_ = OrderedDict()
         self._steering_pub_dict_ = OrderedDict()
+
+        if RolloutCtrl._rollout_ctrl_node is None:
+            RolloutCtrl._rollout_ctrl_node = rclpy.create_node('MarkovRolloutCtrlNode')
         for topic in config_dict[const.ConfigParams.VELOCITY_LIST.value]:
-            self._velocity_pub_dict_[topic] = rospy.Publisher(topic, Float64, queue_size=1)
+            self._velocity_pub_dict_[topic] = RolloutCtrl._rollout_ctrl_node.create_publisher(Float64MultiArray, topic, 1)
         for topic in config_dict[const.ConfigParams.STEERING_LIST.value]:
-            self._steering_pub_dict_[topic] = rospy.Publisher(topic, Float64, queue_size=1)
+            self._steering_pub_dict_[topic] = RolloutCtrl._rollout_ctrl_node.create_publisher(Float64MultiArray, topic, 1)
+
         #Create default reward parameters
         self._reward_params_ = const.RewardParam.make_default_param()
+
         #Create the default metrics dictionary
         self._step_metrics_ = StepMetrics.make_default_metric()
+
         # Dictionary of bools indicating starting position behavior
         self._start_pos_behavior_ = \
             {'change_start': config_dict[const.ConfigParams.CHANGE_START.value],
              'round_robin_advance_dist': config_dict[const.ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value],
              'start_position_offset': config_dict[const.ConfigParams.START_POSITION_OFFSET.value],
              'alternate_dir': config_dict[const.ConfigParams.ALT_DIR.value]}
+
         # Dictionary to track the previous way points
         self._prev_waypoints_ = {'prev_point' : Point(0, 0), 'prev_point_2' : Point(0, 0)}
 
@@ -192,22 +205,29 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self.make_link_points = lambda link_state: Point(link_state.pose.position.x,
                                                          link_state.pose.position.y)
         self.reference_frames = ['' for _ in self._agent_link_name_list_]
+
         # pause pose for car at pause state
         self._pause_car_model_pose = self._track_data_.get_object_pose(self._agent_name_)
+
         # prepare pose for car at prepare state
         self._prepare_car_model_pose = self._track_data_.get_object_pose(self._agent_name_)
         self._park_position = DEFAULT_PARK_POSITION
+
         if self._is_virtual_event:
             # Subscriber to udpate car speed if it's virtual event
-            rospy.Subscriber(WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
-                                                           CarControlTopic.SPEED_CTRL.value),
-                             String,
-                             self._get_speed_mode_value)
+            RolloutCtrl._rollout_ctrl_node.create_subscription(String, 
+                                                               WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
+                                                                                             CarControlTopic.SPEED_CTRL.value),
+                                                               self._get_speed_mode_value,
+                                                               QoSProfile(depth=1))
+
             # Subscriber to udpate car status if it's virtual event
-            rospy.Subscriber(WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
-                                                           CarControlTopic.STATUS_CTRL.value),
-                             String,
-                             self._update_car_status)
+            RolloutCtrl._rollout_ctrl_node.create_subscription(String, 
+                                                               WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
+                                                                                             CarControlTopic.STATUS_CTRL.value),
+                                                               self._updatae_car_status,
+                                                               QoSProfile(depth=1))
+
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
         self.current_obstacle_pose = None
         self.current_obstacle_crash_count = 0
@@ -222,7 +242,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         """
         if self._pause_duration > 0.0:
             self._pause_duration -= delta_time
-        self._current_sim_time = sim_time.clock.secs + 1.e-9 * sim_time.clock.nsecs
+        self._current_sim_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
 
     @property
     def action_space(self):
@@ -241,10 +261,17 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
            starting position at the beginning of each episode
         '''
         LOG.info("Reset agent")
+        
         self._clear_data()
         self._metrics.reset()
         send_action(self._velocity_pub_dict_, self._steering_pub_dict_, 0.0, 0.0)
+        
         start_model_state = self._get_car_start_model_state()
+        LOG.debug("Start model state position: x=%s, y=%s, z=%s",
+                   start_model_state.pose.position.x if hasattr(start_model_state, 'pose') else 'No pose',
+                   start_model_state.pose.position.y if hasattr(start_model_state, 'pose') else 'No pose',
+                   start_model_state.pose.position.z if hasattr(start_model_state, 'pose') else 'No pose')
+        
         # set_model_state and get_model_state is actually occurred asynchronously
         # in tracker with simulation clock subscription. So, when the agent is
         # entering next step function call, either set_model_state
@@ -252,7 +279,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # To avoid such case, use blocking to actually update the model position in gazebo
         # and GetModelstateTracker to reflect the latest agent position right away when start.
         SetModelStateTracker.get_instance().set_model_state(start_model_state, blocking=True)
-        GetModelStateTracker.get_instance().get_model_state(self._agent_name_, '', blocking=True)
+        result = GetModelStateTracker.get_instance().get_model_state(self._agent_name_, '', blocking=True)
         # reset view cameras
         self.camera_manager.reset(car_pose=start_model_state.pose,
                                   namespace=self._agent_name_)
@@ -271,12 +298,12 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         car_model_state = ModelState()
         car_model_state.model_name = self._agent_name_
         car_model_state.pose = car_model_pose
-        car_model_state.twist.linear.x = 0
-        car_model_state.twist.linear.y = 0
-        car_model_state.twist.linear.z = 0
-        car_model_state.twist.angular.x = 0
-        car_model_state.twist.angular.y = 0
-        car_model_state.twist.angular.z = 0
+        car_model_state.twist.linear.x = 0.0
+        car_model_state.twist.linear.y = 0.0
+        car_model_state.twist.linear.z = 0.0
+        car_model_state.twist.angular.x = 0.0
+        car_model_state.twist.angular.y = 0.0
+        car_model_state.twist.angular.z = 0.0
         SetModelStateTracker.get_instance().set_model_state(car_model_state, blocking)
         if blocking:
             # Let GetModelStateTracker retrieves the agent's latest model state instantly after synchronous set,
@@ -310,12 +337,12 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         car_model_state.pose.orientation.y = orientation[1]
         car_model_state.pose.orientation.z = orientation[2]
         car_model_state.pose.orientation.w = orientation[3]
-        car_model_state.twist.linear.x = 0
-        car_model_state.twist.linear.y = 0
-        car_model_state.twist.linear.z = 0
-        car_model_state.twist.angular.x = 0
-        car_model_state.twist.angular.y = 0
-        car_model_state.twist.angular.z = 0
+        car_model_state.twist.linear.x = 0.0
+        car_model_state.twist.linear.y = 0.0
+        car_model_state.twist.linear.z = 0.0
+        car_model_state.twist.angular.x = 0.0
+        car_model_state.twist.angular.y = 0.0
+        car_model_state.twist.angular.z = 0.0
         SetModelStateTracker.get_instance().set_model_state(car_model_state)
         self.camera_manager.reset(car_pose=car_model_state.pose,
                                   namespace=self._agent_name_)
@@ -442,12 +469,12 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         car_model_state = ModelState()
         car_model_state.model_name = self._agent_name_
         car_model_state.pose = new_pose
-        car_model_state.twist.linear.x = 0
-        car_model_state.twist.linear.y = 0
-        car_model_state.twist.linear.z = 0
-        car_model_state.twist.angular.x = 0
-        car_model_state.twist.angular.y = 0
-        car_model_state.twist.angular.z = 0
+        car_model_state.twist.linear.x = 0.0
+        car_model_state.twist.linear.y = 0.0
+        car_model_state.twist.linear.z = 0.0
+        car_model_state.twist.angular.x = 0.0
+        car_model_state.twist.angular.y = 0.0
+        car_model_state.twist.angular.z = 0.0
         return car_model_state
 
     def _get_car_start_model_state(self):
@@ -458,16 +485,23 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         Returns:
             ModelState: start state
         '''
+        LOG.debug("Start ndist: %s, start line ndist offset: %s",
+                   self._data_dict_['start_ndist'], self._start_line_ndist_offset)
+        
         # start_dist should be hypothetical start line (start_ndist) plus
         # start position offset (start_line_ndist_offset).
         start_dist = (self._data_dict_['start_ndist'] + self._start_line_ndist_offset) * self._track_data_.get_track_length()
 
         if self._is_training_:
             _, closest_object_pose = self._get_closest_obj(start_dist)
+            
             # Compute the start pose based on start distance
             start_pose = self._track_data_.center_line.interpolate_pose(
                 start_dist,
                 finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
+            LOG.debug("Start pose position: x=%s, y=%s, z=%s",
+                       start_pose.position.x, start_pose.position.y, start_pose.position.z)
+            
             # If closest_object_pose is not None, for example bot car is around agent
             # start position. The below logic checks for whether inner or outer lane
             # is available for placement. Then, it updates start_pose accordingly.
@@ -488,23 +522,29 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                         self._track_data_.inner_lane.project(Point(start_pose.position.x,
                                                                    start_pose.position.y)),
                         finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
+            LOG.debug("Updated start pose position: x=%s, y=%s, z=%s",
+                           start_pose.position.x, start_pose.position.y, start_pose.position.z)
         else:
             start_pose = self._start_lane_.interpolate_pose(
                 start_dist,
                 finite_difference=FiniteDifference.FORWARD_DIFFERENCE)
+            LOG.debug("Default start pose position: x=%s, y=%s, z=%s",
+                       start_pose.position.x, start_pose.position.y, start_pose.position.z)
 
         # check for whether reset pose is valid or not
         start_pose = self._check_for_invalid_reset_pose(pose=start_pose, dist=start_dist)
+        LOG.debug("Final start pose position: x=%s, y=%s, z=%s",
+                   start_pose.position.x, start_pose.position.y, start_pose.position.z)
 
         car_model_state = ModelState()
         car_model_state.model_name = self._agent_name_
         car_model_state.pose = start_pose
-        car_model_state.twist.linear.x = 0
-        car_model_state.twist.linear.y = 0
-        car_model_state.twist.linear.z = 0
-        car_model_state.twist.angular.x = 0
-        car_model_state.twist.angular.y = 0
-        car_model_state.twist.angular.z = 0
+        car_model_state.twist.linear.x = 0.0
+        car_model_state.twist.linear.y = 0.0
+        car_model_state.twist.linear.z = 0.0
+        car_model_state.twist.angular.x = 0.0
+        car_model_state.twist.angular.y = 0.0
+        car_model_state.twist.angular.z = 0.0
         return car_model_state
 
     def _check_for_invalid_reset_pose(self, pose, dist):
@@ -557,14 +597,31 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         Raises:
             GenericRolloutException: Cannot find position
         '''
+        update_start = time.time()
+        
         # get car state
         # if off-track, using blocking call to get immediate car reset pause position
         # from last step judge_action call.
+        model_state_start = time.time()
         car_model_state = GetModelStateTracker.get_instance().get_model_state(self._agent_name_, '')
+        model_state_end = time.time()
+        
         self._track_data_.update_object_pose(self._agent_name_, car_model_state.pose)
+        
+        link_states_start = time.time()
+        
         link_states = [GetLinkStateTracker.get_instance().get_link_state(link_name, reference_frame).link_state
                        for link_name, reference_frame in zip(self._agent_link_name_list_, self.reference_frames)]
-        link_points = [self.make_link_points(link_state) for link_state in link_states]
+        
+        link_states_end = time.time()
+        
+        # Log first link state position for debugging
+        if link_states and link_states[0] is not None:
+            first_pos = link_states[0].pose.position
+        elif link_states:
+            LOG.debug("Link states exist but first element is None")
+        
+        link_points = [self.make_link_points(link_state) for link_state in link_states if link_state is not None]
 
         current_car_pose = car_model_state.pose
         try:
@@ -578,6 +635,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                                  current_car_pose.orientation.z,
                                  current_car_pose.orientation.w])
             model_point = Point(get_relative_pos(origin, translation, rotation))
+            
             pos_dict = {AgentPos.ORIENTATION.value: rotation,
                         AgentPos.LINK_POINTS.value: link_points,
                         AgentPos.POINT.value: model_point}
@@ -589,6 +647,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                                self._agent_name_, pos_dict, self._track_data_,
                                self._data_dict_, action, self._model_metadata_.get_action_dict(action),
                                current_car_pose)
+        # Set simulation time in reward params
+        self._reward_params_[const.RewardParam.SIM_TIME.value[0]] = self._current_sim_time
         prev_pnt_dist = min(model_point.distance(self._prev_waypoints_['prev_point']),
                             model_point.distance(self._prev_waypoints_['prev_point_2']))
         self._data_dict_['current_progress'] = self._reward_params_[const.RewardParam.PROG.value[0]]
@@ -737,6 +797,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._step_metrics_[StepMetrics.REWARD.value] = reward
         self._step_metrics_[StepMetrics.DONE.value] = done
         self._step_metrics_[StepMetrics.TIME.value] = self._current_sim_time
+        self._step_metrics_[StepMetrics.WALL_CLOCK.value] = time.time()
         self._step_metrics_[StepMetrics.EPISODE_STATUS.value] = episode_status
         self._step_metrics_[StepMetrics.PAUSE_DURATION.value] = self._pause_duration
         self._step_metrics_[StepMetrics.OBSTACLE_CRASH_COUNTER.value] = self.current_obstacle_crash_count
@@ -874,8 +935,10 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                 # position and progress values associated with it to fall back during reset.
                 spawn_dist = self._data_dict_['prev_progress'] * \
                                 self._track_data_.get_track_length() / 100.0
+                # Use current_car_pose if prev_car_pose is not yet initialized (still 0.0)
+                car_pose_for_reset = current_car_pose if isinstance(self._data_dict_['prev_car_pose'], float) else self._data_dict_['prev_car_pose']
                 pause_car_model_pose = self._get_car_reset_model_state(
-                    spawn_dist, car_pose=self._data_dict_['prev_car_pose'], episode_status=episode_status).pose
+                    spawn_dist, car_pose=car_pose_for_reset, episode_status=episode_status).pose
                 should_reset_camera = True
             self._pause_car_model_pose = pause_car_model_pose
             # pause car model through blocking call to make sure agent pose

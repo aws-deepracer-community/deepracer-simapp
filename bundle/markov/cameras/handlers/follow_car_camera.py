@@ -17,7 +17,7 @@
 import math
 import numpy as np
 
-from gazebo_msgs.msg import ModelState, ModelStates
+from deepracer_msgs.msg import ModelState
 from geometry_msgs.msg import Pose
 from markov.cameras import utils
 from markov.track_geom.utils import euler_to_quaternion, quaternion_to_euler, apply_orientation

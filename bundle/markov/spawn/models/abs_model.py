@@ -14,21 +14,22 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-"""this module implement a abstract model"""
+"""this module implement an abstract model"""
 
 import abc
-import random
-import rospkg
-import rospy
 import time
+import logging
 
 from geometry_msgs.msg import Pose
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 from threading import RLock
 from typing import Optional
 from markov.log_handler.exception_handler import log_and_exit
+from markov.log_handler.logger import Logger
 from markov.log_handler.constants import (SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                           SIMAPP_EVENT_ERROR_CODE_500)
+
+logger = Logger(__name__, logging.INFO).get_logger()
 
 
 class AbsModel(object, metaclass=abc.ABCMeta):
@@ -47,7 +48,6 @@ class AbsModel(object, metaclass=abc.ABCMeta):
             backoff_time_sec (float): backoff time in seconds for spawn/delete to complete
         """
         self._model_name = None
-        self._rospack = rospkg.RosPack()
         self._lock = RLock()
         self._max_retry_attempts = max_retry_attempts
         self._backoff_time_sec = backoff_time_sec
@@ -60,15 +60,6 @@ class AbsModel(object, metaclass=abc.ABCMeta):
             str: model name
         """
         return self._model_name
-
-    @property
-    def rospack(self) -> rospkg.RosPack():
-        """Return ros package
-
-        Returns:
-            rospkg.RosPack(): ros package
-        """
-        return self._rospack
 
     def spawn(self, name: str, pose: Optional[Pose] = None, **kwargs) -> None:
         """Spawn model in gazebo simulator
@@ -86,7 +77,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                 self._wait_for_spawn()
                 AbsModel._model_names.add(name)
             else:
-                rospy.loginfo("[AbsModel]: {} cannot be spawned "
+                logger.info("[AbsModel]: {} cannot be spawned "
                               "again without be deleted".format(name))
 
     def delete(self) -> None:
@@ -99,7 +90,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                 AbsModel._model_names.remove(self._model_name)
                 self._model_name = None
             else:
-                rospy.loginfo(
+                logger.info(
                     "[AbsModel]: model does not exist and "
                     "cannot be deleted")
 
@@ -113,7 +104,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                 relative_entity_name="",
                 blocking=True)
             if msg.success:
-                rospy.loginfo("[AbsModel]: spawn {} completed".format(self._model_name))
+                logger.info("[AbsModel]: spawn {} completed".format(self._model_name))
                 break
             try_count += 1
             if try_count > self._max_retry_attempts:
@@ -122,7 +113,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                 log_and_exit("[AbsModel]: spawn {} failed".format(model_name),
                              SIMAPP_SIMULATION_WORKER_EXCEPTION,
                              SIMAPP_EVENT_ERROR_CODE_500)
-            rospy.loginfo("[AbsModel]: model {} is in processing of "
+            logger.info("[AbsModel]: model {} is in processing of "
                           "spawning".format(self._model_name))
             time.sleep(self._backoff_time_sec)
 
@@ -136,7 +127,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                 relative_entity_name="",
                 blocking=True)
             if msg.success:
-                rospy.loginfo("[AbsModel]: model {} is in processing of "
+                logger.info("[AbsModel]: model {} is in processing of "
                               "deleting".format(self._model_name))
                 time.sleep(self._backoff_time_sec)
                 try_count += 1
@@ -145,7 +136,7 @@ class AbsModel(object, metaclass=abc.ABCMeta):
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500)
             else:
-                rospy.loginfo("[AbsModel]: delete {} completed".format(self._model_name))
+                logger.info("[AbsModel]: delete {} completed".format(self._model_name))
                 break
 
     @abc.abstractmethod

@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+ <name>kinesis_video_streamer</name>
+  <version>3.1.0</version>
+  <description>Kinesis Video Streams producer node</description>
+
+  <author email="ros-contributions@amazon.com">AWS RoboMaker</author>
+  <maintainer email="ros-contributions@amazon.com">AWS RoboMaker</maintainer>
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rmw_implementation</buildtool_depend>
+  <build_depend>aws_common</build_depend>
+  <build_depend>aws_ros2_common</build_depend>
+  <build_depend>kinesis_manager</build_depend>
+  <build_depend>rclcpp</build_depend>
+  <build_depend>kinesis_video_msgs</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>rmw_implementation</build_depend>
+  <exec_depend>rmw_implementation</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_gmock</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

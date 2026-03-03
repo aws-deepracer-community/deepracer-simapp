@@ -16,19 +16,16 @@
 
 """This Singleton class handles gazebo model spawn and delete service"""
 
-import rospy
-
 from markov.track_geom.constants import (SPAWN_URDF_MODEL,
                                          SPAWN_SDF_MODEL,
                                          DELETE_MODEL)
 from geometry_msgs.msg import Pose
-from markov.rospy_wrappers import ServiceProxyWrapper
-from gazebo_msgs.srv import (SpawnModel, DeleteModel,
-                             SpawnModelResponse, DeleteModelResponse)
+from markov.rclpy_wrappers import ServiceProxyWrapper
+from deepracer_msgs.srv import SpawnModel, DeleteModel
 from threading import RLock
 
 
-class GazeboModel(object):
+class GazeboModel:
     """GazeboSpanwer Singleton class"""
     _instance = None
     _instance_lock = RLock()
@@ -56,22 +53,16 @@ class GazeboModel(object):
             if GazeboModel._instance is not None:
                 raise RuntimeError("Attempting to construct multiple GazeboModel")
             GazeboModel._instance = self
-        rospy.wait_for_service(SPAWN_URDF_MODEL)
-        rospy.wait_for_service(SPAWN_SDF_MODEL)
-        rospy.wait_for_service(DELETE_MODEL)
-        self._spawn_urdf_model = ServiceProxyWrapper(SPAWN_URDF_MODEL,
-                                                     SpawnModel)
-        self._spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL,
-                                                    SpawnModel)
-        self._delete_model = ServiceProxyWrapper(DELETE_MODEL,
-                                                 DeleteModel)
+        self._spawn_urdf_model = ServiceProxyWrapper(SPAWN_URDF_MODEL, SpawnModel)
+        self._spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel)
+        self._delete_model = ServiceProxyWrapper(DELETE_MODEL, DeleteModel)
 
     def spawn_sdf(self,
                   model_name: str,
                   model_xml: str,
                   robot_namespace: str,
                   initial_pose: Pose,
-                  reference_frame: str) -> SpawnModelResponse:
+                  reference_frame: str) -> SpawnModel.Response:
         """spawn sdf model
 
         http://docs.ros.org/en/jade/api/gazebo_msgs/html/srv/SpawnModel.html
@@ -87,20 +78,22 @@ class GazeboModel(object):
                                       and the model is not spawned
 
         Returns:
-            SpawnModelResponse: response msg
+            SpawnModel.Response: response msg
         """
-        return self._spawn_sdf_model(model_name,
-                                     model_xml,
-                                     robot_namespace,
-                                     initial_pose,
-                                     reference_frame)
+        req = SpawnModel.Request()
+        req.model_name = model_name
+        req.model_xml = model_xml
+        req.robot_namespace = robot_namespace
+        req.initial_pose = initial_pose
+        req.reference_frame = reference_frame
+        return self._spawn_sdf_model(req)
 
     def spawn_urdf(self,
                    model_name: str,
                    model_xml: str,
                    robot_namespace: str,
                    initial_pose: Pose,
-                   reference_frame: str) -> SpawnModelResponse:
+                   reference_frame: str) -> SpawnModel.Response:
         """spawn urdf model
 
         http://docs.ros.org/en/jade/api/gazebo_msgs/html/srv/SpawnModel.html
@@ -116,15 +109,17 @@ class GazeboModel(object):
                                       and the model is not spawned
 
         Returns:
-            SpawnModelResponse: response msg
+            SpawnModel.Response: response msg
         """
-        return self._spawn_urdf_model(model_name,
-                                      model_xml,
-                                      robot_namespace,
-                                      initial_pose,
-                                      reference_frame)
+        req = SpawnModel.Request()
+        req.model_name = model_name
+        req.model_xml = model_xml
+        req.robot_namespace = robot_namespace
+        req.initial_pose = initial_pose
+        req.reference_frame = reference_frame
+        return self._spawn_urdf_model(req)
 
-    def delete(self, model_name: str) -> DeleteModelResponse:
+    def delete(self, model_name: str) -> DeleteModel.Response:
         """delete model
 
         http://docs.ros.org/en/jade/api/gazebo_msgs/html/srv/DeleteModel.html

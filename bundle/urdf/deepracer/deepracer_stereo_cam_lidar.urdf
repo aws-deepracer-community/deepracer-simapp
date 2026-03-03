@@ -4,6 +4,11 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
   name="deepracer_stereo_cam_lidar" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  
+  <material name="sensor_black">
+    <color rgba="0.035 0.035 0.035 1"/>
+  </material>
+  
   <link 
     name="base_link" />
   <link
@@ -173,7 +178,7 @@
   </link>
   <joint
     name="left_steering_hinge_joint"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.082311 0.079601 0.011759"
       rpy="0 0 0" />
@@ -272,7 +277,7 @@
   </link>
   <joint
     name="right_steering_hinge_joint"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.082311 -0.079601 0.011759"
       rpy="0 0 0" />
@@ -344,19 +349,35 @@
   <link
     name="zed_camera_link_leftcam">
     <inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
       <origin
         xyz="0.019881 6.2875E-05 0.034966"
         rpy="0 0 0" />
       <mass
-        value="1e-3" />
+        value="0.34055" />
       <inertia 
-        ixx="1e-6"
+        ixx="0.00026046"
         ixy="0"
         ixz="0"
-        iyy="1e-6"
+        iyy="0.00041226"
         iyz="0"
-        izz="1e-6" />
+        izz="0.00026046" />
     </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
     <xacro:unless value="${'f1' in body_shell_type_val}">
       <visual>
         <origin
@@ -366,6 +387,7 @@
           <mesh
             filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_leftcam.STL" />
         </geometry>
+        <material name="sensor_black"/>
       </visual>
     </xacro:unless>
   </link>
@@ -385,19 +407,35 @@
   <link
     name="camera_link_leftcam">
     <inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
       <origin
         xyz="0.0005 0 0"
         rpy="0 0 0" />
       <mass
-        value="1e-3" />
+        value="0.34055" />
       <inertia 
-        ixx="1e-6"
+        ixx="0.00026046"
         ixy="0"
         ixz="0"
-        iyy="1e-6"
+        iyy="0.00041226"
         iyz="0"
-        izz="1e-6" />
+        izz="0.00026046" />
     </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
 <!--     <visual>
       <origin
         xyz="0 0 0"
@@ -424,19 +462,35 @@
   <link
     name="zed_camera_link_rightcam">
     <inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
       <origin
         xyz="0.019881 6.2895E-05 0.034966"
         rpy="0 0 0" />
       <mass
-        value="1e-3" />
+        value="0.34055" />
       <inertia 
-        ixx="1e-6"
+        ixx="0.00026046"
         ixy="0"
         ixz="0"
-        iyy="1e-6"
+        iyy="0.00041226"
         iyz="0"
-        izz="1e-6" />
+        izz="0.00026046" />
     </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
     <xacro:unless value="${'f1' in body_shell_type_val}">
       <visual>
         <origin
@@ -446,6 +500,7 @@
           <mesh
             filename="package://deepracer_simulation_environment/meshes/deepracer/zed_camera_link_rightcam.STL" />
         </geometry>
+        <material name="sensor_black"/>
       </visual>
     </xacro:unless>
   </link>
@@ -465,19 +520,35 @@
   <link
     name="camera_link_rightcam">
     <inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
       <origin
         xyz="0.0005 0 0"
         rpy="0 0 0" />
       <mass
-        value="1e-3" />
+        value="0.34055" />
       <inertia 
-        ixx="1e-6"
+        ixx="0.00026046"
         ixy="0"
         ixz="0"
-        iyy="1e-6"
+        iyy="0.00041226"
         iyz="0"
-        izz="1e-6" />
+        izz="0.00026046" />
     </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
 <!--     <visual>
       <origin
         xyz="0 0 0"
@@ -504,19 +575,35 @@
   <link
     name="laser">
     <inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
       <origin
         xyz="0.006099 0.00028423 -0.012654"
         rpy="0 0 0" />
       <mass
         value="1E-5" />
       <inertia
-        ixx="1e-6"
+        ixx="0.00026046"
         ixy="0"
         ixz="0"
-        iyy="1e-6"
+        iyy="0.00041226"
         iyz="0"
-        izz="1e-6" />
+        izz="0.00026046" />
     </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.06" />
+      </geometry>
+    </collision>
     <xacro:unless value="${'f1' in body_shell_type_val}">
       <visual>
         <origin
@@ -526,6 +613,7 @@
           <mesh
             filename="package://deepracer_simulation_environment/meshes/deepracer/laser.STL" />
         </geometry>
+        <material name="sensor_black"/>
       </visual>
     </xacro:unless>
     <collision>
@@ -558,14 +646,14 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <mass
-        value="0" />
+        value="0.3" />
       <inertia
-        ixx="0"
+        ixx="0.001"
         ixy="0"
         ixz="0"
-        iyy="0"
+        iyy="0.003"
         iyz="0"
-        izz="0" />
+        izz="0.003" />
     </inertial>
     <xacro:unless value="${'f1' in body_shell_type_val}">
       <visual>

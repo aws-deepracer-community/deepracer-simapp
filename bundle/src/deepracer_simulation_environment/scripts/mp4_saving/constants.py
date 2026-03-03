@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 '''This module houses the constants for scripts package in simulation application'''
 from enum import Enum
@@ -20,6 +7,7 @@ from markov.reset.constants import RaceType
 import cv2
 
 PROGRESS_INTERVAL = 1.0
+METRICS_POLL_PERIOD_SEC = 0.05
 
 class CameraTypeParams(Enum):
     """ This Enum contains the all the params for each camera topics
@@ -41,7 +29,7 @@ class Mp4Parameter(Enum):
     Extends:
         Enum
     """
-    FOURCC = cv2.VideoWriter_fourcc(*'mp4v')
+    FOURCC = cv2.VideoWriter_fourcc(*'avc1')
     FPS = 15
     FRAME_SIZE = (640, 480)
 

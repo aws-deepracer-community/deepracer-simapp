@@ -1,74 +1,102 @@
-FROM ros:noetic-robot
+FROM ros:jazzy-ros-base
 
+ENV DEBIAN_FRONTEND="noninteractive" 
 ARG USERNAME=user-name-goes-here
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    sudo \
-    curl \
-    wget \
+RUN apt update && \ 
+    apt upgrade -y && \
+    apt install --no-install-recommends -y \
     apt-utils \
-    git
-
-RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
-
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -sc) main" > /etc/apt/sources.list.d/gazebo-stable.list'
-RUN curl -s http://packages.osrfoundation.org/gazebo.key | apt-key add -
-
-ENV DEBIAN_FRONTEND="noninteractive" 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    gazebo11 \
+    build-essential \
+    ca-certificates \
+    cmake \
+    curl \
+    dirmngr \
+    ffmpeg \
+    git \
+    gnupg2 \
+    jq \
     jwm \
     libcurl4-openssl-dev \
-    libgazebo11-dev \
-    libignition-math4 \
-    libignition-math4-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libboost-all-dev \
+    libfreetype-dev \
+    libgmock-dev \
+    libgomp1 \
+    libhdf5-dev \
+    libjpeg-dev \
     liblog4cplus-dev \
+    libpng-dev \
+    libssl-dev \
+    libswscale-dev \
     libx264-dev \
-    python \
-    python3 \
-    python3-colcon-common-extensions \
-    python3-jsonschema \
+    libxrender1 \
+    libzmq3-dev \
+    lsb-release \
+    mesa-utils \
+    net-tools \
+    pkg-config \
+    python3-dev \
+    python3-opengl \
     python3-pip \
-    python3-rosdep \
-    python3-scipy \
-    python3-shapely \
-    ros-noetic-controller-manager \
-    ros-noetic-gazebo-dev \
-    ros-noetic-gazebo-plugins \
-    ros-noetic-gazebo-ros \
-    ros-noetic-gazebo-ros-control \
-    ros-noetic-media-export \
-    ros-noetic-ros-base \
-    ros-noetic-ros-control \
-    ros-noetic-ros-controllers \
-    ros-noetic-rosmsg \
-    ros-noetic-rqt-common-plugins \
-    ros-noetic-web-video-server \
-    ros-noetic-xacro \
-    rviz \
+    tzdata \
+    uuid-dev \
+    unzip \
+    wget \
+    x11-xserver-utils \
     x11vnc \
     x264 \
-    xvfb
+    xmlstarlet \
+    xvfb \
+    zlib1g-dev \
+    python3-colcon-common-extensions \
+    python3-colcon-mixin \
+    python3-defusedxml \
+    python3-jsonschema \
+    python3-rosdep \
+    python3-shapely \
+    python3-vcstool \
+    python3-boto3 \
+    ros-jazzy-controller-manager \
+    ros-jazzy-gz-ros2-control \
+    ros-jazzy-ros-base \
+    ros-jazzy-ros-core \
+    ros-jazzy-ros-gz \
+    ros-jazzy-ros2-controllers \
+    ros-jazzy-web-video-server \
+    ros-jazzy-xacro && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Link AWS CPP libraries
-RUN ln -s /opt/ros/noetic/lib/libaws* /usr/local/lib/ && \
-    ln -s /opt/ros/noetic/include/aws /usr/local/include/ 
+# Build and install AWS SDK C++
+RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
+        cd aws-sdk-cpp && git checkout --recurse-submodules tags/1.11.664 && \
+        mkdir build && cd build && \
+        cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCPP_STANDARD=17 \
+            -DCMAKE_PREFIX_PATH=/usr/local \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DBUILD_SHARED_LIBS=ON \
+            -DENABLE_TESTING=OFF \
+            -DBUILD_ONLY="core;logs;kinesis" \
+            -DMINIMIZE_SIZE=ON && \
+        make -j2 && \
+        make install && \
+        ldconfig && \
+        cd ../.. && rm -rf aws-sdk-cpp
 
-# Install Python PIP modules
-ADD .devcontainer/requirements.txt /
-RUN python3 -m pip install -U --no-cache-dir pip 'setuptools<65' && \
-    export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True && \
-    pip3 install -U --no-cache-dir -r requirements.txt "tensorflow-cpu==2.13.1" --ignore-installed psutil && \
-    pip3 install -U --no-cache-dir "setuptools<46"
-
-# Patch RL Coach
-ADD bundle/rl_coach.patch /tmp/
-RUN patch -p1 -N --directory=/usr/local/lib/python3.8/dist-packages/ < /tmp/rl_coach.patch
-
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
+        
 # Create the user
-RUN groupadd --gid $USER_GID $USERNAME \
+RUN userdel ubuntu && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
@@ -82,4 +110,21 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
     && chown -R $USERNAME /commandhistory \
     && echo $SNIPPET >> "/home/$USERNAME/.bashrc"
 
-ENTRYPOINT ["/bin/bash", "source /opt/ros/noetic/setup.bash"]
+RUN mkdir -p /opt/amazon/configs
+COPY .devcontainer/environment.yml /opt/amazon/configs/environment.devcontainer.yml
+
+USER $USERNAME
+ENV CONDA_DIR=/home/$USERNAME/miniconda
+
+# Install Miniconda as non-root
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-$(uname -m).sh -o /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p "$CONDA_DIR" && \
+    rm /tmp/miniconda.sh 
+
+# Create sagemaker_env conda environment from environment.devcontainer.yml
+RUN ${CONDA_DIR}/bin/conda env create -f /opt/amazon/configs/environment.devcontainer.yml -n sagemaker_env --yes || \
+    ${CONDA_DIR}/bin/conda env update -f /opt/amazon/configs/environment.devcontainer.yml -n sagemaker_env && \
+    ${CONDA_DIR}/bin/conda clean -afy && \
+    ${CONDA_DIR}/bin/conda config --set auto_activate_base false
+
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/jazzy/setup.bash && exec /bin/bash"]

@@ -1,18 +1,5 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ Image editing class for virtual event only
 """
@@ -20,8 +7,9 @@
 import os
 import datetime
 import logging
-import rospy
 import cv2
+import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
@@ -53,17 +41,30 @@ LOG = Logger(__name__, logging.INFO).get_logger()
 class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
     """ Image editing class for virtual event
     """
-    def __init__(self, racecar_name, racecar_info, race_type):
+    def __init__(self, racecar_name, racecar_info, race_type, node=None):
         """ Initializing the required data for the head to bot, time-trail. This is used for single agent
         Arguments:
             racecar_name (str): racecar name in string
-            racecars_info (list): list of dict having information of the agent
-            race_type (str): Since this class is reused for all the different race_type
+            racecar_info (dict): racecar information
+            race_type (str): race type
+            node (Node): ROS 2 node for parameter access (optional)
         """
-        # race duration in milliseconds
-        self._world_name = rospy.get_param("WORLD_NAME")
-        self.num_sectors = int(rospy.get_param("NUM_SECTORS", "3"))
-        self.race_duration = int(rospy.get_param("RACE_DURATION", DEFAULT_RACE_DURATION)) * 1000
+        self._node = node
+        
+        # Parameter access with fallback
+        if self._node is not None:
+            self._node.declare_parameter('WORLD_NAME', 'default_track')
+            self._node.declare_parameter('NUM_SECTORS', 3)
+            self._node.declare_parameter('RACE_DURATION', DEFAULT_RACE_DURATION)
+            
+            self._world_name = self._node.get_parameter('WORLD_NAME').get_parameter_value().string_value
+            self.num_sectors = int(self._node.get_parameter('NUM_SECTORS').get_parameter_value().integer_value)
+            self.race_duration = int(self._node.get_parameter('RACE_DURATION').get_parameter_value().integer_value) * 1000
+        else:
+            # Fallback to environment variables
+            self._world_name = os.environ.get('WORLD_NAME', 'default_track')
+            self.num_sectors = int(os.environ.get('NUM_SECTORS', '3'))
+            self.race_duration = int(os.environ.get('RACE_DURATION', str(DEFAULT_RACE_DURATION))) * 1000
         self.racecar_info = racecar_info
         self.race_type = race_type
         racecar_index = get_racecar_idx(racecar_name)
@@ -234,41 +235,48 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
         self._sector_times = info_dict[VirtualEventMP4Params.SECTOR_TIMES.value]
         self._curr_lap_time = info_dict[VirtualEventMP4Params.CURR_LAP_TIME.value]
 
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
+
         # Time remaining digit
         loc_x, loc_y = VirtualEventXYPixelLoc.TIME_REMAINING_DIGIT.value
         time_remaining = self.race_duration - total_eval_milli_seconds
         time_remaining = time_remaining if time_remaining > 0.0 else 0.0
         time_remaining = datetime.timedelta(milliseconds=time_remaining)
         time_remaining = utils.milliseconds_to_timeformat(time_remaining)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=time_remaining,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=time_remaining,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # Speed digit
         loc_x, loc_y = VirtualEventXYPixelLoc.SPEED_DIGIT.value
         speed_text = utils.get_speed_formatted_str(speed)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # Reset digit
         loc_x, loc_y = VirtualEventXYPixelLoc.RESET_DIGIT.value
         reset_counter_text = "{}".format(reset_counter)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=reset_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # curent lap time digit
         loc_x, loc_y = VirtualEventXYPixelLoc.CURRENT_LAP_TIME_DIGIT.value
         curr_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=self._curr_lap_time))
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=curr_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=curr_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # best lap time digit
         loc_x, loc_y = VirtualEventXYPixelLoc.BEST_LAP_TIME_DIGIT.value
@@ -278,11 +286,13 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
         best_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=best_lap_time)) \
             if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
+        major_cv_image = np.array(pil_major_cv_image)
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 

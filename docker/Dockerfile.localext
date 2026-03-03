@@ -1,15 +1,33 @@
-# This is a sample file that shows how one can easily build docker images
-# inheriting one of the core images. It will copy in the bundle and the run.sh
-# but otherwise not install packages etc. again.
+# This Dockerfile extends the deepracer-simapp image and rebuilds
+# selected packages for local development.
 #
-# Build with 'docker build . -t awsdeepracercommunity/deepracer-robomaker:local -f docker/Dockerfile.localext --build-arg FROM_TAG=cpu-avx'
+# Build with:
+#   docker build . -t awsdeepracercommunity/deepracer-simapp:local \
+#     -f docker/Dockerfile.localext \
+#     --build-arg BUNDLE_PREFIX=awsdeepracercommunity \
+#     --build-arg TAG=latest
 #
-ARG FROM_TAG
-FROM awsdeepracercommunity/deepracer-robomaker:${FROM_TAG}
+ARG BUNDLE_PREFIX=awsdeepracercommunity
+ARG TAG=latest
+FROM ${BUNDLE_PREFIX}/deepracer-simapp:${TAG}
 
-COPY bundle/install /opt/simapp
-COPY ./docker/files/run.sh run.sh
-COPY ./docker/files/devel.sh devel.sh
+# Copy markov package and source packages to rebuild
+COPY bundle/markov /opt/amazon/markov
+COPY bundle/src/deepracer_simulation_environment /opt/amazon/src/deepracer_simulation_environment
+COPY bundle/src/sagemaker_rl_agent /opt/amazon/src/sagemaker_rl_agent
+COPY bundle/urdf /opt/amazon/urdf
+
+# Rebuild the modified packages
+WORKDIR /opt/amazon
+SHELL ["/bin/bash", "-c"]
+RUN source /opt/ros/jazzy/setup.bash && \
+    source /opt/amazon/install/setup.bash && \
+    colcon build \
+        --packages-select deepracer_simulation_environment sagemaker_rl_agent \
+        --install-base /opt/amazon/install \
+        --cmake-args "-DCMAKE_BUILD_TYPE=Release"
+
+WORKDIR /opt/ml/code
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run distributed_training.launch"]
+CMD ["./run.sh run distributed_training.launch.py"]

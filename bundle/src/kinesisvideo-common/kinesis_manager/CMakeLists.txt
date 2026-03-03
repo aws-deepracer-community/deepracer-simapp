@@ -14,13 +14,17 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.20)
 project(kinesis_manager)
 set(KINESIS_MANAGER_VERSION 0.1.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+
+add_compile_options(-Wno-deprecated-declarations)
 
 find_package(aws_common REQUIRED)
+# Find the system-installed AWS SDK
+find_package(AWSSDK REQUIRED COMPONENTS core kinesis)
 if(AWSSDK_FOUND)
   set(SERVICE kinesis)
   AWSSDK_DETERMINE_LIBS_TO_LINK(SERVICE AWSSDK_LIBS_TO_LINK)
@@ -66,63 +70,51 @@ target_link_libraries(${PROJECT_NAME} ${AWSSDK_LIBS_TO_LINK} ${${PROJECT_NAME}_I
 
 
 #############
-## Tests ##
+### Tests ###
 #############
+enable_testing()
+find_package(ament_cmake_gmock REQUIRED)
 
-# enable_testing()
-# # Build tests which perform API calls to AWS and require user configuration set up
-# if(BUILD_AWS_TESTING)
-#   add_definitions(-DBUILD_AWS_TESTING)
-# endif()
+# Add test executables
+ament_add_gmock(test_default_callbacks test/default_callbacks_test.cpp)
+target_include_directories(test_default_callbacks PRIVATE 
+  ${aws_common_INCLUDE_DIRS} 
+  ${AWSSDK_INCLUDE_DIR} 
+  ${KVSSDK_EXTERNAL_INCLUDE_DIR}
+)
+target_link_libraries(test_default_callbacks 
+  ${PROJECT_NAME} 
+  ${AWSSDK_LIBS_TO_LINK} 
+  ${aws_common_LIBRARIES}
+  ${AWSSDK_LIBRARIES}
+)
 
-# find_common_test_packages()
+ament_add_gmock(test_kinesis_manager test/kinesis_manager_test.cpp)
+target_include_directories(test_kinesis_manager PRIVATE 
+  ${aws_common_INCLUDE_DIRS} 
+  ${AWSSDK_INCLUDE_DIR} 
+  ${KVSSDK_EXTERNAL_INCLUDE_DIR}
+)
+target_link_libraries(test_kinesis_manager 
+  ${PROJECT_NAME} 
+  ${AWSSDK_LIBS_TO_LINK} 
+  ${aws_common_LIBRARIES}
+  ${AWSSDK_LIBRARIES}
+)
 
-# add_common_gtest(test_kinesis_manager
-#   test/kinesis_manager_test.cpp
-# )
-# if(TARGET test_kinesis_manager)
-#   target_include_directories(test_kinesis_manager PRIVATE
-#     ${aws_common_INCLUDE_DIRS}
-#     ${KVSSDK_EXTERNAL_INCLUDE_DIR}
-#   )
-#   target_link_libraries(test_kinesis_manager
-#     ${PROJECT_NAME}
-#     ${aws_common_LIBRARIES}
-#     ${GMOCK_LIBRARY}
-#     pthread
-#   )
-# endif()
+ament_add_gmock(test_stream_subscription_installer test/stream_subscription_installer_test.cpp)
+target_include_directories(test_stream_subscription_installer PRIVATE 
+  ${aws_common_INCLUDE_DIRS} 
+  ${AWSSDK_INCLUDE_DIR} 
+  ${KVSSDK_EXTERNAL_INCLUDE_DIR}
+)
+target_link_libraries(test_stream_subscription_installer 
+  ${PROJECT_NAME} 
+  ${AWSSDK_LIBS_TO_LINK} 
+  ${aws_common_LIBRARIES}
+  ${AWSSDK_LIBRARIES}
+)
 
-# add_common_gtest(test_stream_subscription_installer
-#   test/stream_subscription_installer_test.cpp
-# )
-# if(TARGET test_stream_subscription_installer)
-#   target_include_directories(test_stream_subscription_installer PRIVATE
-#     ${aws_common_INCLUDE_DIRS}
-#     ${KVSSDK_EXTERNAL_INCLUDE_DIR}
-#   )
-#   target_link_libraries(test_stream_subscription_installer
-#     ${PROJECT_NAME}
-#     ${GMOCK_LIBRARY}
-#     pthread
-#   )
-# endif()
-
-# add_common_gtest(test_default_callbacks
-#   test/default_callbacks_test.cpp
-# )
-# if(TARGET test_default_callbacks)
-#   target_include_directories(test_default_callbacks PRIVATE
-#     ${aws_common_INCLUDE_DIRS}
-#     ${KVSSDK_EXTERNAL_INCLUDE_DIR}
-#   )
-#   target_link_libraries(test_default_callbacks
-#     ${PROJECT_NAME}
-#     ${aws_common_LIBRARIES}
-#     ${GMOCK_LIBRARY}
-#     pthread
-#   )
-# endif()
 
 #############
 ## Install ##

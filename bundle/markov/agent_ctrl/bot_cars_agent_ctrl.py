@@ -19,12 +19,10 @@ import math
 import numpy as np
 import os
 import random
-import rospkg
-import rospy
 import threading
 
-from gazebo_msgs.msg import ModelState
-from gazebo_msgs.srv import SpawnModel
+from deepracer_msgs.msg import ModelState
+from deepracer_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose
 
 from markov.agent_ctrl.constants import BOT_CAR_Z, RELATIVE_POSITION_OF_FRONT_OF_CAR
@@ -36,7 +34,7 @@ from markov.track_geom.spline.track_spline import TrackSpline
 from markov.track_geom.spline.lane_change_spline import LaneChangeSpline
 from markov.track_geom.utils import euler_to_quaternion
 from markov.agent_ctrl.agent_ctrl_interface import AgentCtrlInterface
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov import utils
 from markov.reset.constants import AgentPhase, AgentInfo
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
@@ -46,52 +44,76 @@ from markov.domain_randomizations.constants import ModelRandomizerType
 from markov.gazebo_tracker.trackers.set_model_state_tracker import SetModelStateTracker
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 from markov.gazebo_tracker.constants import TrackerPriority
+from markov.world_config import WorldConfig
 
 from shapely.geometry import Point
 
 
 class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
     def __init__(self, pause_time_before_start=0.0):
-        self.lock = threading.Lock()
-        self.pause_time_before_start = pause_time_before_start
-        # Read ros parameters
-        self.num_bot_cars = int(rospy.get_param("NUMBER_OF_BOT_CARS", 0))
-        self.min_bot_car_dist = float(rospy.get_param("MIN_DISTANCE_BETWEEN_BOT_CARS", 2.0))
-        self.randomize = utils.str2bool(rospy.get_param("RANDOMIZE_BOT_CAR_LOCATIONS", False))
-        self.bot_car_speed = float(rospy.get_param("BOT_CAR_SPEED", 0.2))
-        self.is_lane_change = utils.str2bool(rospy.get_param("IS_LANE_CHANGE", False))
-        self.lower_lane_change_time = float(rospy.get_param("LOWER_LANE_CHANGE_TIME", 3.0))
-        self.upper_lane_change_time = float(rospy.get_param("UPPER_LANE_CHANGE_TIME", 5.0))
-        self.lane_change_distance = float(rospy.get_param("LANE_CHANGE_DISTANCE", 1.0))
-        self.penalty_seconds = float(rospy.get_param("PENALTY_SECONDS", 2.0))
-        self.lane_change_duration = self.lane_change_distance/self.bot_car_speed
-        self.bot_car_names = ["bot_car_{}".format(i) for i in range(self.num_bot_cars)]
-        self.bot_car_poses = []
-        self.bot_car_progresses = {}
-        self.bot_car_phase = AgentPhase.PREPARE.value
-        self.bot_car_dimensions = ObstacleDimensions.BOT_CAR_DIMENSION
-        self.bot_car_crash_count = 0
-        self.pause_duration = 0.0
+        from markov.log_handler.logger import Logger
+        import logging
+        logger = Logger(__name__, logging.INFO).get_logger()
+        
+        
+        try:
+            self.lock = threading.Lock()
+            
+            self.pause_time_before_start = pause_time_before_start
+            
+            # Read ros parameters
+            self.num_bot_cars = int(WorldConfig.get_param("NUMBER_OF_BOT_CARS", 0))
+            
+            self.min_bot_car_dist = float(WorldConfig.get_param("MIN_DISTANCE_BETWEEN_BOT_CARS", 2.0))
+            
+            self.randomize = utils.str2bool(WorldConfig.get_param("RANDOMIZE_BOT_CAR_LOCATIONS", False))
+            
+            self.bot_car_speed = float(WorldConfig.get_param("BOT_CAR_SPEED", 0.2))
+            
+            self.is_lane_change = utils.str2bool(WorldConfig.get_param("IS_LANE_CHANGE", False))
+            
+            self.lower_lane_change_time = float(WorldConfig.get_param("LOWER_LANE_CHANGE_TIME", 3.0))
+            self.upper_lane_change_time = float(WorldConfig.get_param("UPPER_LANE_CHANGE_TIME", 5.0))
+            self.lane_change_distance = float(WorldConfig.get_param("LANE_CHANGE_DISTANCE", 1.0))
+            self.penalty_seconds = float(WorldConfig.get_param("PENALTY_SECONDS", 2.0))
+            
+            self.lane_change_duration = self.lane_change_distance/self.bot_car_speed
+            
+            self.bot_car_names = ["bot_car_{}".format(i) for i in range(self.num_bot_cars)]
+            
+            self.bot_car_poses = []
+            self.bot_car_progresses = {}
+            self.bot_car_phase = AgentPhase.PREPARE.value
+            self.bot_car_dimensions = ObstacleDimensions.BOT_CAR_DIMENSION
+            self.bot_car_crash_count = 0
+            self.pause_duration = 0.0
 
-        # track date
-        self.track_data = TrackData.get_instance()
-        self.reverse_dir = self.track_data.reverse_dir
+            # track date
+            self.track_data = TrackData.get_instance()
+            
+            self.reverse_dir = self.track_data.reverse_dir
 
-        # Wait for ros services
-        rospy.wait_for_service(SPAWN_SDF_MODEL)
-        self.spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel)
+            # Wait for ros services
+            self.spawn_sdf_model = ServiceProxyWrapper(SPAWN_SDF_MODEL, SpawnModel)
 
-        # Build splines for inner/outer lanes
-        self.inner_lane = TrackSpline(lane_name=TrackLane.INNER_LANE.value)
-        self.outer_lane = TrackSpline(lane_name=TrackLane.OUTER_LANE.value)
+            # Build splines for inner/outer lanes
+            self.inner_lane = TrackSpline(lane_name=TrackLane.INNER_LANE.value)
+            
+            self.outer_lane = TrackSpline(lane_name=TrackLane.OUTER_LANE.value)
 
-        # Spawn the bot cars
-        self.current_sim_time = 0.0
-        self._reset_sim_time()
-        self._spawn_bot_cars()
+            # Spawn the bot cars
+            self.current_sim_time = 0.0
+            self._reset_sim_time()
+            
+            self._spawn_bot_cars()
 
-        self._configure_randomizer()
-        AbstractTracker.__init__(self, priority=TrackerPriority.HIGH)
+            self._configure_randomizer()
+            
+            AbstractTracker.__init__(self, priority=TrackerPriority.HIGH)
+            
+        except Exception as e:
+            LOG.error("Error initializing BotCarsCtrl: %s", e)
+            raise
 
     def _configure_randomizer(self):
         '''configure domain randomizer
@@ -103,8 +125,8 @@ class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
     def _reset_sim_time(self):
         '''reset simulation start time
         '''
-        sim_time = rospy.get_rostime()
-        self.start_sim_time = self.current_sim_time = sim_time.secs + 1.e-9*sim_time.nsecs
+        sim_time = self.get_rostime().to_msg()
+        self.start_sim_time = self.current_sim_time = sim_time.sec + 1.e-9*sim_time.nanosec
 
     def update_tracker(self, delta_time, sim_time):
         """
@@ -114,7 +136,7 @@ class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
             delta_time (float): time diff from last call
             sim_time (Clock): simulation time
         """
-        self.current_sim_time = sim_time.clock.secs + 1.e-9*sim_time.clock.nsecs
+        self.current_sim_time = sim_time.clock.sec + 1.e-9*sim_time.clock.nanosec
         if self.pause_duration > 0.0:
             self.pause_duration -= delta_time
 
@@ -262,15 +284,23 @@ class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
         self._compute_bot_car_initial_states()
         self.bot_car_poses = self._compute_bot_car_poses()
 
-        rospack = rospkg.RosPack()
-        deepracer_path = rospack.get_path("deepracer_simulation_environment")
+        # OLD ROS1: rospack = rospkg.RosPack()
+        # OLD ROS1: deepracer_path = rospack.get_path("deepracer_simulation_environment")
+        # FIXED ROS2: Use get_package_share_directory instead of rospack
+        from ament_index_python.packages import get_package_share_directory
+        deepracer_path = get_package_share_directory("deepracer_simulation_environment")
         bot_car_sdf_path = os.path.join(deepracer_path, "models", "bot_car", "model.sdf")
         with open(bot_car_sdf_path, "r") as fp:
             bot_car_sdf = fp.read()
 
         for bot_car_name, bot_car_pose in zip(self.bot_car_names, self.bot_car_poses):
-            self.spawn_sdf_model(bot_car_name, bot_car_sdf, '/{}'.format(bot_car_name),
-                                 bot_car_pose, '')
+            req = SpawnModel.Request()
+            req.model_name = bot_car_name
+            req.model_xml = bot_car_sdf
+            req.robot_namespace = '/{}'.format(bot_car_name)
+            req.initial_pose = bot_car_pose
+            req.reference_frame = ''
+            self.spawn_sdf_model(req)
             self.track_data.initialize_object(bot_car_name, bot_car_pose, self.bot_car_dimensions)
 
     def _update_bot_cars(self):
@@ -281,12 +311,12 @@ class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
             bot_car_state = ModelState()
             bot_car_state.model_name = bot_car_name
             bot_car_state.pose = bot_car_pose
-            bot_car_state.twist.linear.x = 0
-            bot_car_state.twist.linear.y = 0
-            bot_car_state.twist.linear.z = 0
-            bot_car_state.twist.angular.x = 0
-            bot_car_state.twist.angular.y = 0
-            bot_car_state.twist.angular.z = 0
+            bot_car_state.twist.linear.x = 0.0
+            bot_car_state.twist.linear.y = 0.0
+            bot_car_state.twist.linear.z = 0.0
+            bot_car_state.twist.angular.x = 0.0
+            bot_car_state.twist.angular.y = 0.0
+            bot_car_state.twist.angular.z = 0.0
             SetModelStateTracker.get_instance().set_model_state(bot_car_state)
 
     def _update_track_data_bot_car_poses(self):

@@ -18,14 +18,12 @@ import threading
 from collections import OrderedDict
 
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
-import rospy
 
 from markov.domain_randomizations.constants import GazeboServiceName
-from markov.rospy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 import markov.gazebo_tracker.constants as consts
-from deepracer_msgs.srv import (SetVisualTransparencies, SetVisualTransparenciesRequest,
-                                SetVisualTransparencyResponse)
+from deepracer_msgs.srv import SetVisualTransparencies
 
 
 class SetVisualTransparencyTracker(AbstractTracker):
@@ -50,7 +48,6 @@ class SetVisualTransparencyTracker(AbstractTracker):
         self.link_name_map = OrderedDict()
         self.transparency_map = OrderedDict()
 
-        rospy.wait_for_service(GazeboServiceName.SET_VISUAL_TRANSPARENCIES.value)
         self.set_visual_transparencies = ServiceProxyWrapper(GazeboServiceName.SET_VISUAL_TRANSPARENCIES.value,
                                                              SetVisualTransparencies)
 
@@ -68,7 +65,7 @@ class SetVisualTransparencyTracker(AbstractTracker):
         Returns:
             msg (SetVisualTransparencyResponse)
         """
-        msg = SetVisualTransparencyResponse()
+        msg = SetVisualTransparencies.Response()
         key = (visual_name, link_name)
         with self.lock:
             if blocking:
@@ -76,7 +73,7 @@ class SetVisualTransparencyTracker(AbstractTracker):
                     del self.visual_name_map[key]
                     del self.link_name_map[key]
                     del self.transparency_map[key]
-                req = SetVisualTransparenciesRequest()
+                req = SetVisualTransparencies.Request()
                 req.visual_names = [visual_name]
                 req.link_names = [link_name]
                 req.transparencies = [transparency]
@@ -99,7 +96,7 @@ class SetVisualTransparencyTracker(AbstractTracker):
         """
         with self.lock:
             if self.visual_name_map.values():
-                req = SetVisualTransparenciesRequest()
+                req = SetVisualTransparencies.Request()
 
                 req.visual_names = self.visual_name_map.values()
                 req.link_names = self.link_name_map.values()

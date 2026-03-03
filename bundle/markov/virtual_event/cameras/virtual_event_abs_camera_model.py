@@ -15,7 +15,6 @@
 #################################################################################
 
 import abc
-import rospkg
 
 from markov.cameras.camera_factory import CameraFactory
 from markov.cameras.camera_manager import CameraManager
@@ -40,7 +39,8 @@ class VirtualEventAbsCameraModel(ABC):
         """
         self._camera_manager = CameraManager.get_instance()
         self._namespace = namespace
-        self._deepracer_path = rospkg.RosPack().get_path(
+        from ament_index_python.packages import get_package_share_directory
+        self._deepracer_path = get_package_share_directory(
             DeepRacerPackages.DEEPRACER_SIMULATION_ENVIRONMENT)
         self._camera = CameraFactory.create_instance(
             camera_type=camera_type,

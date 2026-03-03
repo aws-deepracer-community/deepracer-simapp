@@ -46,10 +46,11 @@
 
 <!-- Gazebo plugins -->
 <gazebo>
-  <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-    <robotNamespace>/$(arg racecar_name)</robotNamespace>
-    <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-    <legacyModeNS>true</legacyModeNS>
+  <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <parameters>$(arg ros2_control_params)</parameters>
+    <ros>
+      <namespace>/$(arg racecar_name)</namespace>
+    </ros>
   </plugin>
 </gazebo>
 
@@ -58,8 +59,11 @@
   <gazebo reference="camera_link">
     <sensor type="camera" name="zed_camera_left_sensor">
       <pose>0 0 0 0 0 0</pose>
+      <visualize>false</visualize>
+      <always_on>true</always_on>
       <update_rate>15.0</update_rate>
       <camera name="zed_camera_left_camera">
+        <camera_info_topic>/$(arg racecar_name)/camera/zed/camera_info</camera_info_topic>
         <horizontal_fov>1.13</horizontal_fov>
         <image>
           <width>640</width>
@@ -71,20 +75,8 @@
           <far>300</far>
         </clip>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>60</updateRate>
-        <cameraName>camera/zed</cameraName>
-        <imageTopicName>rgb/image_rect_color</imageTopicName>
-        <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
-        <frameName>camera_link</frameName>
-        <hackBaseline>0</hackBaseline><!-- set this to 0.12 for the second camera -->
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!-- Native Gazebo sensor - bridge handled in launch files -->
+      <topic>/$(arg racecar_name)/camera/zed/rgb/image_rect_color</topic>
     </sensor>
   </gazebo>
 </xacro:unless>
@@ -93,8 +85,11 @@
   <gazebo reference="camera_link_leftcam">
     <sensor type="camera" name="zed_camera_left_sensor">
       <pose>0 0 0 0 0 0</pose>
+      <visualize>false</visualize>
+      <always_on>true</always_on>
       <update_rate>15.0</update_rate>
       <camera name="zed_camera_left_camera">
+        <camera_info_topic>/$(arg racecar_name)/camera/zed/camera_info</camera_info_topic>
         <horizontal_fov>1.13</horizontal_fov>
         <image>
           <width>640</width>
@@ -106,28 +101,19 @@
           <far>300</far>
         </clip>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>60</updateRate>
-        <cameraName>camera/zed</cameraName>
-        <imageTopicName>rgb/image_rect_color</imageTopicName>
-        <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
-        <frameName>camera_link</frameName>
-        <hackBaseline>0.12</hackBaseline><!-- set this to 0.12 for the second camera -->
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!-- Native Gazebo sensor - bridge handled in launch files -->
+      <topic>/$(arg racecar_name)/camera/zed/rgb/image_rect_color</topic>
     </sensor>
   </gazebo>
 
   <gazebo reference="camera_link_rightcam">
     <sensor type="camera" name="zed_camera_right_sensor">
       <pose>0 0 0 0 0 0</pose>
+      <visualize>false</visualize>
+      <always_on>true</always_on>
       <update_rate>15.0</update_rate>
       <camera name="zed_camera_right_camera">
+        <camera_info_topic>/$(arg racecar_name)/camera/zed_right/camera_info</camera_info_topic>
         <horizontal_fov>1.13</horizontal_fov>
         <image>
           <width>640</width>
@@ -139,20 +125,8 @@
           <far>300</far>
         </clip>
       </camera>
-      <plugin name="camera_controller_right" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>60</updateRate>
-        <cameraName>camera/zed_right</cameraName>
-        <imageTopicName>rgb/image_rect_color_right</imageTopicName>
-        <cameraInfoTopicName>rgb/camera_info_right</cameraInfoTopicName>
-        <frameName>camera_link_right</frameName>
-        <hackBaseline>0.0</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!-- Native Gazebo sensor - bridge handled in launch files -->
+      <topic>/$(arg racecar_name)/camera/zed_right/rgb/image_rect_color_right</topic>
     </sensor>
   </gazebo>
 </xacro:if>
@@ -160,11 +134,12 @@
 <!-- hokuyo sensor-->
 <xacro:if value="$(arg include_lidar_sensor)">
   <gazebo reference="laser">
-    <sensor type="ray" name="hokuyo_sensor">
+    <sensor type="gpu_lidar" name="hokuyo_sensor">
       <pose>0 0 0 0 0 0</pose>
       <visualize>true</visualize>
+      <always_on>true</always_on>
       <update_rate>10</update_rate>
-      <ray>
+      <lidar>
         <scan>
           <horizontal>
             <samples>$(arg lidar_360_degree_sample)</samples>
@@ -182,11 +157,9 @@
           <mean>$(arg lidar_360_degree_noise_mean)</mean>
           <stddev>$(arg lidar_360_degree_noise_stddev)</stddev>
         </noise>
-      </ray>
-      <plugin name="gazebo_ros_hokuyo_controller" filename="libgazebo_ros_laser.so">
-        <topicName>scan</topicName>
-        <frameName>laser</frameName>
-      </plugin>
+      </lidar>
+      <!-- Native Gazebo sensor - bridge handled in launch files -->
+      <topic>/$(arg racecar_name)/scan</topic>
     </sensor>
   </gazebo>
 </xacro:if>

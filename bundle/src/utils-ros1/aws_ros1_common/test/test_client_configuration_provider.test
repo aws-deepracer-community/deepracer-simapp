@@ -1,3 +1,0 @@
-<launch>
-	<test test-name="test_client_configuration_provider" pkg="aws_ros1_common" type="test_client_configuration_provider"/>
-</launch>

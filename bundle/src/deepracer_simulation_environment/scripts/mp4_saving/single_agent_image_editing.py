@@ -1,30 +1,18 @@
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 """ Image editing class for head to bot, time-trail, obstacle where
 there is only single agent
 """
 import datetime
 import logging
-import rospy
 import cv2
-import os
+import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx, str2bool
+from markov.world_config import WorldConfig
 from mp4_saving import utils
 from mp4_saving.constants import (RaceCarColorToRGB,
                                   IconographicImageSize,
@@ -40,12 +28,14 @@ class SingleAgentImageEditing(ImageEditingInterface):
     """ Image editing class for head to bot, time-trail, obstacle where
     there is only single agent
     """
-    def __init__(self, racecar_name, racecar_info, race_type):
+    def __init__(self, racecar_name, racecar_info, race_type, node=None):
         """ Initializing the required data for the head to bot, time-trail. This is used for single agent
         Arguments:
             racecars_info (list): list of dict having information of the agent
             race_type (str): Since this class is reused for all the different race_type
+            node (Node): ROS 2 node for parameter access (optional)
         """
+        self._node = node
         self.racecar_info = racecar_info
         self.race_type = race_type
         racecar_index = get_racecar_idx(racecar_name)
@@ -58,14 +48,29 @@ class SingleAgentImageEditing(ImageEditingInterface):
         self.amazon_ember_light_20px = utils.get_font('AmazonEmber-Light', 20)
         self.amazon_ember_light_italic_20px = utils.get_font('AmazonEmber-LightItalic', 20)
 
-        self.is_racing = rospy.get_param("VIDEO_JOB_TYPE", "") == "RACING"
-        self.is_league_leaderboard = rospy.get_param("LEADERBOARD_TYPE", "") == "LEAGUE"
-        self.leaderboard_name = rospy.get_param("LEADERBOARD_NAME", "")
-        self._total_laps = int(rospy.get_param("NUMBER_OF_TRIALS", 0))
-        self._enable_mercy_reset = str2bool(rospy.get_param("ENABLE_MERCY_RESET", ""))
+        # Parameter access with fallback
+        if self._node is not None:
+            self._node.declare_parameter('VIDEO_JOB_TYPE', '')
+            self._node.declare_parameter('LEADERBOARD_TYPE', '')
+            self._node.declare_parameter('LEADERBOARD_NAME', '')
+            self._node.declare_parameter('NUMBER_OF_TRIALS', 0)
+            self._node.declare_parameter('ENABLE_MERCY_RESET', '')
+            
+            self.is_racing = self._node.get_parameter('VIDEO_JOB_TYPE').get_parameter_value().string_value == "RACING"
+            self.is_league_leaderboard = self._node.get_parameter('LEADERBOARD_TYPE').get_parameter_value().string_value == "LEAGUE"
+            self.leaderboard_name = self._node.get_parameter('LEADERBOARD_NAME').get_parameter_value().string_value
+            self._total_laps = int(self._node.get_parameter('NUMBER_OF_TRIALS').get_parameter_value().integer_value)
+            self._enable_mercy_reset = str2bool(self._node.get_parameter('ENABLE_MERCY_RESET').get_parameter_value().string_value)
+        else:
+            # Fallback to world config
+            self.is_racing = WorldConfig.get_param('VIDEO_JOB_TYPE', '') == "RACING"
+            self.is_league_leaderboard = WorldConfig.get_param('LEADERBOARD_TYPE', '') == "LEAGUE"
+            self.leaderboard_name = WorldConfig.get_param('LEADERBOARD_NAME', '')
+            self._total_laps = int(WorldConfig.get_param('NUMBER_OF_TRIALS', 0))
+            self._enable_mercy_reset = str2bool(WorldConfig.get_param('ENABLE_MERCY_RESET', ''))
 
         # The track image as iconography
-        self.track_icongraphy_img = utils.get_track_iconography_image()
+        self.track_icongraphy_img = utils.get_track_iconography_image(self._node)
 
         # Track image offset
         self.track_loc_offset = XYPixelLoc.TRACK_IMG_WITH_OFFSET_LOC.value if self.is_league_leaderboard \
@@ -93,6 +98,8 @@ class SingleAgentImageEditing(ImageEditingInterface):
         # Applying gradient to whole major image and then writing text
         major_cv_image = utils.apply_gradient(major_cv_image, self.gradient_alpha_rgb_mul,
                                               self.one_minus_gradient_alpha)
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
 
         # Top left location of the picture
         loc_x, loc_y = XYPixelLoc.SINGLE_AGENT_DISPLAY_NAME_LOC.value
@@ -100,28 +107,31 @@ class SingleAgentImageEditing(ImageEditingInterface):
         # Display name (Racer name/Model name)
         display_name = self.racecar_info[self.racecar_index]['display_name']
         display_name_txt = display_name if len(display_name) < 15 else "{}...".format(display_name[:15])
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=display_name_txt,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=display_name_txt,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_20px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
         # Lap Counter
         loc_y += 30
         current_lap = min(int(mp4_video_metrics_info[self.racecar_index].lap_counter) + 1, self._total_laps)
         lap_counter_text = "{}/{}".format(current_lap, self._total_laps)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=lap_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
         # total_evaluation_time (Race time)
         loc_y += 45
         total_eval_milli_seconds = mp4_video_metrics_info[self.racecar_index].total_evaluation_time
         time_delta = datetime.timedelta(milliseconds=total_eval_milli_seconds)
         total_eval_time_text = "Race | {}".format(utils.milliseconds_to_timeformat(time_delta))
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=total_eval_time_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=total_eval_time_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
-        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
+        if WorldConfig.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             loc_y += 25
             best_lap_time = mp4_video_metrics_info[self.racecar_index].best_lap_time
             # The initial default best_lap_time from s3_metrics.py is inf
@@ -131,80 +141,91 @@ class SingleAgentImageEditing(ImageEditingInterface):
                 if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
                 
             best_lap_time_text = "Best lap | {}".format(best_lap_time) 
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
         
         # Reset counter
         loc_y += 25
         reset_counter_text = "Reset | {}".format(mp4_video_metrics_info[self.racecar_index].reset_counter)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=reset_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
 
         if(self._enable_mercy_reset):
             # Consecutive obstacle crash counter
             loc_y += 25
             obstacle_reset_counter_text = "Obstacle attempts | {}".format(mp4_video_metrics_info[self.racecar_index].obstacle_reset_counter)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=obstacle_reset_counter_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=obstacle_reset_counter_text,
                                                        loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                       draw_obj=draw)
         
-        if rospy.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
+        if WorldConfig.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
             # Steering Angle
             loc_y += 25
             steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].steering)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)
             
             # Throttle
             loc_y += 25
             steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[self.racecar_index].throttle)
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=steering_text,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
                                                     loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                     font_color=RaceCarColorToRGB.White.value,
-                                                    font_shadow_color=RaceCarColorToRGB.Black.value)       
+                                                    font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                    draw_obj=draw)      
         
         # Speed
         loc_x, loc_y = XYPixelLoc.SPEED_EVAL_LOC.value
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.SPEED_LEADERBOARD_LOC.value
         speed_text = "{} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].speed))
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                 loc=(loc_x, loc_y), font=self.amazon_ember_light_20px,
                                                 font_color=RaceCarColorToRGB.White.value,
-                                                font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                draw_obj=draw)
             
         # Leaderboard name
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.LEADERBOARD_NAME_LOC.value
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=self.leaderboard_name,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=self.leaderboard_name,
                                                        loc=(loc_x, loc_y), font=self.amazon_ember_regular_16px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                       draw_obj=draw)
         # Evaluation type
         loc_x, loc_y = XYPixelLoc.RACE_TYPE_EVAL_LOC.value
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.RACE_TYPE_RACE_LOC.value
         race_text = "race" if self.is_racing else "evaluation"
         evaluation_type_txt = "{} {}".format(RACE_TYPE_TO_VIDEO_TEXT_MAPPING[self.race_type], race_text)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=evaluation_type_txt,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=evaluation_type_txt,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_italic_20px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
 
         # AWS Deepracer logo at the bottom for the community leaderboard
         if self.is_league_leaderboard:
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=AWS_DEEPRACER_WATER_MARK,
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=AWS_DEEPRACER_WATER_MARK,
                                                        loc=XYPixelLoc.AWS_DEEPRACER_WATER_MARK_LOC.value,
                                                        font=self.amazon_ember_regular_16px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                       draw_obj=draw)
+
+        major_cv_image = np.array(pil_major_cv_image)
 
         # Check if the done flag is set and set the banner appropriately
         if mp4_video_metrics_info[self.racecar_index].done and (int(self._total_laps) >= current_lap):

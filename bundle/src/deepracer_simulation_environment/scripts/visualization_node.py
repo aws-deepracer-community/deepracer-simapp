@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-#################################################################################
-#   Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.          #
-#                                                                               #
-#   Licensed under the Apache License, Version 2.0 (the "License").             #
-#   You may not use this file except in compliance with the License.            #
-#   You may obtain a copy of the License at                                     #
-#                                                                               #
-#       http://www.apache.org/licenses/LICENSE-2.0                              #
-#                                                                               #
-#   Unless required by applicable law or agreed to in writing, software         #
-#   distributed under the License is distributed on an "AS IS" BASIS,           #
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    #
-#   See the License for the specific language governing permissions and         #
-#   limitations under the License.                                              #
-#################################################################################
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 '''This module will launch a ROS node that will have publish visualization topics.
 '''
@@ -23,27 +10,54 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-import rospy
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
+from rclpy.executors import MultiThreadedExecutor
 import sys
 from sensor_msgs.msg import Image as sensor_image
 from deepracer_simulation_environment.msg import AgentRewardData 
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
+import logging
+from markov.log_handler.logger import Logger
 from markov import utils
 
-class RewardDistributionBarGraph(object):
-    def __init__(self,racecar_name, title="Reward Distribution Bar Graph"):
+logger = Logger(__name__, logging.INFO).get_logger()
+
+class RewardDistributionBarGraph(Node):
+    def __init__(self, racecar_name, title="Reward Distribution Bar Graph"):
+        super().__init__(f'visualization_node_{racecar_name}')
         self.racecar_name = racecar_name
-        rospy.Subscriber("/reward_data/"+self.racecar_name, AgentRewardData, self.reward_data_subscriber)
-        self.reward_distribution_graph_publisher = rospy.Publisher('/visualization/reward_bar_graph/'+self.racecar_name, sensor_image, queue_size=1)
+        
+        # Create subscriber and publisher
+        self.subscription = self.create_subscription(
+            AgentRewardData,
+            f"/reward_data/{self.racecar_name}",
+            self.reward_data_subscriber,
+            QoSProfile(depth=10)
+        )
+        self.reward_distribution_graph_publisher = self.create_publisher(
+            sensor_image, 
+            f'/visualization/reward_bar_graph/{self.racecar_name}', 
+            10
+        )
         self.bridge = CvBridge()
         
-        self.num_of_past_frames = int(rospy.get_param("VIS_NUMBER_OF_PAST_FRAMES", 10))
+        # Declare and get parameters
+        self.declare_parameter('vis_number_of_past_frames', 10)
+        self.declare_parameter('vis_figure_width', 12)
+        self.declare_parameter('vis_figure_height', 6)
+        
+        self.num_of_past_frames = self.get_parameter('vis_number_of_past_frames').value
+        figure_width = self.get_parameter('vis_figure_width').value
+        figure_height = self.get_parameter('vis_figure_height').value
+        
         # TODO: Change from list to queue
         self.reward_list = [0 for i in range(self.num_of_past_frames)]
         self.action_index_list = [0 for i in range(self.num_of_past_frames)]
         self.image_list = [np.zeros((120, 160)) for i in range(self.num_of_past_frames)]
-        self.fig = plt.figure(figsize=(int(rospy.get_param("VIS_FIGURE_WIDTH", 12)),int(rospy.get_param("VIS_FIGURE_HEIGHT", 6))))
+        self.fig = plt.figure(figsize=(int(figure_width), int(figure_height)))
 
         # Define the plot specifics
         gs = gridspec.GridSpec(6, self.num_of_past_frames)
@@ -118,12 +132,38 @@ class RewardDistributionBarGraph(object):
         self.reward_distribution_graph_publisher.publish(self.bridge.cv2_to_imgmsg(data, "bgr8"))
 
 
-if __name__ == '__main__':
-    # comma seperated racecar names passed as an argument to the node 
-    RACER_NUM = int(sys.argv[1])
-    racecar_names = utils.get_racecar_names(RACER_NUM)
-    rospy.init_node('visualization_node', anonymous=True)
-    for racecar_name in racecar_names:
-        RewardDistributionBarGraph(racecar_name)
-    rospy.spin()
+def main(args=None):
+    rclpy.init(args=args)
     
+    try:
+        # comma separated racecar names passed as an argument to the node 
+        RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        racecar_names = utils.get_racecar_names(RACER_NUM)
+        
+        # Create nodes for each racecar
+        nodes = []
+        for racecar_name in racecar_names:
+            node = RewardDistributionBarGraph(racecar_name)
+            nodes.append(node)
+        
+        # Use MultiThreadedExecutor to handle multiple nodes
+        executor = MultiThreadedExecutor()
+        
+        for node in nodes:
+            executor.add_node(node)
+        
+        try:
+            executor.spin()
+        finally:
+            for node in nodes:
+                node.destroy_node()
+            
+    except Exception as ex:
+        logger.error(f"Exception in visualization node: {ex}")
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

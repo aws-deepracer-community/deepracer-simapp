@@ -15,19 +15,18 @@
 #################################################################################
 
 '''This module implements concrete reset rule for going reversed direction'''
-import rospy
 
 from markov.reset.abstract_reset_rule import AbstractResetRule
 from markov.reset.constants import AgentCtrlStatus, AgentPhase
 from markov.metrics.constants import EpisodeStatus
-
+from markov.world_config import WorldConfig
 
 class ReverseResetRule(AbstractResetRule):
     name = EpisodeStatus.REVERSED.value
 
     def __init__(self):
         super(ReverseResetRule, self).__init__(ReverseResetRule.name)
-        self._number_of_reverse_counts = int(rospy.get_param("NUMBER_OF_REVERSE_COUNTS", 15))
+        self._number_of_reverse_counts = int(WorldConfig.get_param("NUMBER_OF_REVERSE_COUNTS", 15))
         self._reverse_count = 0
 
     def _update(self, agent_status):
