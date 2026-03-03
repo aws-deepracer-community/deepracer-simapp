@@ -63,17 +63,11 @@ include_directories(
 #############
 
 install(PROGRAMS
-    scripts/run_local_rl_agent.sh
-    scripts/run_rollout_rl_agent.sh
-    scripts/run_evaluation_rl_agent.sh
-    scripts/run_virtual_event_rl_agent.sh
     scripts/only_sleep.sh
     scripts/car_node.py
     scripts/car_control_webrtc_msg_node.py
     scripts/visualization_node.py
-    scripts/download_params_and_roslaunch_agent.py
     scripts/mp4_saving/agents_video_editor.py
-    scripts/mp4_saving/virtual_event_video_editor.py
     scripts/test_fixture_nodes/camera_topic_node.py
     tests/pytest_runner.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
