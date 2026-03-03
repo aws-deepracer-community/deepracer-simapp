@@ -168,7 +168,16 @@ Inside your project repository:
 docker build \
   --build-arg SIMAPP_TAG=<VERSION>-cpu \
   -t my-deepracer-project:latest .
+```
 
+> **Rebuilding after changes to the base image:** Docker caches the `FROM` layer
+> by tag. If you rebuilt `deepracer-env` with the same tag, add `--no-cache` to
+> force the project image to pick up the new base:
+> ```bash
+> docker build --no-cache --build-arg SIMAPP_TAG=<VERSION>-cpu -t my-deepracer-project:latest .
+> ```
+
+```bash
 docker run --rm \
   -e WORLD_NAME=reinvent_base \
   -e ENABLE_GUI=False \
@@ -186,7 +195,11 @@ docker run --rm \
   my-deepracer-project:latest
 ```
 
-Then connect any VNC viewer to `localhost:5900`.
+Then connect a **desktop VNC client** (e.g. [TigerVNC](https://tigervnc.org/),
+RealVNC Viewer) to `localhost:5900`. No password is set.
+
+> **Note:** Browser-based noVNC clients will not work — port 5900 is a raw VNC
+> port, not a WebSocket endpoint.
 
 ### Step 4 — Iterate without rebuilding the image
 
@@ -303,8 +316,39 @@ an image):
 
 ```bash
 ./build-dev-bundle.sh          # compiles into ./install/
-./build-dev-bundle.sh -g       # also starts Gazebo (requires DR_SIMAPP_IMAGE and DR_WORLD_NAME)
 ```
+
+To also start Gazebo immediately after building, use the `-g` flag. This
+requires a few environment variables and the `sagemaker-local` Docker network:
+
+```bash
+# One-time network setup
+docker network create sagemaker-local
+
+# Set required variables (on Windows/Git Bash, $USER may not be set — whoami is used automatically)
+export DR_SIMAPP_IMAGE=$(cat VERSION)-cpu   # or -gpu
+export DR_WORLD_NAME=reinvent_base
+export USER_UID=$(id -u)
+export USER_GID=$(id -g)
+
+./build-dev-bundle.sh -g
+```
+
+To iterate without rebuilding the image, volume-mount the local `install/` and
+`deepracer_env/` into a running container:
+
+```bash
+docker run --rm \
+  -e WORLD_NAME=reinvent_base \
+  -v $(pwd)/install:/opt/simapp \
+  -v $(pwd)/deepracer_env:/usr/local/lib/python3.8/dist-packages/deepracer_env \
+  my-deepracer-project:latest
+```
+
+> **Windows / Git Bash note:** `$USER` is not set by default on Windows. The
+> `build-dev-bundle.sh` script falls back to `whoami` automatically. If you
+> encounter UID/GID related errors, verify that `id -u` and `id -g` return
+> valid values in your shell.
 
 ---
 
