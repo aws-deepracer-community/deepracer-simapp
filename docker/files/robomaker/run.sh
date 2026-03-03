@@ -50,11 +50,11 @@ if [[ -n "${RTF_OVERRIDE}" ]]; then
 	xmlstarlet sel -t -c '/sdf/world/physics' $WORLD_FILE
 fi
 
-# If no run-option given then use the distributed training
-if [ -z ${2+x} ]; then
-	$2 = "distributed_training.launch"
-	exit
-
+# If no launch file given, show usage and exit
+if [ -z "${2+x}" ]; then
+	echo "Usage: run.sh [multi] <launch_file>"
+	echo "Example: run.sh run deepracer_env.launch"
+	exit 1
 fi
 
 # Initialize ROS & the Bundle
