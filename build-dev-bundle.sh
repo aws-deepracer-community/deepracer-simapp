@@ -29,6 +29,11 @@ done
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 VERSION=$(cat $DIR/VERSION)
 
+# On Windows/Git Bash $USER is not set; fall back to whoami
+if [ -z "$USER" ]; then
+    USER=$(whoami)
+fi
+
 if [ "$(docker images -q ${PREFIX}/deepracer-env-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
     echo "Preparing core builder image ${PREFIX}/deepracer-env-build-core:latest..."
     docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-env-build-core:latest -f docker/Dockerfile.base .
@@ -40,10 +45,10 @@ echo "Preparing devel image for user $(id -u)..."
 docker buildx build ${OPT_NOCACHE} -t ${PREFIX}/deepracer-env-build-devel:latest -f docker/Dockerfile.dev-user \
     --build-arg FROM_IMG=${PREFIX}/deepracer-env-build-core:latest --build-arg USERNAME=$USER --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) .
 
-echo "Building development build of bundle into $(pwd)/bundle..."
+echo "Building development build of bundle into $(pwd)/install..."
 mkdir -p $(pwd)/install $(pwd)/build $(pwd)/log
 docker run --rm -ti -v $(pwd)/simulation:/opt/bundle -v $(pwd)/log:/opt/log -v $(pwd)/install:/opt/simapp -v $(pwd)/build:/opt/build \
-    ${PREFIX}/deepracer-env-build-devel:latest bash -c 'colcon --log-base /opt/log build --install-base /opt/simapp --build-base /opt/build'
+    ${PREFIX}/deepracer-env-build-devel:latest bash -c 'sudo mkdir -p /opt/log /opt/simapp /opt/build && sudo chown -R $(whoami) /opt/log /opt/simapp /opt/build && cd /opt/bundle && colcon --log-base /opt/log build --install-base /opt/simapp --build-base /opt/build'
 
 if [ -n "${OPT_GAZEBO}" ]; then
     if [ -z "${DR_SIMAPP_IMAGE}" ]; then
