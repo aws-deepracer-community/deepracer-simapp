@@ -1,8 +1,19 @@
 <?xml version="1.0"?>
 <sdf version="1.7">
   <model name="bot_car">
-    <link name="base_link" >
+    <link name="base_link">
       <gravity>0</gravity>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
     </link>
     <link name="chassis">
       <gravity>0</gravity>
@@ -14,7 +25,7 @@
     <link name="left_rear_wheel">
       <gravity>0</gravity>
       <visual name="left_rear_wheel_visual">
-        <pose frame="">-0.081663 0.08105 0.038999 0 0 0</pose>
+        <pose>-0.081663 0.08105 0.038999 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -29,18 +40,14 @@
         </material>
       </visual>
     </link>
-    <joint name="left_rear_wheel_joint" type="continuous">
+    <joint name="left_rear_wheel_joint" type="fixed">
       <parent>chassis</parent>
       <child>left_rear_wheel</child>
-      <axis>
-        <xyz>0 1 0</xyz>
-      </axis>
-      <use_parent_model_frame>1</use_parent_model_frame>
     </joint>
     <link name="right_rear_wheel">
       <gravity>0</gravity>
       <visual name="right_rear_wheel_visual">
-        <pose frame="">-0.081663 -0.08105 0.038999 0 0 0</pose>
+        <pose>-0.081663 -0.08105 0.038999 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -55,19 +62,15 @@
         </material>
       </visual>
     </link>
-    <joint name="right_rear_wheel_joint" type="continuous">
+    <joint name="right_rear_wheel_joint" type="fixed">
       <parent>chassis</parent>
       <child>right_rear_wheel</child>
-      <axis>
-        <xyz>0 1 0</xyz>
-      </axis>
-      <use_parent_model_frame>1</use_parent_model_frame>
     </joint>
 
     <link name="left_front_wheel">
       <gravity>0</gravity>
       <visual name="left_front_wheel_visual">
-        <pose frame="">0.082311 0.079601 0.027509 0 0 0</pose>
+        <pose>0.082311 0.079601 0.027509 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -82,18 +85,14 @@
         </material>
       </visual>
     </link>
-    <joint name="left_front_wheel_joint" type="continuous">
+    <joint name="left_front_wheel_joint" type="fixed">
       <parent>chassis</parent>
       <child>left_front_wheel</child>
-      <axis>
-        <xyz>0 1 0</xyz>
-      </axis>
-      <use_parent_model_frame>1</use_parent_model_frame>
     </joint>
     <link name="right_front_wheel">
       <gravity>0</gravity>
       <visual name="right_front_wheel_visual">
-        <pose frame="">0.082311 -0.079601 0.027509 0 0 0</pose>
+        <pose>0.082311 -0.079601 0.027509 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -108,18 +107,14 @@
         </material>
       </visual>
     </link>
-    <joint name="right_front_wheel_joint" type="continuous">
+    <joint name="right_front_wheel_joint" type="fixed">
       <parent>chassis</parent>
       <child>right_front_wheel</child>
-      <axis>
-        <xyz>0 1 0</xyz>
-      </axis>
-      <use_parent_model_frame>1</use_parent_model_frame>
     </joint>
     <link name="car_body_link_v3">
       <gravity>0</gravity>
       <visual name="car_body_link_v3_visual">
-        <pose frame="">-0.0762 0 0.01577 0 0 0</pose>
+        <pose>-0.0762 0 0.01577 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -135,7 +130,7 @@
         </material>
       </visual>
       <collision name='car_body_link_v3_collision'>
-        <pose frame="">-0.0762 0 0.01577 0 0 0</pose>
+        <pose>-0.0762 0 0.01577 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -152,10 +147,6 @@
     <joint name="car_body_joint" type="fixed">
       <parent>chassis</parent>
       <child>car_body_link_v3</child>
-      <axis>
-        <xyz>0 0 0</xyz>
-      </axis>
-      <use_parent_model_frame>1</use_parent_model_frame>
     </joint>
   </model>
 </sdf>
