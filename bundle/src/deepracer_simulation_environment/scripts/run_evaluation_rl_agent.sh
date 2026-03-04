@@ -17,12 +17,6 @@ echo "Waiting for system to stabilize..."
 sleep 5
 
 echo "Starting markov evaluation worker..."
-
-# ESSENTIAL: Source ROS setup before activating conda to ensure ROS is available
-source /opt/ros/jazzy/setup.bash
-source /opt/amazon/install/setup.bash
-source /root/anaconda/bin/activate sagemaker_env
-
 # Run the evaluation worker
 python3 -m markov.evaluation_worker
 

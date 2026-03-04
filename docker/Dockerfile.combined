@@ -58,9 +58,9 @@ RUN apt update && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Prevent docker build get stopped by requesting user interaction
-ENV DEBIAN_FRONTEND=noninteractive
-ENV DEBCONF_NONINTERACTIVE_SEEN=true
+# Set non-interactive frontend for apt
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
 # Python won’t try to write .pyc or .pyo files on the import of source modules
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -74,6 +74,7 @@ ENV ROS_SNAPSHOT_DATE=2025-11-19
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES="all"
 ENV NVIDIA_DRIVER_CAPABILITIES="all"
+ENV MESA_DEBUG=silent
 
 COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
@@ -121,9 +122,12 @@ RUN python3 -m venv /root/sagemaker-venv && \
     /root/sagemaker-venv/bin/pip install --no-cache-dir --upgrade pip && \
     /root/sagemaker-venv/bin/pip install --no-cache-dir "sagemaker<3"
 
-# Copy installed libraries (Redis + AWS CPP + Conda)
+RUN python3 -m pip install --no-cache-dir --break-system-packages sagemaker-training 
+
+# Copy installed libraries (Redis + AWS CPP + AWS CLI + Conda)
 COPY --from=bundle /usr/local/ /usr/local/
 COPY --from=bundle /root/anaconda/ /root/anaconda/
+
 # Copy compiled bundle
 COPY --from=bundle /opt/amazon/install /opt/amazon/install
 # Copy configurations and scripts
@@ -143,8 +147,7 @@ RUN apt update -y && rosdep init && rosdep update --rosdistro=jazzy -q && \
 
 # Copy Sagemaker and misc files
 COPY ./docker/files/ml-code /opt/ml/code
-# ENV SAGEMAKER_TRAINING_MODULE="sagemaker_bootstrap:sageonly"
-ENV SAGEMAKER_PROGRAM="sage-train.sh"
+ENV SAGEMAKER_PROGRAM="sagemaker_bootstrap.py"
 
 # Copy Robomaker scripts and configuration files
 COPY ./docker/files/robomaker/run.sh /opt/ml/code/run.sh
@@ -166,4 +169,4 @@ LABEL maintainer="AWS DeepRacer Community - deepracing.io"
 LABEL version="${IMG_VERSION}"
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["./run.sh run distributed_training.launch.py"]
+CMD ["bash"]
