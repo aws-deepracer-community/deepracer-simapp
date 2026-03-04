@@ -179,7 +179,8 @@ class AgentsVideoEditor(Node):
                                                        camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS]],
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
-                                         frame_size=Mp4Parameter.FRAME_SIZE.value)
+                                         frame_size=Mp4Parameter.FRAME_SIZE.value,
+                                         node_name='save_to_mp4_{}'.format(self.racecar_name))
 
         self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         self._metrics_timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
@@ -205,13 +206,15 @@ class AgentsVideoEditor(Node):
             10
         )
 
-        # ROS service to get video metrics
-        # Increase retry attempts and timeout since the service may take time to become available
+        # ROS service to get video metrics.
+        # Do NOT wait_for_service here: EvalMetrics registers this service only after
+        # models are downloaded and the graph is built (~10 min). The timer below
+        # polls at 50 ms and will silently skip until the service is ready.
         self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
                                                          VideoMetricsSrv,
-                                                         max_retry_attempts=30,
+                                                         max_retry_attempts=3,
                                                          timeout_sec=2.0,
-                                                         wait_for_service=True)
+                                                         wait_for_service=False)
         self._metrics_update_timer = self.create_timer(METRICS_POLL_PERIOD_SEC,
                                                         self._update_racers_metrics,
                                                         callback_group=self._metrics_timer_callback_group)
@@ -360,12 +363,17 @@ class AgentsVideoEditor(Node):
         if not self._metrics_call_lock.acquire(blocking=False):
             return
         try:
+            # Skip silently if the service is not yet available.
+            # EvalMetrics registers this service only after models are loaded,
+            # which can take many minutes. We poll at 50 ms so missing ticks is fine.
+            if not self.mp4_video_metrics_srv.client.service_is_ready():
+                return
             video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrv.Request())
-            if not self._shutdown_requested:
+            if video_metrics is not None and not self._shutdown_requested:
                 self._agent_metrics_buffer.put(video_metrics)
-        except Exception:
+        except Exception as ex:
             if not self._shutdown_requested and rclpy.ok():
-                raise
+                LOG.debug("mp4_video_metrics call skipped: %s", ex)
         finally:
             self._metrics_call_lock.release()
 

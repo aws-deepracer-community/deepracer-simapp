@@ -55,7 +55,8 @@ class GetModelStateTracker(AbstractTracker):
             pass  # Keep waiting like ROS1 did
             
         # Now create simple ServiceProxyWrapper (should work immediately)
-        self.get_model_states = ServiceProxyWrapper(GET_MODEL_STATES, GetModelStates)
+        self.get_model_states = ServiceProxyWrapper(GET_MODEL_STATES, GetModelStates,
+                                                    max_retry_attempts=10, timeout_sec=5.0)
 
         GetModelStateTracker._instance_ = self
         super(GetModelStateTracker, self).__init__(priority=consts.TrackerPriority.HIGH)
@@ -67,7 +68,8 @@ class GetModelStateTracker(AbstractTracker):
             
             if model_name not in self.model_names:
                 self.model_names.append(model_name)
-            if relative_entity_name not in self.relative_entity_names:
+                # Always append a corresponding relative_entity_name together with model_name
+                # so both lists stay the same length (required by the service)
                 self.relative_entity_names.append(relative_entity_name)
                 
             if blocking or cache_key not in self.model_map:
@@ -82,7 +84,14 @@ class GetModelStateTracker(AbstractTracker):
                 try:
                     # Call the service
                     response = self.get_model_states(request)
-                    
+
+                    # Guard against None response (service timeout / not ready)
+                    if response is None:
+                        msg = GetModelStateResponse()
+                        msg.success = False
+                        msg.status_message = "Service call returned None"
+                        return msg
+
                     # Add detailed logging of the raw service response
                     from markov.log_handler.logger import Logger
                     logger = Logger(__name__, logging.ERROR).get_logger()
