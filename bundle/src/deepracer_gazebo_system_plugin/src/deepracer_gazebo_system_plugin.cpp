@@ -915,14 +915,7 @@ void DeepRacerGazeboSystemPlugin::initializeROS2()
 
     node_ = std::make_shared<rclcpp::Node>("deepracer_gazebo_system", "deepracer");
     
-    // Set log level to WARN for the node's logger
-    rcutils_ret_t ret = rcutils_logging_set_logger_level(
-        node_->get_logger().get_name(), RCUTILS_LOG_SEVERITY_WARN);
-    if (ret != RCUTILS_RET_OK) {
-        RCLCPP_WARN(node_->get_logger(), "Failed to set logger level");
-    }
-    
-    RCLCPP_WARN(node_->get_logger(), "ROS 2 node created: %s (log level: WARN)", node_->get_name());
+    RCLCPP_INFO(node_->get_logger(), "ROS 2 node created: %s", node_->get_name());
 
     createServices();
 
