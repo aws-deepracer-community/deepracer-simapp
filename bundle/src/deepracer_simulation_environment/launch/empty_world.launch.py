@@ -34,6 +34,7 @@ def generate_launch_description():
     use_clock_frequency_arg = DeclareLaunchArgument('use_clock_frequency', default_value='false')
     pub_clock_frequency_arg = DeclareLaunchArgument('pub_clock_frequency', default_value='100')
     make_required_arg = DeclareLaunchArgument('make_required', default_value='true')
+    multicar_arg = DeclareLaunchArgument('multicar', default_value='false')
     
     # Set use_sim_time parameter
     use_sim_time_param = SetParameter(name='use_sim_time', value=(LaunchConfiguration('use_sim_time') == 'true'))
@@ -102,34 +103,61 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('gui'))
     )
 
-    # Bridge configuration file
+    # Bridge configuration files
     bridge_params = os.path.join(
         get_package_share_directory('deepracer_simulation_environment'),
         'params',
         'deepracer_bridge.yaml'
     )
+    bridge_params_multiagent = os.path.join(
+        get_package_share_directory('deepracer_simulation_environment'),
+        'params',
+        'deepracer_bridge_multiagent.yaml'
+    )
 
-    # Single bridge for all topics with QoS overrides for performance tuning. The deepracer_bridge.yaml wouldn't apply these effectively so added here
+    # Single-agent bridge (used when multicar=false)
     gazebo_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
+        name='gazebo_bridge',
         arguments=[
             '--ros-args',
             '-p',
             f'config_file:={bridge_params}',
         ],
         parameters=[{
-#            'qos_overrides./racecar/scan.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/scan.publisher.depth': 10,
-#            'qos_overrides./racecar/camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/camera/zed/rgb/image_rect_color.publisher.depth': 10,
-#            'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.depth': 10,
-#            'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.depth': 10,
-#            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.depth': 10,
         }],
+        condition=UnlessCondition(LaunchConfiguration('multicar')),
+        output='screen'
+    )
+
+    # Multi-agent bridge (HEAD_TO_MODEL) — used exclusively when multicar=true
+    gazebo_bridge_multiagent = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='gazebo_bridge',
+        arguments=[
+            '--ros-args',
+            '-p',
+            f'config_file:={bridge_params_multiagent}',
+        ],
+        parameters=[{
+            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.depth': 10,
+            'qos_overrides./racecar_0/scan.publisher.depth': 10,
+            'qos_overrides./racecar_0/camera/zed/rgb/image_rect_color.publisher.depth': 10,
+            'qos_overrides./racecar_0/camera/zed_right/rgb/image_rect_color_right.publisher.depth': 10,
+            'qos_overrides./racecar_0/main_camera/zed/rgb/image_rect_color.publisher.depth': 10,
+            'qos_overrides./racecar_1/scan.publisher.depth': 10,
+            'qos_overrides./racecar_1/camera/zed/rgb/image_rect_color.publisher.depth': 10,
+            'qos_overrides./racecar_1/camera/zed_right/rgb/image_rect_color_right.publisher.depth': 10,
+            'qos_overrides./racecar_1/main_camera/zed/rgb/image_rect_color.publisher.depth': 10,
+        }],
+        condition=IfCondition(LaunchConfiguration('multicar')),
         output='screen'
     )
     
@@ -149,6 +177,7 @@ def generate_launch_description():
         use_clock_frequency_arg,
         pub_clock_frequency_arg,
         make_required_arg,
+        multicar_arg,
         
         # Environment variables
         gz_resource_path,
@@ -162,5 +191,6 @@ def generate_launch_description():
         gazebo_client,
 
         # Nodes
-        gazebo_bridge
+        gazebo_bridge,
+        gazebo_bridge_multiagent
     ])

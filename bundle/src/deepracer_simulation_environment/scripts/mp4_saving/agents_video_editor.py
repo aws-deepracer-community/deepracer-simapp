@@ -173,7 +173,8 @@ class AgentsVideoEditor(Node):
                                                        camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS]],
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
-                                         frame_size=Mp4Parameter.FRAME_SIZE.value)
+                                         frame_size=Mp4Parameter.FRAME_SIZE.value,
+                                         node_name='save_to_mp4_{}'.format(self.racecar_name))
 
         self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         

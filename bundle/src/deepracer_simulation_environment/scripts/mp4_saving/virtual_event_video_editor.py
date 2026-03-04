@@ -112,7 +112,8 @@ class VirtualEventVideoEditor(Node):
                                                        camera_info[CameraTypeParams.CAMERA_TOPVIEW_PARAMS]],
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
-                                         frame_size=Mp4Parameter.FRAME_SIZE.value)
+                                         frame_size=Mp4Parameter.FRAME_SIZE.value,
+                                         node_name='save_to_mp4_{}'.format(self.racecar_name))
         self.subscribe_service = self.create_service(
             VirtualEventVideoEditSrv,
             f'/{self.racecar_name}/save_mp4/subscribe_to_save_mp4',

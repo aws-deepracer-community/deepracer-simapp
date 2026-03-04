@@ -604,7 +604,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # if off-track, using blocking call to get immediate car reset pause position
         # from last step judge_action call.
         model_state_start = time.time()
-        car_model_state = GetModelStateTracker.get_instance().get_model_state(self._agent_name_, '')
+        car_model_state = GetModelStateTracker.get_instance().get_model_state(self._agent_name_, '',
+                                                                              blocking=True)
         model_state_end = time.time()
         
         self._track_data_.update_object_pose(self._agent_name_, car_model_state.pose)
@@ -625,6 +626,10 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         link_points = [self.make_link_points(link_state) for link_state in link_states if link_state is not None]
 
         current_car_pose = car_model_state.pose
+        if current_car_pose is None:
+            raise GenericRolloutException(
+                'Cannot find position: model state pose is None for agent {}'
+                .format(self._agent_name_))
         try:
             # get agent head point location
             origin = np.array([current_car_pose.position.x,
