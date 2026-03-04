@@ -206,7 +206,8 @@ def generate_launch_description():
         launch_arguments=[
             ('world_name', LaunchConfiguration('world_name')),
             ('gui', LaunchConfiguration('gui')),
-            ('make_required', LaunchConfiguration('make_required'))
+            ('make_required', LaunchConfiguration('make_required')),
+            ('multicar', LaunchConfiguration('multicar'))
         ]
     )
     

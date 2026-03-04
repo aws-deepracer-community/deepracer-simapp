@@ -20,8 +20,8 @@ class SaveToMp4(Node):
     """ SaveToMp4 class is used to subscribe/unsubscribe to the camera Image topic and
     save the frame information to the disk
     """
-    def __init__(self, camera_infos, fourcc, fps, frame_size):
-        super().__init__('save_to_mp4_node')
+    def __init__(self, camera_infos, fourcc, fps, frame_size, node_name='save_to_mp4_node'):
+        super().__init__(node_name)
         self.camera_infos = camera_infos
         self.fourcc = fourcc
         self.fps = fps

@@ -256,7 +256,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
 
         self._video_metrics = Mp4VideoMetrics.get_empty_dict()
         self._training_metrics_node = MarkovVideoMetrics(
-            "MarkovTrainingMetrics", self._handle_get_video_metrics, self._agent_name_
+            "MarkovTrainingMetrics_{}".format(self._agent_name_), self._handle_get_video_metrics, self._agent_name_
         )
         self._training_metrics_node.start()
 
@@ -608,7 +608,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
 
 
         self._eval_metrics_node = MarkovVideoMetrics(
-            "MarkovEvalMetrics", self._handle_get_video_metrics, self._agent_name_
+            "MarkovEvalMetrics_{}".format(self._agent_name_), self._handle_get_video_metrics, self._agent_name_
         )
         self._eval_metrics_node.start()
 

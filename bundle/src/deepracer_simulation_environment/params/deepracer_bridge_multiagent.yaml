@@ -1,0 +1,112 @@
+# DeepRacer Gazebo Harmonic Bridge Configuration - HEAD_TO_MODEL / multi-agent
+# Used exclusively when multicar=true (replaces deepracer_bridge.yaml)
+# racecar_0 and racecar_1 supersede racecar; clock and sub_camera are included here.
+
+# Clock synchronization
+- ros_topic_name: "clock"
+  gz_topic_name: "clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# Sub-camera (top-down view, shared across agents)
+- ros_topic_name: "/sub_camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/sub_camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/sub_camera/zed/rgb/camera_info"
+  gz_topic_name: "/sub_camera/zed/rgb/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# LIDAR scan data (racecar_0 / racecar_1)
+- ros_topic_name: "/racecar_0/scan"
+  gz_topic_name: "/racecar_0/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_1/scan"
+  gz_topic_name: "/racecar_1/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+# Camera images (racecar_0)
+- ros_topic_name: "/racecar_0/camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar_0/camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_0/camera/zed_right/rgb/image_rect_color_right"
+  gz_topic_name: "/racecar_0/camera/zed_right/rgb/image_rect_color_right"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_0/main_camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar_0/main_camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+# Camera images (racecar_1)
+- ros_topic_name: "/racecar_1/camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar_1/camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_1/camera/zed_right/rgb/image_rect_color_right"
+  gz_topic_name: "/racecar_1/camera/zed_right/rgb/image_rect_color_right"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_1/main_camera/zed/rgb/image_rect_color"
+  gz_topic_name: "/racecar_1/main_camera/zed/rgb/image_rect_color"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+# Camera info topics (racecar_0)
+- ros_topic_name: "/racecar_0/camera/zed/camera_info"
+  gz_topic_name: "/racecar_0/camera/zed/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_0/camera/zed_right/camera_info"
+  gz_topic_name: "/racecar_0/camera/zed_right/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_0/main_camera/zed/rgb/camera_info"
+  gz_topic_name: "/racecar_0/main_camera/zed/rgb/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# Camera info topics (racecar_1)
+- ros_topic_name: "/racecar_1/camera/zed/camera_info"
+  gz_topic_name: "/racecar_1/camera/zed/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_1/camera/zed_right/camera_info"
+  gz_topic_name: "/racecar_1/camera/zed_right/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/racecar_1/main_camera/zed/rgb/camera_info"
+  gz_topic_name: "/racecar_1/main_camera/zed/rgb/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
