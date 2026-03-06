@@ -91,11 +91,10 @@ from std_srvs.srv import Empty
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
+MIN_EVAL_TRIALS = 5
 ## Suppress unnecessary logs from these modules
 logging.getLogger('rl_coach').setLevel(logging.ERROR)
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
-
-MIN_EVAL_TRIALS = 5
 
 CUSTOM_FILES_PATH = "./custom_files"
 if not os.path.exists(CUSTOM_FILES_PATH):
@@ -104,7 +103,7 @@ if not os.path.exists(CUSTOM_FILES_PATH):
 IS_PROFILER_ON, PROFILER_S3_BUCKET, PROFILER_S3_PREFIX = get_robomaker_profiler_env()
 
 
-def download_custom_files_if_present(s3_bucket, s3_prefix, aws_region):
+def download_custom_files_if_present(s3_bucket, s3_prefix, aws_region, s3_endpoint_url):
     '''download custom environment and preset files
 
     Args:
@@ -118,7 +117,7 @@ def download_custom_files_if_present(s3_bucket, s3_prefix, aws_region):
     '''
     success_environment_download, success_preset_download = False, False
     try:
-        s3_client = S3Client(region_name=aws_region, max_retry_attempts=0)
+        s3_client = S3Client(region_name=aws_region, s3_endpoint_url=s3_endpoint_url, max_retry_attempts=0)
         environment_file_s3_key = os.path.normpath(s3_prefix + "/environments/deepracer_racetrack_env.py")
         environment_local_path = os.path.join(CUSTOM_FILES_PATH, "deepracer_racetrack_env.py")
         s3_client.download_file(bucket=s3_bucket,
@@ -149,7 +148,9 @@ def exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
         
         if is_save_mp4_enabled:
             try:
-                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
+                # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
+                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                               timeout_sec=60.0)
                 unsubscribe_from_save_mp4(Empty.Request())
             except Exception as mp4_error:
                 logger.error("MP4 unsubscribe failed (exit_if_trainer_done): %s", mp4_error)
@@ -182,6 +183,9 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
 
     #TODO change agent to specific agent name for multip agent case
     checkpoint_dir = os.path.join(task_parameters.checkpoint_restore_path, "agent")
+
+    camera_main_enable = utils.str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
+    camera_sub_enable = utils.str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))    
     
     try:
         graph_manager.data_store.wait_for_checkpoints()
@@ -208,17 +212,20 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
         logger.error(f"Error waiting for unpause physics service: {e}")
         raise
     
-    try:
-        subscribe_to_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/subscribe_to_save_mp4')
-    except Exception as e:
-        logger.error(f"Error creating subscribe_to_save_mp4 service proxy: {e}")
-        raise
-    
-    try:
-        unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
-    except Exception as e:
-        logger.error(f"Error creating unsubscribe_from_save_mp4 service proxy: {e}")
-        raise
+    if camera_main_enable:
+        try:
+            subscribe_to_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/subscribe_to_save_mp4')
+        except Exception as e:
+            logger.error(f"Error creating subscribe_to_save_mp4 service proxy: {e}")
+            raise
+        
+        try:
+            # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
+            unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                           timeout_sec=60.0)
+        except Exception as e:
+            logger.error(f"Error creating unsubscribe_from_save_mp4 service proxy: {e}")
+            raise
     
     try:
         graph_manager.create_graph(task_parameters=task_parameters, stop_physics=pause_physics,
@@ -318,7 +325,7 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     subscribe_to_save_mp4(Empty.Request())
                 
                 if rollout_idx == 0:
-                    for trial_idx in range(MIN_EVAL_TRIALS):
+                    for _ in range(int(WorldConfig.get_param('MIN_EVAL_TRIALS', MIN_EVAL_TRIALS))):
                         graph_manager.evaluate(EnvironmentSteps(1))
 
                 # For sageonly job for better performance only run limited number of evaluations.
@@ -344,7 +351,10 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
                     # Continously run the evaluation only for SageMaker + RoboMaker job
                     if not is_sageonly and rollout_idx == 0:
+                        print ("Additional evaluation. New Checkpoint: {}, Last Checkpoint: {}".format(new_checkpoint, last_checkpoint))
                         graph_manager.evaluate(EnvironmentSteps(1))
+                    else:
+                        time.sleep(5)
                     new_checkpoint = data_store.get_coach_checkpoint_number('agent')
 
                 # Save the mp4 for Robo+Sage jobs
@@ -374,6 +384,8 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     graph_manager.restore_checkpoint()
 
             last_checkpoint = new_checkpoint
+    
+    logger.info("Exited main loop. Done.")
 
 def main():
     # Set up ROS environment
@@ -415,6 +427,10 @@ def main():
                         help='(string) S3 prefix',
                         type=str,
                         default=WorldConfig.get_param("SAGEMAKER_SHARED_S3_PREFIX", "sagemaker"))
+    parser.add_argument('--s3_endpoint_url',
+                        help='(string) S3 endpoint URL',
+                        type=str,
+                        default=WorldConfig.get_param("S3_ENDPOINT_URL", None))                             
     parser.add_argument('--num_workers',
                         help="(int) The number of workers started in this pool",
                         type=int,
@@ -422,7 +438,7 @@ def main():
     parser.add_argument('--rollout_idx',
                         help="(int) The index of current rollout worker",
                         type=int,
-                        default=0)
+                        default=0)                        
     parser.add_argument('-r', '--redis_ip',
                         help="(string) IP or host for the redis server",
                         default='localhost',
@@ -473,6 +489,14 @@ def main():
                         help='(float) collision penalty second',
                         type=float,
                         default=float(WorldConfig.get_param("COLLISION_PENALTY", 0.0)))
+    parser.add_argument('--round_robin_advance_dist',
+                        help='(float) round robin distance 0-1',
+                        type=float,
+                        default=float(WorldConfig.get_param("ROUND_ROBIN_ADVANCE_DIST", 0.05)))
+    parser.add_argument('--start_position_offset',
+                        help='(float) offset start 0-1',
+                        type=float,
+                        default=float(WorldConfig.get_param("START_POSITION_OFFSET", 0.0)))
 
     args = parser.parse_args()
 
@@ -486,6 +510,7 @@ def main():
 
     logger.info("S3 bucket: %s", args.s3_bucket)
     logger.info("S3 prefix: %s", args.s3_prefix)
+    logger.info("S3 endpoint URL: %s" % args.s3_endpoint_url)
     
     reward_file_s3_key = WorldConfig.get_param("REWARD_FILE_S3_KEY", None)
     model_metadata_s3_key = WorldConfig.get_param("MODEL_METADATA_FILE_S3_KEY", None)
@@ -496,27 +521,34 @@ def main():
     reward_function_file = RewardFunction(bucket=args.s3_bucket,
                                           s3_key=args.reward_file_s3_key,
                                           region_name=args.aws_region,
+                                          s3_endpoint_url=args.s3_endpoint_url,
                                           local_path=REWARD_FUCTION_LOCAL_PATH_FORMAT.format('agent'))
     reward_function = reward_function_file.get_reward_function()
 
     # Instantiate Cameras
+    camera_main_enable = utils.str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
+    camera_sub_enable = utils.str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
+
     # Wait for car spawn delay (racecar_control_kinematics.launch.py has 30s TimerAction before spawning controllers)
     time.sleep(30)
     try:
-        configure_camera(namespaces=['racecar'])
+        if camera_main_enable or camera_sub_enable:
+            configure_camera(namespaces=['racecar'])
     except Exception as e:
         logger.error(f"Error configuring camera: {e}")
         raise
 
     preset_file_success, _ = download_custom_files_if_present(s3_bucket=args.s3_bucket,
                                                               s3_prefix=args.s3_prefix,
-                                                              aws_region=args.aws_region)
+                                                              aws_region=args.aws_region,
+                                                              s3_endpoint_url=args.s3_endpoint_url)
 
     # download model metadata
     # TODO: replace 'agent' with name of each agent
     model_metadata = ModelMetadata(bucket=args.s3_bucket,
                                    s3_key=args.model_metadata_s3_key,
                                    region_name=args.aws_region,
+                                   s3_endpoint_url=args.s3_endpoint_url,
                                    local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format('agent'))
     model_metadata_info = model_metadata.get_model_metadata_info()
     version = model_metadata_info[ModelMetadataKeys.VERSION.value]
@@ -539,7 +571,9 @@ def main():
             ConfigParams.IS_CONTINUOUS.value: args.is_continuous,
             ConfigParams.RACE_TYPE.value: args.race_type,
             ConfigParams.COLLISION_PENALTY.value: args.collision_penalty,
-            ConfigParams.OFF_TRACK_PENALTY.value: args.off_track_penalty
+            ConfigParams.OFF_TRACK_PENALTY.value: args.off_track_penalty,
+            ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: args.round_robin_advance_dist,
+            ConfigParams.START_POSITION_OFFSET.value: args.start_position_offset
         }
     }
 
@@ -560,7 +594,8 @@ def main():
         
         metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: metrics_bucket,
                              MetricsS3Keys.METRICS_KEY.value: metrics_key,
-                             MetricsS3Keys.REGION.value: aws_region}
+                             MetricsS3Keys.REGION.value: aws_region,
+                             MetricsS3Keys.ENDPOINT_URL.value: args.s3_endpoint_url}
     except Exception as e:
         logger.error(f"Error configuring metrics S3 config: {e}")
         raise
@@ -632,12 +667,14 @@ def main():
                                                                bucket=simtrace_s3_bucket, 
                                                                s3_prefix=simtrace_episode_s3_object_prefix, 
                                                                region_name=aws_region, 
+                                                               s3_endpoint_url=args.s3_endpoint_url,
                                                                local_path=SIMTRACE_EPISODE_TRAINING_LOCAL_PATH_FORMAT.format('agent'))
         simtrace_video_s3_writers.append(
             SimtraceVideo(upload_type=SimtraceVideoNames.SIMTRACE_TRAINING.value,
                           bucket=simtrace_s3_bucket,
                           s3_prefix=simtrace_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=SIMTRACE_TRAINING_LOCAL_PATH_FORMAT.format('agent')))
     if mp4_s3_bucket:
         simtrace_video_s3_writers.extend([
@@ -645,16 +682,19 @@ def main():
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format('agent')),
             SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format('agent')),
             SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
                           bucket=mp4_s3_bucket,
                           s3_prefix=mp4_s3_object_prefix,
                           region_name=aws_region,
+                          s3_endpoint_url=args.s3_endpoint_url,
                           local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format('agent'))])
 
     run_phase_subject = RunPhaseSubject()
@@ -667,6 +707,7 @@ def main():
     checkpoint = Checkpoint(bucket=args.s3_bucket,
                             s3_prefix=args.s3_prefix,
                             region_name=args.aws_region,
+                            s3_endpoint_url=args.s3_endpoint_url,
                             agent_name='agent',
                             checkpoint_dir=args.checkpoint_dir)
 
@@ -712,14 +753,16 @@ def main():
     ip_config = IpConfig(bucket=args.s3_bucket,
                          s3_prefix=args.s3_prefix,
                          region_name=args.aws_region,
+                         s3_endpoint_url=args.s3_endpoint_url,       
                          local_path=IP_ADDRESS_LOCAL_PATH.format('agent'))
-    redis_ip = '127.0.0.1'
+    redis_ip = ip_config.get_ip_config()
 
     # Download hyperparameters from SageMaker shared s3 bucket
     # TODO: replace 'agent' with name of each agent
     hyperparameters = Hyperparameters(bucket=args.s3_bucket,
                                       s3_key=get_s3_key(args.s3_prefix, HYPERPARAMETER_S3_POSTFIX),
                                       region_name=args.aws_region,
+                                      s3_endpoint_url=args.s3_endpoint_url,
                                       local_path=HYPERPARAMETER_LOCAL_PATH_FORMAT.format('agent'))
     sm_hyperparams_dict = hyperparameters.get_hyperparameters_dict()
 
@@ -821,6 +864,8 @@ if __name__ == '__main__':
     except GenericRolloutException as ex:
         ex.log_except_and_exit()
     except Exception as ex:
+        import traceback
+        logger.error(f"Full traceback:\n{traceback.format_exc()}")
         log_and_exit("Rollout worker exited with exception: {}".format(ex),
                      SIMAPP_SIMULATION_WORKER_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)

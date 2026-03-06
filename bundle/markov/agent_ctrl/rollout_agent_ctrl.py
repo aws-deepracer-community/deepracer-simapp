@@ -149,13 +149,15 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # Dictionary of bools indicating starting position behavior
         self._start_pos_behavior_ = \
             {'change_start': config_dict[const.ConfigParams.CHANGE_START.value],
+             'round_robin_advance_dist': config_dict[const.ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value],
+             'start_position_offset': config_dict[const.ConfigParams.START_POSITION_OFFSET.value],
              'alternate_dir': config_dict[const.ConfigParams.ALT_DIR.value]}
 
         # Dictionary to track the previous way points
         self._prev_waypoints_ = {'prev_point' : Point(0, 0), 'prev_point_2' : Point(0, 0)}
 
         # Normalized distance of new start line from the original start line of the track.
-        start_ndist = 0.0
+        start_ndist = 0.0 + self._start_pos_behavior_['start_position_offset']
 
         # Normalized start position offset w.r.t to start_ndist, which is the start line of the track.
         start_pos_offset = config_dict.get(const.ConfigParams.START_POSITION.value, 0.0)
@@ -645,6 +647,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
                                self._agent_name_, pos_dict, self._track_data_,
                                self._data_dict_, action, self._model_metadata_.get_action_dict(action),
                                current_car_pose)
+        # Set simulation time in reward params
+        self._reward_params_[const.RewardParam.SIM_TIME.value[0]] = self._current_sim_time
         prev_pnt_dist = min(model_point.distance(self._prev_waypoints_['prev_point']),
                             model_point.distance(self._prev_waypoints_['prev_point_2']))
         self._data_dict_['current_progress'] = self._reward_params_[const.RewardParam.PROG.value[0]]
@@ -1055,7 +1059,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         self._metrics.upload_episode_metrics()
         if self._start_pos_behavior_['change_start'] and self._is_training_:
             self._data_dict_['start_ndist'] = (self._data_dict_['start_ndist']
-                                               + const.ROUND_ROBIN_ADVANCE_DIST) % 1.0
+                                               + self._start_pos_behavior_['round_robin_advance_dist']) % 1.0
         # For multi-agent case, alternating direction will NOT work!
         # Reverse direction will be set multiple times
         # However, we are not supporting multi-agent training for now

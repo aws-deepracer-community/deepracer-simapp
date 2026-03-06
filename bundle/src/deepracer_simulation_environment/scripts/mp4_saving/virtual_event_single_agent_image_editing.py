@@ -8,6 +8,8 @@ import os
 import datetime
 import logging
 import cv2
+import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
@@ -233,41 +235,48 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
         self._sector_times = info_dict[VirtualEventMP4Params.SECTOR_TIMES.value]
         self._curr_lap_time = info_dict[VirtualEventMP4Params.CURR_LAP_TIME.value]
 
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
+
         # Time remaining digit
         loc_x, loc_y = VirtualEventXYPixelLoc.TIME_REMAINING_DIGIT.value
         time_remaining = self.race_duration - total_eval_milli_seconds
         time_remaining = time_remaining if time_remaining > 0.0 else 0.0
         time_remaining = datetime.timedelta(milliseconds=time_remaining)
         time_remaining = utils.milliseconds_to_timeformat(time_remaining)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=time_remaining,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=time_remaining,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # Speed digit
         loc_x, loc_y = VirtualEventXYPixelLoc.SPEED_DIGIT.value
         speed_text = utils.get_speed_formatted_str(speed)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # Reset digit
         loc_x, loc_y = VirtualEventXYPixelLoc.RESET_DIGIT.value
         reset_counter_text = "{}".format(reset_counter)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=reset_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # curent lap time digit
         loc_x, loc_y = VirtualEventXYPixelLoc.CURRENT_LAP_TIME_DIGIT.value
         curr_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=self._curr_lap_time))
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=curr_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=curr_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # best lap time digit
         loc_x, loc_y = VirtualEventXYPixelLoc.BEST_LAP_TIME_DIGIT.value
@@ -277,11 +286,13 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
         best_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=best_lap_time)) \
             if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
+        major_cv_image = np.array(pil_major_cv_image)
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 
