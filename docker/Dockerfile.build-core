@@ -8,7 +8,8 @@ RUN apt update && apt install -y --no-install-recommends \
     curl \
     wget \
     apt-utils \
-    git
+    git \
+    unzip
 
 RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
     libcurl4-openssl-dev \
@@ -52,18 +53,26 @@ RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Lin
     rm /tmp/miniconda.sh && \
     /root/anaconda/bin/conda init bash
 
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf aws awscliv2.zip
+
 # Copy Bundle
 COPY bundle/ /opt/amazon
 WORKDIR /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code
 
-# Create sagemaker_env conda environment from environment.yml
+# Create sagemaker_env conda environment from environment.yml.
+# Also upgrade cryptography and setuptools so conda properly replaces orphaned
+# dist-info entries (avoids hard-coded rm -rf version paths).
 RUN /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment.yml -n sagemaker_env --yes && \
+    /root/anaconda/bin/conda config --set auto_activate_base false && \
+    /root/anaconda/bin/conda install -y cryptography "setuptools<81" && \
     /root/anaconda/bin/conda clean -afy && \
-    /root/anaconda/bin/conda config --set auto_activate_base false
+    rm -rf /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/tensorflow/include/external/curl
 
 RUN apt-get update && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 
-ADD docker/files/ml-code/simulation-entrypoint.sh /
-ENTRYPOINT ["/simulation-entrypoint.sh"]
-CMD ["bash"]
+ENTRYPOINT ["/bin/bash", "-c"]

@@ -111,6 +111,7 @@ model_metrics = (
 # Define environment variables
 env_var = {}
 env_var["RUN_ID"] = os.environ.get("RUN_ID","Unknown")
+env_var["SAGEMAKER_PROGRAM"] = "sage-train.sh"
 
 telegraf_host = os.environ.get("TELEGRAF_HOST", None)
 if telegraf_host is not None:
@@ -139,8 +140,6 @@ estimator = Estimator(
     max_run=job_duration_in_seconds,  # Maximum runtime in seconds
     metric_definitons=model_metrics,
     environment=env_var,
-    container_entry_point=["/opt/ml/code/sagemaker-entrypoint.sh"],
-    container_arguments=["train"],
 )
 
 # Will block until job is stopped.

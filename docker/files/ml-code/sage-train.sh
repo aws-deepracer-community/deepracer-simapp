@@ -24,7 +24,8 @@ COACH_EXP_NAME=sagemaker_rl
 cd /opt/amazon/
 
 export PYTHONUNBUFFERED=1
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
+export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/
+source /root/anaconda/bin/activate sagemaker_env
 
 # Start the redis server and Coach training worker
 redis-server /etc/redis/redis.conf & (sleep 5 && \
