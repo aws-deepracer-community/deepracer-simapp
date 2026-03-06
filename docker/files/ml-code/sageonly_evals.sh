@@ -40,11 +40,15 @@ export ROS_IP=127.0.0.1
 
 export DEEPRACER_JOB_TYPE_ENV="SAGEONLY"
 
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
+export PATH="/opt/ml/:$PATH"
+# Unset the PYTHONPATH set by the base image to avoid conflicts with sagemaker_env
+export PYTHONPATH="/opt/ml/code"
 
-export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Source the libraries
 source /opt/ros/${ROS_DISTRO}/setup.bash
 source /opt/amazon/install/setup.bash
+source /root/anaconda/bin/activate sagemaker_env
+
 export DISPLAY=:0 # Select screen 0 by default.
 export GAZEBO_MODEL_PATH=./deepracer_simulation_environment/share/deepracer_simulation_environment
 xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
