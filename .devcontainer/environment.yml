@@ -13,7 +13,7 @@ dependencies:
       - pygame==2.6.1
       - shapely==2.0.2
       - annoy==1.17.3
-      - pillow==12.1.1
+      - pillow==11.3.0
       - matplotlib==3.10.6
       - numpy==1.26.4
       - pandas==2.3.1
@@ -22,11 +22,10 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==46.0.5
+      - cryptography==44.0.1
       - kubernetes==33.1.0
       - opencv-python==4.9.0.80
       - bokeh==3.7.3
-      - /opt/amazon/rl_coach  # Install rl_coach from local source directory
       - retrying==1.4.1
       - eventlet==0.40.3
       - flask==3.1.1
@@ -36,9 +35,8 @@ dependencies:
       - h5py==3.14.0
       - pytest==8.3.4
       - pytest-cov==6.0.0
-      - tensorflow==2.20.0
+      - tensorflow==2.19.0
       - tensorflow-probability==0.25.0
-      - protobuf==6.33.5
       - pyparsing==3.2.5
       - requests==2.32.5
       - urllib3==2.6.3
@@ -56,5 +54,4 @@ dependencies:
       - catkin_pkg==1.0.0
       - pytelegraf
       - sagemaker-training
-      - argcomplete
-      - setuptools==80.10.2
+      - sagemaker

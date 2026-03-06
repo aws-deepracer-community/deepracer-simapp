@@ -164,7 +164,7 @@ def draw_shadow(draw_obj, text, font, x_loc, y_loc, shadowcolor):
     draw_obj.text((x_loc - 1, y_loc + 1), text, font=font, fill=shadowcolor)
     draw_obj.text((x_loc + 1, y_loc + 1), text, font=font, fill=shadowcolor)
 
-def write_text_on_image(image, text, loc, font, font_color, font_shadow_color):
+def write_text_on_image(image, text, loc, font, font_color, font_shadow_color, draw_obj=None):
     """This function is used to write the text on the image using cv2 writer
 
     Args:
@@ -174,15 +174,24 @@ def write_text_on_image(image, text, loc, font, font_color, font_shadow_color):
         font (ImageFont): The font style object
         font_color (tuple): RGB value of the font
         font_shadow_color (tuple): RGB color of the font shawdow
+        draw_obj (ImageDraw): Optional existing PIL draw object to reuse for faster
+                              repeated text drawing on the same PIL image.
 
     Returns:
         Image: Edited image
     """
-    pil_im = Image.fromarray(image)
-    draw = ImageDraw.Draw(pil_im)
+    is_pil_input = isinstance(image, Image.Image)
+
+    if is_pil_input:
+        pil_im = image
+    else:
+        pil_im = Image.fromarray(image)
+
+    draw = draw_obj if draw_obj is not None else ImageDraw.Draw(pil_im)
     draw_shadow(draw, text, font, loc[0], loc[1], font_shadow_color)
     draw.text(loc, text, font=font, fill=font_color)
-    return np.array(pil_im)
+
+    return pil_im if is_pil_input else np.array(pil_im)
 
 def create_folder_path(camera_dir_list):
     """ Create directory if the folder path does not exist
@@ -420,11 +429,15 @@ def get_gradient_values(gradient_img, multiplier=1):
         (tuple): gradient_alpha_rgb_mul (Numpy.Array) gradient_img * gradient_alpha value
                  one_minus_gradient_alpha (Numpy.Array) (1 - gradient_alpha)
     """
-    (height, width, _) = gradient_img.shape
-    gradient_alpha = (gradient_img[:, :, 3] / 255.0 * multiplier).reshape(height, width, 1)
+    (height, width, channels) = gradient_img.shape
+    gradient_alpha = (gradient_img[:, :, 3].astype(np.float32) / 255.0 * multiplier).reshape(height, width, 1)
+    gradient_alpha_full = np.repeat(gradient_alpha, channels, axis=2)
 
-    gradient_alpha_rgb_mul = gradient_img * gradient_alpha
-    one_minus_gradient_alpha = (1 - gradient_alpha).reshape(height, width)
+    # Precompute uint8 contribution from gradient and alpha map for efficient in-place cv2 ops.
+    gradient_alpha_rgb_mul = np.clip(gradient_img.astype(np.float32) * gradient_alpha_full,
+                                     0.0,
+                                     255.0).astype(np.uint8)
+    one_minus_gradient_alpha = (1.0 - gradient_alpha_full).astype(np.float32)
     return gradient_alpha_rgb_mul, one_minus_gradient_alpha
 
 def apply_gradient(main_image, gradient_alpha_rgb_mul, one_minus_gradient_alpha):
@@ -445,9 +458,9 @@ def apply_gradient(main_image, gradient_alpha_rgb_mul, one_minus_gradient_alpha)
     Returns:
         Image: Gradient applied image
     """
-    for channel in range(0, 4):
-        main_image[:, :, channel] = gradient_alpha_rgb_mul[:, :, channel] + \
-            (main_image[:, :, channel] * one_minus_gradient_alpha)
+    # In-place operations to reduce temporary allocations and improve throughput.
+    cv2.multiply(main_image, one_minus_gradient_alpha, dst=main_image, dtype=cv2.CV_8U)
+    cv2.add(main_image, gradient_alpha_rgb_mul, dst=main_image, dtype=cv2.CV_8U)
     return main_image
 
 def racecar_name_to_agent_name(racecars_info, racecar_name):

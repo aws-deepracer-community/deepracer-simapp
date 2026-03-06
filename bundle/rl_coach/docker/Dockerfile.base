@@ -33,7 +33,7 @@ RUN apt-get update && \
 # Install Pip Requirements #
 ############################
 RUN pip3 install --upgrade pip
-RUN pip3 install setuptools==80.10.1 jaraco-context==6.1.0 && pip3 install pytest && pip3 install pytest-xdist
+RUN pip3 install setuptools==80.10.2 && pip3 install pytest && pip3 install pytest-xdist
 
 RUN curl -o /usr/local/bin/patchelf https://s3-us-west-2.amazonaws.com/openai-sci-artifacts/manual-builds/patchelf_0.9_amd64.elf \
     && chmod +x /usr/local/bin/patchelf

@@ -80,25 +80,34 @@ fi
 # Initialize ROS & the Bundle
 export GZ_IP=127.0.0.1
 
-# Start an X server if we do not have one
-if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
-	export DISPLAY=:0 # Select screen 0 by default.
-	xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
-	x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
-# Ensure DISPLAY is defined
-else
-	if [ -z "$DISPLAY" ]; then
-		export DISPLAY=:$(ls /tmp/.X11-unix/ | cut -c2 | head -1)
+# Start an X server if we do not have one, and GUI is needed
+if [[ "${ENABLE_GUI,,}" == "true" ]] || [[ "${GAZEBO_RENDER_ENGINE,,}" == "ogre" ]]; then
+	# GUI is enabled, but do we have an external X server or should we start one?
+	if [[ "${USE_EXTERNAL_X,,}" != "true" ]]; then
+		export DISPLAY=:0 # Select screen 0 by default.
+		xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
+		x11vnc -bg -forever -nopw -rfbport 5900 -display WAIT$DISPLAY &
+	# Ensure DISPLAY is defined
+	else
+		if [ -z "$DISPLAY" ]; then
+			export DISPLAY=:$(ls /tmp/.X11-unix/ | cut -c2 | head -1)
+		fi
 	fi
 fi
 
 # Start the training
 ros2 launch deepracer_simulation_environment $LAUNCH_FILE &
+ROS2_LAUNCH_PID=$!
+echo "Started ros2 launch with PID $ROS2_LAUNCH_PID"
+
+BG_PIDS=""
 
 # If GUI is desired then also start RQT and RVIZ
 if [[ "${ENABLE_GUI,,}" == "true" ]]; then
 	ros2 run rqt_gui rqt_gui &
+	BG_PIDS="$BG_PIDS $!"
 	rviz2 &
+	BG_PIDS="$BG_PIDS $!"
 fi
 
 sleep 1
@@ -107,11 +116,13 @@ if [ -n "$MULTI_CONFIG" ]; then
 	if [ -f /scripts/alter_environment_$ROLLOUT_IDX.sh ]; then
 		echo "Altering environment"
 		bash /scripts/alter_environment_$ROLLOUT_IDX.sh &
+		BG_PIDS="$BG_PIDS $!"
 	fi
 else
 	if [ -f /scripts/alter_environment.sh ]; then
 		echo "Altering environment"
 		bash /scripts/alter_environment.sh &
+		BG_PIDS="$BG_PIDS $!"
 	fi
 fi
 
@@ -119,4 +130,12 @@ echo "IP: $(hostname -I) ($(hostname))"
 
 # python3 start_deepracer_node_monitor.py --node_monitor_file_path=deepracer_evaluation_node_monitor_list.txt
 
-wait
+wait $ROS2_LAUNCH_PID
+ROS2_EXIT_CODE=$?
+echo "ros2 launch process exited with code $ROS2_EXIT_CODE"
+
+if [ -n "$BG_PIDS" ]; then
+	kill $BG_PIDS 2>/dev/null || true
+fi
+
+exit $ROS2_EXIT_CODE

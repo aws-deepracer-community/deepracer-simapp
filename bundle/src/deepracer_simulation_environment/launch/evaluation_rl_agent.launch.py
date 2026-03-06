@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Shutdown
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, EnvironmentVariable
@@ -83,7 +83,8 @@ def generate_launch_description():
         package='deepracer_simulation_environment',
         executable='run_evaluation_rl_agent.sh',
         name='agent',
-        output='screen'
+        output='screen',
+        on_exit=Shutdown(reason='evaluation agent exited')
     )
     
     return LaunchDescription([

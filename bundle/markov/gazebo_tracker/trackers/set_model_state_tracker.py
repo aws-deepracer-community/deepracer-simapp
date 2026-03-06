@@ -40,6 +40,7 @@ class SetModelStateTracker(AbstractTracker):
         self.lock = threading.RLock()
         # Use dictionary like ROS1 instead of list to prevent duplicate model states, contributing to SetModelState flood
         self.model_state_map = {}
+        self._blocking_in_progress = False  # Flag to skip batch updates during blocking calls
 
         # ROS1-like: explicit service waiting first, then create ServiceProxyWrapper  
         node = ROS2NodeManager.get_instance(DEFAULT_ROS2_NODE_NAME).get_node()
@@ -78,6 +79,9 @@ class SetModelStateTracker(AbstractTracker):
         
         with self.lock:
             if blocking:
+                # Set flag to prevent concurrent batch updates during blocking calls
+                self._blocking_in_progress = True
+                
                 # Create a request with the model states
                 request = SetModelStates.Request()
                 request.model_states = [model_state]
@@ -121,6 +125,9 @@ class SetModelStateTracker(AbstractTracker):
                 except Exception as e:
                     logger.error(f"Error in set_model_state: {e}")
                     return False
+                finally:
+                    # Clear blocking flag after the call completes
+                    self._blocking_in_progress = False
             else:
                 # Use dictionary like ROS1 to prevent duplicates
                 # If same model gets multiple set_model_state calls, only keep the latest
@@ -134,6 +141,10 @@ class SetModelStateTracker(AbstractTracker):
             delta_time (float): time elapsed since last update
             sim_time (float): current simulation time
         """
+        
+        # Skip batch updates if a blocking call is in progress to avoid contention
+        if self._blocking_in_progress:
+            return
         
         with self.lock:
             # Use dictionary like ROS1 to prevent duplicate commands

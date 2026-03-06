@@ -29,7 +29,7 @@ import boto3
 import botocore
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 from deepracer_simulation_environment.srv import VideoMetricsSrv, VideoMetricsSrv_Response
 from geometry_msgs.msg import Point32
 from markov.constants import BEST_CHECKPOINT, LAST_CHECKPOINT, METRICS_VERSION
@@ -68,7 +68,7 @@ def sim_trace_log(sim_trace_dict):
        sim_trace_dict - Ordered dict containing the step metrics, note order must match
                         precision in the string
     '''
-    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d\n' % \
+    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d,%.4f' % \
         (tuple(sim_trace_dict.values())))
 
 
@@ -169,6 +169,8 @@ class MarkovVideoMetrics(Node):
                     executor = SingleThreadedExecutor()
                     executor.add_node(self)
                     executor.spin()
+                except ExternalShutdownException:
+                    LOGGER.info("Video metrics node shutdown requested")
                 except Exception as e:
                     LOGGER.error("Node spinning error: %s", e)
 
@@ -446,6 +448,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value] = 0
         self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
         self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value] = 0
+        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
         self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
         self._video_metrics[Mp4VideoMetrics.STEERING.value] = metrics[StepMetrics.STEER.value]
         self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
@@ -742,7 +745,6 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         if self._agent_xy:
             # Speed = Distance/Time
             delta_time = cur_time - self._prev_step_time
-            actual_speed = 0
             if delta_time:
                 actual_speed = math.sqrt((self._agent_xy[0] - agent_x) ** 2 +
                                          (self._agent_xy[1] - agent_y) ** 2) / delta_time

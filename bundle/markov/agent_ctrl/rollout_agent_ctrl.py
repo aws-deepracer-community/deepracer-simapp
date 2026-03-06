@@ -798,7 +798,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # update and upload metrics
         self._step_metrics_[StepMetrics.REWARD.value] = reward
         self._step_metrics_[StepMetrics.DONE.value] = done
-        self._step_metrics_[StepMetrics.TIME.value] = cur_time
+        self._step_metrics_[StepMetrics.TIME.value] = self._current_sim_time
+        self._step_metrics_[StepMetrics.WALL_CLOCK.value] = time.time()
         self._step_metrics_[StepMetrics.EPISODE_STATUS.value] = episode_status
         self._step_metrics_[StepMetrics.PAUSE_DURATION.value] = self._pause_duration
         self._step_metrics_[StepMetrics.OBSTACLE_CRASH_COUNTER.value] = self.current_obstacle_crash_count
