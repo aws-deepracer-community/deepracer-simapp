@@ -11,7 +11,7 @@ Requires-Dist: tensorflow==2.20.0
 Requires-Dist: tensorflow-probability==0.25.0
 Requires-Dist: tf_keras==2.20.1
 Requires-Dist: protobuf==6.33.5
-Requires-Dist: keras==3.13.1
+Requires-Dist: keras==3.13.2
 Requires-Dist: numpy==1.26.4
 Requires-Dist: scipy==1.13.1
 Requires-Dist: scikit-learn==1.7.0

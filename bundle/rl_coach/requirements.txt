@@ -6,7 +6,7 @@ tensorflow==2.20.0
 tensorflow-probability==0.25.0
 tf_keras==2.20.1
 protobuf==6.33.5
-keras==3.13.1
+keras==3.13.2
 numpy==1.26.4  # Allow system version compatibility
 scipy==1.13.1  # Allow system version compatibility
 scikit-learn==1.7.0

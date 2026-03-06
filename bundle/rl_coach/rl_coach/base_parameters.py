@@ -106,9 +106,10 @@ class DistributedCoachSynchronizationType(Enum):
 
 def iterable_to_items(obj):
     if isinstance(obj, dict) or isinstance(obj, OrderedDict) or isinstance(obj, types.MappingProxyType):
-        items = obj.items()
+        # Create a list copy to avoid "dictionary changed size during iteration" errors
+        items = list(obj.items())
     elif isinstance(obj, list):
-        items = enumerate(obj)
+        items = list(enumerate(obj))
     else:
         raise ValueError("The given object is not a dict or a list")
     return items
