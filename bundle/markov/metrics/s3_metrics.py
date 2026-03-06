@@ -215,14 +215,14 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
                                                           region_name=firehose_dict_simtrace[FirehoseStreamKeys.REGION.value])
             self._firehose_upload_frequency = WorldConfig.get_param('FIREHOSE_UPLOAD_FREQUENCY', 'EPISODE')
         self._simtrace_episode_s3_writer = simtrace_episode_s3_writer
-        self._start_time_ = 0
+        self._start_time_ = time.time()
         self._episode_ = 0
         self._episode_reward_ = 0.0
         self._progress_ = 0.0
         self._episode_status = ''
         self._metrics_ = list()
         self._agent_xy = list()
-        self._prev_step_time = 0
+        self._prev_step_time = time.time()
         self._is_eval_ = True
         self._eval_trials_ = 0
         self._best_lap_time = float('inf')
@@ -279,23 +279,20 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         """
         self._current_sim_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
 
-    def reset(self, cur_time=None):
-        if cur_time is not None:
-            self._start_time_ = cur_time
-        else:
-            self._start_time_ = self._current_sim_time
+    def reset(self):
+        self._start_time_ = self._current_sim_time
         self._episode_reward_ = 0.0
         self._progress_ = 0.0
 
-    def append_episode_metrics(self, cur_time, is_complete=True):
+    def append_episode_metrics(self):
         self._episode_ += 1 if not self._is_eval_ else 0
         self._eval_trials_ += 1 if not self._is_eval_ else 0
         training_metric = dict()
         training_metric['reward_score'] = int(round(self._episode_reward_))
-        training_metric['metric_time'] = int(round(cur_time * 1000))
+        training_metric['metric_time'] = int(round(self._current_sim_time * 1000))
         training_metric['start_time'] = int(round(self._start_time_ * 1000))
         training_metric['elapsed_time_in_milliseconds'] = \
-            int(round((cur_time - self._start_time_) * 1000))
+            int(round((self._current_sim_time - self._start_time_) * 1000))
         training_metric['episode'] = int(self._episode_)
         training_metric['trial'] = int(self._eval_trials_)
         training_metric['phase'] = 'evaluation' if self._is_eval_ else 'training'
@@ -430,7 +427,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
 
     def update_mp4_video_metrics(self, metrics):
         actual_speed = 0
-        cur_time = metrics[StepMetrics.TIME.value]
+        cur_time = self._current_sim_time
         agent_x, agent_y = metrics[StepMetrics.X.value], metrics[StepMetrics.Y.value]
         if self._agent_xy:
             # Speed = Distance/Time
@@ -441,12 +438,13 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
         self._agent_xy = [agent_x, agent_y]
         self._prev_step_time = cur_time
         
+        # agent_x, agent_y = metrics[StepMetrics.X.value], metrics[StepMetrics.Y.value]
         self._video_metrics[Mp4VideoMetrics.LAP_COUNTER.value] = 0
         self._video_metrics[Mp4VideoMetrics.COMPLETION_PERCENTAGE.value] = self._progress_
         # For continuous race, MP4 video will display the total reset counter for the entire race
         # For non-continuous race, MP4 video will display reset counter per lap
         self._video_metrics[Mp4VideoMetrics.RESET_COUNTER.value] = 0
-        self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
+
         self._video_metrics[Mp4VideoMetrics.OBSTACLE_RESET_COUNTER.value] = 0
         self._video_metrics[Mp4VideoMetrics.SPEED.value] = actual_speed
         self._video_metrics[Mp4VideoMetrics.THROTTLE.value] = metrics[StepMetrics.THROTTLE.value]
@@ -568,7 +566,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
 
         self._simtrace_episode_s3_writer = simtrace_episode_s3_writer
         self._is_continuous = is_continuous
-        self._start_time_ = 0
+        self._start_time_ = time.time()
         self._number_of_trials_ = 0
         self._progress_ = 0.0
         self._episode_status = ''
@@ -576,7 +574,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
 
         # This is used to calculate the actual distance traveled by the car
         self._agent_xy = list()
-        self._prev_step_time = 0
+        self._prev_step_time = time.time()
         self.is_save_simtrace_enabled = WorldConfig.get_param('SIMTRACE_S3_BUCKET', None)
 
         # Create the agent specific directories needed for storing the metric files
@@ -647,22 +645,18 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         """
         self._current_sim_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
 
-    def reset(self, cur_time=None):
+    def reset(self):
         """clear reset counter only for non-continuous racing
         """
-        if cur_time is not None:
-            cur_time_reference = cur_time
-        else:
-            cur_time_reference = self._current_sim_time
         # for continuous race: add pause time for only first lap
         if self._is_continuous:
-            self._start_time_ = cur_time_reference
+            self._start_time_ = self._current_sim_time
             if not self._is_pause_time_subtracted:
                 self._start_time_ += self._pause_time_before_start
                 self._is_pause_time_subtracted = True
         # for non-continuous race: add pause time for every lap
         else:
-            self._start_time_ = cur_time_reference + self._pause_time_before_start
+            self._start_time_ = self._current_sim_time + self._pause_time_before_start
         self._reset_count_sum += \
             self.reset_count_dict[EpisodeStatus.CRASHED.value] +\
             self.reset_count_dict[EpisodeStatus.IMMOBILIZED.value] +\
@@ -671,7 +665,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         for key in self.reset_count_dict.keys():
             self.reset_count_dict[key] = 0
 
-    def append_episode_metrics(self, cur_time, is_complete=True):
+    def append_episode_metrics(self, is_complete=True):
         if not is_complete and self._number_of_trials_ != 0:
             # Note: for virtual event, if the racer did not even finish one lap
             # for the duration of the event, we display DNF.
@@ -683,10 +677,10 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             return
         eval_metric = dict()
         eval_metric['completion_percentage'] = int(self._progress_)
-        eval_metric['metric_time'] = int(round(cur_time * 1000))
+        eval_metric['metric_time'] = int(round(self._current_sim_time * 1000))
         eval_metric['start_time'] = int(round(self._start_time_ * 1000))
         eval_metric['elapsed_time_in_milliseconds'] = \
-            int(round((cur_time - self._start_time_) * 1000))
+            int(round((self._current_sim_time - self._start_time_) * 1000))
         eval_metric['episode_status'] = EpisodeStatus.get_episode_status_label(self._episode_status)
         eval_metric['crash_count'] = self.reset_count_dict[EpisodeStatus.CRASHED.value]
         eval_metric['immobilized_count'] = self.reset_count_dict[EpisodeStatus.IMMOBILIZED.value]
@@ -740,7 +734,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
 
     def update_mp4_video_metrics(self, metrics):
         actual_speed = 0
-        cur_time = metrics[StepMetrics.TIME.value]
+        cur_time = self._current_sim_time
         agent_x, agent_y = metrics[StepMetrics.X.value], metrics[StepMetrics.Y.value]
         if self._agent_xy:
             # Speed = Distance/Time
@@ -769,7 +763,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
         self._video_metrics[Mp4VideoMetrics.BEST_LAP_TIME.value] = self._best_lap_time
         self._video_metrics[Mp4VideoMetrics.LAST_LAP_TIME.value] = self._last_lap_time
         self._video_metrics[Mp4VideoMetrics.TOTAL_EVALUATION_TIME.value] = self._total_evaluation_time +\
-            int(round((cur_time - self._start_time_) * 1000))
+            int(round((self._current_sim_time - self._start_time_) * 1000))
         self._video_metrics[Mp4VideoMetrics.DONE.value] = metrics[StepMetrics.DONE.value]
         self._video_metrics[Mp4VideoMetrics.X.value] = agent_x
         self._video_metrics[Mp4VideoMetrics.Y.value] = agent_y
