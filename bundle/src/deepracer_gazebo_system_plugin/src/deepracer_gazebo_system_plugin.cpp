@@ -663,8 +663,11 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                 light.SetSpecular(gz::math::Color(
                     cmd.specular.r, cmd.specular.g, cmd.specular.b, cmd.specular.a));
                 
-                light.SetDirection(gz::math::Vector3d(
-                    cmd.direction.x, cmd.direction.y, cmd.direction.z));
+                // Only update direction if explicitly set (non-zero)
+                gz::math::Vector3d dir(cmd.direction.x, cmd.direction.y, cmd.direction.z);
+                if (dir != gz::math::Vector3d::Zero) {
+                    light.SetDirection(dir);
+                }
                 
                 // Update Light component for state consistency
                 lightComp->Data() = light;
@@ -683,19 +686,24 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                     _ecm.CreateComponent(lightEntity, components::LightCmd(lightMsg));
                 }
                 
+                // Only update pose if it was explicitly set (not the default all-zeros)
                 gz::math::Vector3d pos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
                 gz::math::Quaterniond rot(cmd.pose.orientation.w, cmd.pose.orientation.x,
                                          cmd.pose.orientation.y, cmd.pose.orientation.z);
-                rot.Normalize();
-                gz::math::Pose3d newPose(pos, rot);
-                
-                auto poseComp = _ecm.Component<components::Pose>(lightEntity);
-                if (poseComp) {
-                    poseComp->Data() = newPose;
-                    _ecm.SetChanged(lightEntity, components::Pose::typeId,
-                                   ComponentState::OneTimeChange);
-                } else {
-                    _ecm.CreateComponent(lightEntity, components::Pose(newPose));
+                bool poseIsDefault = (pos == gz::math::Vector3d::Zero &&
+                                      rot == gz::math::Quaterniond(0, 0, 0, 0));
+                if (!poseIsDefault) {
+                    rot.Normalize();
+                    gz::math::Pose3d newPose(pos, rot);
+                    
+                    auto poseComp = _ecm.Component<components::Pose>(lightEntity);
+                    if (poseComp) {
+                        poseComp->Data() = newPose;
+                        _ecm.SetChanged(lightEntity, components::Pose::typeId,
+                                       ComponentState::OneTimeChange);
+                    } else {
+                        _ecm.CreateComponent(lightEntity, components::Pose(newPose));
+                    }
                 }
             }
         }
