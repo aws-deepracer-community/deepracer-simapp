@@ -40,38 +40,37 @@ export ROS_IP=127.0.0.1
 
 export DEEPRACER_JOB_TYPE_ENV="SAGEONLY"
 
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
+export PATH="/opt/ml/:$PATH"
+# Unset the PYTHONPATH set by the base image to avoid conflicts with sagemaker_env
+export PYTHONPATH="/opt/ml/code"
+
+# Source the libraries
+source /opt/ros/${ROS_DISTRO}/setup.bash
+source /opt/amazon/install/setup.bash
+source /root/anaconda/bin/activate sagemaker_env
 
 echo "Logging sagemaker and robomaker in seperate cloudwatch stream"
 export SIMULATION_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/SimulationJobs
 export TRAINING_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/TrainingJobs
-/usr/bin/python3.12 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
-/usr/bin/python3.12 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
+python3 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
+python3 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
 
-# Starting sagemaker instance inside conda environment
-export PATH="/root/anaconda/bin:/root/anaconda/condabin:/root/anaconda/bin:/opt/ml:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-conda init bash
-source /root/anaconda/etc/profile.d/conda.sh
-source /root/.bashrc
-conda activate sagemaker_env
 # Start the redis server and Coach training worker
 redis-server /etc/redis/redis.conf &
 sleep 5 
 echo "Running training job inside conda on single sagemaker instance..."
 echo "Input argument to training worker $@"
+
 # redirect stderr to stdout and have error messages sent to the same file as standard output
 export DR_MARKOV_WORLD_CONFIG_LOCAL_YAML_FILE=/opt/ml/code/custom_files/training_params.yaml
-python3.12 /opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
-conda deactivate
+python3 /opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
 
-export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-source /opt/ros/${ROS_DISTRO}/setup.bash
-source /opt/amazon/install/setup.bash
 export DISPLAY=:0 # Select screen 0 by default.
 export GAZEBO_MODEL_PATH=./deepracer_simulation_environment/share/deepracer_simulation_environment
 xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
 echo "Running simulation job on single sagemaker instance..."
 echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
+
 # redirect stderr to stdout and have error messages sent to the same file as standard output
 set +e
 ros2 launch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE > /opt/ml/simapp.log 2>&1

@@ -1,9 +1,13 @@
 name: sagemaker_env
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - python=3.12
   - pip
+  - numpy==1.26.4          # conda-managed so cv2/TF share one C-API instance
+  - ffmpeg=8.0.1=gpl_*     # GPL variant includes x264 for AVC1/H.264 encoding
+  - py-opencv              # headless cv2 bindings, uses the ffmpeg above
   - nginx
   - zip
   - wget
@@ -15,7 +19,6 @@ dependencies:
       - annoy==1.17.3
       - pillow==12.1.1
       - matplotlib==3.10.6
-      - numpy==1.26.4
       - pandas==2.3.1
       - PyOpenGL==3.1.9
       - scipy==1.13.1
@@ -24,7 +27,6 @@ dependencies:
       - minio==7.2.15
       - cryptography==46.0.5
       - kubernetes==33.1.0
-      - opencv-python==4.9.0.80
       - bokeh==3.7.3
       - /opt/amazon/rl_coach  # Install rl_coach from local source directory
       - retrying==1.4.1
@@ -55,6 +57,5 @@ dependencies:
       - lark==1.2.2
       - catkin_pkg==1.0.0
       - pytelegraf
-      - sagemaker-training
       - argcomplete
       - setuptools==80.10.2
