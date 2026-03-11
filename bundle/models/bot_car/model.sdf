@@ -3,17 +3,6 @@
   <model name="bot_car">
     <link name="base_link">
       <gravity>0</gravity>
-      <inertial>
-        <mass>1.0</mass>
-        <inertia>
-          <ixx>0.01</ixx>
-          <ixy>0.0</ixy>
-          <ixz>0.0</ixz>
-          <iyy>0.01</iyy>
-          <iyz>0.0</iyz>
-          <izz>0.01</izz>
-        </inertia>
-      </inertial>
     </link>
     <link name="chassis">
       <gravity>0</gravity>
