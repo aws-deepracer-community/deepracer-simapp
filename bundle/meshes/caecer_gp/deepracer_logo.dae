@@ -41,7 +41,7 @@
   </library_effects>
   <library_images>
     <image id="Map__23" name="Map__23">
-      <init_from>textures/deepRacer%20logo.png</init_from>
+      <init_from>textures/deepRacer logo.png</init_from>
     </image>
   </library_images>
   <library_materials>
