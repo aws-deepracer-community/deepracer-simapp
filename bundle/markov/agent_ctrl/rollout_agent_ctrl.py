@@ -551,7 +551,8 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # if current reset position/orientation is inf/-inf or nan, reset to the starting position centerline
         pose_list = [pose.position.x, pose.position.y, pose.position.z,
                      pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
-        if math.inf in pose_list or -math.inf in pose_list or math.nan in pose_list:
+        # NaN does not compare equal to itself, so use isfinite for robust validation.
+        if not all(math.isfinite(v) for v in pose_list):
             LOG.info("invalid reset pose %s for distance %s", pose_list, dist)
             pose, _, _ = self._get_reset_poses(dist=0.0)
             # if is training job, update to start_ndist to 0.0
