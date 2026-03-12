@@ -677,6 +677,28 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                 // Use LightCmd to notify rendering system of the update
                 // (Light component alone doesn't trigger visual refresh)
                 gz::msgs::Light lightMsg = gz::sim::convert<gz::msgs::Light>(light);
+
+                // The converted lightMsg may carry a default (zero) pose from sdf::Light.
+                // Inject the current entity pose so the renderer doesn't reset it to origin.
+                gz::math::Vector3d cmdPos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
+                gz::math::Quaterniond cmdRot(cmd.pose.orientation.w, cmd.pose.orientation.x,
+                                             cmd.pose.orientation.y, cmd.pose.orientation.z);
+                // ROS 2 geometry_msgs/Pose defaults to position=(0,0,0) and
+                // orientation=(w=1,x=0,y=0,z=0) i.e. identity quaternion.
+                bool poseIsDefault = (cmdPos == gz::math::Vector3d::Zero &&
+                                      (cmdRot == gz::math::Quaterniond::Identity ||
+                                       cmdRot == gz::math::Quaterniond(0, 0, 0, 0)));
+                gz::math::Pose3d poseForMsg = poseIsDefault ? currentPose
+                    : gz::math::Pose3d(cmdPos, cmdRot.Normalized());
+                gz::msgs::Set(lightMsg.mutable_pose(),
+                              poseForMsg);
+
+                RCLCPP_DEBUG(node_->get_logger(),
+                    "SetLight '%s': LightCmd pose=(%f,%f,%f) poseIsDefault=%d",
+                    cmd.light_name.c_str(),
+                    poseForMsg.Pos().X(), poseForMsg.Pos().Y(), poseForMsg.Pos().Z(),
+                    poseIsDefault);
+
                 auto lightCmdComp = _ecm.Component<components::LightCmd>(lightEntity);
                 if (lightCmdComp) {
                     lightCmdComp->Data() = lightMsg;
@@ -686,24 +708,23 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                     _ecm.CreateComponent(lightEntity, components::LightCmd(lightMsg));
                 }
                 
-                // Only update pose if it was explicitly set (not the default all-zeros)
-                gz::math::Vector3d pos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
-                gz::math::Quaterniond rot(cmd.pose.orientation.w, cmd.pose.orientation.x,
-                                         cmd.pose.orientation.y, cmd.pose.orientation.z);
-                bool poseIsDefault = (pos == gz::math::Vector3d::Zero &&
-                                      rot == gz::math::Quaterniond(0, 0, 0, 0));
+                // Only update ECS pose if it was explicitly set (not the default all-zeros)
                 if (!poseIsDefault) {
-                    rot.Normalize();
-                    gz::math::Pose3d newPose(pos, rot);
-                    
-                    auto poseComp = _ecm.Component<components::Pose>(lightEntity);
                     if (poseComp) {
-                        poseComp->Data() = newPose;
+                        poseComp->Data() = poseForMsg;
                         _ecm.SetChanged(lightEntity, components::Pose::typeId,
                                        ComponentState::OneTimeChange);
                     } else {
-                        _ecm.CreateComponent(lightEntity, components::Pose(newPose));
+                        _ecm.CreateComponent(lightEntity, components::Pose(poseForMsg));
                     }
+                    RCLCPP_INFO(node_->get_logger(),
+                        "SetLight '%s': updated ECS pose to (%f,%f,%f)",
+                        cmd.light_name.c_str(),
+                        poseForMsg.Pos().X(), poseForMsg.Pos().Y(), poseForMsg.Pos().Z());
+                } else {
+                    RCLCPP_INFO(node_->get_logger(),
+                        "SetLight '%s': pose was default, preserving current pose",
+                        cmd.light_name.c_str());
                 }
             }
         }
