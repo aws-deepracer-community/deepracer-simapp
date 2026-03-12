@@ -32,8 +32,8 @@ is built into the single image, and RL coach does not inject code anymore.
 Installed core technologies are:
  - Ubuntu 24.04
  - Python 3.12
- - Tensorflow 2.19
- - CUDA 13.1 (GPU only)
+ - Tensorflow 2.20
+ - CUDA 12.6 (GPU only)
  - Redis 8.0.4
  - ROS 2 Jazzy
  - Gazebo Harmonic
