@@ -28,6 +28,9 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Light.hh>
+#include <gz/sim/components/LightCmd.hh>
+#include <gz/sim/Conversions.hh>
+#include <gz/msgs/Utility.hh>
 #include <gz/sim/components/Physics.hh>
 #include <gz/sim/components/PhysicsCmd.hh>
 #include <gz/sim/components/World.hh>
