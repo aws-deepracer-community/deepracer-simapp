@@ -95,10 +95,30 @@ def configure_environment_randomizer(light_name_filter=None):
                                             max_retry_attempts=3, timeout_sec=1.0)
         res = get_light_names(GetLightNames.Request())
         
+        if res is None:
+            LOG.warning("GetLightNames service returned None - no lights will be randomized")
+            return
+            
+        if not res.success:
+            LOG.warning("GetLightNames service failed: %s - no lights will be randomized", 
+                       res.status_message)
+            return
+        
+        if not res.light_names:
+            LOG.info("No lights found in scene for randomization")
+            return
+            
+        LOG.info("Found %d lights in scene: %s", len(res.light_names), res.light_names)
+        
+        lights_added = 0
         for light_name in res.light_names:
             if light_name_filter and light_name not in light_name_filter:
+                LOG.debug("Skipping light '%s' (not in filter)", light_name)
                 continue
             RandomizerManager.get_instance().add(LightRandomizer(light_name=light_name))
+            lights_added += 1
+        
+        LOG.info("Added %d light randomizers", lights_added)
         
     except Exception as e:
         LOG.error("Error adding light randomizers: %s", e)

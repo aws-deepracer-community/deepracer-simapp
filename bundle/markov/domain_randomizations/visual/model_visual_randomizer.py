@@ -102,13 +102,13 @@ class ModelVisualRandomizer(AbstractRandomizer):
         #logger.info('link_visuals_map: {}'.format({"model_name:": self.model_name, "links": self.link_visuals_map}))
 
     def _get_random_color(self):
-        return ColorRGBA(*[np.random.uniform(self.color_range[Color.R.value][RANGE_MIN],
-                                             self.color_range[Color.R.value][RANGE_MAX]),
-                           np.random.uniform(self.color_range[Color.G.value][RANGE_MIN],
-                                             self.color_range[Color.G.value][RANGE_MAX]),
-                           np.random.uniform(self.color_range[Color.B.value][RANGE_MIN],
-                                             self.color_range[Color.B.value][RANGE_MAX]),
-                           1.0])
+        return ColorRGBA(r=np.random.uniform(self.color_range[Color.R.value][RANGE_MIN],
+                                              self.color_range[Color.R.value][RANGE_MAX]),
+                         g=np.random.uniform(self.color_range[Color.G.value][RANGE_MIN],
+                                              self.color_range[Color.G.value][RANGE_MAX]),
+                         b=np.random.uniform(self.color_range[Color.B.value][RANGE_MIN],
+                                              self.color_range[Color.B.value][RANGE_MAX]),
+                         a=1.0)
 
     def _randomize(self):
         link_names = self.link_visuals_map.keys()
@@ -132,8 +132,8 @@ class ModelVisualRandomizer(AbstractRandomizer):
         color = self._get_random_color()
         ambient = color
         diffuse = color
-        specular = ColorRGBA(0.0, 0.0, 0.0, 1.0)
-        emissive = ColorRGBA(0.0, 0.0, 0.0, 1.0)
+        specular = ColorRGBA(r=0.0, g=0.0, b=0.0, a=1.0)
+        emissive = ColorRGBA(r=0.0, g=0.0, b=0.0, a=1.0)
 
         for link_name in link_names:
             for idx, visual_name in enumerate(self.link_visuals_map[link_name]):
