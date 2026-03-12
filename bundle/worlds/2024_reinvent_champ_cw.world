@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.4">
+<sdf version="1.7">
   <world name="2024_reinvent_champ_cw">
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
@@ -15,7 +15,7 @@
       <origin_visual>false</origin_visual>
       <sky/>
     </scene>
-        <light type="directional" name="sun">
+    <light type="directional" name="sun">
       <pose>0 0 15 0 0 0</pose>
       <cast_shadows>false</cast_shadows>
       <intensity>1.0</intensity>

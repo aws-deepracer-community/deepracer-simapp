@@ -91,7 +91,7 @@
   </library_effects>
   <library_images>
     <image id="building__wall_U_01" name="building__wall_U_01">
-      <init_from>textures/Monaco_track_building%20_wall_U_01.png</init_from>
+      <init_from>textures/Monaco_track_building _wall_U_01.png</init_from>
       <extra>
         <technique profile="OpenCOLLADAMaya">
           <originalMayaNodeId sid="originalMayaNodeId" type="string">building__wall_U_01</originalMayaNodeId>

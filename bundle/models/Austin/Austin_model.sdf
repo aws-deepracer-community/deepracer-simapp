@@ -97,6 +97,7 @@
             </visual>
         </link>
 
+        <!--
         <link name="Austin_track_Camera">
             <visual name="visual">
                 <pose>0 0 0 0 0 0</pose>
@@ -107,6 +108,7 @@
                 </geometry>
             </visual>
         </link>
+        -->
 
         <link name="Austin_track_city_road">
             <visual name="visual">
@@ -208,6 +210,7 @@
             </visual>
         </link>
 
+        <!--
         <link name="Austin_track_Light">
             <visual name="visual">
                 <pose>0 0 0 0 0 0</pose>
@@ -218,6 +221,7 @@
                 </geometry>
             </visual>
         </link>
+        -->
 
         <link name="Austin_track_road">
             <visual name="visual">

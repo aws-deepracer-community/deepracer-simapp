@@ -50,7 +50,7 @@
         <technique sid="common">
           <lambert>
             <emission>
-              <color>1 1 1 1</color>
+              <color>0 0 0 1</color>
             </emission>
             <ambient>
               <color>1 1 1 1</color>
@@ -112,7 +112,7 @@
         <technique sid="common">
           <lambert>
             <emission>
-              <color>1 1 1 1</color>
+              <color>0 0 0 1</color>
             </emission>
             <ambient>
               <color>1 1 1 1</color>
@@ -174,7 +174,7 @@
         <technique sid="common">
           <lambert>
             <emission>
-              <color>1 1 1 1</color>
+              <color>0 0 0 1</color>
             </emission>
             <ambient>
               <color>1 1 1 1</color>
@@ -236,7 +236,7 @@
         <technique sid="common">
           <lambert>
             <emission>
-              <color>1 1 1 1</color>
+              <color>0 0 0 1</color>
             </emission>
             <ambient>
               <color>1 1 1 1</color>
