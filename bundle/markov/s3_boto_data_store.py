@@ -386,6 +386,8 @@ class S3BotoDataStore(DataStore):
 
     def modify_checkpoint_variables(self):
         for agent_name, checkpoint in self.params.checkpoint_dict.items():
+            if not checkpoint.rl_coach_checkpoint.coach_checkpoint_state_file.exists():
+                continue
             checkpoint.tensorflow_model.rename(
                 coach_checkpoint_state_file=checkpoint.rl_coach_checkpoint.coach_checkpoint_state_file,
                 agent_name=agent_name)
