@@ -7,7 +7,7 @@ dependencies:
   - nginx==1.23.2
   - zip
   - wget
-  - curl==8.18.0
+  - curl==8.19.0
   - pip:
       - pygame==2.6.1
       - shapely==2.0.2
