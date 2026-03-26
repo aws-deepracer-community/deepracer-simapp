@@ -112,7 +112,6 @@ class ClaudeHandler(ModelHandler):
             "anthropic_version": self.anthropic_version,
             "max_tokens": self.max_tokens,
             "temperature": 0.3,
-            "top_p": 1.0,
             "top_k": 0,
             "system": self.system_prompt,
             "messages": messages
