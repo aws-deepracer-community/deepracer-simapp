@@ -101,7 +101,13 @@ class LLMAgent(Agent):
             
             # Set up tracing directory if tracing is enabled
             if self.trace:
-                self.trace_dir = os.path.join("/tmp", "llm_agent_traces")
+                try:
+                    import rclpy.logging
+                    ros_log_dir = rclpy.logging.get_logging_directory()
+                except Exception:
+                    ros_home = os.path.expanduser(os.environ.get("ROS_HOME", "~/.ros"))
+                    ros_log_dir = os.path.join(ros_home, "log")
+                self.trace_dir = os.path.join(ros_log_dir, "llm_agent_traces")
                 os.makedirs(self.trace_dir, exist_ok=True)
                 LOG.info(f"LLM Agent tracing enabled. Traces will be saved to {self.trace_dir}")
             
