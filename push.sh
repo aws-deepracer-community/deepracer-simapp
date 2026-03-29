@@ -7,7 +7,7 @@ function ctrl_c() {
 }
 
 PREFIX="local"
-VERSION=$(cat VERSION)
+VERSION=$(jq -r '.simapp' VERSION)
 
 while getopts ":a:p:" opt; do
     case $opt in

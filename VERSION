@@ -1,1 +1,4 @@
-6.0.3-dev
+{
+    "simapp" : "6.0.3-dev",
+    "deepracer-on-aws" : "v1.0.11"
+}
