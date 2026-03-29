@@ -54,7 +54,7 @@ setup(
         'python-dateutil==2.8.2',
         'pytest==8.3.4',
         'docutils==0.21.2',
-        'cryptography==46.0.5',
+        'cryptography==46.0.6',
         'jsonschema==4.24.0',
         'pytz==2025.2',
         'tokenize-rt==6.2.0',
