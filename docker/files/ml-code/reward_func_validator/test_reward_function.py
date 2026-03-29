@@ -119,7 +119,7 @@ def run_flake8():
                 REWARD_FUNCTION_PATH,
                 "--format=%(code)s:%(row)d:%(text)s",
                 "--select=E,F",
-                "--ignore=E5,E226,E261",  # ignore stylistic errors
+                "--ignore=E2,E3,E4,E5,W,F401,F841",  # ignore stylistic errors, keep E1 (indentation) and F (logic) except unused imports/variables
             ],
             capture_output=True,
             text=True,
