@@ -1,7 +1,7 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.6
-# Image ID: 071b2eba4a68
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.11
+# Image ID: 18c1edabf9b7
 # Base: Ubuntu 24.04 (Noble)
-# Built: February 23, 2026
+# Built: March 23, 2026
 # Optimized: February 26, 2026
 
 FROM ubuntu:24.04
@@ -266,8 +266,8 @@ RUN conda env create -f /opt/amazon/configs/environment.yml && \
 # Install security updates via conda
 RUN /root/anaconda/bin/conda install -y \
     brotli-python==1.2.0 \
-    curl==8.16.0 \
-    libcurl==8.16.0 \
+    conda-forge::curl==8.19.0 \
+    conda-forge::libcurl==8.19.0 \
     urllib3==2.6.3 \
     requests==2.32.5 \
     && /root/anaconda/bin/conda clean -afy \

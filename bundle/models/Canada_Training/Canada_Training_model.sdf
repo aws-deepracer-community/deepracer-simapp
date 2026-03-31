@@ -271,6 +271,7 @@
 </geometry>
 </visual>
 </link>
+<!--
 <link name="Canada_track_lightLink">
 <collision name="collision">
 <pose>0 0 0 0 0 0</pose>
@@ -289,6 +290,7 @@
 </geometry>
 </visual>
 </link>
+-->
 <link name="Canada_track_riverLink">
 <collision name="collision">
 <pose>0 0 0 0 0 0</pose>

@@ -1,0 +1,27 @@
+ARG DROA_VERSION=v1.0.11
+FROM public.ecr.aws/aws-solutions/deepracer-on-aws-model-validation:${DROA_VERSION} AS upstream
+
+FROM public.ecr.aws/lambda/python:3.12
+
+RUN pip install \
+    setuptools==80.10.1 \
+    wheel==0.46.3 \
+    boto3==1.40.49 \
+    protobuf==6.33.5
+
+RUN rm -f /usr/local/bin/aws-lambda-rie
+
+COPY --from=upstream /var/runtime /var/runtime
+
+RUN rm -rf /var/runtime/tensorflow/include/external/curl
+RUN rm -rf /var/runtime/setuptools/_vendor/wheel*
+RUN rm -rf /var/lang/lib/python3.12/site-packages/setuptools/_vendor/wheel*
+
+COPY bundle/markov/ /var/task/markov/
+COPY docker/files/ml-code/model_validator/ /var/task/
+COPY docker/files/ml-code/sample_data/ /var/task/sample_data/
+
+WORKDIR /var/task/
+ENV PYTHONPATH=/var/task/:/var/runtime:
+
+CMD ["lambda_function.lambda_handler"]

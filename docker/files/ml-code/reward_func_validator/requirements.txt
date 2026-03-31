@@ -1,0 +1,4 @@
+numpy==2.3.4
+scipy==1.16.2
+shapely==2.1.2
+flake8==7.3.0

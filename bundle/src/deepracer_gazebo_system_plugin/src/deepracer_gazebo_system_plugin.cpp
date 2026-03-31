@@ -79,7 +79,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
         
         bool ok = gz_node_.Request(svc, req, 1000, rep, result);
         if (ok && result) {
-            RCLCPP_INFO(node_->get_logger(), "Physics paused successfully via service %s", svc.c_str());
+            RCLCPP_DEBUG(node_->get_logger(), "Physics paused successfully via service %s", svc.c_str());
         } else {
             RCLCPP_ERROR(node_->get_logger(), "WorldControl pause request failed for %s", svc.c_str());
         }
@@ -95,7 +95,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
         
         bool ok = gz_node_.Request(svc, req, 1000, rep, result);
         if (ok && result) {
-            RCLCPP_INFO(node_->get_logger(), "Physics unpaused successfully via service %s", svc.c_str());
+            RCLCPP_DEBUG(node_->get_logger(), "Physics unpaused successfully via service %s", svc.c_str());
         } else {
             RCLCPP_ERROR(node_->get_logger(), "WorldControl unpause request failed for %s", svc.c_str());
         }
@@ -106,7 +106,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
         std::lock_guard<std::mutex> lock(command_queue_mtx_);
         
         if (!model_state_commands_.empty()) {
-            RCLCPP_INFO(node_->get_logger(), "PreUpdate: Processing %zu queued model state commands", 
+            RCLCPP_DEBUG(node_->get_logger(), "PreUpdate: Processing %zu queued model state commands", 
                 model_state_commands_.size());
             
             // Build entity maps once for all commands
@@ -405,7 +405,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                     _ecm.CreateComponent(visualEntity, components::VisualCmd(visualMsg));
                 }
                 
-                RCLCPP_INFO(node_->get_logger(), "Updated visual color for '%s'", cmd.visual_name.c_str());
+                RCLCPP_DEBUG(node_->get_logger(), "Updated visual color for '%s'", cmd.visual_name.c_str());
             }
         }
     }
@@ -663,26 +663,72 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
                 light.SetSpecular(gz::math::Color(
                     cmd.specular.r, cmd.specular.g, cmd.specular.b, cmd.specular.a));
                 
-                light.SetDirection(gz::math::Vector3d(
-                    cmd.direction.x, cmd.direction.y, cmd.direction.z));
+                // Retrieve the current pose of the light entity from the ECS
+                auto poseComp = _ecm.Component<components::Pose>(lightEntity);
+                gz::math::Pose3d currentPose = poseComp ? poseComp->Data() : gz::math::Pose3d::Zero;
+
+                // Only update direction if explicitly set (non-zero)
+                gz::math::Vector3d dir(cmd.direction.x, cmd.direction.y, cmd.direction.z);
+                if (dir != gz::math::Vector3d::Zero) {
+                    light.SetDirection(dir);
+                }
                 
+                // Update Light component for state consistency
                 lightComp->Data() = light;
                 _ecm.SetChanged(lightEntity, components::Light::typeId,
                                ComponentState::OneTimeChange);
                 
-                gz::math::Vector3d pos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
-                gz::math::Quaterniond rot(cmd.pose.orientation.w, cmd.pose.orientation.x,
-                                         cmd.pose.orientation.y, cmd.pose.orientation.z);
-                rot.Normalize();
-                gz::math::Pose3d newPose(pos, rot);
-                
-                auto poseComp = _ecm.Component<components::Pose>(lightEntity);
-                if (poseComp) {
-                    poseComp->Data() = newPose;
-                    _ecm.SetChanged(lightEntity, components::Pose::typeId,
+                // Use LightCmd to notify rendering system of the update
+                // (Light component alone doesn't trigger visual refresh)
+                gz::msgs::Light lightMsg = gz::sim::convert<gz::msgs::Light>(light);
+
+                // The converted lightMsg may carry a default (zero) pose from sdf::Light.
+                // Inject the current entity pose so the renderer doesn't reset it to origin.
+                gz::math::Vector3d cmdPos(cmd.pose.position.x, cmd.pose.position.y, cmd.pose.position.z);
+                gz::math::Quaterniond cmdRot(cmd.pose.orientation.w, cmd.pose.orientation.x,
+                                             cmd.pose.orientation.y, cmd.pose.orientation.z);
+                // ROS 2 geometry_msgs/Pose defaults to position=(0,0,0) and
+                // orientation=(w=1,x=0,y=0,z=0) i.e. identity quaternion.
+                bool poseIsDefault = (cmdPos == gz::math::Vector3d::Zero &&
+                                      (cmdRot == gz::math::Quaterniond::Identity ||
+                                       cmdRot == gz::math::Quaterniond(0, 0, 0, 0)));
+                gz::math::Pose3d poseForMsg = poseIsDefault ? currentPose
+                    : gz::math::Pose3d(cmdPos, cmdRot.Normalized());
+                gz::msgs::Set(lightMsg.mutable_pose(),
+                              poseForMsg);
+
+                RCLCPP_DEBUG(node_->get_logger(),
+                    "SetLight '%s': LightCmd pose=(%f,%f,%f) poseIsDefault=%d",
+                    cmd.light_name.c_str(),
+                    poseForMsg.Pos().X(), poseForMsg.Pos().Y(), poseForMsg.Pos().Z(),
+                    poseIsDefault);
+
+                auto lightCmdComp = _ecm.Component<components::LightCmd>(lightEntity);
+                if (lightCmdComp) {
+                    lightCmdComp->Data() = lightMsg;
+                    _ecm.SetChanged(lightEntity, components::LightCmd::typeId,
                                    ComponentState::OneTimeChange);
                 } else {
-                    _ecm.CreateComponent(lightEntity, components::Pose(newPose));
+                    _ecm.CreateComponent(lightEntity, components::LightCmd(lightMsg));
+                }
+                
+                // Only update ECS pose if it was explicitly set (not the default all-zeros)
+                if (!poseIsDefault) {
+                    if (poseComp) {
+                        poseComp->Data() = poseForMsg;
+                        _ecm.SetChanged(lightEntity, components::Pose::typeId,
+                                       ComponentState::OneTimeChange);
+                    } else {
+                        _ecm.CreateComponent(lightEntity, components::Pose(poseForMsg));
+                    }
+                    RCLCPP_INFO(node_->get_logger(),
+                        "SetLight '%s': updated ECS pose to (%f,%f,%f)",
+                        cmd.light_name.c_str(),
+                        poseForMsg.Pos().X(), poseForMsg.Pos().Y(), poseForMsg.Pos().Z());
+                } else {
+                    RCLCPP_INFO(node_->get_logger(),
+                        "SetLight '%s': pose was default, preserving current pose",
+                        cmd.light_name.c_str());
                 }
             }
         }
@@ -915,14 +961,7 @@ void DeepRacerGazeboSystemPlugin::initializeROS2()
 
     node_ = std::make_shared<rclcpp::Node>("deepracer_gazebo_system", "deepracer");
     
-    // Set log level to WARN for the node's logger
-    rcutils_ret_t ret = rcutils_logging_set_logger_level(
-        node_->get_logger().get_name(), RCUTILS_LOG_SEVERITY_WARN);
-    if (ret != RCUTILS_RET_OK) {
-        RCLCPP_WARN(node_->get_logger(), "Failed to set logger level");
-    }
-    
-    RCLCPP_WARN(node_->get_logger(), "ROS 2 node created: %s (log level: WARN)", node_->get_name());
+    RCLCPP_INFO(node_->get_logger(), "ROS 2 node created: %s", node_->get_name());
 
     createServices();
 
@@ -1062,7 +1101,7 @@ void DeepRacerGazeboSystemPlugin::createServices()
         std::bind(&DeepRacerGazeboSystemPlugin::deleteModelCallback, this,
                   std::placeholders::_1, std::placeholders::_2));
 
-    RCLCPP_INFO(node_->get_logger(), "All 22 ROS 2 services created successfully");
+    RCLCPP_INFO(node_->get_logger(), "All ROS 2 services created successfully");
 }
 
 //////////////////////////////////////////////////
@@ -1110,7 +1149,7 @@ void DeepRacerGazeboSystemPlugin::getLightNamesCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetLightNames::Request> /*request*/,
     std::shared_ptr<deepracer_msgs::srv::GetLightNames::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getLightNames service called");
+    RCLCPP_DEBUG(node_->get_logger(), "getLightNames service called");
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
     
@@ -1119,7 +1158,7 @@ void DeepRacerGazeboSystemPlugin::getLightNamesCallback(
         response->success = true;
         response->status_message = "Found " + std::to_string(light_names_cache_.size()) + " lights";
         
-        RCLCPP_INFO(node_->get_logger(), "Found %zu lights in cache", light_names_cache_.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Found %zu lights in cache", light_names_cache_.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1132,7 +1171,7 @@ void DeepRacerGazeboSystemPlugin::getVisualNamesCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetVisualNames::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetVisualNames::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getVisualNames service called for %zu links", 
+    RCLCPP_DEBUG(node_->get_logger(), "getVisualNames service called for %zu links", 
                 request->link_names.size());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -1183,7 +1222,7 @@ void DeepRacerGazeboSystemPlugin::getVisualCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetVisual::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetVisual::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getVisual service called for link: %s, visual: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "getVisual service called for link: %s, visual: %s", 
                 request->link_name.c_str(), request->visual_name.c_str());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -1213,7 +1252,7 @@ void DeepRacerGazeboSystemPlugin::getVisualCallback(
         response->success = true;
         response->status_message = "Visual properties retrieved from cache";
         
-        RCLCPP_INFO(node_->get_logger(), "Retrieved visual properties for '%s' in link '%s' from cache", 
+        RCLCPP_DEBUG(node_->get_logger(), "Retrieved visual properties for '%s' in link '%s' from cache", 
                     request->visual_name.c_str(), request->link_name.c_str());
         
     } catch (const std::exception &e) {
@@ -1227,7 +1266,7 @@ void DeepRacerGazeboSystemPlugin::getVisualsCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetVisuals::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetVisuals::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getVisuals service called for %zu visuals", 
+    RCLCPP_DEBUG(node_->get_logger(), "getVisuals service called for %zu visuals", 
                 request->link_names.size());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -1298,7 +1337,7 @@ void DeepRacerGazeboSystemPlugin::getVisualsCallback(
         response->success = true;
         response->status_message = "Retrieved " + std::to_string(response->visual_names.size()) + " visual properties";
         
-        RCLCPP_INFO(node_->get_logger(), "Retrieved %zu visual properties from cache", response->visual_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Retrieved %zu visual properties from cache", response->visual_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1315,7 +1354,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualColor::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualColor::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualColor service called for link: %s, visual: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualColor service called for link: %s, visual: %s", 
                 request->link_name.c_str(), request->visual_name.c_str());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1334,7 +1373,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorCallback(
         response->success = true;
         response->status_message = "Visual color command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued color update for visual '%s' in link '%s'", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued color update for visual '%s' in link '%s'", 
                     request->visual_name.c_str(), request->link_name.c_str());
         
     } catch (const std::exception &e) {
@@ -1348,7 +1387,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorsCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualColors::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualColors::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualColors service called for %zu visuals", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualColors service called for %zu visuals", 
                 request->link_names.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1379,7 +1418,7 @@ void DeepRacerGazeboSystemPlugin::setVisualColorsCallback(
         response->success = true;
         response->status_message = "Queued " + std::to_string(request->link_names.size()) + " visual color commands";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu visual color commands", request->link_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu visual color commands", request->link_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1392,7 +1431,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparencyCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualTransparency::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualTransparency::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualTransparency service called for link: %s, visual: %s, transparency: %f", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualTransparency service called for link: %s, visual: %s, transparency: %f", 
                 request->link_name.c_str(), request->visual_name.c_str(), request->transparency);
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1408,7 +1447,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparencyCallback(
         response->success = true;
         response->status_message = "Visual transparency command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued transparency update for visual '%s' in link '%s' to %.2f", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued transparency update for visual '%s' in link '%s' to %.2f", 
                     request->visual_name.c_str(), request->link_name.c_str(), request->transparency);
         
     } catch (const std::exception &e) {
@@ -1422,7 +1461,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparenciesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualTransparencies::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualTransparencies::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualTransparencies service called for %zu visuals", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualTransparencies service called for %zu visuals", 
                 request->link_names.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1447,7 +1486,7 @@ void DeepRacerGazeboSystemPlugin::setVisualTransparenciesCallback(
         response->success = true;
         response->status_message = "Queued " + std::to_string(request->link_names.size()) + " visual transparency commands";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu visual transparency commands", request->link_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu visual transparency commands", request->link_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1460,7 +1499,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisibleCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualVisible::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualVisible::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualVisible service called for link: %s, visual: %s, visible: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualVisible service called for link: %s, visual: %s, visible: %s", 
                 request->link_name.c_str(), request->visual_name.c_str(), 
                 request->visible ? "true" : "false");
     
@@ -1477,7 +1516,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisibleCallback(
         response->success = true;
         response->status_message = "Visual visibility command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued visibility update for visual '%s' in link '%s' to %s", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued visibility update for visual '%s' in link '%s' to %s", 
                     request->visual_name.c_str(), request->link_name.c_str(), 
                     request->visible ? "visible" : "invisible");
         
@@ -1492,7 +1531,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisiblesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualVisibles::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualVisibles::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualVisibles service called for %zu visuals", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualVisibles service called for %zu visuals", 
                 request->link_names.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1520,7 +1559,7 @@ void DeepRacerGazeboSystemPlugin::setVisualVisiblesCallback(
         response->success = true;
         response->status_message = "Queued " + std::to_string(request->link_names.size()) + " visual visibility commands";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu visual visibility commands", request->link_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu visual visibility commands", request->link_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1533,7 +1572,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPoseCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualPose::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualPose::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualPose service called for link: %s, visual: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualPose service called for link: %s, visual: %s", 
                 request->link_name.c_str(), request->visual_name.c_str());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1549,7 +1588,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPoseCallback(
         response->success = true;
         response->status_message = "Visual pose command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued pose update for visual '%s' in link '%s'", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued pose update for visual '%s' in link '%s'", 
                    request->visual_name.c_str(), request->link_name.c_str());
         
     } catch (const std::exception &e) {
@@ -1563,7 +1602,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPosesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualPoses::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualPoses::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualPoses service called for %zu visual pose updates", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualPoses service called for %zu visual pose updates", 
                 request->link_names.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1588,7 +1627,7 @@ void DeepRacerGazeboSystemPlugin::setVisualPosesCallback(
         response->success = true;
         response->status_message = "Queued " + std::to_string(request->link_names.size()) + " visual pose commands";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu visual pose commands", request->link_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu visual pose commands", request->link_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1601,7 +1640,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualMesh::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualMesh::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualMesh service called for link: %s, visual: %s, mesh: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualMesh service called for link: %s, visual: %s, mesh: %s", 
                 request->link_name.c_str(), request->visual_name.c_str(), request->filename.c_str());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1618,7 +1657,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshCallback(
         response->success = true;
         response->status_message = "Visual mesh command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued mesh update for visual '%s' in link '%s' to '%s'", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued mesh update for visual '%s' in link '%s' to '%s'", 
                    request->visual_name.c_str(), request->link_name.c_str(), request->filename.c_str());
         
     } catch (const std::exception &e) {
@@ -1632,7 +1671,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetVisualMeshes::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetVisualMeshes::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setVisualMeshes service called for %zu visual mesh updates", 
+    RCLCPP_DEBUG(node_->get_logger(), "setVisualMeshes service called for %zu visual mesh updates", 
                 request->link_names.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1659,7 +1698,7 @@ void DeepRacerGazeboSystemPlugin::setVisualMeshesCallback(
         response->success = true;
         response->status_message = "Queued " + std::to_string(request->link_names.size()) + " visual mesh commands";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu visual mesh commands", request->link_names.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu visual mesh commands", request->link_names.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1813,7 +1852,7 @@ void DeepRacerGazeboSystemPlugin::setModelStatesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetModelStates::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetModelStates::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setModelStates service called for %zu models", 
+    RCLCPP_DEBUG(node_->get_logger(), "setModelStates service called for %zu models", 
                 request->model_states.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -1854,14 +1893,14 @@ void DeepRacerGazeboSystemPlugin::setModelStatesCallback(
             response->status[i] = 1;
             response->messages[i] = "Command queued";
             
-            RCLCPP_INFO(node_->get_logger(), "Queued state update for model '%s'", 
+            RCLCPP_DEBUG(node_->get_logger(), "Queued state update for model '%s'", 
                        cmd.model_name.c_str());
         }
         
         response->success = true;
         response->status_message = "SetModelStates: commands queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu model state commands", request->model_states.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu model state commands", request->model_states.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1874,7 +1913,7 @@ void DeepRacerGazeboSystemPlugin::getLinkStatesCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetLinkStates::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetLinkStates::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getLinkStates service called for %zu links", 
+    RCLCPP_DEBUG(node_->get_logger(), "getLinkStates service called for %zu links", 
                 request->link_names.size());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -1972,7 +2011,7 @@ void DeepRacerGazeboSystemPlugin::getLinkStatesCallback(
         response->success = true;
         response->status_message = "GetLinkStates: got state";
         
-        RCLCPP_INFO(node_->get_logger(), "Retrieved %zu link states from cache", response->link_states.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Retrieved %zu link states from cache", response->link_states.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -1985,7 +2024,7 @@ void DeepRacerGazeboSystemPlugin::setLinkStatesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetLinkStates::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetLinkStates::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setLinkStates service called for %zu links", 
+    RCLCPP_DEBUG(node_->get_logger(), "setLinkStates service called for %zu links", 
                 request->link_states.size());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -2030,7 +2069,7 @@ void DeepRacerGazeboSystemPlugin::setLinkStatesCallback(
         response->success = true;
         response->status_message = "SetLinkStates: commands queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued %zu link state commands", request->link_states.size());
+        RCLCPP_DEBUG(node_->get_logger(), "Queued %zu link state commands", request->link_states.size());
         
     } catch (const std::exception &e) {
         response->success = false;
@@ -2047,7 +2086,7 @@ void DeepRacerGazeboSystemPlugin::pausePhysicsCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
 {
-    RCLCPP_INFO(node_->get_logger(), "pausePhysics service called");
+    RCLCPP_DEBUG(node_->get_logger(), "pausePhysics service called");
     
     // Set atomic flag - actual pause will happen in PreUpdate
     pause_req_.store(true, std::memory_order_relaxed);
@@ -2057,7 +2096,7 @@ void DeepRacerGazeboSystemPlugin::unpausePhysicsCallback(
     const std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
 {
-    RCLCPP_INFO(node_->get_logger(), "unpausePhysics service called");
+    RCLCPP_DEBUG(node_->get_logger(), "unpausePhysics service called");
     
     // Set atomic flag - actual unpause will happen in PreUpdate
     unpause_req_.store(true, std::memory_order_relaxed);
@@ -2067,7 +2106,7 @@ void DeepRacerGazeboSystemPlugin::getModelPropertiesCallback(
     const std::shared_ptr<deepracer_msgs::srv::GetModelProperties::Request> request,
     std::shared_ptr<deepracer_msgs::srv::GetModelProperties::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "getModelProperties service called for model: %s", 
+    RCLCPP_DEBUG(node_->get_logger(), "getModelProperties service called for model: %s", 
                 request->model_name.c_str());
     
     std::shared_lock<std::shared_mutex> lock(snapshot_mtx_);
@@ -2199,7 +2238,7 @@ void DeepRacerGazeboSystemPlugin::getModelPropertiesCallback(
         response->success = true;
         response->status_message = "GetModelProperties: got properties";
         
-        RCLCPP_INFO(node_->get_logger(), "GetModelProperties for '%s': canonical='%s', %zu bodies, %zu geoms, %zu joints, %zu children, static=%s", 
+        RCLCPP_DEBUG(node_->get_logger(), "GetModelProperties for '%s': canonical='%s', %zu bodies, %zu geoms, %zu joints, %zu children, static=%s", 
                     request->model_name.c_str(),
                     response->canonical_body_name.c_str(),
                     response->body_names.size(),
@@ -2219,7 +2258,7 @@ void DeepRacerGazeboSystemPlugin::setLightPropertiesCallback(
     const std::shared_ptr<deepracer_msgs::srv::SetLightProperties::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SetLightProperties::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "setLightProperties service called for light: %s",
+    RCLCPP_DEBUG(node_->get_logger(), "setLightProperties service called for light: %s",
                 request->light_name.c_str());
     
     std::lock_guard<std::mutex> lock(command_queue_mtx_);
@@ -2241,7 +2280,7 @@ void DeepRacerGazeboSystemPlugin::setLightPropertiesCallback(
         response->success = true;
         response->status_message = "SetLightProperties: command queued";
         
-        RCLCPP_INFO(node_->get_logger(), "Queued light properties update for '%s'", 
+        RCLCPP_DEBUG(node_->get_logger(), "Queued light properties update for '%s'", 
                    request->light_name.c_str());
         
     } catch (const std::exception &e) {
@@ -2255,7 +2294,7 @@ void DeepRacerGazeboSystemPlugin::spawnSDFModelCallback(
     const std::shared_ptr<deepracer_msgs::srv::SpawnModel::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SpawnModel::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "spawnSDFModel service called for model: %s", request->model_name.c_str());
+    RCLCPP_DEBUG(node_->get_logger(), "spawnSDFModel service called for model: %s", request->model_name.c_str());
     
     std::lock_guard<std::mutex> lock(mutex_);
     
@@ -2311,7 +2350,7 @@ void DeepRacerGazeboSystemPlugin::spawnURDFModelCallback(
     const std::shared_ptr<deepracer_msgs::srv::SpawnModel::Request> request,
     std::shared_ptr<deepracer_msgs::srv::SpawnModel::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "spawnURDFModel service called for model: %s",
+    RCLCPP_DEBUG(node_->get_logger(), "spawnURDFModel service called for model: %s",
                 request->model_name.c_str());
     
     std::lock_guard<std::mutex> lock(mutex_);
@@ -2327,7 +2366,7 @@ void DeepRacerGazeboSystemPlugin::deleteModelCallback(
     const std::shared_ptr<deepracer_msgs::srv::DeleteModel::Request> request,
     std::shared_ptr<deepracer_msgs::srv::DeleteModel::Response> response)
 {
-    RCLCPP_INFO(node_->get_logger(), "deleteModel service called for model: %s",
+    RCLCPP_DEBUG(node_->get_logger(), "deleteModel service called for model: %s",
                 request->model_name.c_str());
     
     try {        
