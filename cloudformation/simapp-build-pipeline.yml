@@ -451,10 +451,8 @@ Resources:
               InputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1
-        - !If
-          - EnableEcrPublishingCondition
-          - Name: PublishEcrImages
-            Actions:
+            - !If
+              - EnableEcrPublishingCondition
               - Name: BuildValidators
                 ActionTypeId:
                   Category: Build
@@ -466,7 +464,7 @@ Resources:
                 InputArtifacts:
                   - Name: SourceArtifact
                 RunOrder: 1
-          - !Ref AWS::NoValue
+              - !Ref AWS::NoValue
         - Name: PublishManifests
           Actions:
             - Name: PublishTransparentTags
