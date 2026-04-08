@@ -2,7 +2,11 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo "${DOCKER_HUB_KEY}" | docker login --username "${DOCKER_HUB_USER}" --password-stdin
+      - printf '%s' "${DOCKER_HUB_KEY}" | docker login --username "${DOCKER_HUB_USER}" --password-stdin
+      - |
+        if [ -n "${ECR_REGISTRY:-}" ]; then
+          aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+        fi
       - docker buildx version
       - docker buildx inspect --bootstrap
   build:
@@ -11,12 +15,18 @@ phases:
         case "${BUILD_TARGET}" in
           amd64)
             bash build.sh --platform linux/amd64 -a "cpu gpu" -p "${DOCKER_HUB_REPO}" --push ${NO_CACHE:+--no-cache}
+            if [ -n "${ECR_REGISTRY:-}" ]; then
+              bash build-droa.sh --simapp-only --push -r "${ECR_REGISTRY}" -p "${ECR_REPO_PREFIX}" -s "${DOCKER_HUB_REPO}" ${NO_CACHE:+-f}
+            fi
             ;;
           arm64)
             bash build.sh --platform linux/arm64 -a "cpu" -p "${DOCKER_HUB_REPO}" --push ${NO_CACHE:+--no-cache}
             ;;
           manifests)
             bash publish-manifests.sh -a "cpu gpu" -p "${DOCKER_HUB_REPO}"
+            ;;
+          validators)
+            bash build-droa.sh --validators-only --push -r "${ECR_REGISTRY}" -p "${ECR_REPO_PREFIX}" -s "${DOCKER_HUB_REPO}" ${NO_CACHE:+-f}
             ;;
           *)
             echo "Unknown BUILD_TARGET=${BUILD_TARGET}" >&2
