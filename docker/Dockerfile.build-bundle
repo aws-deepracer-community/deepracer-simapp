@@ -1,5 +1,6 @@
 ARG CORE_PREFIX=awsdeepracercommunity
-FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
+ARG CORE_TAG=latest
+FROM $CORE_PREFIX/deepracer-simapp-build-core:${CORE_TAG}
 
 COPY bundle/ /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code

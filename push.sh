@@ -6,13 +6,16 @@ function ctrl_c() {
     exit 1
 }
 
+set -euo pipefail
+
 PREFIX="local"
-VERSION=$(jq -r '.simapp' VERSION)
+VARIANTS="cpu gpu"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 while getopts ":a:p:" opt; do
     case $opt in
     a)
-        ARCH="$OPTARG"
+        VARIANTS="$OPTARG"
         ;;
     p)
         PREFIX="$OPTARG"
@@ -24,9 +27,5 @@ while getopts ":a:p:" opt; do
     esac
 done
 
-echo "Pushing docker images for [$ARCH]"
-
-for A in $ARCH; do
-    echo "Pushing $PREFIX/deepracer-simapp:$VERSION-$A"
-    docker push $PREFIX/deepracer-simapp:$VERSION-$A
-done
+echo "push.sh is deprecated; publishing transparent manifests for [$VARIANTS] instead."
+exec "$DIR/publish-manifests.sh" -a "$VARIANTS" -p "$PREFIX"

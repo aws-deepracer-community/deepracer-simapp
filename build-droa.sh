@@ -34,6 +34,19 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 DROA_VERSION=$(jq -r '."deepracer-on-aws"' "$DIR/VERSION")
 SIMAPP_VERSION=$(jq -r '.simapp' "$DIR/VERSION")
 
+case "$(uname -m)" in
+x86_64|amd64)
+    SIMAPP_ARCH="amd64"
+    ;;
+aarch64|arm64)
+    SIMAPP_ARCH="arm64"
+    ;;
+*)
+    echo "Unsupported host architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
 if [ -z "$REGISTRY" ] || [ -z "$PREFIX" ]; then
     REPO="${REGISTRY}${PREFIX}"
 else
@@ -43,11 +56,11 @@ fi
 echo "Building deepracer-on-aws images version ${DROA_VERSION} under ${REPO}"
 
 # --- SimApp (cpu) ---
-SIMAPP_BUILD_IMG="${SIMAPP_PREFIX}/deepracer-simapp:${SIMAPP_VERSION}-cpu"
+SIMAPP_BUILD_IMG="${SIMAPP_PREFIX}/deepracer-simapp:${SIMAPP_VERSION}-cpu-${SIMAPP_ARCH}"
 SIMAPP_IMG="${REPO}/deepracer-on-aws-simapp:${DROA_VERSION}"
-if [ "$(docker images -q ${SIMAPP_BUILD_IMG} 2>/dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
+if [ "$(docker images -q ${SIMAPP_BUILD_IMG} 2>/dev/null)" == "" ] || [ -n "${OPT_NOCACHE:-}" ]; then
     echo "SimApp image ${SIMAPP_BUILD_IMG} not found - running build.sh..."
-    "$DIR/build.sh" -a cpu -p "${SIMAPP_PREFIX}" ${OPT_NOCACHE:+-f}
+    "$DIR/build.sh" -a cpu --platform "linux/${SIMAPP_ARCH}" -p "${SIMAPP_PREFIX}" ${OPT_NOCACHE:+-f}
 else
     echo "SimApp image ${SIMAPP_BUILD_IMG} already exists, skipping build."
 fi
