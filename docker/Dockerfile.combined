@@ -1,7 +1,8 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
+ARG BUNDLE_TAG=latest
 ARG CORE_IMG=ubuntu:24.04
 
-FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:latest AS bundle
+FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:${BUNDLE_TAG} AS bundle
 FROM ${CORE_IMG}
 
 ARG NVCC_VER=""

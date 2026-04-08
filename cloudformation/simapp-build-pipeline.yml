@@ -1,0 +1,346 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Small CodePipeline + CodeBuild stack for DeepRacer simapp multi-arch Docker builds
+  and transparent Docker Hub manifest publishing.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: deepracer-simapp
+    Description: Prefix used for pipeline and CodeBuild project names.
+
+  GitHubConnectionArn:
+    Type: String
+    Description: Existing CodeStar connection ARN for the GitHub repository.
+
+  RepositoryOwner:
+    Type: String
+    Description: GitHub organization or user name.
+
+  RepositoryName:
+    Type: String
+    Description: GitHub repository name.
+
+  RepositoryBranch:
+    Type: String
+    Default: main
+    Description: Git branch that triggers the pipeline.
+
+  DockerHubRepo:
+    Type: String
+    Default: awsdeepracercommunity
+    Description: Docker Hub namespace/repository prefix used by the build scripts.
+
+  DockerHubSecretArn:
+    Type: String
+    Description: >-
+      Secrets Manager ARN containing the Docker Hub credentials as JSON, for example
+      {"username":"...","token":"..."}.
+
+  DockerHubUsernameKey:
+    Type: String
+    Default: username
+    Description: JSON key inside the Docker Hub secret for the Docker Hub username.
+
+  DockerHubTokenKey:
+    Type: String
+    Default: token
+    Description: JSON key inside the Docker Hub secret for the Docker Hub access token or password.
+
+  BuildComputeType:
+    Type: String
+    Default: BUILD_GENERAL1_LARGE
+    AllowedValues:
+      - BUILD_GENERAL1_SMALL
+      - BUILD_GENERAL1_MEDIUM
+      - BUILD_GENERAL1_LARGE
+      - BUILD_GENERAL1_XLARGE
+      - BUILD_GENERAL1_2XLARGE
+    Description: CodeBuild compute size to use for all jobs.
+
+  Amd64BuildImage:
+    Type: String
+    Default: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+    Description: Docker image for the amd64 CodeBuild environment.
+
+  Arm64BuildImage:
+    Type: String
+    Default: aws/codebuild/amazonlinux2-aarch64-standard:3.0
+    Description: Docker image for the arm64 CodeBuild environment.
+
+  BuildTimeoutMinutes:
+    Type: Number
+    Default: 120
+    MinValue: 5
+    MaxValue: 480
+    Description: Timeout for each CodeBuild project in minutes.
+
+Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codebuild-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codebuild-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:GetBucketAcl
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref DockerHubSecretArn
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codepipeline-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codepipeline-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketVersioning
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource:
+                  - !GetAtt Amd64BuildProject.Arn
+                  - !GetAtt Arm64BuildProject.Arn
+                  - !GetAtt ManifestBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                  - codeconnections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  Amd64BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-amd64'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: amd64
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+
+  Arm64BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-arm64'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Arm64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: arm64
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+
+  ManifestBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-manifests'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: manifests
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref ProjectName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      RestartExecutionOnUpdate: true
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceFromGitHub
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Sub '${RepositoryOwner}/${RepositoryName}'
+                BranchName: !Ref RepositoryBranch
+                DetectChanges: 'true'
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: BuildImages
+          Actions:
+            - Name: BuildAmd64
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref Amd64BuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: BuildArm64
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref Arm64BuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: PublishManifests
+          Actions:
+            - Name: PublishTransparentTags
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref ManifestBuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+
+Outputs:
+  PipelineName:
+    Description: Name of the created CodePipeline pipeline.
+    Value: !Ref Pipeline
+
+  ArtifactBucketName:
+    Description: S3 bucket used for CodePipeline artifacts.
+    Value: !Ref ArtifactBucket
+
+  Amd64ProjectName:
+    Description: Name of the amd64 CodeBuild project.
+    Value: !Ref Amd64BuildProject
+
+  Arm64ProjectName:
+    Description: Name of the arm64 CodeBuild project.
+    Value: !Ref Arm64BuildProject
+
+  ManifestProjectName:
+    Description: Name of the manifest publishing CodeBuild project.
+    Value: !Ref ManifestBuildProject
