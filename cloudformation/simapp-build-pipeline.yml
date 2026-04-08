@@ -31,21 +31,18 @@ Parameters:
     Default: awsdeepracercommunity
     Description: Docker Hub namespace/repository prefix used by the build scripts.
 
+  DockerHubUsername:
+    Type: String
+    Description: Docker Hub username used for `docker login`.
+
   DockerHubSecretArn:
     Type: String
-    Description: >-
-      Secrets Manager ARN containing the Docker Hub credentials as JSON, for example
-      {"username":"...","token":"..."}.
+    Description: Base Secrets Manager ARN containing the Docker Hub secret object.
 
-  DockerHubUsernameKey:
+  DockerHubSecretKey:
     Type: String
-    Default: username
-    Description: JSON key inside the Docker Hub secret for the Docker Hub username.
-
-  DockerHubTokenKey:
-    Type: String
-    Default: token
-    Description: JSON key inside the Docker Hub secret for the Docker Hub access token or password.
+    Default: docker-hub-password
+    Description: JSON key inside the Secrets Manager value that holds the Docker Hub password or access token.
 
   BuildComputeType:
     Type: String
@@ -128,7 +125,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
-                Resource: !Ref DockerHubSecretArn
+                Resource:
+                  - !Ref DockerHubSecretArn
+                  - !Sub '${DockerHubSecretArn}*'
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -194,11 +193,11 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
-            Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
 
   Arm64BuildProject:
     Type: AWS::CodeBuild::Project
@@ -224,11 +223,11 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
-            Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
 
   ManifestBuildProject:
     Type: AWS::CodeBuild::Project
@@ -254,11 +253,11 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
-            Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubUsernameKey}'
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
-            Value: !Sub '${DockerHubSecretArn}:${DockerHubTokenKey}'
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
