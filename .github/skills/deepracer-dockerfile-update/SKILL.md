@@ -117,3 +117,5 @@ docker build --no-cache --dry-run -f docker/Dockerfile.upstream . 2>&1 | head -2
 | v1.0.8 | Baseline for `Dockerfile.upstream` |
 | v1.0.9 | Added `conda-forge::curl==8.16.0`, `libcurl==8.16.0` (security fix) |
 | v1.0.11 | Bumped `conda-forge::curl==8.19.0`, `conda-forge::libcurl==8.19.0` |
+| v1.0.12 | Baseline (from v1.0.11 base) |
+| v1.0.13 | Base Ubuntu layer refresh only; `LABEL org.opencontainers.image.ref.name=ubuntu` removed; no package changes |
