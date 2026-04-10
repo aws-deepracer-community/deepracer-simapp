@@ -1,0 +1,13 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+RUN pip install --upgrade pip
+
+COPY docker/files/ml-code/reward_func_validator/ /var/task/
+COPY bundle/routes/ /var/task/routes/
+
+RUN pip install --no-cache-dir -r /var/task/requirements.txt
+RUN pip install --no-cache-dir --upgrade pillow==12.1.1
+
+RUN rm -f /usr/local/bin/aws-lambda-rie
+
+CMD ["lambda_function.lambda_handler"]

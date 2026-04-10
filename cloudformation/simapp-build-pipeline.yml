@@ -1,0 +1,530 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Small CodePipeline + CodeBuild stack for DeepRacer simapp multi-arch Docker builds
+  and transparent Docker Hub manifest publishing.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: deepracer-simapp
+    Description: Prefix used for pipeline and CodeBuild project names.
+
+  EnableEcrPublishing:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Set to true to publish DROA and validator images to private ECR.
+
+  CreateEcrRepositories:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Set to true only if the private ECR repositories should be created by this stack.
+
+  GitHubConnectionArn:
+    Type: String
+    Description: Existing CodeStar connection ARN for the GitHub repository.
+
+  RepositoryOwner:
+    Type: String
+    Description: GitHub organization or user name.
+
+  RepositoryName:
+    Type: String
+    Description: GitHub repository name.
+
+  RepositoryBranch:
+    Type: String
+    Default: main
+    Description: Git branch that triggers the pipeline.
+
+  DockerHubRepo:
+    Type: String
+    Default: awsdeepracercommunity
+    Description: Docker Hub namespace/repository prefix used by the build scripts.
+
+  DockerHubUsername:
+    Type: String
+    Description: Docker Hub username used for `docker login`.
+
+  DockerHubSecretArn:
+    Type: String
+    Description: Base Secrets Manager ARN containing the Docker Hub secret object.
+
+  DockerHubSecretKey:
+    Type: String
+    Default: docker-hub-password
+    Description: JSON key inside the Secrets Manager value that holds the Docker Hub password or access token.
+
+  EcrRepositoryPrefix:
+    Type: String
+    Default: ''
+    Description: Optional prefix for the private ECR repositories used for DROA and validator images. Leave empty to publish at the registry root.
+
+  BuildComputeType:
+    Type: String
+    Default: BUILD_GENERAL1_LARGE
+    AllowedValues:
+      - BUILD_GENERAL1_SMALL
+      - BUILD_GENERAL1_MEDIUM
+      - BUILD_GENERAL1_LARGE
+      - BUILD_GENERAL1_XLARGE
+      - BUILD_GENERAL1_2XLARGE
+    Description: CodeBuild compute size to use for all jobs.
+
+  Amd64BuildImage:
+    Type: String
+    Default: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+    Description: Docker image for the amd64 CodeBuild environment.
+
+  Arm64BuildImage:
+    Type: String
+    Default: aws/codebuild/amazonlinux2-aarch64-standard:3.0
+    Description: Docker image for the arm64 CodeBuild environment.
+
+  BuildTimeoutMinutes:
+    Type: Number
+    Default: 120
+    MinValue: 5
+    MaxValue: 480
+    Description: Timeout for each CodeBuild project in minutes.
+
+Conditions:
+  EnableEcrPublishingCondition: !Equals [!Ref EnableEcrPublishing, 'true']
+  ShouldCreateEcrRepositories: !And
+    - !Condition EnableEcrPublishingCondition
+    - !Equals [!Ref CreateEcrRepositories, 'true']
+  HasEcrRepositoryPrefix: !Not [!Equals [!Ref EcrRepositoryPrefix, '']]
+
+Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  DroaSimappRepository:
+    Condition: ShouldCreateEcrRepositories
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !If
+        - HasEcrRepositoryPrefix
+        - !Sub '${EcrRepositoryPrefix}/deepracer-on-aws-simapp'
+        - deepracer-on-aws-simapp
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+
+  ModelValidationRepository:
+    Condition: ShouldCreateEcrRepositories
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !If
+        - HasEcrRepositoryPrefix
+        - !Sub '${EcrRepositoryPrefix}/deepracer-on-aws-model-validation'
+        - deepracer-on-aws-model-validation
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+
+  RewardFunctionValidationRepository:
+    Condition: ShouldCreateEcrRepositories
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !If
+        - HasEcrRepositoryPrefix
+        - !Sub '${EcrRepositoryPrefix}/deepracer-on-aws-reward-function-validation'
+        - deepracer-on-aws-reward-function-validation
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codebuild-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codebuild-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:GetBucketAcl
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref DockerHubSecretArn
+                  - !Sub '${DockerHubSecretArn}*'
+              - !If
+                - EnableEcrPublishingCondition
+                - Effect: Allow
+                  Action:
+                    - ecr:GetAuthorizationToken
+                  Resource: '*'
+                - !Ref AWS::NoValue
+              - !If
+                - EnableEcrPublishingCondition
+                - Effect: Allow
+                  Action:
+                    - ecr:BatchCheckLayerAvailability
+                    - ecr:BatchGetImage
+                    - ecr:CompleteLayerUpload
+                    - ecr:DescribeImages
+                    - ecr:DescribeRepositories
+                    - ecr:GetDownloadUrlForLayer
+                    - ecr:InitiateLayerUpload
+                    - ecr:PutImage
+                    - ecr:UploadLayerPart
+                  Resource: !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*'
+                - !Ref AWS::NoValue
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codepipeline-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codepipeline-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketVersioning
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource:
+                  - !GetAtt Amd64BuildProject.Arn
+                  - !GetAtt Arm64BuildProject.Arn
+                  - !GetAtt ManifestBuildProject.Arn
+                  - !If [EnableEcrPublishingCondition, !GetAtt ValidatorsBuildProject.Arn, !Ref AWS::NoValue]
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                  - codeconnections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  Amd64BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-amd64'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: amd64
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+          - !If
+            - EnableEcrPublishingCondition
+            - Name: ECR_REGISTRY
+              Type: PLAINTEXT
+              Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
+            - !Ref AWS::NoValue
+          - !If
+            - EnableEcrPublishingCondition
+            - Name: ECR_REPO_PREFIX
+              Type: PLAINTEXT
+              Value: !Ref EcrRepositoryPrefix
+            - !Ref AWS::NoValue
+
+  Arm64BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-arm64'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: ARM_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Arm64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: arm64
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+
+  ManifestBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-manifests'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: manifests
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+
+  ValidatorsBuildProject:
+    Condition: EnableEcrPublishingCondition
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-validators'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: validators
+          - Name: DOCKER_HUB_REPO
+            Type: PLAINTEXT
+            Value: !Ref DockerHubRepo
+          - Name: DOCKER_HUB_USER
+            Type: PLAINTEXT
+            Value: !Ref DockerHubUsername
+          - Name: DOCKER_HUB_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+          - Name: ECR_REGISTRY
+            Type: PLAINTEXT
+            Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
+          - Name: ECR_REPO_PREFIX
+            Type: PLAINTEXT
+            Value: !Ref EcrRepositoryPrefix
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref ProjectName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      RestartExecutionOnUpdate: true
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceFromGitHub
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Sub '${RepositoryOwner}/${RepositoryName}'
+                BranchName: !Ref RepositoryBranch
+                DetectChanges: 'true'
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: BuildImages
+          Actions:
+            - Name: BuildAmd64
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref Amd64BuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: BuildArm64
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref Arm64BuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - !If
+              - EnableEcrPublishingCondition
+              - Name: BuildValidators
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Provider: CodeBuild
+                  Version: '1'
+                Configuration:
+                  ProjectName: !Ref ValidatorsBuildProject
+                InputArtifacts:
+                  - Name: SourceArtifact
+                RunOrder: 1
+              - !Ref AWS::NoValue
+        - Name: PublishManifests
+          Actions:
+            - Name: PublishTransparentTags
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref ManifestBuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+
+Outputs:
+  PipelineName:
+    Description: Name of the created CodePipeline pipeline.
+    Value: !Ref Pipeline
+
+  ArtifactBucketName:
+    Description: S3 bucket used for CodePipeline artifacts.
+    Value: !Ref ArtifactBucket
+
+  Amd64ProjectName:
+    Description: Name of the amd64 CodeBuild project.
+    Value: !Ref Amd64BuildProject
+
+  Arm64ProjectName:
+    Description: Name of the arm64 CodeBuild project.
+    Value: !Ref Arm64BuildProject
+
+  ManifestProjectName:
+    Description: Name of the manifest publishing CodeBuild project.
+    Value: !Ref ManifestBuildProject
+
+  ValidatorsProjectName:
+    Condition: EnableEcrPublishingCondition
+    Description: Name of the validator ECR publishing CodeBuild project.
+    Value: !Ref ValidatorsBuildProject
+
+  DroaSimappRepositoryUri:
+    Condition: EnableEcrPublishingCondition
+    Description: ECR repository URI for the DROA simapp tag.
+    Value: !If
+      - HasEcrRepositoryPrefix
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}/deepracer-on-aws-simapp'
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/deepracer-on-aws-simapp'
+
+  ModelValidationRepositoryUri:
+    Condition: EnableEcrPublishingCondition
+    Description: ECR repository URI for the model validation image.
+    Value: !If
+      - HasEcrRepositoryPrefix
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}/deepracer-on-aws-model-validation'
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/deepracer-on-aws-model-validation'
+
+  RewardFunctionValidationRepositoryUri:
+    Condition: EnableEcrPublishingCondition
+    Description: ECR repository URI for the reward function validation image.
+    Value: !If
+      - HasEcrRepositoryPrefix
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}/deepracer-on-aws-reward-function-validation'
+      - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/deepracer-on-aws-reward-function-validation'

@@ -27,7 +27,7 @@ while getopts ":gfp:" opt; do
 done
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-VERSION=$(cat $DIR/VERSION)
+VERSION=$(jq -r '.simapp' $DIR/VERSION)
 
 if [ "$(docker images -q ${PREFIX}/deepracer-simapp-build-core:latest 2> /dev/null)" == "" ] || [ -n "${OPT_NOCACHE}" ]; then
     echo "Preparing core builder image ${PREFIX}/deepracer-simapp-build-core:latest..."
