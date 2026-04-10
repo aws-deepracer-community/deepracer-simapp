@@ -28,36 +28,34 @@ from markov.boto.s3.constants import ModelMetadataKeys
 
 # Logger object
 logger = Logger(__name__, logging.INFO).get_logger()
+from markov.architecture.constants import NeuralNetwork
 
 
-def create_rollout_agent(agent_config, metrics, run_phase_subject):
-    '''Returns an rollout agent object
-       agent_config - Dictionary containing the key specified in ConfigParams
-       metrics - Metrics object for the agent
-       run_phase_subject - Subject that notifies observers when the run phase changes
-    '''
-    
+def create_rollout_agent(agent_config, metrics, run_phase_subject=None):
+    """
+    Factory method for creating agents based on the agent_config
+    Args:
+        agent_config (dict): agent configuration containing neural network type
+        metrics: metrics object
+        run_phase_subject: Subject that notifies observers when the run phase changes
+    Returns:
+        Agent object
+    """
+    # Get model metadata
     try:
         model_metadata = agent_config['model_metadata']
-        
         model_metadata_info = model_metadata.get_model_metadata_info()
-        
         observation_list = model_metadata_info[ModelMetadataKeys.SENSOR.value]
         network = model_metadata_info[ModelMetadataKeys.NEURAL_NETWORK.value]
         version = model_metadata_info[ModelMetadataKeys.VERSION.value]
-        
         agent_name = agent_config[ConfigParams.CAR_CTRL_CONFIG.value][ConfigParams.AGENT_NAME.value]
-        
         sensor = construct_sensor(agent_name, observation_list, SensorFactory, model_metadata_info)
-        
         network_settings = get_network_settings(sensor, network)
-        
         FrustumManager.get_instance().add(agent_name=agent_name,
-                                          observation_list=observation_list,
-                                          version=version)
+                                            observation_list=observation_list,
+                                            version=version)
 
         ctrl_config = agent_config[ConfigParams.CAR_CTRL_CONFIG.value]
-        
         ctrl = RolloutCtrl(ctrl_config, run_phase_subject, metrics)
 
         agent = Agent(network_settings, sensor, ctrl)
