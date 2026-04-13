@@ -32,7 +32,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     install_requires=[
         'annoy==1.17.3',
-        'pillow==12.1.1',
+        'pillow==12.2.0',
         'matplotlib==3.10.6',
         'numpy==1.26.4',
         'pandas==2.3.1',
