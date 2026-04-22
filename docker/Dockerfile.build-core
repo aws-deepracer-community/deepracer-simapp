@@ -1,24 +1,50 @@
-FROM ros:jazzy-ros-base
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND="noninteractive" 
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore:::setuptools.command.install"
+ENV ROS_DISTRO=jazzy
+ENV ROS_SNAPSHOT_DATE=2025-11-19
 
-RUN apt update && apt install -y --no-install-recommends \
+# Bootstrap: install tools needed to add the ROS repo
+RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
+    dirmngr \
     wget \
     apt-utils \
     git \
-    unzip
+    unzip \
+    gnupg2 \
+    lsb-release \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
+# Add ROS 2 repository key
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    gpg --keyserver keyserver.ubuntu.com --recv-keys AD19BAB3CBF125EA && \
+    gpg --export AD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg
+
+# Add ROS 2 repository (using snapshots for reproducibility)
+RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://snapshots.ros.org/$ROS_DISTRO/$ROS_SNAPSHOT_DATE/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list'
+
+# Install ROS base and rosdep
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-$ROS_DISTRO-ros-base \
+    python3-rosdep \
+    && rosdep init \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
     libcurl4-openssl-dev \
     python3-pip \
     python3-colcon-common-extensions \
     x264 \
     libx264-dev \
     libgmock-dev \
-    ros-jazzy-ros-gz 
+    ros-$ROS_DISTRO-ros-gz \
+    && rm -rf /var/lib/apt/lists/*
 
 # Build and install AWS SDK C++
 RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
