@@ -17,7 +17,7 @@ dependencies:
       - pygame==2.6.1
       - shapely==2.0.2
       - annoy==1.17.3
-      - pillow==12.1.1
+      - pillow==12.2.0
       - matplotlib==3.10.6
       - pandas==2.3.1
       - PyOpenGL==3.1.9
@@ -25,7 +25,7 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==46.0.5
+      - cryptography==46.0.7
       - kubernetes==33.1.0
       - bokeh==3.7.3
       - /opt/amazon/rl_coach  # Install rl_coach from local source directory

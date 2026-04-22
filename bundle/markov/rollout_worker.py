@@ -169,7 +169,7 @@ def exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
 
 
 def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, simtrace_video_s3_writers,
-                   pause_physics, unpause_physics):
+                   pause_physics, unpause_physics, min_eval_trials):
     """
     wait for first checkpoint then perform rollouts using the model
     """
@@ -325,7 +325,7 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     subscribe_to_save_mp4(Empty.Request())
                 
                 if rollout_idx == 0:
-                    for _ in range(int(WorldConfig.get_param('MIN_EVAL_TRIALS', MIN_EVAL_TRIALS))):
+                    for trial_idx in range(min_eval_trials):
                         graph_manager.evaluate(EnvironmentSteps(1))
 
                 # For sageonly job for better performance only run limited number of evaluations.
@@ -497,6 +497,11 @@ def main():
                         help='(float) offset start 0-1',
                         type=float,
                         default=float(WorldConfig.get_param("START_POSITION_OFFSET", 0.0)))
+
+    parser.add_argument('--min_eval_trials',
+                        help='(integer) Minimal number of evaluations',
+                        type=int,
+                        default=int(WorldConfig.get_param("MIN_EVAL_TRIALS", 5)))
 
     args = parser.parse_args()
 
@@ -842,7 +847,8 @@ def main():
         task_parameters=task_parameters,
         simtrace_video_s3_writers=simtrace_video_s3_writers,
         pause_physics=pause_physics,
-        unpause_physics=unpause_physics
+        unpause_physics=unpause_physics,
+        min_eval_trials=args.min_eval_trials
     )
 
 if __name__ == '__main__':
