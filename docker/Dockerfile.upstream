@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.0.13
-# Image ID: 8a7c8b305b92
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.1.0
+# Image ID: 5903cceba02c
 # Base: Ubuntu 24.04 (Noble)
-# Built: April 3, 2026
-# Optimized: April 9, 2026
+# Built: April 21, 2026
+# Optimized: April 22, 2026
 
 FROM ubuntu:24.04
 
@@ -167,15 +167,15 @@ RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
     ldconfig && \
     cd ../.. && rm -rf aws-sdk-cpp
 
-# Build and install Redis 8.0.4
+# Build and install Redis 8.6.1
 RUN cd /tmp && \
-    wget https://download.redis.io/releases/redis-8.0.4.tar.gz && \
-    tar xvzf redis-8.0.4.tar.gz && \
-    cd redis-8.0.4 && \
+    wget https://download.redis.io/releases/redis-8.6.1.tar.gz && \
+    tar xvzf redis-8.6.1.tar.gz && \
+    cd redis-8.6.1 && \
     make && \
     make install && \
     cd /tmp && \
-    rm -rf redis-8.0.4 redis-8.0.4.tar.gz
+    rm -rf redis-8.6.1 redis-8.6.1.tar.gz
 
 # Install Python dependencies
 RUN python3 -m pip install --no-cache-dir --ignore-installed \
@@ -184,14 +184,14 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     shapely==2.0.2 \
     pyparsing==3.2.5 \
     python-dateutil==2.8.2 \
-    pillow==12.1.1 \
+    pillow==12.2.0 \
     pyyaml==6.0.3 \
     requests==2.32.5 \
     urllib3==2.6.3 \
     empy==4.2 \
     boto3==1.38.38 \
     bokeh==3.7.3 \
-    cryptography==46.0.5 \
+    cryptography==46.0.7 \
     docutils==0.21.2 \
     h5py==3.14.0 \
     jsonschema==4.24.0 \
