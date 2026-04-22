@@ -70,10 +70,12 @@ class NodeMonitor(object):
         self._observer_lock = RLock()
         self._running_node_lock = RLock()
         self._dead_node_lock = RLock()
+        self._service_clients_lock = RLock()
 
         self._observers = set()
         self._seen_nodes = set()
         self._is_monitoring = False
+        self._service_clients = {}
         
         # Initialize ROS2 node for client operations
         if not rclpy.ok():
@@ -121,6 +123,55 @@ class NodeMonitor(object):
                 return True
         return False
 
+    def _get_service_client(self, service_name: str):
+        """Return cached service client for a service name, creating it if needed."""
+        with self._service_clients_lock:
+            client = self._service_clients.get(service_name)
+            if client is None:
+                client = self._ros_node.create_client(ListParameters, service_name)
+                self._service_clients[service_name] = client
+            return client
+
+    def _destroy_service_client(self, service_name: str) -> None:
+        """Destroy and remove a cached service client if present."""
+        with self._service_clients_lock:
+            client = self._service_clients.pop(service_name, None)
+            if client is not None:
+                try:
+                    self._ros_node.destroy_client(client)
+                except Exception as ex:
+                    logging.exception(f"[NodeMonitor] Failed to destroy service client {service_name}: {ex}")
+
+    def _prune_stale_service_clients(self, active_service_names: Set[str]) -> None:
+        """Destroy cached clients that were not observed in the latest node graph snapshot."""
+        with self._service_clients_lock:
+            stale_service_names = [
+                service_name
+                for service_name in self._service_clients
+                if service_name not in active_service_names
+            ]
+            for service_name in stale_service_names:
+                client = self._service_clients.pop(service_name, None)
+                if client is not None:
+                    try:
+                        self._ros_node.destroy_client(client)
+                    except Exception as ex:
+                        logging.exception(
+                            f"[NodeMonitor] Failed to destroy stale service client {service_name}: {ex}"
+                        )
+
+    def _destroy_all_service_clients(self) -> None:
+        """Destroy all cached service clients."""
+        with self._service_clients_lock:
+            for service_name, client in self._service_clients.items():
+                try:
+                    self._ros_node.destroy_client(client)
+                except Exception as ex:
+                    logging.exception(
+                        f"[NodeMonitor] Failed to destroy service client {service_name}: {ex}"
+                    )
+            self._service_clients.clear()
+
     def _ros2_ping_all(self) -> List[str]:
         """
         Custom function to list active ROS2 nodes and verify they're responsive.
@@ -128,10 +179,14 @@ class NodeMonitor(object):
         Returns:
             List[str]: List of active node names that respond to service calls
         """
+        if not self._is_monitoring:
+            return []
+        
         active_nodes = []
         try:
             # Get all node names from ROS2
             node_names_and_namespaces = self._ros_node.get_node_names_and_namespaces()
+            active_service_names = set()
 
             # For each node, try to call the list_parameters service
             for node_name, namespace in node_names_and_namespaces:
@@ -141,33 +196,47 @@ class NodeMonitor(object):
                 else:
                     full_node_name = f"{namespace}/{node_name}"
 
-                # Create a client for the list_parameters service
+                # Reuse a client for the list_parameters service
                 service_name = f"{full_node_name}/list_parameters"
-                client = self._ros_node.create_client(ListParameters, service_name)
+                active_service_names.add(service_name)
+                try:
+                    client = self._get_service_client(service_name)
+                    # Wait for service to be available (with timeout)
+                    if client.wait_for_service(timeout_sec=5.0):
+                        # Create and send request
+                        request = ListParameters.Request()
+                        future = client.call_async(request)
 
-                # Wait for service to be available (with timeout)
-                if client.wait_for_service(timeout_sec=5.0):
-                    # Create and send request
-                    request = ListParameters.Request()
-                    future = client.call_async(request)
+                        # Process the service call (with timeout)
+                        start_time = time.time()
+                        while time.time() - start_time < 5.0:
+                            rclpy.spin_once(self._ros_node, timeout_sec=0.1)
+                            if future.done():
+                                try:
+                                    # If we get a response, the node is active
+                                    future.result()
+                                    active_nodes.append(full_node_name)
+                                except Exception as ex:
+                                    # If the service call fails, the node is not considered active (expected condition)
+                                    logging.debug(f"[NodeMonitor] Service call failed for {full_node_name}: {ex}")
+                                break
+                except Exception as ex:
+                    # Unexpected error during service query - capture full traceback
+                    logging.exception(
+                        f"[NodeMonitor] Error while querying service {service_name}: {str(ex)}"
+                    )
+                    self._destroy_service_client(service_name)
 
-                    # Process the service call (with timeout)
-                    start_time = time.time()
-                    while time.time() - start_time < 5.0:
-                        rclpy.spin_once(self._ros_node, timeout_sec=0.1)
-                        if future.done():
-                            try:
-                                # If we get a response, the node is active
-                                future.result()
-                                active_nodes.append(full_node_name)
-                            except Exception:
-                                # If the service call fails, the node is not considered active
-                                pass
-                            break
+            try:
+                self._prune_stale_service_clients(active_service_names)
+            except Exception as ex:
+                logging.exception(
+                    f"[NodeMonitor] Failed to prune stale service clients: {ex}"
+                )
 
             return active_nodes
         except Exception as ex:
-            logging.warn(f"[NodeMonitor] Error getting ROS2 nodes: {str(ex)}")
+            logging.warning(f"[NodeMonitor] Error getting ROS2 nodes: {str(ex)}")
             return []
 
     def _update_running_nodes(self) -> None:
@@ -182,7 +251,7 @@ class NodeMonitor(object):
                 ping_nodes = self._ros2_ping_all()
             except Exception as ex:
                 ping_nodes = []
-                logging.warn(f"[NodeMonitor] Unable to ping ROS2 nodes: {str(ex)}")
+                logging.warning(f"[NodeMonitor] Unable to ping ROS2 nodes: {str(ex)}")
 
             # Since the monitor node is empty, defaulting to monitoring all nodes
             if not self._monitor_nodes:
@@ -312,6 +381,8 @@ class NodeMonitor(object):
         for observers in self._observers:
             observers.on_stop(self)
         self._is_monitoring = False
+
+        self._destroy_all_service_clients()
         
         # Clean up ROS node
         if hasattr(self, '_ros_node') and self._ros_node is not None:

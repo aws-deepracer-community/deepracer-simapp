@@ -50,7 +50,7 @@ class NodeMonitorTest(TestCase):
         self.assertEqual(node_monitor.update_rate_hz, self.update_rate_hz)
         self.assertEqual(node_monitor.running_nodes, set())
         self.assertEqual(node_monitor.dead_nodes, set())
-        self.assertEqual(rlock_mock.call_count, 3)
+        self.assertEqual(rlock_mock.call_count, 4)
         self.assertEqual(node_monitor._observers, set())
         self.assertFalse(node_monitor._is_monitoring)
         self.assertEqual(node_monitor._seen_nodes, set())
@@ -87,6 +87,7 @@ class NodeMonitorTest(TestCase):
         self, rlock_mock
     ):
         node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = True
         # Mock the ROS2 node and its methods
         node_monitor._ros_node = MagicMock()
         node_monitor._ros_node.get_node_names_and_namespaces.return_value = [("gazebo", "/")]
@@ -112,6 +113,7 @@ class NodeMonitorTest(TestCase):
         self, rlock_mock
     ):
         node_monitor = NodeMonitor(list(), self.update_rate_hz)
+        node_monitor._is_monitoring = True
         # Mock the ROS2 node and its methods
         node_monitor._ros_node = MagicMock()
         node_monitor._ros_node.get_node_names_and_namespaces.return_value = [("gazebo", "/")]
@@ -137,6 +139,7 @@ class NodeMonitorTest(TestCase):
         self, rlock_mock
     ):
         node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = True
         # Mock the ROS2 node and its methods
         node_monitor._ros_node = MagicMock()
         node_monitor._ros_node.get_node_names_and_namespaces.return_value = [("not_in_monitor", "/")]
@@ -160,6 +163,7 @@ class NodeMonitorTest(TestCase):
 
     def test_update_running_nodes_already_seen_node(self, rlock_mock):
         node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = True
         # Mock the ROS2 node and its methods
         node_monitor._ros_node = MagicMock()
         node_monitor._ros_node.get_node_names_and_namespaces.return_value = [("gazebo", "/")]
@@ -180,6 +184,131 @@ class NodeMonitorTest(TestCase):
         
         # Verify create_client was called
         node_monitor._ros_node.create_client.assert_called()
+
+    def test_get_service_client_creates_new(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        client_mock = MagicMock()
+        node_monitor._ros_node.create_client.return_value = client_mock
+
+        result = node_monitor._get_service_client("/gazebo/list_parameters")
+
+        node_monitor._ros_node.create_client.assert_called_once()
+        self.assertEqual(result, client_mock)
+        self.assertIn("/gazebo/list_parameters", node_monitor._service_clients)
+
+    def test_get_service_client_returns_cached(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        cached_client = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = cached_client
+
+        result = node_monitor._get_service_client("/gazebo/list_parameters")
+
+        node_monitor._ros_node.create_client.assert_not_called()
+        self.assertEqual(result, cached_client)
+
+    def test_destroy_service_client(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        client_mock = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = client_mock
+
+        node_monitor._destroy_service_client("/gazebo/list_parameters")
+
+        node_monitor._ros_node.destroy_client.assert_called_once_with(client_mock)
+        self.assertNotIn("/gazebo/list_parameters", node_monitor._service_clients)
+
+    def test_destroy_service_client_not_present(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+
+        node_monitor._destroy_service_client("/nonexistent/list_parameters")
+
+        node_monitor._ros_node.destroy_client.assert_not_called()
+
+    def test_destroy_service_client_exception(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        client_mock = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = client_mock
+        node_monitor._ros_node.destroy_client.side_effect = Exception("destroy failed")
+
+        node_monitor._destroy_service_client("/gazebo/list_parameters")
+
+        self.assertNotIn("/gazebo/list_parameters", node_monitor._service_clients)
+
+    def test_prune_stale_service_clients(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        active_client = MagicMock()
+        stale_client = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = active_client
+        node_monitor._service_clients["/old_node/list_parameters"] = stale_client
+
+        node_monitor._prune_stale_service_clients({"/gazebo/list_parameters"})
+
+        self.assertIn("/gazebo/list_parameters", node_monitor._service_clients)
+        self.assertNotIn("/old_node/list_parameters", node_monitor._service_clients)
+        node_monitor._ros_node.destroy_client.assert_called_once_with(stale_client)
+
+    def test_destroy_all_service_clients(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = MagicMock()
+        node_monitor._service_clients["/deepracer/list_parameters"] = MagicMock()
+
+        node_monitor._destroy_all_service_clients()
+
+        self.assertEqual(node_monitor._ros_node.destroy_client.call_count, 2)
+        self.assertEqual(len(node_monitor._service_clients), 0)
+
+    @patch("deepracer_node_monitor.node_monitor.logging")
+    def test_destroy_all_service_clients_with_exception(self, logging_mock, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._ros_node = MagicMock()
+        node_monitor._service_clients["/gazebo/list_parameters"] = MagicMock()
+        node_monitor._service_clients["/deepracer/list_parameters"] = MagicMock()
+        node_monitor._ros_node.destroy_client.side_effect = [Exception("fail"), None]
+
+        node_monitor._destroy_all_service_clients()
+
+        self.assertEqual(node_monitor._ros_node.destroy_client.call_count, 2)
+        self.assertEqual(len(node_monitor._service_clients), 0)
+        logging_mock.exception.assert_called_once()
+        self.assertIn("/gazebo/list_parameters", logging_mock.exception.call_args[0][0])
+
+    def test_ros2_ping_all_returns_empty_when_not_monitoring(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = False
+
+        result = node_monitor._ros2_ping_all()
+
+        self.assertEqual(result, [])
+
+    def test_ros2_ping_all_returns_empty_on_node_discovery_exception(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = True
+        node_monitor._ros_node = MagicMock()
+        node_monitor._ros_node.get_node_names_and_namespaces.side_effect = Exception("discovery failed")
+
+        result = node_monitor._ros2_ping_all()
+
+        self.assertEqual(result, [])
+
+    def test_ros2_ping_all_destroys_client_on_unexpected_exception(self, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor._is_monitoring = True
+        node_monitor._ros_node = MagicMock()
+        node_monitor._ros_node.get_node_names_and_namespaces.return_value = [("gazebo", "/")]
+        client_mock = MagicMock()
+        client_mock.wait_for_service.side_effect = Exception("unexpected")
+        node_monitor._ros_node.create_client.return_value = client_mock
+
+        result = node_monitor._ros2_ping_all()
+
+        self.assertEqual(result, [])
+        node_monitor._ros_node.destroy_client.assert_called_once_with(client_mock)
 
     def test_update_running_nodes_failed_master_node(self, rlock_mock):
         with self.assertRaises(Exception):
