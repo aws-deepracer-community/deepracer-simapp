@@ -52,7 +52,7 @@ setup(
         'tensorflow==2.20.0',
         'opencv-python==4.9.0.80',
         'python-dateutil==2.8.2',
-        'pytest==8.3.4',
+        'pytest==9.0.3',
         'docutils==0.21.2',
         'cryptography==46.0.7',
         'jsonschema==4.24.0',
