@@ -32,7 +32,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     install_requires=[
         'annoy==1.17.3',
-        'pillow==12.1.1',
+        'pillow==12.2.0',
         'matplotlib==3.10.6',
         'numpy==1.26.4',
         'pandas==2.3.1',
@@ -54,7 +54,7 @@ setup(
         'python-dateutil==2.8.2',
         'pytest==8.3.4',
         'docutils==0.21.2',
-        'cryptography==46.0.5',
+        'cryptography==46.0.7',
         'jsonschema==4.24.0',
         'pytz==2025.2',
         'tokenize-rt==6.2.0',
