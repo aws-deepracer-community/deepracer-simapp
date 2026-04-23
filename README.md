@@ -34,7 +34,7 @@ Installed core technologies are:
  - Python 3.12
  - Tensorflow 2.20
  - CUDA 12.6 (GPU only)
- - Redis 8.0.4
+ - Redis 8.6.1
  - ROS 2 Jazzy
  - Gazebo Harmonic
 
@@ -45,9 +45,9 @@ In most cases it will be sufficient to use one of our pre-built images:
 - CPU image support training using the CPU for inference. (Tag `VERSION-cpu`)
 - GPU image support training using CUDA GPU for inference. (Tag `VERSION-gpu`)
 
-Both containers support OpenGL acceleration.
-
-Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also [Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
+Both containers support OpenGL acceleration. Starting with version 6.0.3 the `-cpu` tag is a transparent wrapper around both `arm64` and `amd64` versions. Docker will choose which image to download
+depending on the architecture. Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also 
+[Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
 
 ## Building the image
 
