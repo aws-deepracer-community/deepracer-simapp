@@ -69,7 +69,9 @@ phases:
               exit 1
             fi
 
-            if [ "${ENABLE_IMAGE_PUSH}" = "true" ]; then
+            # Only push via build.sh when targeting Docker Hub; for ECR flows
+            # build.sh builds locally and build-droa.sh handles the push.
+            if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
               bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
             else
               bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
@@ -91,7 +93,7 @@ phases:
               exit 1
             fi
 
-            if [ "${ENABLE_IMAGE_PUSH}" = "true" ]; then
+            if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
               bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
             else
               bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
