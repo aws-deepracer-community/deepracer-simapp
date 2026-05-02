@@ -6,6 +6,12 @@ This repository contains the extracts from the AWS DeepRacer Simapp; including
 - the robotics agent code ('markov')
 - Dockerfiles
 
+The project supports both DeepRacer-for-Cloud (DRfC) and deepracer-on-aws (DRoA) image workflows:
+
+- DRfC images: `deepracer-simapp` (CPU and GPU variants)
+- DRoA images: `deepracer-on-aws-simapp` and validator images
+	(`deepracer-on-aws-model-validation` and `deepracer-on-aws-reward-function-validation`)
+
 In DeepRacer-for-Cloud this single image is being used for three purposes:
 
 - "Robomaker" container (1 or more) providing robotics simulation using ROS and Gazebo
@@ -40,14 +46,27 @@ Installed core technologies are:
 
 ## Available pre-built versions
 
-In most cases it will be sufficient to use one of our pre-built images:
+In most cases it is sufficient to use one of the published images.
 
-- CPU image support training using the CPU for inference. (Tag `VERSION-cpu`)
-- GPU image support training using CUDA GPU for inference. (Tag `VERSION-gpu`)
+### DRfC images on Docker Hub
 
-Both containers support OpenGL acceleration. Starting with version 6.0.3 the `-cpu` tag is a transparent wrapper around both `arm64` and `amd64` versions. Docker will choose which image to download
-depending on the architecture. Built images are available via `docker pull awsdeepracercommunity/deepracer-simapp:<tag>` - see also 
-[Docker Hub](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp).
+- Repository: `awsdeepracercommunity/deepracer-simapp`
+- CPU image supports training using CPU inference. Tag: `VERSION-cpu`
+- GPU image supports training using CUDA GPU inference. Tag: `VERSION-gpu`
+
+Both containers support OpenGL acceleration. Starting with version 6.0.3 the `-cpu` tag is a transparent wrapper around both `arm64` and `amd64` versions, and Docker selects the matching architecture automatically.
+
+- Docker Hub page: [awsdeepracercommunity/deepracer-simapp](https://hub.docker.com/repository/docker/awsdeepracercommunity/deepracer-simapp)
+- Pull example: `docker pull awsdeepracercommunity/deepracer-simapp:<tag>`
+
+### DRoA images on Public ECR
+
+DRoA images are published in the public gallery namespace:
+[gallery.ecr.aws/deepracer-community](https://gallery.ecr.aws/deepracer-community)
+
+- `public.ecr.aws/deepracer-community/deepracer-on-aws-simapp:<tag>`
+- `public.ecr.aws/deepracer-community/deepracer-on-aws-model-validation:<tag>`
+- `public.ecr.aws/deepracer-community/deepracer-on-aws-reward-function-validation:<tag>`
 
 ## Building the image
 
