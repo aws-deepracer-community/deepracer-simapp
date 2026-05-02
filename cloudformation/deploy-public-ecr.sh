@@ -22,6 +22,7 @@
 #   --image-variants     VARIANTS   "cpu" or "cpu gpu"                 (default: cpu)
 #   --create-repos       true|false Create public ECR repos in stack   (default: false)
 #   --no-cache           true|false Disable Docker layer cache         (default: false; omitted when false)
+#   --auto-detect-changes true|false Trigger pipeline on git push      (default: false)
 #   --dry-run                       Print the command without running it
 
 set -euo pipefail
@@ -40,6 +41,7 @@ PUBLIC_ECR_PREFIX="deepracer-community"
 IMAGE_VARIANTS="cpu"
 CREATE_REPOS="false"
 NO_CACHE=""
+AUTO_DETECT_CHANGES="false"
 DRY_RUN=""
 
 # ── parse args ──────────────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ while [[ $# -gt 0 ]]; do
     --image-variants)     IMAGE_VARIANTS="$2";    shift 2 ;;
     --create-repos)       CREATE_REPOS="$2";      shift 2 ;;
     --no-cache)           NO_CACHE="$2";          shift 2 ;;
+    --auto-detect-changes) AUTO_DETECT_CHANGES="$2"; shift 2 ;;
     --dry-run)            DRY_RUN="true";         shift   ;;
     *)
         echo "Unknown option: $1" >&2
@@ -79,6 +82,7 @@ PARAMS=(
     "PublicEcrPrefix=${PUBLIC_ECR_PREFIX}"
     "ImageVariants=${IMAGE_VARIANTS}"
     "CreatePublicEcrRepositories=${CREATE_REPOS}"
+    "AutoDetectChanges=${AUTO_DETECT_CHANGES}"
 )
 
 if [[ -n "${NO_CACHE}" && "${NO_CACHE}" == "true" ]]; then

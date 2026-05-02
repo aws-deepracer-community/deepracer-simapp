@@ -90,6 +90,16 @@ Parameters:
     MaxValue: 480
     Description: Timeout for each CodeBuild project in minutes.
 
+  AutoDetectChanges:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: >-
+      Set to true to automatically trigger the pipeline on every push to the
+      configured branch. Default is false so releases are triggered manually.
+
 Conditions:
   ShouldCreatePublicEcrRepositories: !Equals [!Ref CreatePublicEcrRepositories, 'true']
 
@@ -326,7 +336,7 @@ Resources:
                 ConnectionArn: !Ref GitHubConnectionArn
                 FullRepositoryId: !Sub '${RepositoryOwner}/${RepositoryName}'
                 BranchName: !Ref RepositoryBranch
-                DetectChanges: 'true'
+                DetectChanges: !Ref AutoDetectChanges
               OutputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1
