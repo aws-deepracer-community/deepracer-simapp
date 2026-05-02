@@ -19,7 +19,7 @@ from rclpy.node import Node
 import re
 
 from enum import Enum
-from markov.utils import test_internet_connection
+from markov.utils import test_internet_connection, str2bool
 from markov.constants import DEFAULT_COLOR, DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
@@ -123,8 +123,10 @@ def main():
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
-                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
-        Popen(cmd, shell=True, executable="/bin/bash")
+                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS", "True")))))]
+        process = Popen(cmd, shell=True, executable="/bin/bash")
+        LOG.info("Launched process pid %s for command: %s", process.pid, cmd[0])
+        return process
     except botocore.exceptions.ClientError as ex:
         log_and_exit("Download params and launch of agent node S3 ClientError: s3_bucket: {}, yaml_key: {}, {}"
                          .format(s3_bucket, yaml_key, ex),
@@ -149,8 +151,7 @@ def write_pids_to_file():
     """ Write pids to files for clean up purpose.
     """
     if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
-        pid_list = get_pid_list(["ros2", "gz", "python3"])  # ROS 2 and Gazebo processes
-        pid_list.append(str(os.getpid()))
+        pid_list = get_pid_list(os.getpid())
         # Get the ros processes pids to clean up
         with open(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH, "w") as fp:
             for pid in pid_list:
@@ -158,33 +159,60 @@ def write_pids_to_file():
             LOG.info("Writing sim job pid %s to %s", pid_list, SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
 
 
-def get_pid_list(cmd_names):
-    """return a list of pids that has the command given in the command names.
+def get_pid_list(root_pid):
+    """Return a list containing root_pid and all descendant process pids.
 
     Args:
-        cmd_names ([str]): list of command names
+        root_pid (int): Root process pid.
 
     Returns:
-        list: list of pids
+        list: list of pids as strings
     """
-    pid_list = []
-    sub_proc = Popen(['ps', 'aux'], shell=False, stdout=PIPE)
-    # Discard the first line (ps aux header)
-    sub_proc.stdout.readline()
+    root_pid = str(root_pid)
+    pid_to_children = {}
+
+    sub_proc = Popen(['ps', '-eo', 'pid=', '-eo', 'ppid='], shell=False, stdout=PIPE)
     for line in sub_proc.stdout:
-        # the separator for splitting is 'variable number of spaces'
-        proc_info = re.split(r"\s+", line.decode('utf-8'), 10)
-        pid = proc_info[1]
-        cmd = proc_info[10]
-        for cmd_name in cmd_names:
-            if cmd_name in cmd:
-                pid_list.append(pid)
+        parts = line.decode('utf-8').strip().split()
+        if len(parts) != 2:
+            continue
+        pid, ppid = parts
+        if ppid not in pid_to_children:
+            pid_to_children[ppid] = []
+        pid_to_children[ppid].append(pid)
+
+    pid_list = []
+    queue = [root_pid]
+    seen = set()
+    while queue:
+        current_pid = queue.pop(0)
+        if current_pid in seen:
+            continue
+        seen.add(current_pid)
+        pid_list.append(current_pid)
+        for child_pid in pid_to_children.get(current_pid, []):
+            queue.append(child_pid)
+
     return pid_list
 
 
 class DownloadParamsNode(Node):
     def __init__(self):
         super().__init__('download_params_and_roslaunch_agent_node')
+        self.launch_process = None
+
+    def set_launch_process(self, launch_process):
+        self.launch_process = launch_process
+
+    def monitor_launch_process(self):
+        if self.launch_process is None:
+            return
+
+        if self.launch_process.poll() is not None:
+            LOG.info("Launch process pid %s exited. Shutting down node.", self.launch_process.pid)
+            self.destroy_node()
+            if rclpy.ok():
+                rclpy.shutdown()
 
 
 def ros2_main(args=None):
@@ -193,7 +221,9 @@ def ros2_main(args=None):
     try:
         node = DownloadParamsNode()
         # Run the main download and launch logic
-        main()
+        launch_process = main()
+        node.set_launch_process(launch_process)
+        node.create_timer(10.0, node.monitor_launch_process)
         # Keep the node alive
         rclpy.spin(node)
     except Exception as ex:

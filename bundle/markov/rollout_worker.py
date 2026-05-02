@@ -147,7 +147,9 @@ def exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
         
         if is_save_mp4_enabled:
             try:
-                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
+                # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
+                unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                                timeout_sec=60.0)
                 unsubscribe_from_save_mp4(Empty.Request())
             except Exception as mp4_error:
                 logger.error("MP4 unsubscribe failed (exit_if_trainer_done): %s", mp4_error)
@@ -213,7 +215,8 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
         raise
     
     try:
-        unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4')
+        unsubscribe_from_save_mp4 = ServiceProxyWrapper('/racecar/save_mp4/unsubscribe_from_save_mp4',
+                                                        timeout_sec=60.0) # Use longer timeout (60s) for unsubscribe since it waits for MP4 queue to flush
     except Exception as e:
         logger.error(f"Error creating unsubscribe_from_save_mp4 service proxy: {e}")
         raise
@@ -342,7 +345,10 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     exit_if_trainer_done(checkpoint_dir, simtrace_video_s3_writers, rollout_idx)
                     # Continously run the evaluation only for SageMaker + RoboMaker job
                     if not is_sageonly and rollout_idx == 0:
+                        print ("Additional evaluation. New Checkpoint: {}, Last Checkpoint: {}".format(new_checkpoint, last_checkpoint))
                         graph_manager.evaluate(EnvironmentSteps(1))
+                    else:
+                        time.sleep(5)
                     new_checkpoint = data_store.get_coach_checkpoint_number('agent')
 
                 # Save the mp4 for Robo+Sage jobs
@@ -372,6 +378,8 @@ def rollout_worker(graph_manager, num_workers, rollout_idx, task_parameters, sim
                     graph_manager.restore_checkpoint()
 
             last_checkpoint = new_checkpoint
+    
+    logger.info("Exited main loop. Done.")
 
 def main():
     # Set up ROS environment

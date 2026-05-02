@@ -315,6 +315,7 @@ def get_graph_manager(hp_dict, agent_list, run_phase_subject, enable_domain_rand
     env_params.unpause_physics = unpause_physics
     vis_params = VisualizationParameters()
     vis_params.dump_mp4 = False
+    vis_params.dump_parameters_documentation = False
 
     ########
     # Test #
