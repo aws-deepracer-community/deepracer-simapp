@@ -1,0 +1,387 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Simplified CodePipeline + CodeBuild stack for DeepRacer simapp AMD64-only builds
+  publishing to public ECR. No Docker Hub required. Builds the simapp and validator
+  images in parallel, both targeting public.ecr.aws.
+  NOTE: If CreatePublicEcrRepositories is true, this stack must be deployed in us-east-1
+  because AWS::ECR::PublicRepository is a global (us-east-1-only) resource.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: deepracer-simapp-public
+    Description: Prefix used for pipeline and CodeBuild project names.
+
+  GitHubConnectionArn:
+    Type: String
+    Description: Existing CodeStar connection ARN for the GitHub repository.
+
+  RepositoryOwner:
+    Type: String
+    Description: GitHub organization or user name.
+
+  RepositoryName:
+    Type: String
+    Description: GitHub repository name.
+
+  RepositoryBranch:
+    Type: String
+    Default: main
+    Description: Git branch that triggers the pipeline.
+
+  PublicEcrRegistry:
+    Type: String
+    Default: public.ecr.aws
+    Description: Public ECR registry hostname. Change only if using a regional mirror.
+
+  PublicEcrPrefix:
+    Type: String
+    Description: >-
+      Namespace/alias under the public ECR registry, e.g. deepracer-community.
+      Images are published as <PublicEcrRegistry>/<PublicEcrPrefix>/deepracer-on-aws-simapp:…
+
+  ImageVariants:
+    Type: String
+    Default: cpu
+    AllowedValues:
+      - cpu
+      - cpu gpu
+    Description: >-
+      Simapp variants to build. "cpu" builds and publishes only the CPU image.
+      "cpu gpu" also builds the GPU image. The DROA simapp tag always uses the cpu-amd64 image.
+
+  LocalImagePrefix:
+    Type: String
+    Default: deepracer-local
+    Description: >-
+      Local Docker tag prefix used by build.sh when building images on the CodeBuild host.
+      Must be consistent between the amd64 and any downstream steps within the same job.
+
+  CreatePublicEcrRepositories:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: >-
+      Set to true to create the three public ECR repositories in this stack.
+      Requires the stack to be deployed in us-east-1.
+
+  BuildComputeType:
+    Type: String
+    Default: BUILD_GENERAL1_LARGE
+    AllowedValues:
+      - BUILD_GENERAL1_SMALL
+      - BUILD_GENERAL1_MEDIUM
+      - BUILD_GENERAL1_LARGE
+      - BUILD_GENERAL1_XLARGE
+      - BUILD_GENERAL1_2XLARGE
+    Description: CodeBuild compute size for all jobs.
+
+  Amd64BuildImage:
+    Type: String
+    Default: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+    Description: CodeBuild environment image for the AMD64 projects.
+
+  BuildTimeoutMinutes:
+    Type: Number
+    Default: 120
+    MinValue: 5
+    MaxValue: 480
+    Description: Timeout for each CodeBuild project in minutes.
+
+Conditions:
+  ShouldCreatePublicEcrRepositories: !Equals [!Ref CreatePublicEcrRepositories, 'true']
+
+Resources:
+
+  # ── S3 artifact bucket ───────────────────────────────────────────────────────
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ── Optional public ECR repositories (deploy in us-east-1) ──────────────────
+  DroaSimappRepository:
+    Condition: ShouldCreatePublicEcrRepositories
+    Type: AWS::ECR::PublicRepository
+    Properties:
+      RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-simapp'
+
+  ModelValidationRepository:
+    Condition: ShouldCreatePublicEcrRepositories
+    Type: AWS::ECR::PublicRepository
+    Properties:
+      RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-model-validation'
+
+  RewardFunctionValidationRepository:
+    Condition: ShouldCreatePublicEcrRepositories
+    Type: AWS::ECR::PublicRepository
+    Properties:
+      RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-reward-function-validation'
+
+  # ── IAM role for CodeBuild ───────────────────────────────────────────────────
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codebuild-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codebuild-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:GetBucketAcl
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              # public ECR login requires sts:GetServiceBearerToken in addition to
+              # ecr-public:GetAuthorizationToken
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetAuthorizationToken
+                  - sts:GetServiceBearerToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:CompleteLayerUpload
+                  - ecr-public:DescribeImages
+                  - ecr-public:DescribeRepositories
+                  - ecr-public:InitiateLayerUpload
+                  - ecr-public:PutImage
+                  - ecr-public:UploadLayerPart
+                # Public ECR ARNs have no region component
+                Resource: !Sub 'arn:aws:ecr-public::${AWS::AccountId}:repository/*'
+
+  # ── IAM role for CodePipeline ────────────────────────────────────────────────
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-codepipeline-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-codepipeline-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketVersioning
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub '${ArtifactBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource:
+                  - !GetAtt Amd64BuildProject.Arn
+                  - !GetAtt ValidatorsBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                  - codeconnections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+
+  # ── Shared environment variable list (used by both projects) ─────────────────
+  # Defined as a YAML anchor so it stays DRY across the two projects.
+  # CloudFormation does not support anchors natively; the variables are inlined below.
+
+  # ── CodeBuild: amd64 simapp + DROA simapp tag ─────────────────────────────────
+  Amd64BuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-amd64'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: amd64
+          - Name: BUILD_VARIANTS
+            Type: PLAINTEXT
+            Value: !Ref ImageVariants
+          - Name: ENABLE_IMAGE_PUSH
+            Type: PLAINTEXT
+            Value: 'true'
+          - Name: PUBLIC_ECR_LOGIN_REGION
+            Type: PLAINTEXT
+            Value: us-east-1
+          - Name: PUBLIC_ECR_REGISTRY
+            Type: PLAINTEXT
+            Value: !Ref PublicEcrRegistry
+          - Name: PUBLIC_ECR_PREFIX
+            Type: PLAINTEXT
+            Value: !Ref PublicEcrPrefix
+          - Name: LOCAL_IMAGE_PREFIX
+            Type: PLAINTEXT
+            Value: !Ref LocalImagePrefix
+
+  # ── CodeBuild: validator images ───────────────────────────────────────────────
+  ValidatorsBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub '${ProjectName}-validators'
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      TimeoutInMinutes: !Ref BuildTimeoutMinutes
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: !Ref BuildComputeType
+        Image: !Ref Amd64BuildImage
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: BUILD_TARGET
+            Type: PLAINTEXT
+            Value: validators
+          - Name: ENABLE_IMAGE_PUSH
+            Type: PLAINTEXT
+            Value: 'true'
+          - Name: PUBLIC_ECR_LOGIN_REGION
+            Type: PLAINTEXT
+            Value: us-east-1
+          - Name: PUBLIC_ECR_REGISTRY
+            Type: PLAINTEXT
+            Value: !Ref PublicEcrRegistry
+          - Name: PUBLIC_ECR_PREFIX
+            Type: PLAINTEXT
+            Value: !Ref PublicEcrPrefix
+          # BUILD_VARIANTS and LOCAL_IMAGE_PREFIX not needed for validators-only
+
+  # ── Pipeline ──────────────────────────────────────────────────────────────────
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref ProjectName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      RestartExecutionOnUpdate: true
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceFromGitHub
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Sub '${RepositoryOwner}/${RepositoryName}'
+                BranchName: !Ref RepositoryBranch
+                DetectChanges: 'true'
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        # Amd64 and Validators run in parallel – validators build from public base
+        # images and have no dependency on the locally-built simapp image.
+        - Name: Build
+          Actions:
+            - Name: BuildAmd64AndSimapp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref Amd64BuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: BuildValidators
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref ValidatorsBuildProject
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+
+Outputs:
+  PipelineName:
+    Description: Name of the created CodePipeline pipeline.
+    Value: !Ref Pipeline
+
+  ArtifactBucketName:
+    Description: S3 bucket used for CodePipeline artifacts.
+    Value: !Ref ArtifactBucket
+
+  Amd64ProjectName:
+    Description: Name of the AMD64 simapp CodeBuild project.
+    Value: !Ref Amd64BuildProject
+
+  ValidatorsProjectName:
+    Description: Name of the validators CodeBuild project.
+    Value: !Ref ValidatorsBuildProject
+
+  SimappRepositoryUri:
+    Description: Public ECR URI for the DROA simapp image.
+    Value: !Sub '${PublicEcrRegistry}/${PublicEcrPrefix}/deepracer-on-aws-simapp'
+
+  ModelValidationRepositoryUri:
+    Description: Public ECR URI for the model validation image.
+    Value: !Sub '${PublicEcrRegistry}/${PublicEcrPrefix}/deepracer-on-aws-model-validation'
+
+  RewardFunctionValidationRepositoryUri:
+    Description: Public ECR URI for the reward function validation image.
+    Value: !Sub '${PublicEcrRegistry}/${PublicEcrPrefix}/deepracer-on-aws-reward-function-validation'

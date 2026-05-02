@@ -282,7 +282,7 @@ Resources:
           - Name: BUILD_TARGET
             Type: PLAINTEXT
             Value: amd64
-          - Name: DOCKER_HUB_REPO
+          - Name: DOCKER_HUB_REGISTRY
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
@@ -293,13 +293,13 @@ Resources:
             Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
           - !If
             - EnableEcrPublishingCondition
-            - Name: ECR_REGISTRY
+            - Name: PRIVATE_ECR_REGISTRY
               Type: PLAINTEXT
               Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
             - !Ref AWS::NoValue
           - !If
             - EnableEcrPublishingCondition
-            - Name: ECR_REPO_PREFIX
+            - Name: PRIVATE_ECR_PREFIX
               Type: PLAINTEXT
               Value: !Ref EcrRepositoryPrefix
             - !Ref AWS::NoValue
@@ -324,7 +324,7 @@ Resources:
           - Name: BUILD_TARGET
             Type: PLAINTEXT
             Value: arm64
-          - Name: DOCKER_HUB_REPO
+          - Name: DOCKER_HUB_REGISTRY
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
@@ -354,7 +354,7 @@ Resources:
           - Name: BUILD_TARGET
             Type: PLAINTEXT
             Value: manifests
-          - Name: DOCKER_HUB_REPO
+          - Name: DOCKER_HUB_REGISTRY
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
@@ -385,7 +385,7 @@ Resources:
           - Name: BUILD_TARGET
             Type: PLAINTEXT
             Value: validators
-          - Name: DOCKER_HUB_REPO
+          - Name: DOCKER_HUB_REGISTRY
             Type: PLAINTEXT
             Value: !Ref DockerHubRepo
           - Name: DOCKER_HUB_USER
@@ -394,10 +394,10 @@ Resources:
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
             Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
-          - Name: ECR_REGISTRY
+          - Name: PRIVATE_ECR_REGISTRY
             Type: PLAINTEXT
             Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
-          - Name: ECR_REPO_PREFIX
+          - Name: PRIVATE_ECR_PREFIX
             Type: PLAINTEXT
             Value: !Ref EcrRepositoryPrefix
 
