@@ -1,33 +1,121 @@
 version: 0.2
+# Shared buildspec supporting Docker Hub, private ECR, and public ECR flows.
+#
+# Registry login is triggered automatically by variable presence:
+#   DOCKER_HUB_REGISTRY   – set to the Docker Hub namespace (e.g. awsdeepracercommunity)
+#                           Login requires DOCKER_HUB_USER + DOCKER_HUB_KEY to also be set.
+#   PRIVATE_ECR_REGISTRY  – set to the full private ECR URL; triggers private ECR login.
+#   PUBLIC_ECR_REGISTRY   – set to public.ecr.aws (or similar); triggers public ECR login.
+#
+# Other optional vars:
+#   ENABLE_IMAGE_PUSH=true|false  (default: true; controls --push for build.sh / build-droa.sh)
+#   PRIVATE_ECR_PREFIX            – repo prefix/namespace inside the private ECR registry
+#   PUBLIC_ECR_PREFIX             – repo prefix/namespace inside the public ECR registry
+#   BUILD_VARIANTS="cpu"|"cpu gpu" (default: "cpu gpu")
+#   ARM64_BUILD_VARIANTS="cpu"    (default: "cpu")
+#   LOCAL_IMAGE_PREFIX            – local tag prefix when not pushing to Docker Hub
+#   PUBLIC_ECR_LOGIN_REGION       – region for public ECR auth token (default: us-east-1)
 phases:
   pre_build:
     commands:
-      - printf '%s' "${DOCKER_HUB_KEY}" | docker login --username "${DOCKER_HUB_USER}" --password-stdin
       - |
-        if [ -n "${ECR_REGISTRY:-}" ]; then
-          aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+        set -euo pipefail
+
+        if [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
+          printf '%s' "${DOCKER_HUB_KEY}" | docker login --username "${DOCKER_HUB_USER}" --password-stdin
         fi
+
+        if [ -n "${PRIVATE_ECR_REGISTRY:-}" ]; then
+          aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${PRIVATE_ECR_REGISTRY}"
+        fi
+
+        if [ -n "${PUBLIC_ECR_REGISTRY:-}" ]; then
+          PUBLIC_ECR_LOGIN_REGION="${PUBLIC_ECR_LOGIN_REGION:-us-east-1}"
+          aws ecr-public get-login-password --region "${PUBLIC_ECR_LOGIN_REGION}" | docker login --username AWS --password-stdin "${PUBLIC_ECR_REGISTRY}"
+        fi
+
       - docker buildx version
       - docker buildx inspect --bootstrap
+
   build:
     commands:
       - |
+        set -euo pipefail
+
+        BUILD_VARIANTS="${BUILD_VARIANTS:-cpu gpu}"
+        ARM64_BUILD_VARIANTS="${ARM64_BUILD_VARIANTS:-cpu}"
+        ENABLE_IMAGE_PUSH="${ENABLE_IMAGE_PUSH:-true}"
+
+        # Resolve the push target for build-droa.sh.
+        # Private ECR takes precedence over public ECR when both are set.
+        TARGET_REGISTRY=""
+        TARGET_PREFIX=""
+        SOURCE_PREFIX="${DOCKER_HUB_REGISTRY:-}"
+        if [ -n "${PRIVATE_ECR_REGISTRY:-}" ]; then
+          TARGET_REGISTRY="${PRIVATE_ECR_REGISTRY}"
+          TARGET_PREFIX="${PRIVATE_ECR_PREFIX:-}"
+          SOURCE_PREFIX="${DOCKER_HUB_REGISTRY:-}"
+        elif [ -n "${PUBLIC_ECR_REGISTRY:-}" ]; then
+          TARGET_REGISTRY="${PUBLIC_ECR_REGISTRY}"
+          TARGET_PREFIX="${PUBLIC_ECR_PREFIX:-}"
+          SOURCE_PREFIX="${LOCAL_IMAGE_PREFIX:-${DOCKER_HUB_REGISTRY:-}}"
+        fi
+
         case "${BUILD_TARGET}" in
           amd64)
-            bash build.sh --platform linux/amd64 -a "cpu gpu" -p "${DOCKER_HUB_REPO}" --push ${NO_CACHE:+--no-cache}
-            if [ -n "${ECR_REGISTRY:-}" ]; then
-              bash build-droa.sh --simapp-only --push -r "${ECR_REGISTRY}" -p "${ECR_REPO_PREFIX}" -s "${DOCKER_HUB_REPO}" ${NO_CACHE:+-f}
+            BUILD_PREFIX="${DOCKER_HUB_REGISTRY:-${LOCAL_IMAGE_PREFIX:-}}"
+            if [ -z "${BUILD_PREFIX}" ]; then
+              echo "BUILD_PREFIX is empty; set DOCKER_HUB_REGISTRY or LOCAL_IMAGE_PREFIX" >&2
+              exit 1
+            fi
+
+            # Only push via build.sh when targeting Docker Hub; for ECR flows
+            # build.sh builds locally and build-droa.sh handles the push.
+            if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
+              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
+            else
+              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
+            fi
+
+            if [ -n "${TARGET_REGISTRY}" ]; then
+              if [ -z "${SOURCE_PREFIX}" ]; then
+                echo "SOURCE_PREFIX is empty; set DOCKER_HUB_REGISTRY or LOCAL_IMAGE_PREFIX" >&2
+                exit 1
+              fi
+              bash build-droa.sh --simapp-only --push -r "${TARGET_REGISTRY}" -p "${TARGET_PREFIX}" -s "${SOURCE_PREFIX}" ${NO_CACHE:+-f}
             fi
             ;;
+
           arm64)
-            bash build.sh --platform linux/arm64 -a "cpu" -p "${DOCKER_HUB_REPO}" --push ${NO_CACHE:+--no-cache}
+            BUILD_PREFIX="${DOCKER_HUB_REGISTRY:-${LOCAL_IMAGE_PREFIX:-}}"
+            if [ -z "${BUILD_PREFIX}" ]; then
+              echo "BUILD_PREFIX is empty; set DOCKER_HUB_REGISTRY or LOCAL_IMAGE_PREFIX" >&2
+              exit 1
+            fi
+
+            if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
+              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
+            else
+              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
+            fi
             ;;
+
           manifests)
-            bash publish-manifests.sh -a "cpu gpu" -p "${DOCKER_HUB_REPO}"
+            if [ -z "${DOCKER_HUB_REGISTRY:-}" ]; then
+              echo "DOCKER_HUB_REGISTRY is required for manifests target" >&2
+              exit 1
+            fi
+            bash publish-manifests.sh -a "${BUILD_VARIANTS}" -p "${DOCKER_HUB_REGISTRY}"
             ;;
+
           validators)
-            bash build-droa.sh --validators-only --push -r "${ECR_REGISTRY}" -p "${ECR_REPO_PREFIX}" -s "${DOCKER_HUB_REPO}" ${NO_CACHE:+-f}
+            if [ -z "${TARGET_REGISTRY}" ]; then
+              echo "validators target requires PRIVATE_ECR_REGISTRY or PUBLIC_ECR_REGISTRY" >&2
+              exit 1
+            fi
+            bash build-droa.sh --validators-only --push -r "${TARGET_REGISTRY}" -p "${TARGET_PREFIX}" -s "${SOURCE_PREFIX:-awsdeepracercommunity}" ${NO_CACHE:+-f}
             ;;
+
           *)
             echo "Unknown BUILD_TARGET=${BUILD_TARGET}" >&2
             exit 1
