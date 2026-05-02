@@ -129,18 +129,98 @@ Resources:
     Type: AWS::ECR::PublicRepository
     Properties:
       RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-simapp'
+      RepositoryCatalogData:
+        AboutText: |
+          ## deepracer-on-aws-simapp
+
+          Community-built simapp image for [deepracer-on-aws](https://github.com/aws-solutions/deepracer-on-aws/),
+          based on the AWS DeepRacer Simapp. Contains the full ROS 2 / Gazebo simulation environment,
+          the Markov robotics agent code, and all track assets required to run DeepRacer training locally.
+
+          Built from source at [aws-deepracer-community/deepracer-simapp](https://github.com/aws-deepracer-community/deepracer-simapp).
+        UsageText: |
+          ## Usage with deepracer-on-aws
+
+          Set the following variable in your deepracer-on-aws environment to use this community image
+          instead of the default AWS-provided image:
+
+          ```
+          PUBLIC_ECR_REGISTRY=public.ecr.aws/deepracer-community
+          ```
+
+          See the [deepracer-on-aws README](https://github.com/aws-solutions/deepracer-on-aws/blob/master/README.md)
+          for full configuration instructions.
+
+          ### Pull directly
+
+          ```bash
+          docker pull public.ecr.aws/deepracer-community/deepracer-on-aws-simapp:<tag>
+          ```
 
   ModelValidationRepository:
     Condition: ShouldCreatePublicEcrRepositories
     Type: AWS::ECR::PublicRepository
     Properties:
       RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-model-validation'
+      RepositoryCatalogData:
+        AboutText: |
+          ## deepracer-on-aws-model-validation
+
+          Community-built Lambda container image used by [deepracer-on-aws](https://github.com/aws-solutions/deepracer-on-aws/)
+          to validate DeepRacer model archives before training or upload.
+          Based on the AWS-provided model validation image with updated dependencies.
+
+          Built from source at [aws-deepracer-community/deepracer-simapp](https://github.com/aws-deepracer-community/deepracer-simapp).
+        UsageText: |
+          ## Usage with deepracer-on-aws
+
+          Set the following variable in your deepracer-on-aws environment to use this community image
+          instead of the default AWS-provided image:
+
+          ```
+          PUBLIC_ECR_REGISTRY=public.ecr.aws/deepracer-community
+          ```
+
+          See the [deepracer-on-aws README](https://github.com/aws-solutions/deepracer-on-aws/blob/master/README.md)
+          for full configuration instructions.
+
+          ### Pull directly
+
+          ```bash
+          docker pull public.ecr.aws/deepracer-community/deepracer-on-aws-model-validation:<tag>
+          ```
 
   RewardFunctionValidationRepository:
     Condition: ShouldCreatePublicEcrRepositories
     Type: AWS::ECR::PublicRepository
     Properties:
       RepositoryName: !Sub '${PublicEcrPrefix}/deepracer-on-aws-reward-function-validation'
+      RepositoryCatalogData:
+        AboutText: |
+          ## deepracer-on-aws-reward-function-validation
+
+          Community-built Lambda container image used by [deepracer-on-aws](https://github.com/aws-solutions/deepracer-on-aws/)
+          to validate DeepRacer reward function code before training.
+
+          Built from source at [aws-deepracer-community/deepracer-simapp](https://github.com/aws-deepracer-community/deepracer-simapp).
+        UsageText: |
+          ## Usage with deepracer-on-aws
+
+          Set the following variable in your deepracer-on-aws environment to use this community image
+          instead of the default AWS-provided image:
+
+          ```
+          PUBLIC_ECR_REGISTRY=public.ecr.aws/deepracer-community
+          ```
+
+          See the [deepracer-on-aws README](https://github.com/aws-solutions/deepracer-on-aws/blob/master/README.md)
+          for full configuration instructions.
+
+          ### Pull directly
+
+          ```bash
+          docker pull public.ecr.aws/deepracer-community/deepracer-on-aws-reward-function-validation:<tag>
+          ```
 
   # ── IAM role for CodeBuild ───────────────────────────────────────────────────
   CodeBuildServiceRole:
