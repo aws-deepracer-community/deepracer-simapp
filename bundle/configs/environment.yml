@@ -28,7 +28,7 @@ dependencies:
       - cryptography==46.0.7
       - kubernetes==33.1.0
       - bokeh==3.7.3
-      - /opt/amazon/rl_coach  # Install rl_coach from local source directory
+      - -e /opt/amazon/rl_coach  # Install rl_coach from local source directory
       - retrying==1.4.1
       - eventlet==0.40.3
       - flask==3.1.1
@@ -56,6 +56,5 @@ dependencies:
       - typeguard==4.4.4
       - lark==1.2.2
       - catkin_pkg==1.0.0
-      - pytelegraf
       - argcomplete
       - setuptools==80.10.2
