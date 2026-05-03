@@ -153,7 +153,7 @@ class SingleAgentImageEditing(ImageEditingInterface):
         loc_x, loc_y = XYPixelLoc.SPEED_EVAL_LOC.value
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.SPEED_LEADERBOARD_LOC.value
-        speed_text = "{} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].speed))
+        speed_text = "{} m/s".format(utils.get_speed_formatted_str(mp4_video_metrics_info[self.racecar_index].throttle))
         pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                 loc=(loc_x, loc_y), font=self.amazon_ember_light_20px,
                                                 font_color=RaceCarColorToRGB.White.value,
