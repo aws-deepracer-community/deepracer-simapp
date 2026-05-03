@@ -28,7 +28,6 @@ def generate_launch_description():
                                                           default_value=EnvironmentVariable('KINESIS_VIDEO_STREAM_NAME', default_value=''))
     f1_arg = DeclareLaunchArgument('f1', default_value='false')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
-    gui_arg = DeclareLaunchArgument('gui', default_value='false')
     
     # Include racetrack_with_racecar.launch (unless f1)
     racetrack_launch = IncludeLaunchDescription(
@@ -48,8 +47,7 @@ def generate_launch_description():
             ('body_shell_types', LaunchConfiguration('body_shell_types')),
             ('simapp_versions', LaunchConfiguration('simapp_versions')),
             ('multicar', LaunchConfiguration('multicar')),
-            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
-            ('gui', LaunchConfiguration('gui'))
+            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
         ],
         condition=UnlessCondition(LaunchConfiguration('f1'))
     )
@@ -72,8 +70,7 @@ def generate_launch_description():
             ('body_shell_types', LaunchConfiguration('body_shell_types')),
             ('simapp_versions', LaunchConfiguration('simapp_versions')),
             ('multicar', LaunchConfiguration('multicar')),
-            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
-            ('gui', LaunchConfiguration('gui'))
+            ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
         ],
         condition=IfCondition(LaunchConfiguration('f1'))
     )
@@ -98,10 +95,6 @@ def generate_launch_description():
         kinesis_video_stream_names_arg,
         f1_arg,
         publish_to_kinesis_stream_arg,
-        gui_arg,
-        
-        # Load YAML parameters
-        WorldConfig.get_launch_parameter(),
         
         # Launch includes
         racetrack_launch,

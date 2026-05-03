@@ -45,7 +45,6 @@ def generate_launch_description():
         simapp_versions_arg,
         kinesis_video_stream_names_arg,
         publish_to_kinesis_stream_arg,
-        gui_arg,
         
         # Load YAML parameters
         WorldConfig.get_launch_parameter(),
@@ -67,8 +66,7 @@ def generate_launch_description():
                 ('racecars_with_lidars', LaunchConfiguration('racecars_with_lidars')),
                 ('body_shell_types', LaunchConfiguration('body_shell_types')),
                 ('simapp_versions', LaunchConfiguration('simapp_versions')),
-                ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
-                ('gui', LaunchConfiguration('gui'))
+                ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
             ]
         ),
         

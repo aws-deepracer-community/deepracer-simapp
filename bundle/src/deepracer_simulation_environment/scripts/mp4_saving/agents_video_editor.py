@@ -211,7 +211,7 @@ class AgentsVideoEditor(Node):
                                                          VideoMetricsSrv,
                                                          max_retry_attempts=30,
                                                          timeout_sec=2.0,
-                                                         wait_for_service=False)
+                                                         wait_for_service=True)
         self._metrics_update_timer = self.create_timer(METRICS_POLL_PERIOD_SEC,
                                                         self._update_racers_metrics,
                                                         callback_group=self._metrics_timer_callback_group)
