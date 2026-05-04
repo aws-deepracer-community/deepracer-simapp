@@ -19,7 +19,7 @@ from rclpy.node import Node
 import re
 
 from enum import Enum
-from markov.utils import test_internet_connection, str2bool
+from markov.utils import test_internet_connection
 from markov.constants import DEFAULT_COLOR, DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 from markov.architecture.constants import Input
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
@@ -123,7 +123,7 @@ def main():
                             "multicar:={} ".format(yaml_file.is_multicar),
                             "kinesis_webrtc_signaling_channel_names:={} ".format(
                                 ','.join(yaml_file.kinesis_webrtc_signaling_channel_name)),
-                            "publish_to_kinesis_stream:={} ".format(str2bool(os.environ.get("ENABLE_KINESIS", "True")))))]
+                            "publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)))]
         process = Popen(cmd, shell=True, executable="/bin/bash")
         LOG.info("Launched process pid %s for command: %s", process.pid, cmd[0])
         return process
