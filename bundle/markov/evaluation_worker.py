@@ -304,6 +304,8 @@ def main():
         raise GenericRolloutException("number of resets is less than {}".format(MIN_RESET_COUNT))
 
     # Instantiate Cameras
+    # Wait for car spawn delay (racecar_control_kinematics.launch.py has 30s TimerAction before spawning controllers)
+    time.sleep(30)
     if len(arg_s3_bucket) == 1:
         configure_camera(namespaces=['racecar'])
     else:
