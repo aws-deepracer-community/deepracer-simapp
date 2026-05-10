@@ -73,12 +73,19 @@ xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
 echo "Running simulation job on single sagemaker instance..."
 echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
 # redirect stderr to stdout and have error messages sent to the same file as standard output
+set +e
 ros2 launch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE > /opt/ml/simapp.log 2>&1
+SIM_EXIT_CODE=$?
+set -e
 
 echo "Uploading ROS Gazebo Logs"
 # || true allows the upload to continue even if some of source directory doesn't exist or upload failed
 aws s3 sync /root/.ros/log/ s3://${S3_ROS_LOG_BUCKET}/${JOB_NAME}/ros || true
 aws s3 sync /root/.gazebo/ s3://${S3_ROS_LOG_BUCKET}/${JOB_NAME}/gazebo || true
 
-echo "Terminating with error"
-exit 1
+if [ ${SIM_EXIT_CODE} -ne 0 ]; then
+	echo "Terminating with error. Simulation exit code: ${SIM_EXIT_CODE}"
+else
+	echo "Terminating successfully. Simulation exit code: ${SIM_EXIT_CODE}"
+fi
+exit ${SIM_EXIT_CODE}

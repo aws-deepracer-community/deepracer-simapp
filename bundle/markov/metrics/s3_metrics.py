@@ -29,7 +29,7 @@ import boto3
 import botocore
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 from deepracer_simulation_environment.srv import VideoMetricsSrv, VideoMetricsSrv_Response
 from geometry_msgs.msg import Point32
 from markov.constants import BEST_CHECKPOINT, LAST_CHECKPOINT, METRICS_VERSION
@@ -67,7 +67,7 @@ def sim_trace_log(sim_trace_dict):
        sim_trace_dict - Ordered dict containing the step metrics, note order must match
                         precision in the string
     '''
-    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d' % \
+    LOGGER.info('SIM_TRACE_LOG:%d,%d,%.4f,%.4f,%.4f,%.2f,%.2f,%s,%.4f,%s,%s,%.4f,%d,%.2f,%s,%s,%.2f,%d,%.4f' % \
         (tuple(sim_trace_dict.values())))
 
 
@@ -168,6 +168,8 @@ class MarkovVideoMetrics(Node):
                     executor = SingleThreadedExecutor()
                     executor.add_node(self)
                     executor.spin()
+                except ExternalShutdownException:
+                    LOGGER.info("Video metrics node shutdown requested")
                 except Exception as e:
                     LOGGER.error("Node spinning error: %s", e)
 

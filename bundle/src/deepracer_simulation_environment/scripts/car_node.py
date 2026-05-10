@@ -11,6 +11,7 @@ import os
 import time
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 import logging
 from ament_index_python.packages import get_package_share_directory
 from deepracer_msgs.srv import SetModelStates
@@ -155,10 +156,23 @@ class DeepRacerNode(Node):
 def main():
     if not rclpy.ok():
         rclpy.init()
-    RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
-    racecar_names = utils.get_racecar_names(RACER_NUM)
-    node = DeepRacerNode(racecar_names)
-    rclpy.spin(node)
+    node = None
+    try:
+        RACER_NUM = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        racecar_names = utils.get_racecar_names(RACER_NUM)
+        node = DeepRacerNode(racecar_names)
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        logger.info("car_node shutdown requested")
+    except Exception as ex:
+        log_and_exit("car_node exited with exception: {}".format(ex),
+                     SIMAPP_CAR_NODE_EXCEPTION,
+                     SIMAPP_EVENT_ERROR_CODE_500)
+    finally:
+        if node is not None:
+            node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':
