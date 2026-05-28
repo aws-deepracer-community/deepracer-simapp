@@ -4,10 +4,10 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.29.7
+  - nginx==1.31.0
   - zip
   - wget
-  - curl==8.19.0
+  - curl==8.20.0
   - pip:
       - pygame==2.6.1
       - shapely==2.0.2
@@ -40,7 +40,7 @@ dependencies:
       - protobuf==6.33.5
       - pyparsing==3.2.5
       - requests==2.32.5
-      - urllib3==2.6.3
+      - urllib3==2.7.0
       - docutils==0.21.2
       - rospkg==1.6.0
       - tokenize-rt==6.2.0
