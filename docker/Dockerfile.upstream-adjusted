@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.1.3
-# Image ID: ceb406201c10
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.1.4
+# Image ID: 1d1bb2c68911
 # Base: Ubuntu 24.04 (Noble)
-# Built: May 27, 2026
-# Optimized: May 28, 2026
+# Built: May 28, 2026
+# Optimized: May 31, 2026
 
 FROM ubuntu:24.04
 
