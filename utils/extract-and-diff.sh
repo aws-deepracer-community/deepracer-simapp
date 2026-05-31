@@ -26,6 +26,8 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+
 git checkout upstream-ros2
 
 mkdir -p /tmp/bundle-src
@@ -38,6 +40,7 @@ docker stop deepracer-simapp
 
 cd /tmp/bundle-src/amazon
 rm -rf build/ install/ log/
+rm $(find . -name *.psd)
 
 rsync -a --delete ./ ~/deepracer-simapp/bundle/
 
