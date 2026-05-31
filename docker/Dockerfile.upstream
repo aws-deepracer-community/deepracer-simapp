@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.1.2
-# Image ID: d55358f19501
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.1.3
+# Image ID: ceb406201c10
 # Base: Ubuntu 24.04 (Noble)
-# Built: May 13, 2026
-# Optimized: May 13, 2026
+# Built: May 27, 2026
+# Optimized: May 28, 2026
 
 FROM ubuntu:24.04
 
@@ -187,7 +187,7 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     pillow==12.2.0 \
     pyyaml==6.0.3 \
     requests==2.32.5 \
-    urllib3==2.6.3 \
+    urllib3==2.7.0 \
     empy==4.2 \
     boto3==1.38.38 \
     bokeh==3.7.3 \
@@ -242,7 +242,6 @@ RUN pip3 install --no-cache-dir --use-pep517 annoy==1.17.3 && \
 
 # Initialize rosdep and add custom rosdep sources
 RUN rosdep init && \
-    sh -c 'echo "yaml https://s3-us-west-2.amazonaws.com/rosdep/base.yaml" > /etc/ros/rosdep/sources.list.d/19-aws-sdk.list' && \
     sh -c 'echo "yaml https://deepracer-managed-resources-us-east-1.s3.amazonaws.com/rosdep/python.yaml" > /etc/ros/rosdep/sources.list.d/18-deepracer.list' && \
     rosdep update --include-eol-distros
 
@@ -282,10 +281,11 @@ RUN conda env create -f /opt/amazon/configs/environment.yml && \
 # Install security updates via conda
 RUN /root/anaconda/bin/conda install -y \
     brotli-python==1.2.0 \
-    conda-forge::curl==8.19.0 \
-    conda-forge::libcurl==8.19.0 \
-    urllib3==2.6.3 \
+    conda-forge::curl==8.20.0 \
+    conda-forge::libcurl==8.20.0 \
+    urllib3==2.7.0 \
     requests==2.32.5 \
+    nginx==1.31.1 \
     && /root/anaconda/bin/conda clean -afy \
     && rm -rf /root/anaconda/lib/python3.12/site-packages/cryptography-42.0.5.dist-info
 
