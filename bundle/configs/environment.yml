@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.31.0
+  - nginx==1.31.1
   - zip
   - wget
   - curl==8.20.0
