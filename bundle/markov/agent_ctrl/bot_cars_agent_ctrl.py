@@ -125,8 +125,7 @@ class BotCarsCtrl(AgentCtrlInterface, AbstractTracker):
     def _reset_sim_time(self):
         '''reset simulation start time
         '''
-        sim_time = self.get_rostime().to_msg()
-        self.start_sim_time = self.current_sim_time = sim_time.sec + 1.e-9*sim_time.nanosec
+        self.start_sim_time = self.current_sim_time
 
     def update_tracker(self, delta_time, sim_time):
         """

@@ -7,9 +7,11 @@ This module takes care of addressing each race type editting of images.
 import logging
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
+from markov.world_config import WorldConfig
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.constants import (RaceCarColorToRGB, SCALE_RATIO, IconographicImageSize,
                                   XYPixelLoc, FrameQueueData)
@@ -51,7 +53,7 @@ class TrainingImageEditing(ImageEditingInterface):
                                                  top_camera_info.image_width, top_camera_info.image_height,
                                                  racecar_info)
 
-    def _edit_major_cv_image(self, major_cv_image, cur_training_phase):
+    def _edit_major_cv_image(self, major_cv_image, cur_training_phase, mp4_video_metrics_info):
         """ Apply all the editing for the Major 45degree camera image
         Args:
             major_cv_image (Image): Image straight from the camera
@@ -61,12 +63,16 @@ class TrainingImageEditing(ImageEditingInterface):
         # Applying gradient to whole major image and then writing text
         major_cv_image = utils.apply_gradient(major_cv_image, self.gradient_alpha_rgb_mul,
                                               self.one_minus_gradient_alpha)
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
 
         # Add the label that lets the user know the training phase
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=cur_training_phase,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=cur_training_phase,
                                                    loc=XYPixelLoc.TRAINING_PHASE_LOC.value,
                                                    font=self.training_phase_font, font_color=None,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                   draw_obj=draw)
+        major_cv_image = np.array(pil_major_cv_image)
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 
@@ -119,6 +125,6 @@ class TrainingImageEditing(ImageEditingInterface):
         mp4_video_metrics_info = metric_info[FrameQueueData.AGENT_METRIC_INFO.value]
         cur_training_phase = metric_info[FrameQueueData.TRAINING_PHASE.value]
 
-        major_cv_image = self._edit_major_cv_image(major_cv_image, cur_training_phase)
+        major_cv_image = self._edit_major_cv_image(major_cv_image, cur_training_phase, mp4_video_metrics_info)
         major_cv_image = self._plot_agents_on_major_cv_image(major_cv_image, mp4_video_metrics_info)
         return cv2.cvtColor(major_cv_image, cv2.COLOR_BGRA2RGB)

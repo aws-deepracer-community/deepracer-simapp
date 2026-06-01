@@ -22,7 +22,7 @@ import threading
 import xml.etree.ElementTree as ET
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 
 try:
     from deepracer_simulation_environment.srv import TopCamDataSrv
@@ -103,7 +103,7 @@ class TopCamera(AbstractCamera):
                 TopCamera._global_executor = SingleThreadedExecutor()
                 TopCamera._global_executor.add_node(TopCamera._global_service_node)
                 TopCamera._global_executor_thread = threading.Thread(
-                    target=TopCamera._global_executor.spin, daemon=False)
+                    target=self._safe_global_executor_spin, daemon=False)
                 TopCamera._global_executor_thread.start()
                 TopCamera._global_executor_started = True
             
@@ -115,8 +115,19 @@ class TopCamera(AbstractCamera):
         """Safely spin the executor with error handling"""
         try:
             self.executor.spin()
+        except ExternalShutdownException:
+            LOG.info("Executor shutdown requested")
         except Exception as e:
             LOG.error("Executor spin error: %s", e)
+
+    def _safe_global_executor_spin(self):
+        """Safely spin the global executor with error handling"""
+        try:
+            TopCamera._global_executor.spin()
+        except ExternalShutdownException:
+            LOG.info("Top camera global executor shutdown requested")
+        except Exception as e:
+            LOG.error("Top camera global executor spin error: %s", e)
 
     def _handle_get_top_cam_data(self, request, response):
         '''Response handler for clients requesting the camera settings data

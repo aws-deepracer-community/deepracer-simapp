@@ -43,6 +43,7 @@ class GetModelStateTracker(AbstractTracker):
         self.model_map = {}
         self.model_names = []
         self.relative_entity_names = []
+        self._blocking_in_progress = False  # Flag to skip batch updates during blocking calls
 
         # ROS1-like: explicit service waiting first, then create ServiceProxyWrapper
         from markov.rclpy_wrappers import ROS2NodeManager
@@ -70,6 +71,10 @@ class GetModelStateTracker(AbstractTracker):
                 self.relative_entity_names.append(relative_entity_name)
                 
             if blocking or cache_key not in self.model_map:
+                # Set flag to prevent concurrent batch updates during blocking calls
+                if blocking:
+                    self._blocking_in_progress = True
+                    
                 # Create a request with the model names and relative entity names
                 request = GetModelStates.Request()
                 request.model_names = self.model_names
@@ -121,6 +126,10 @@ class GetModelStateTracker(AbstractTracker):
                     msg.success = False
                     msg.status_message = str(ex)
                     return msg
+                finally:
+                    # Clear blocking flag after the call completes
+                    if blocking:
+                        self._blocking_in_progress = False
             else:
                 # Return cached result using consistent key
                 if cache_key in self.model_map:
@@ -138,6 +147,11 @@ class GetModelStateTracker(AbstractTracker):
             delta_time (float): delta time
             sim_time (float): simulation time
         """
+        import time
+        
+        # Skip batch updates if a blocking call is in progress to avoid contention
+        if self._blocking_in_progress:
+            return
         
         if self.model_names:
             with self.lock:
@@ -147,6 +161,9 @@ class GetModelStateTracker(AbstractTracker):
                     request.relative_entity_names = self.relative_entity_names
                     
                     response = self.get_model_states(request)
+                    # Check for None response (can happen during shutdown)
+                    if response is None:
+                        return
                     if response.success:
                         for model_state, status in zip(response.model_states, response.status):
                             if status:

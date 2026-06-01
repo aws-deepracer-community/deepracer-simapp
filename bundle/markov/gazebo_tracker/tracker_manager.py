@@ -91,6 +91,10 @@ class TrackerManager:
             sim_time (Clock): simulation time
         """
         
+        # Skip if rclpy is shutting down
+        if not rclpy.ok():
+            return
+        
         # ROS2 Clock message format: sim_time.clock.sec and sim_time.clock.nanosec
         curr_time = sim_time.clock.sec + 1.e-9 * sim_time.clock.nanosec
         if self.last_time is None:
@@ -108,10 +112,7 @@ class TrackerManager:
                         tracker_name = tracker.__class__.__name__
                         tracker.update_tracker(delta_time, sim_time)
             except Exception as e:
-                log_and_exit("Tracker raised Exception: {}"
-                             .format(e),
-                             SIMAPP_SIMULATION_WORKER_EXCEPTION,
-                             SIMAPP_EVENT_ERROR_CODE_500)
+                logger.info("TrackerManager: failed _update_sim_time call")
             finally:
                 self.lock.release()
         else:

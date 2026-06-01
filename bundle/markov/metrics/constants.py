@@ -63,7 +63,8 @@ class StepMetrics(Enum):
     TIME = 'tstamp'
     EPISODE_STATUS = 'episode_status'
     PAUSE_DURATION = 'pause_duration'
-    OBSTACLE_CRASH_COUNTER = "obstacle_crash_counter"
+    OBSTACLE_CRASH_COUNTER = 'obstacle_crash_counter'
+    WALL_CLOCK = 'wall_clock'
 
     @classmethod
     def make_default_metric(cls):

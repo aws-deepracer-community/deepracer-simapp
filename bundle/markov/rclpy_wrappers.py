@@ -51,10 +51,14 @@ class ROS2NodeManager:
             
             node_name_with_suffix = f"{node_name}_{suffix}"
             self.node = Node(node_name_with_suffix)
-            self.executor = rclpy.executors.MultiThreadedExecutor()
+            # Use MultiThreadedExecutor to allow service client callbacks to be processed
+            # while other callbacks are pending. SingleThreadedExecutor can cause deadlocks
+            # with MutuallyExclusiveCallbackGroup service clients.
+            self.executor = rclpy.executors.MultiThreadedExecutor(num_threads=4)
             self.executor.add_node(self.node)
             self.executor_thread = threading.Thread(target=self._spin_executor, daemon=True)
             self.executor_thread.start()
+            logger.info(f"ROS2NodeManager initialized: {node_name_with_suffix}")
         except Exception as ex:
             logger.error(f"Failed to initialize ROS2 node manager: {ex}")
             log_and_exit("ROS2 node initialization failed",
@@ -67,13 +71,16 @@ class ROS2NodeManager:
         while rclpy.ok():
             try:
                 # Based on: https://github.com/ros2/rclpy/issues/1547
-                self.executor.spin_once(timeout_sec=0.001)
+                self.executor.spin_once(timeout_sec=0.01)
                 # Yield GIL to improve performance
-                time.sleep(0)
+                time.sleep(0.001)
             except Exception as ex:
+                # Ignore shutdown-related errors - they're expected during cleanup
+                if "shutdown" in str(ex).lower() or not rclpy.ok():
+                    break
                 logger.error(f"Error in ROS2 executor: {ex}")
                 # Brief sleep to avoid tight error loop
-                time.sleep(0.01)
+                time.sleep(0.1)
 
     def get_node(self):
         """Get the ROS2 node"""
@@ -160,27 +167,41 @@ class ServiceProxyWrapper:
         try_count = 0
         while True:
             try:
-                # start_time = time.time() # Renable to profile service call duration
+                # Verify service is still available before calling
+                if not self.client.service_is_ready():
+                    logger.warning(f"Service {self._service_name} not ready, waiting...")
+                    if not self.client.wait_for_service(timeout_sec=5.0):
+                        raise Exception(f"Service {self._service_name} not available")
                 
                 future = self.client.call_async(request)
                 
-                # Use optimized spin_once with timeout instead of spin_until_future_complete
-                # This prevents GIL blocking and performance degradation
+                # Since the node is already being spun by the Executor in _spin_executor,
+                # we cannot call spin_once here (causes "Executor is already spinning" error).
+                # Instead, just wait for the future with a timeout loop.
                 # Based on: https://github.com/ros2/rclpy/issues/1223
+                timeout_start = time.time()
                 while not future.done() and rclpy.ok():
-                    rclpy.spin_once(self.node, timeout_sec=0.1)
-                    time.sleep(0.001)  # Yield GIL to prevent thread starvation
+                    # Check for overall timeout using configurable timeout_sec
+                    if time.time() - timeout_start > self._timeout_sec:
+                        raise Exception(f"Service call to {self._service_name} timed out after {self._timeout_sec}s")
+                    time.sleep(0.002)  # Wait for executor thread to process the response
                 
-                # elapsed_time = time.time() - start_time # Renable to profile service call duration
-                # logger.info(f"PROFILE: Service {self._service_name} took {elapsed_time*1000:.1f}ms") # Renable to profile service call duration
+                # Check why the loop exited
+                if not rclpy.ok():
+                    raise Exception(f"Service call to {self._service_name} aborted: rclpy shutdown")
                 
+                # Check future state properly
+                if future.cancelled():
+                    raise Exception(f"Service call to {self._service_name} was cancelled")
                 
+                if future.exception() is not None:
+                    raise Exception(f"Service call to {self._service_name} raised exception: {future.exception()}")
                 
-                if future.result() is not None:
-                    response = future.result()
+                response = future.result()
+                if response is not None:
                     return response
                 else:
-                    raise Exception(f"Service call to {self._service_name} returned None")
+                    raise Exception(f"Service call to {self._service_name} returned None (service may not be ready)")
                 
             except TypeError as err:
                 log_and_exit(f"Invalid arguments for client {err}",
@@ -188,6 +209,11 @@ class ServiceProxyWrapper:
                              SIMAPP_EVENT_ERROR_CODE_500,
                              name=str(err))
             except Exception as ex:
+                # If rclpy is shutting down, don't retry or log_and_exit - just return quietly
+                if not rclpy.ok() or "shutdown" in str(ex).lower():
+                    logger.info(f"Service call to {self._service_name} aborted due to shutdown")
+                    return None
+                
                 try_count += 1
                 if try_count > self._max_retry_attempts:
                     time.sleep(ROBOMAKER_CANCEL_JOB_WAIT_TIME)
@@ -195,6 +221,7 @@ class ServiceProxyWrapper:
                                  SIMAPP_SIMULATION_WORKER_EXCEPTION,
                                  SIMAPP_EVENT_ERROR_CODE_500,
                                  name=str(ex))
+                    return None
                 
                 error_message = ROS_SERVICE_ERROR_MSG_FORMAT.format(self._service_name,
                                                                     str(try_count),
