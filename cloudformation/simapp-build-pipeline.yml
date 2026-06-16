@@ -86,6 +86,15 @@ Parameters:
     Default: aws/codebuild/amazonlinux2-aarch64-standard:3.0
     Description: Docker image for the arm64 CodeBuild environment.
 
+  BaseImage:
+    Type: String
+    Default: public.ecr.aws/ubuntu/ubuntu:24.04
+    Description: >-
+      Ubuntu base image used for the CPU/core simapp build. Defaults to the public ECR
+      mirror to avoid the Docker Hub anonymous pull rate limit (HTTP 429). Override to
+      pull from another source, e.g. ubuntu:24.04 on Docker Hub or an ECR pull-through
+      cache repository.
+
   BuildTimeoutMinutes:
     Type: Number
     Default: 120
@@ -301,6 +310,9 @@ Resources:
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
             Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+          - Name: BASE_IMAGE
+            Type: PLAINTEXT
+            Value: !Ref BaseImage
           - !If
             - EnableEcrPublishingCondition
             - Name: PRIVATE_ECR_REGISTRY
@@ -343,6 +355,9 @@ Resources:
           - Name: DOCKER_HUB_KEY
             Type: SECRETS_MANAGER
             Value: !Sub '${DockerHubSecretArn}:${DockerHubSecretKey}'
+          - Name: BASE_IMAGE
+            Type: PLAINTEXT
+            Value: !Ref BaseImage
 
   ManifestBuildProject:
     Type: AWS::CodeBuild::Project
