@@ -11,6 +11,7 @@ set -euo pipefail
 PREFIX="awsdeepracercommunity"
 VARIANTS="cpu gpu"
 PLATFORM=""
+BASE_IMAGE="${BASE_IMAGE:-ubuntu:24.04}"
 
 function usage() {
     cat <<EOF
@@ -18,6 +19,9 @@ Usage: $0 [-a "cpu gpu"] [--platform linux/amd64|linux/arm64] [-p prefix] [-f] [
   -a, --variant       Space-separated variants to build (default: "cpu gpu")
       --platform      Docker platform to build for (default: native host)
   -p, --prefix        Image prefix / repository namespace
+      --base-image    Ubuntu base image for the CPU/core build (default: ubuntu:24.04).
+                      Use to pull from a non-Docker Hub source, e.g.
+                      public.ecr.aws/ubuntu/ubuntu:24.04 or a pull-through cache.
   -f, --no-cache      Disable Docker build cache
   -c, --rebuild-core  Force rebuild of the core builder image
       --push          Push built leaf images after the build completes
@@ -51,6 +55,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     -p|--prefix)
         PREFIX="$2"
+        shift 2
+        ;;
+    --base-image)
+        BASE_IMAGE="$2"
         shift 2
         ;;
     -f|--no-cache)
@@ -101,6 +109,7 @@ if [ "$(docker images -q ${PREFIX}/deepracer-simapp-build-core:${CORE_TAG} 2>/de
     echo "Preparing core builder image ${PREFIX}/deepracer-simapp-build-core:${CORE_TAG} for ${PLATFORM}..."
     docker buildx build ${OPT_NOCACHE:-} --load --platform "${PLATFORM}" \
         -t ${PREFIX}/deepracer-simapp-build-core:${CORE_TAG} \
+        --build-arg BASE_IMAGE="${BASE_IMAGE}" \
         -f docker/Dockerfile.build-core .
 else
     echo "Core builder image ${PREFIX}/deepracer-simapp-build-core:${CORE_TAG} already exists."
@@ -126,7 +135,7 @@ for variant in $VARIANTS; do
         NVCC_VER="cuda-nvcc-12-6"
         ;;
     cpu)
-        CORE_IMG="ubuntu:24.04"
+        CORE_IMG="${BASE_IMAGE}"
         NVCC_VER=""
         ;;
     *)

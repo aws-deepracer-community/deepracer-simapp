@@ -15,6 +15,10 @@ version: 0.2
 #   ARM64_BUILD_VARIANTS="cpu"    (default: "cpu")
 #   LOCAL_IMAGE_PREFIX            – local tag prefix when not pushing to Docker Hub
 #   PUBLIC_ECR_LOGIN_REGION       – region for public ECR auth token (default: us-east-1)
+#   BASE_IMAGE                    – Ubuntu base image for the CPU/core build. Set to a
+#                                  non-Docker Hub source to avoid Docker Hub rate limits,
+#                                  e.g. public.ecr.aws/ubuntu/ubuntu:24.04 or a pull-through
+#                                  cache repo. Defaults to ubuntu:24.04 (Docker Hub).
 phases:
   pre_build:
     commands:
@@ -72,9 +76,9 @@ phases:
             # Only push via build.sh when targeting Docker Hub; for ECR flows
             # build.sh builds locally and build-droa.sh handles the push.
             if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
-              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
+              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${BASE_IMAGE:+--base-image "${BASE_IMAGE}"} --push ${NO_CACHE:+--no-cache}
             else
-              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
+              bash build.sh --platform linux/amd64 -a "${BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${BASE_IMAGE:+--base-image "${BASE_IMAGE}"} ${NO_CACHE:+--no-cache}
             fi
 
             if [ -n "${TARGET_REGISTRY}" ]; then
@@ -94,9 +98,9 @@ phases:
             fi
 
             if [ "${ENABLE_IMAGE_PUSH}" = "true" ] && [ -n "${DOCKER_HUB_REGISTRY:-}" ]; then
-              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" --push ${NO_CACHE:+--no-cache}
+              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${BASE_IMAGE:+--base-image "${BASE_IMAGE}"} --push ${NO_CACHE:+--no-cache}
             else
-              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${NO_CACHE:+--no-cache}
+              bash build.sh --platform linux/arm64 -a "${ARM64_BUILD_VARIANTS}" -p "${BUILD_PREFIX}" ${BASE_IMAGE:+--base-image "${BASE_IMAGE}"} ${NO_CACHE:+--no-cache}
             fi
             ;;
 
