@@ -154,6 +154,7 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
             bucket=os.environ.get("YAML_S3_BUCKET", ''),
             s3_key=get_s3_key(os.environ.get("YAML_S3_PREFIX", ''), SECTOR_TIME_S3_POSTFIX),
             region_name=os.environ.get("APP_REGION", "us-east-1"),
+            s3_endpoint_url=os.environ.get("S3_ENDPOINT_URL", None),
             local_path=SECTOR_TIME_LOCAL_PATH)
         self._sector_times.update(self._virtual_event_best_sector_time.get_sector_time(
             num_sectors=self.num_sectors))

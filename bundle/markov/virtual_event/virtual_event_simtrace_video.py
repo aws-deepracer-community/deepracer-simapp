@@ -31,17 +31,19 @@ class VirtualEventSimtraceVideo():
     """
     VirtualEventSimtraceVideo class
     """
-    def __init__(self, profile, region):
+    def __init__(self, profile, region, s3_endpoint_url=None):
         """
         VirtualEventSimtraceVideo constructor
 
         Args:
             profile (object): racer profile object
             region (str): aws region
+            s3_endpoint_url (str): optional S3 endpoint url override (e.g. MinIO)
         """
         self._is_saving_simtrace = False
         self._is_saving_mp4 = False
         self._region = region
+        self._s3_endpoint_url = s3_endpoint_url
         self._profile = profile
         self._simtrace_video_s3_writers = []
         self._subscribe_to_save_mp4, self._unsubscribe_from_save_mp4 = None, None
@@ -52,6 +54,7 @@ class VirtualEventSimtraceVideo():
                               bucket=profile.outputSimTrace.s3BucketName,
                               s3_prefix=profile.outputSimTrace.s3KeyPrefix,
                               region_name=self._region,
+                              s3_endpoint_url=self._s3_endpoint_url,
                               local_path=SIMTRACE_EVAL_LOCAL_PATH_FORMAT.format(profile.agent_name)))
             self._is_saving_simtrace = True
         if hasattr(profile, 'outputMp4'):
@@ -60,16 +63,19 @@ class VirtualEventSimtraceVideo():
                               bucket=profile.outputMp4.s3BucketName,
                               s3_prefix=profile.outputMp4.s3KeyPrefix,
                               region_name=self._region,
+                              s3_endpoint_url=self._s3_endpoint_url,
                               local_path=CAMERA_PIP_MP4_LOCAL_PATH_FORMAT.format(profile.agent_name)),
                 SimtraceVideo(upload_type=SimtraceVideoNames.DEGREE45.value,
                               bucket=profile.outputMp4.s3BucketName,
                               s3_prefix=profile.outputMp4.s3KeyPrefix,
                               region_name=self._region,
+                              s3_endpoint_url=self._s3_endpoint_url,
                               local_path=CAMERA_45DEGREE_LOCAL_PATH_FORMAT.format(profile.agent_name)),
                 SimtraceVideo(upload_type=SimtraceVideoNames.TOPVIEW.value,
                               bucket=profile.outputMp4.s3BucketName,
                               s3_prefix=profile.outputMp4.s3KeyPrefix,
                               region_name=self._region,
+                              s3_endpoint_url=self._s3_endpoint_url,
                               local_path=CAMERA_TOPVIEW_LOCAL_PATH_FORMAT.format(profile.agent_name))])
             self._is_saving_mp4 = True
 

@@ -61,10 +61,20 @@ class VirtualEventAgentData():
         """
         VirtualEventAgentData constructor
         """
-        self._kvs_webrtc_names = WorldConfig.get_param("KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME")
+        self._kvs_webrtc_names = WorldConfig.get_param("KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME", None)
         self._queue_url = str(WorldConfig.get_param("SQS_QUEUE_URL", "sqs_queue_url"))
         self._region = WorldConfig.get_param("AWS_REGION", "us-east-1")
-        self._s3_client = S3Client(region_name=self._region)
+        # Optional endpoint overrides for running against local, SQS/S3-compatible
+        # services (e.g. ElasticMQ and MinIO). When unset the real AWS endpoints
+        # are used. The S3 endpoint is sourced from the race YAML (WorldConfig) to
+        # match the rest of simapp, with an environment fallback. The SQS endpoint
+        # is injected via the container environment.
+        self._s3_endpoint_url = WorldConfig.get_param("S3_ENDPOINT_URL", None) \
+            or os.environ.get("S3_ENDPOINT_URL", None)
+        self._sqs_endpoint_url = os.environ.get("SQS_ENDPOINT_URL", None) \
+            or WorldConfig.get_param("SQS_ENDPOINT_URL", None)
+        self._s3_client = S3Client(region_name=self._region,
+                                   s3_endpoint_url=self._s3_endpoint_url)
         self._num_of_agents = 1
         if isinstance(self._kvs_webrtc_names, list):
             self._num_of_agents = len(self._kvs_webrtc_names)
@@ -76,7 +86,8 @@ class VirtualEventAgentData():
                                      region_name=self._region,
                                      max_num_of_msg=MAX_NUM_OF_SQS_MESSAGE,
                                      wait_time_sec=SQS_WAIT_TIME_SEC,
-                                     session=refreshed_session(self._region))
+                                     session=refreshed_session(self._region),
+                                     endpoint_url=self._sqs_endpoint_url)
         self._racer_profiles = list()
 
     @property
@@ -190,6 +201,7 @@ class VirtualEventAgentData():
                 model_metadata = ModelMetadata(bucket=profile.inputModel.s3BucketName,
                                                s3_key=model_metadata_s3_key,
                                                region_name=self._region,
+                                               s3_endpoint_url=self._s3_endpoint_url,
                                                local_path=MODEL_METADATA_LOCAL_PATH_FORMAT.format(profile.agent_name))
                 setattr(profile, "model_metadata", model_metadata)
                 model_metadata_info = model_metadata.get_model_metadata_info()
@@ -221,6 +233,7 @@ class VirtualEventAgentData():
             checkpoint = Checkpoint(bucket=profile.inputModel.s3BucketName,
                                     s3_prefix=profile.inputModel.s3KeyPrefix,
                                     region_name=self._region,
+                                    s3_endpoint_url=self._s3_endpoint_url,
                                     agent_name=profile.agent_name,
                                     checkpoint_dir=LOCAL_MODEL_DIR)
             # make coach checkpoint compatible

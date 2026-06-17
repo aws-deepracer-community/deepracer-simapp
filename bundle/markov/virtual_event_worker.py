@@ -33,7 +33,6 @@ def main():
     """
     Main function for virutal event
     """
-    ModelUpdater.get_instance().pause_physics()
     virtual_event = VirtualEvent()
     LOG.info("[VirtualEventWorker] virtual event start.")
 
@@ -42,6 +41,10 @@ def main():
             virtual_event.poll()
         if virtual_event.is_event_end:
             break
+        # Pause physics after receiving the SQS message so that sim clock is
+        # running during controller spawner activation (which uses use_sim_time).
+        # setup() calls unpause_physics() as its first action.
+        ModelUpdater.get_instance().pause_physics()
         if virtual_event.setup():
             virtual_event.start()
             virtual_event.finish()

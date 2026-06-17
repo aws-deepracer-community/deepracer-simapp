@@ -17,7 +17,7 @@
 """this module handle all agent model spawn and delete"""
 
 import os
-import rosnode
+import subprocess
 import yaml
 import time
 import logging
@@ -99,11 +99,10 @@ class AgentModel(AbsModel):
         [ERROR] [1616111166.451933744, 49.818000000]:
         Tried to advertise a service that is already advertised in this node [/agent1/camera/zed/set_parameters]
         """
-        # kill agent controller manager and robot state publisher node
-        Popen("rosnode kill /{}/controller_manager".format(self._model_name),
-              shell=True,
-              executable="/bin/bash")
-        Popen("rosnode kill /{}/robot_state_publisher".format(self._model_name),
+        # kill agent controller manager and robot state publisher node.
+        # In ROS2 there is no rosnode kill; send SIGTERM to all processes whose
+        # ROS arguments contain the racecar namespace.
+        Popen("pkill -TERM -f '__ns:=/{0}' || pkill -TERM -f 'racecar_name:={0}'".format(self._model_name),
               shell=True,
               executable="/bin/bash")
         self._wait_for_rosnode(dead_nodes=[node.format(self._model_name) for node in self._control_nodes])
@@ -120,9 +119,13 @@ class AgentModel(AbsModel):
         Returns:
             bool: True is ros node is alive, False otherwise.
         """
-        if node_name in rosnode.get_node_names():
-            return True
-        return False
+        # ROS2 equivalent of rosnode.get_node_names(): query the live node graph.
+        try:
+            result = subprocess.run(['ros2', 'node', 'list'],
+                                    capture_output=True, text=True, timeout=5.0)
+            return node_name in result.stdout.splitlines()
+        except Exception:
+            return False
 
     def _wait_for_rosnode(self, alive_nodes: Optional[list] = None, dead_nodes: Optional[list] = None) -> None:
         """Wait for starting/killing ros node to complete

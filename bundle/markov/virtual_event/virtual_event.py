@@ -153,7 +153,8 @@ class VirtualEvent():
             self._virtual_event_simtrace_videos = \
                 [VirtualEventSimtraceVideo(
                     profile,
-                    self._virtual_event_race_data.region)
+                    self._virtual_event_race_data.region,
+                    self._virtual_event_race_data.s3_endpoint_url)
                  for profile in self._virtual_event_agent_data.racer_profiles]
 
             [eval_metric.reset(
@@ -228,6 +229,7 @@ class VirtualEvent():
             bucket=os.environ.get("YAML_S3_BUCKET", ''),
             s3_key=get_s3_key(os.environ.get("YAML_S3_PREFIX", ''), SECTOR_TIME_S3_POSTFIX),
             region_name=os.environ.get("APP_REGION", "us-east-1"),
+            s3_endpoint_url=os.environ.get("S3_ENDPOINT_URL", None),
             local_path=SECTOR_TIME_LOCAL_PATH)
         response = virtual_event_best_sector_time.list()
         # this is used to handle situation such as robomaker job crash, so the next robomaker job

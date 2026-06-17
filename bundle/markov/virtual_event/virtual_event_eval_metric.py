@@ -37,6 +37,7 @@ class VirtualEventEvalMetric():
         self._race_data = race_data
         dummy_metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: "dummy-bucket",
                                    MetricsS3Keys.METRICS_KEY.value: "dummy-key",
+                                   MetricsS3Keys.ENDPOINT_URL.value: self._race_data.s3_endpoint_url,
                                    MetricsS3Keys.REGION.value: self._race_data.region}
         self._eval_metric = \
             EvalMetrics(agent_name=agent_name,
@@ -62,6 +63,7 @@ class VirtualEventEvalMetric():
         """
         metrics_s3_config = {MetricsS3Keys.METRICS_BUCKET.value: profile.outputMetrics.s3BucketName,
                              MetricsS3Keys.METRICS_KEY.value: profile.outputMetrics.s3KeyPrefix,
+                             MetricsS3Keys.ENDPOINT_URL.value: self._race_data.s3_endpoint_url,
                              MetricsS3Keys.REGION.value: self._race_data.region}
         self._eval_metric.reset_metrics(
             s3_dict_metrics=metrics_s3_config,

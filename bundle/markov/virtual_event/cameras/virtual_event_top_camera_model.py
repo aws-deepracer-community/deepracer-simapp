@@ -30,7 +30,7 @@ class VirtualEventTopCameraModel(VirtualEventAbsCameraModel):
         """
         super().__init__(
             camera_type=DEFAULT_SUB_CAMERA,
-            model_name="/{}".format("sub_camera"),
+            model_name="top_camera",
             namespace=DEFAULT_SUB_CAMERA)
 
     def spawn(self):

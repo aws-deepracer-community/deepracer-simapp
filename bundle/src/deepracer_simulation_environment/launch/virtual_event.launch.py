@@ -17,7 +17,7 @@ def generate_launch_description():
     pkg_dir = get_package_share_directory('deepracer_simulation_environment')
     
     # Path to the Python script
-    script_path = os.path.join(pkg_dir, '..', '..', '..', 'lib', 'deepracer_simulation_environment', 'download_params_and_roslaunch_agent.py')
+    script_path = os.path.join(pkg_dir, '..', '..', 'lib', 'deepracer_simulation_environment', 'download_params_and_roslaunch_agent.py')
     
     return LaunchDescription([
         ExecuteProcess(

@@ -34,10 +34,8 @@ from markov.reset.constants import (RaceType)
 from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
 from markov.virtual_event.constants import WAIT_DISPLAY_NAME
-from deepracer_simulation_environment.srv import (VideoMetricsSrvRequest,
-                                                  VideoMetricsSrv,
-                                                  VirtualEventVideoEditSrv,
-                                                  VirtualEventVideoEditSrvResponse)
+from deepracer_simulation_environment.srv import (VideoMetricsSrv,
+                                                  VirtualEventVideoEditSrv)
 from mp4_saving.constants import (RaceCarColorToRGB, CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
                                   KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME,
@@ -81,6 +79,7 @@ class VirtualEventVideoEditor(Node):
         racecar_dict['display_name'] = WAIT_DISPLAY_NAME
         self._racecars_info.append(racecar_dict)
 
+        self.declare_parameter('RACE_TYPE', RaceType.TIME_TRIAL.value)
         self.job_type_image_edit = self._get_image_editing_job_type()
 
         # Fetching main camera frames, start consumer thread and producer thread for main camera frame
@@ -103,7 +102,6 @@ class VirtualEventVideoEditor(Node):
 
         # Initialize save mp4 ROS service for the markov package to signal when to
         # start and stop collecting video frames
-        self.declare_parameter('RACE_TYPE', RaceType.TIME_TRIAL.value)
         race_type = self.get_parameter('RACE_TYPE').get_parameter_value().string_value
         is_f1_race_type = race_type == RaceType.F1.value
         camera_info = utils.get_cameratype_params(self.racecar_name, self.agent_name, is_f1_race_type)
@@ -158,7 +156,7 @@ class VirtualEventVideoEditor(Node):
         self._racecars_info[self.racecar_index]['display_name'] = req.display_name
         self.job_type_image_edit = self._get_image_editing_job_type()
         self.save_to_mp4_obj.subscribe_to_save_mp4()
-        return VirtualEventVideoEditSrvResponse(success=True)
+        return VirtualEventVideoEditSrv.Response(success=True)
 
     def unsubscribe_to_save_mp4(self, req):
         """ Ros service handler function used to unsubscribe from the Image topic.
@@ -200,7 +198,7 @@ class VirtualEventVideoEditor(Node):
         """ Used to update the racers metric information
         """
         if rclpy.ok():
-            video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrvRequest())
+            video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrv.Request())
             self._agents_metrics[self.racecar_index].put(video_metrics)
 
     def _edit_camera_images(self, frame_data):
