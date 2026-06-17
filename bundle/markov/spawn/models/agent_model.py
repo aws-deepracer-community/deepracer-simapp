@@ -72,21 +72,19 @@ class AgentModel(AbsModel):
         # load robot_description into ros parameter server
         WorldConfig.set_param("/{}/robot_description".format(self._model_name), model_urdf)
 
-        # ros2 launch controller_manager and robot_state_publisher
-        Popen("ros2 launch deepracer_simulation_environment racecar_control_kinematics.launch.py \
-            racecar_name:={} make_required:={} __ns:={}".format(self._model_name,
-                                                                "false",
-                                                                self._model_name),
-              shell=True,
-              executable="/bin/bash")
-        self._wait_for_rosnode(alive_nodes=[node.format(self._model_name) for node in self._control_nodes])
+        # ros2 launch controller_manager and robot_state_publisher — only if not already running
+        #control_nodes = [node.format(self._model_name) for node in self._control_nodes]
+        #if not all(self._is_ros_node_alive(node) for node in control_nodes):
+        #    Popen("ros2 launch deepracer_simulation_environment racecar_control_kinematics.launch.py \
+        #        racecar_name:={} make_required:={} __ns:={}".format(self._model_name,
+        #                                                            "false",
+        #                                                            self._model_name),
+        #          shell=True,
+        #          executable="/bin/bash")
+        #    self._wait_for_rosnode(alive_nodes=control_nodes)
 
-        # spawn agent urdf model
-        GazeboModel.get_instance().spawn_urdf(model_name=self._model_name,
-                                              model_xml=model_urdf,
-                                              robot_namespace="/{}".format(self._model_name),
-                                              initial_pose=pose if pose else Pose(),
-                                              reference_frame='')
+        # The physical racecar model is already present in Gazebo (spawned by
+        # racecar.launch.py at startup). No URDF spawn needed here.
 
     def _delete(self) -> None:
         """delete the agent model

@@ -187,7 +187,9 @@ class VirtualEventGraphManager():
                                                                            self._start_pos_offset)[idx],
                     ConfigParams.DONE_CONDITION.value: self._race_data.done_condition,
                     ConfigParams.IS_VIRTUAL_EVENT.value: True,
-                    ConfigParams.RACE_DURATION.value: self._race_data.race_duration}}
+                    ConfigParams.RACE_DURATION.value: self._race_data.race_duration,
+                    ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: 0.0,
+                    ConfigParams.START_POSITION_OFFSET.value: 0.0}}
 
             agent_list.append(create_rollout_agent(agent_config,
                                                    self._eval_metrics[idx],

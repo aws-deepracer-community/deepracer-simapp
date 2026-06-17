@@ -225,7 +225,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
             RolloutCtrl._rollout_ctrl_node.create_subscription(String, 
                                                                WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
                                                                                              CarControlTopic.STATUS_CTRL.value),
-                                                               self._updatae_car_status,
+                                                               self._update_car_status,
                                                                QoSProfile(depth=1))
 
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
