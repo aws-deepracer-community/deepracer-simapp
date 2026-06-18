@@ -71,6 +71,8 @@ class ROS2NodeManager:
                 # Yield GIL to improve performance
                 time.sleep(0)
             except Exception as ex:
+                if not rclpy.ok() or "cannot schedule new futures after shutdown" in str(ex):
+                    break
                 logger.error(f"Error in ROS2 executor: {ex}")
                 # Brief sleep to avoid tight error loop
                 time.sleep(0.01)

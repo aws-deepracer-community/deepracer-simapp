@@ -250,7 +250,12 @@ class AgentsVideoEditor(Node):
         Thread(target=self._consumer_mp4_frame_thread).start()
 
         # Leaderboard jobs do not require KVS streams
-        if self._is_publish_to_kvs_stream:
+        # KVS streaming: training keeps the in-process publisher here (its light overlay
+        # never starved the camera intake). Evaluation/race KVS is produced by the
+        # dedicated kvs_video_editor node (its heavier overlay needs its own process), so
+        # for those jobs this node does NOT publish KVS. Leaderboard jobs (publish flag
+        # false) stream no KVS at all.
+        if self._is_publish_to_kvs_stream and self.is_training:
             self.job_type_image_edit_kvs = self._get_image_editing_job_type()
             # Publish to KVS stream topic
             self.kvs_pub = self.create_publisher(

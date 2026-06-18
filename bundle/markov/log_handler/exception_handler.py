@@ -37,7 +37,6 @@ from markov.log_handler.constants import (SIMAPP_ERROR_HANDLER_EXCEPTION, SIMAPP
                                           SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME, CONDA_ENV_NAME,
                                           CLOUDWATCH_LOG_WORKER_SLEEP_TIME, CONDA_DEFAULT_ENV, STOP_ROS_NODE_MONITOR_SYNC_FILE)
 from markov.log_handler.logger import Logger
-from markov.constants import DEEPRACER_JOB_TYPE_ENV, DeepRacerJobType
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -187,19 +186,29 @@ def kill_sagemaker_simapp_jobs_by_pid():
     """This method reads from the simulation and training pid files and kills the processes one by one.
     """
     try: 
+        job_type = os.environ.get("JOB_TYPE", "").strip().lower()
+        wait_for_training_pid = job_type == "training"
+
         total_wait_time = 0
-        while not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
+        while (not os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH) or
+               (wait_for_training_pid and not os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))):
             if total_wait_time >= SAGEONLY_PID_FILE_NOT_PRESENT_TIME_OUT:
                 LOG.info("simapp_exit_gracefully - Stopped waiting. SimApp Pid Exists=%s, Training Pid Exists=%s.",
                         os.path.exists(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH),
                         os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH))
                 return
-            LOG.info("simapp_exit_gracefully - Waiting for simapp and training job to come up.")
+            LOG.info("simapp_exit_gracefully - Waiting for simapp%s job to come up.",
+                     " and training" if wait_for_training_pid else "")
             time.sleep(SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME)
             total_wait_time += SAGEONLY_PID_FILE_NOT_PRESENT_SLEEP_TIME
 
         simapp_pids = read_pids_from_file(SAGEONLY_SIMAPP_JOB_PID_FILE_PATH)
-        training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
+        training_pids = []
+        if wait_for_training_pid and os.path.exists(SAGEONLY_TRAINING_JOB_PID_FILE_PATH):
+            training_pids = read_pids_from_file(SAGEONLY_TRAINING_JOB_PID_FILE_PATH)
+        elif not wait_for_training_pid:
+            LOG.info("simapp_exit_gracefully - Training pid file not required for job type=%s.",
+                     job_type or "<unset>")
         LOG.info("simapp_exit_gracefully - SimApp pids=%s, Training pids=%s.", simapp_pids, training_pids)
 
         pids_to_kill = []
