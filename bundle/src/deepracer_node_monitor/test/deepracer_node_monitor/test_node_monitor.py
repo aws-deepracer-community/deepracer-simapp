@@ -13,6 +13,7 @@
 #   See the License for the specific language governing permissions and         #
 #   limitations under the License.                                              #
 #################################################################################
+import os
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -394,3 +395,67 @@ class NodeMonitorTest(TestCase):
         observer1.on_stop.assert_called_once()
         observer2.on_stop.assert_called_once()
         self.assertFalse(node_monitor._is_monitoring)
+
+    @patch("deepracer_node_monitor.node_monitor.os.path.isfile", return_value=False)
+    def test_handle_stop_file_if_present_no_stop_file(self, isfile_mock, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor.checkIfROSNodeMonitorShouldStop = MagicMock(return_value=False)
+        node_monitor.stopSimulationJob = MagicMock()
+        result = node_monitor._handle_stop_file_if_present()
+        self.assertFalse(result)
+        node_monitor.stopSimulationJob.assert_not_called()
+
+    @patch("deepracer_node_monitor.node_monitor.os.path.isfile", return_value=False)
+    def test_handle_stop_file_if_present_success_path(self, isfile_mock, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor.checkIfROSNodeMonitorShouldStop = MagicMock(return_value=True)
+        node_monitor.stopSimulationJob = MagicMock()
+        observer = MagicMock()
+        node_monitor._observers = set({observer})
+        result = node_monitor._handle_stop_file_if_present()
+        self.assertTrue(result)
+        observer.on_job_successful_completion.assert_called_once()
+        node_monitor.stopSimulationJob.assert_called_once_with(job_completed=True)
+
+    @patch("deepracer_node_monitor.node_monitor.os.path.isfile", return_value=True)
+    def test_handle_stop_file_if_present_error_path(self, isfile_mock, rlock_mock):
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor.checkIfROSNodeMonitorShouldStop = MagicMock(return_value=True)
+        node_monitor.stopSimulationJob = MagicMock()
+        observer = MagicMock()
+        node_monitor._observers = set({observer})
+        node_monitor._dead_nodes = set({"/gazebo"})
+        result = node_monitor._handle_stop_file_if_present()
+        self.assertTrue(result)
+        observer.on_dead_node_update.assert_called_once_with(node_monitor, set({"/gazebo"}))
+        node_monitor.stopSimulationJob.assert_called_once_with(job_completed=False)
+
+    @patch("deepracer_node_monitor.node_monitor.kill_sagemaker_simapp_jobs_by_pid")
+    @patch("deepracer_node_monitor.node_monitor.cancel_simulation_job")
+    @patch("time.sleep")
+    def test_stop_simulation_job_completed_calls_cancel_before_kill(self, sleep_mock, cancel_mock, kill_mock, rlock_mock):
+        from deepracer_node_monitor.node_monitor import DeepRacerJobType, DEEPRACER_JOB_TYPE_ENV
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor.stop = MagicMock()
+        call_order = []
+        cancel_mock.side_effect = lambda: call_order.append("cancel")
+        kill_mock.side_effect = lambda: call_order.append("kill")
+        # Make os.environ.get return SAGEONLY value for the job type key
+        with patch("os.environ.get", return_value=DeepRacerJobType.SAGEONLY.value):
+            node_monitor.stopSimulationJob(job_completed=True)
+        self.assertEqual(call_order, ["cancel", "kill"])
+
+    @patch("deepracer_node_monitor.node_monitor.kill_sagemaker_simapp_jobs_by_pid")
+    @patch("deepracer_node_monitor.node_monitor.cancel_simulation_job")
+    @patch("time.sleep")
+    def test_stop_simulation_job_failed_calls_kill_before_cancel(self, sleep_mock, cancel_mock, kill_mock, rlock_mock):
+        from deepracer_node_monitor.node_monitor import DeepRacerJobType, DEEPRACER_JOB_TYPE_ENV
+        node_monitor = NodeMonitor(self.monitor_nodes, self.update_rate_hz)
+        node_monitor.stop = MagicMock()
+        call_order = []
+        cancel_mock.side_effect = lambda: call_order.append("cancel")
+        kill_mock.side_effect = lambda: call_order.append("kill")
+        # Make os.environ.get return SAGEONLY value for the job type key
+        with patch("os.environ.get", return_value=DeepRacerJobType.SAGEONLY.value):
+            node_monitor.stopSimulationJob(job_completed=False)
+        self.assertEqual(call_order, ["kill", "cancel"])

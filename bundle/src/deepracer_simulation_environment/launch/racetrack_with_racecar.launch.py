@@ -4,12 +4,13 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, LogInfo
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression, PathJoinSubstitution, EnvironmentVariable
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from markov.world_config import WorldConfig
 
 def generate_launch_description():
     """
@@ -221,13 +222,34 @@ def generate_launch_description():
         }],
     )
     
-    # Agents video editor
+    # Agents video editor: MP4 recording + metrics, and the in-process KVS publisher for
+    # TRAINING only (self-gates on JOB_TYPE). Evaluation/race KVS comes from the
+    # dedicated kvs_video_editor node below.
     agents_video_editor = Node(
         package='deepracer_simulation_environment',
         executable='agents_video_editor.py',
         arguments=[PythonExpression(["'2' if '", LaunchConfiguration('multicar'), "'.lower() == 'true' else '1'"]),
                    LaunchConfiguration('publish_to_kinesis_stream')],
         output='screen'
+    )
+
+    # Dedicated KVS overlay editor for evaluation/race. Runs as its own process so the
+    # CPU-heavy overlay editing cannot contend with the camera-frame intake for the GIL
+    # (which was dropping ~40% of unique frames from the live evaluation stream).
+    # Launched only for non-training jobs (evaluation / race / leaderboard submission):
+    # in training the lighter overlay runs in-process in agents_video_editor, and adding
+    # this editing process to training measurably lowers the sim frame rate (~14%), so we
+    # skip launching it there entirely. JOB_TYPE is read from the params YAML that
+    # download_params_and_roslaunch_agent downloads before this launch runs. (The node
+    # also self-idles in training as a backstop if it is ever launched there.)
+    job_type = WorldConfig.get_param('JOB_TYPE', 'EVALUATION')
+    is_training = job_type == 'TRAINING'
+    kvs_video_editor = Node(
+        package='deepracer_simulation_environment',
+        executable='kvs_video_editor.py',
+        arguments=[PythonExpression(["'2' if '", LaunchConfiguration('multicar'), "'.lower() == 'true' else '1'"])],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('publish_to_kinesis_stream'))
     )
     
     # Web video server for browser-based video streaming
@@ -266,4 +288,8 @@ def generate_launch_description():
         car_reset_node,
         agents_video_editor,
         web_video_server,
+        LogInfo(msg="kvs_video_editor launch gate: JOB_TYPE={} -> {}".format(
+            job_type, "skipped (training)" if is_training else "launched (gated on publish flag)")),
+        # Only launch the dedicated KVS editor for non-training jobs.
+        *([] if is_training else [kvs_video_editor]),
     ])
