@@ -46,6 +46,7 @@ install(PROGRAMS
     scripts/visualization_node.py
     scripts/test_fixture_nodes/camera_topic_node.py
     scripts/mp4_saving/agents_video_editor.py
+    scripts/mp4_saving/kvs_video_editor.py
     scripts/mp4_saving/virtual_event_video_editor.py
     tests/pytest_runner.py
     DESTINATION lib/${PROJECT_NAME}

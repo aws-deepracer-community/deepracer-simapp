@@ -290,16 +290,17 @@ class NodeMonitor(object):
         self._is_monitoring = True
         try:
             while self._is_monitoring:
-                if self.checkIfROSNodeMonitorShouldStop():
-                    for observers in self._observers:
-                        observers.on_job_successful_completion(self)
-                    self.stopSimulationJob()
+                # Check stop file FIRST, before potentially-blocking node status updates
+                if self._handle_stop_file_if_present():
                     break
                 is_status_changed = False
                 prev_running_nodes = self._running_nodes.copy()
                 prev_dead_nodes = self._dead_nodes.copy()
                 self._update_running_nodes()
                 self._update_dead_nodes()
+                # Re-check stop file after potentially-blocking node pings
+                if self._handle_stop_file_if_present():
+                    break
                 if prev_dead_nodes != self._dead_nodes:
                     is_status_changed = True
                     newly_dead_nodes = self._dead_nodes - prev_dead_nodes
@@ -336,16 +337,35 @@ class NodeMonitor(object):
         finally:
             logging.info("[NodeMonitor] Node monitoring closed")
 
-    def stopSimulationJob(self) -> None:
+    def _handle_stop_file_if_present(self) -> bool:
+        """Check if stop file exists and handle shutdown accordingly.
+        Returns True if stop file was found and shutdown initiated."""
+        if self.checkIfROSNodeMonitorShouldStop():
+            if os.path.isfile(EXCEPTION_HANDLER_SYNC_FILE):
+                logging.info("[NodeMonitor] Stop file found but exception occurred - treating as failure")
+                for observers in self._observers:
+                    observers.on_dead_node_update(self, self._dead_nodes)
+                self.stopSimulationJob(job_completed=False)
+            else:
+                for observers in self._observers:
+                    observers.on_job_successful_completion(self)
+                self.stopSimulationJob(job_completed=True)
+            return True
+        return False
+
+    def stopSimulationJob(self, job_completed: bool = False) -> None:
         # The sleep time is for logs to get uploaded to cloudwatch
         time.sleep(CLOUDWATCH_LOG_WORKER_SLEEP_TIME)
         logging.info("[NodeMonitor] Cancelling sim job")
+        if job_completed:
+            cancel_simulation_job()
         if os.environ.get(DEEPRACER_JOB_TYPE_ENV) == DeepRacerJobType.SAGEONLY.value:
             logging.info(
                 "simapp_exit_gracefully - Job type is SageOnly. Killing SimApp and Training jobs by PID"
             )
             kill_sagemaker_simapp_jobs_by_pid()
-        cancel_simulation_job()
+        if not job_completed:
+            cancel_simulation_job()
         self.stop()
 
     def checkIfROSNodeMonitorShouldStop(self) -> bool:
