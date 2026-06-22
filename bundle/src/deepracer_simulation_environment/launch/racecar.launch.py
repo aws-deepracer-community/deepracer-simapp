@@ -156,7 +156,7 @@ def generate_launch_description():
         ],
         condition=IfCondition(PythonExpression([
             "'", LaunchConfiguration('publish_to_kinesis_stream'), "'.lower() == 'true' and '",
-            LaunchConfiguration('kinesis_video_stream_name'), "' != ''"
+            LaunchConfiguration('kinesis_video_stream_name'), "'.lower() not in ('', 'none')"
         ]))
     )
     
@@ -185,7 +185,7 @@ def generate_launch_description():
         ],
         condition=IfCondition(PythonExpression([
             "'", LaunchConfiguration('publish_to_kinesis_stream'), "'.lower() == 'true' and '",
-            LaunchConfiguration('kinesis_video_stream_name'), "' != ''"
+            LaunchConfiguration('kinesis_video_stream_name'), "'.lower() not in ('', 'none')"
         ]))
     )
     
