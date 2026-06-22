@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.31.1
+  - nginx==1.31.2
   - zip
   - wget
   - curl==8.20.0
@@ -21,7 +21,7 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==46.0.7
+      - cryptography==48.0.1
       - kubernetes==33.1.0
       - opencv-python==4.9.0.80
       - bokeh==3.7.3
