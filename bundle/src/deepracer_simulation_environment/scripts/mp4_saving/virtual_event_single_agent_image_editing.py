@@ -25,6 +25,7 @@ from mp4_saving.image_editing_interface import ImageEditingInterface
 from mp4_saving.top_view_graphics import TopViewGraphics
 from mp4_saving.fader import Fader
 from markov.virtual_event.constants import DEFAULT_RACE_DURATION
+from markov.world_config import WorldConfig
 from mp4_saving.states.virtual_event_wait_state import VirtualEventWaitState
 from markov.state_machine.fsm import FSM
 from markov.boto.s3.files.virtual_event_best_sector_time import VirtualEventBestSectorTime
@@ -63,8 +64,8 @@ class VirtualEventSingleAgentImageEditing(ImageEditingInterface):
         else:
             # Fallback to environment variables
             self._world_name = os.environ.get('WORLD_NAME', 'default_track')
-            self.num_sectors = int(os.environ.get('NUM_SECTORS', '3'))
-            self.race_duration = int(os.environ.get('RACE_DURATION', str(DEFAULT_RACE_DURATION))) * 1000
+            self.num_sectors = int(WorldConfig.get_param('NUM_SECTORS', '3'))
+            self.race_duration = int(WorldConfig.get_param('RACE_DURATION', DEFAULT_RACE_DURATION)) * 1000
         self.racecar_info = racecar_info
         self.race_type = race_type
         racecar_index = get_racecar_idx(racecar_name)

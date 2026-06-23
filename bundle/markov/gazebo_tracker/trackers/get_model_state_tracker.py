@@ -67,7 +67,6 @@ class GetModelStateTracker(AbstractTracker):
             
             if model_name not in self.model_names:
                 self.model_names.append(model_name)
-            if relative_entity_name not in self.relative_entity_names:
                 self.relative_entity_names.append(relative_entity_name)
                 
             if blocking or cache_key not in self.model_map:
