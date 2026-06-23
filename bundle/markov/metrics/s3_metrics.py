@@ -31,6 +31,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
 from deepracer_simulation_environment.srv import VideoMetricsSrv, VideoMetricsSrv_Response
+from deepracer_simulation_environment.msg import VideoMetrics as VideoMetricsMsg
 from geometry_msgs.msg import Point32
 from markov.constants import BEST_CHECKPOINT, LAST_CHECKPOINT, METRICS_VERSION
 from markov.common import ObserverInterface
@@ -154,10 +155,37 @@ class MarkovVideoMetrics(Node):
             VideoMetricsSrv,
             f"/{agent_name}/mp4_video_metrics",
             self._handle_get_video_metrics)
+        # Topic publisher for pub/sub consumers; service kept for backward compatibility
+        self._pub = self.create_publisher(VideoMetricsMsg, f"/{agent_name}/video_metrics", 10)
 
     def _handle_get_video_metrics(self, request, response):
-        '''Serivce callback, which delegates to the provided handler.'''
+        '''Service callback, which delegates to the provided handler.'''
         return self._handler(request, response)
+
+    def publish_latest(self):
+        '''Build a VideoMetrics topic message from current metrics and publish it.
+        Called by TrainingMetrics/EvalMetrics on every simulation step so subscribers
+        always have fresh data without polling the service.
+        '''
+        response = self._handler(None, VideoMetricsSrv_Response())
+        msg = VideoMetricsMsg()
+        msg.lap_counter = response.lap_counter
+        msg.completion_percentage = response.completion_percentage
+        msg.reset_counter = response.reset_counter
+        msg.obstacle_reset_counter = response.obstacle_reset_counter
+        msg.speed = response.speed
+        msg.throttle = response.throttle
+        msg.steering = response.steering
+        msg.best_lap_time = response.best_lap_time
+        msg.last_lap_time = response.last_lap_time
+        msg.total_evaluation_time = response.total_evaluation_time
+        msg.done = response.done
+        msg.x = response.x
+        msg.y = response.y
+        msg.object_locations = response.object_locations
+        msg.episode_status = response.episode_status
+        msg.pause_duration = response.pause_duration
+        self._pub.publish(msg)
 
     def start(self):
         '''Start a thread to listen for service requests.'''
@@ -468,6 +496,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             point.z = 0.0
             object_locations.append(point)
         self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value] = object_locations
+        self._training_metrics_node.publish_latest()
 
     def _handle_get_video_metrics(self, request, response):
         # Fill the response
@@ -784,6 +813,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             metrics[StepMetrics.EPISODE_STATUS.value]
         self._video_metrics[Mp4VideoMetrics.PAUSE_DURATION.value] = \
             metrics[StepMetrics.PAUSE_DURATION.value]
+        self._eval_metrics_node.publish_latest()
 
     def upload_step_metrics(self, metrics):
         metrics[StepMetrics.EPISODE.value] = self._number_of_trials_
