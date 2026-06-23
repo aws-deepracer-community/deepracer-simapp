@@ -26,14 +26,12 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import (RaceType)
-from markov.rclpy_wrappers import ServiceProxyWrapper 
 from markov.utils import get_racecar_idx
 from markov.world_config import WorldConfig
-from deepracer_simulation_environment.srv import VideoMetricsSrv
+from deepracer_simulation_environment.msg import VideoMetrics
 from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
-                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes,
-                                  METRICS_POLL_PERIOD_SEC)
+                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes)
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -68,8 +66,6 @@ class AgentsVideoEditor(Node):
             LOG.error("Error initializing ROS2 node: %s", e)
             raise
 
-        # ROS2 ARCHITECTURE FIX: Set basic attributes immediately (like ROS1)
-        # ServiceProxyWrapper handles service coordination with retries, no upfront waiting needed
         try:
             self._agent_metrics_buffer = DoubleBuffer(clear_data_on_get=False)
             self._agents_metrics.append(self._agent_metrics_buffer)
@@ -86,8 +82,6 @@ class AgentsVideoEditor(Node):
 
         # init cv bridge
         self.bridge = CvBridge()
-        self._shutdown_requested = False
-        self._metrics_call_lock = Lock()
 
         # ROS2: Declare parameters
         try:
@@ -182,7 +176,6 @@ class AgentsVideoEditor(Node):
                                          frame_size=Mp4Parameter.FRAME_SIZE.value)
 
         self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
-        self._metrics_timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         
         self.subscribe_service = self.create_service(
             Empty, 
@@ -205,16 +198,14 @@ class AgentsVideoEditor(Node):
             10
         )
 
-        # ROS service to get video metrics
-        # Increase retry attempts and timeout since the service may take time to become available
-        self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
-                                                         VideoMetricsSrv,
-                                                         max_retry_attempts=30,
-                                                         timeout_sec=2.0,
-                                                         wait_for_service=True)
-        self._metrics_update_timer = self.create_timer(METRICS_POLL_PERIOD_SEC,
-                                                        self._update_racers_metrics,
-                                                        callback_group=self._metrics_timer_callback_group)
+        # Subscribe to the video metrics topic published by MarkovVideoMetrics on every sim step.
+        # This replaces the service-call polling approach: no blocking, no GIL contention.
+        self._metrics_sub = self.create_subscription(
+            VideoMetrics,
+            f'/{self.agent_name}/video_metrics',
+            self._on_video_metrics,
+            10
+        )
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited
@@ -268,14 +259,9 @@ class AgentsVideoEditor(Node):
             )
             Thread(target=self._kvs_publisher).start()
 
-    def request_shutdown(self):
-        self._shutdown_requested = True
-        try:
-            if hasattr(self, '_metrics_update_timer') and self._metrics_update_timer is not None:
-                self._metrics_update_timer.cancel()
-        except Exception:
-            pass
-        
+    def _on_video_metrics(self, msg):
+        """Subscription callback: store the latest VideoMetrics message for the camera pipeline."""
+        self._agent_metrics_buffer.put(msg)
 
     def subscribe_to_save_mp4(self, req, response):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -359,21 +345,9 @@ class AgentsVideoEditor(Node):
         raise Exception("Unknown job type for image editing")
 
     def _update_racers_metrics(self):
-        """ Used to update the racers metric information
-        """
-        if not rclpy.ok() or self._shutdown_requested:
-            return
-        if not self._metrics_call_lock.acquire(blocking=False):
-            return
-        try:
-            video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrv.Request())
-            if not self._shutdown_requested:
-                self._agent_metrics_buffer.put(video_metrics)
-        except Exception:
-            if not self._shutdown_requested and rclpy.ok():
-                raise
-        finally:
-            self._metrics_call_lock.release()
+        """ Legacy stub — metrics are now pushed via the /{agent}/video_metrics topic.
+        Kept so any external caller does not raise AttributeError. """
+        pass
 
     def _edit_main_camera_images(self, frame_data, metric_info, edited_frame_result):
         """ Thread to edit main camera frames
@@ -478,14 +452,20 @@ class AgentsVideoEditor(Node):
         if rclpy.ok():
             self._main_camera_frame_buffer.put(frame)
 
+            # Nothing to produce for: MP4 saving is off and KVS is either disabled or
+            # handled by kvs_video_editor (evaluation). Skip metrics fetch entirely.
+            if not self.is_save_mp4_enabled and not (self._is_publish_to_kvs_stream and self.is_training):
+                return
+
             # Get frame from main camera & agents metric information
             frame_metric_data = self.get_latest_frame_metric_data()
 
             if frame_metric_data is None:
                 return
 
-            # Queue frames if MP4 saving OR KVS streaming is enabled
-            if self.is_save_mp4_enabled or self._is_publish_to_kvs_stream:
+            # Queue frames if MP4 saving is enabled, or KVS streaming for training
+            # (evaluation KVS is handled by kvs_video_editor in its own process)
+            if self.is_save_mp4_enabled or (self._is_publish_to_kvs_stream and self.is_training):
                 if self._agent_frame_queue.qsize() == MAX_FRAMES_IN_QUEUE:
                     LOG.info("Dropping frame from the queue")
                     self._agent_frame_queue.get()
@@ -512,8 +492,9 @@ class AgentsVideoEditor(Node):
                     self.mp4_main_camera_pub.publish(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
                     if self.top_camera_mp4_pub:
                         self.top_camera_mp4_pub.publish(edited_frames[FrameTypes.TOP_CAMERA_FRAME.value])
-                # Update KVS buffer with edited frame (if KVS is enabled)
-                if self._is_publish_to_kvs_stream:
+                # Update KVS buffer with edited frame (training only; evaluation KVS is
+                # handled by the dedicated kvs_video_editor process)
+                if self._is_publish_to_kvs_stream and self.is_training:
                     self._kvs_edited_frame_buffer.put(edited_frames[FrameTypes.MAIN_CAMERA_FRAME.value])
 
     def _kvs_publisher(self):
@@ -626,12 +607,6 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
-        for video_editor in video_editor_nodes:
-            try:
-                video_editor.request_shutdown()
-            except Exception:
-                pass
-
         if executor is not None:
             try:
                 executor.shutdown(timeout_sec=2.0)

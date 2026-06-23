@@ -38,9 +38,8 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import RaceType
-from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.world_config import WorldConfig
-from deepracer_simulation_environment.srv import VideoMetricsSrv
+from deepracer_simulation_environment.msg import VideoMetrics
 from mp4_saving.constants import FrameQueueData, FrameTypes, KVS_PUBLISH_PERIOD
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
@@ -87,15 +86,23 @@ class KvsVideoEditor(Node):
             self.create_subscription(String, '/agent/training_phase',
                                      self._training_phase_cb, QoSProfile(depth=10))
 
-        # One metrics service client per agent so the overlay has every racer's data
-        # (matches agents_video_editor, which aggregates all agents' metrics).
-        self._metrics_srvs = list()
+        # One metrics buffer per agent populated via the /{agent}/video_metrics topic.
+        # Non-blocking reads mean the camera callback is never delayed waiting for a response.
+        self._metrics_buffers = {}
+        self._metrics_subs = []
         for racecar in racecars_info:
             agent_name = utils.racecar_name_to_agent_name(racecars_info, racecar['name'])
-            self._metrics_srvs.append(
-                ServiceProxyWrapper("/{}/{}".format(agent_name, "mp4_video_metrics"),
-                                    VideoMetricsSrv, max_retry_attempts=30,
-                                    timeout_sec=2.0, wait_for_service=True))
+            buf = DoubleBuffer(clear_data_on_get=False)
+            self._metrics_buffers[agent_name] = buf
+            # Keep a reference so the subscription is not garbage-collected.
+            self._metrics_subs.append(
+                self.create_subscription(
+                    VideoMetrics,
+                    f'/{agent_name}/video_metrics',
+                    lambda msg, a=agent_name: self._metrics_buffers[a].put(msg),
+                    10
+                )
+            )
 
         self.kvs_pub = self.create_publisher(
             ROSImg, '/{}/deepracer/kvs_stream'.format(self.racecar_name), 1)
@@ -139,7 +146,16 @@ class KvsVideoEditor(Node):
         if not rclpy.ok():
             return
         try:
-            agent_metric_info = [srv(VideoMetricsSrv.Request()) for srv in self._metrics_srvs]
+            # Collect metrics from each agent's buffer (non-blocking).
+            # If any buffer has not yet received data, skip this frame to avoid a crash.
+            agent_metric_info = []
+            for racecar in self.racecars_info:
+                agent_name = utils.racecar_name_to_agent_name(self.racecars_info, racecar['name'])
+                buf = self._metrics_buffers.get(agent_name)
+                metric = buf.get() if buf is not None else None
+                if metric is None:
+                    return  # metrics not yet available; skip frame
+                agent_metric_info.append(metric)
             metric_info = {
                 FrameQueueData.AGENT_METRIC_INFO.value: agent_metric_info,
                 FrameQueueData.TRAINING_PHASE.value:
@@ -196,6 +212,8 @@ def main(args=None):
                 executor.add_node(KvsVideoEditor(racecar['name'], racecars_info))
             LOG.info("KVS video editor started for %d racecar(s)", len(racecars_info))
         executor.spin()
+    except KeyboardInterrupt:
+        pass  # Normal SIGINT shutdown — not an error
     except Exception as err_msg:
         log_and_exit("Exception in KVS video editor ros node: {}".format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
