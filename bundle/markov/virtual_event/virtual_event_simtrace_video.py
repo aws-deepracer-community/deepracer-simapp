@@ -94,7 +94,7 @@ class VirtualEventSimtraceVideo():
         mp4_sub = "/{}/save_mp4/subscribe_to_save_mp4".format(self._profile.racecar_name)
         mp4_unsub = "/{}/save_mp4/unsubscribe_from_save_mp4".format(self._profile.racecar_name)
         self._subscribe_to_save_mp4 = ServiceProxyWrapper(mp4_sub, VirtualEventVideoEditSrv)
-        self._unsubscribe_from_save_mp4 = ServiceProxyWrapper(mp4_unsub)
+        self._unsubscribe_from_save_mp4 = ServiceProxyWrapper(mp4_unsub, timeout_sec=60.0)
         if self._is_saving_mp4:
             # racecar_color is not used for virtual event image editing, so simply pass default "Black"
             self._subscribe_to_save_mp4(VirtualEventVideoEditSrv.Request(
