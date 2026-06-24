@@ -5,7 +5,7 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 import os
@@ -22,6 +22,9 @@ def generate_launch_description():
     kinesis_webrtc_signaling_channel_names_arg = DeclareLaunchArgument('kinesis_webrtc_signaling_channel_names')
     multicar_arg = DeclareLaunchArgument('multicar', default_value='true')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
+    enable_agent_video_editor_arg = DeclareLaunchArgument('enable_agent_video_editor', default_value='false')
+    body_shell_types_arg = DeclareLaunchArgument('body_shell_types', default_value='deepracer')
+    simapp_versions_arg = DeclareLaunchArgument('simapp_versions', default_value='6.0')
     
     # Get package directory
     pkg_dir = get_package_share_directory('deepracer_simulation_environment')
@@ -34,7 +37,10 @@ def generate_launch_description():
         kinesis_webrtc_signaling_channel_names_arg,
         multicar_arg,
         publish_to_kinesis_stream_arg,
-        
+        enable_agent_video_editor_arg,
+        body_shell_types_arg,
+        simapp_versions_arg,
+
         # Include racetrack_with_racecar launch
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -49,7 +55,10 @@ def generate_launch_description():
                 ('kinesis_video_stream_names', LaunchConfiguration('kinesis_video_stream_names')),
                 ('kinesis_video_stream_region', LaunchConfiguration('kinesis_video_stream_region')),
                 ('multicar', LaunchConfiguration('multicar')),
-                ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream'))
+                ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
+                ('enable_agent_video_editor', LaunchConfiguration('enable_agent_video_editor')),
+                ('body_shell_types', LaunchConfiguration('body_shell_types')),
+                ('simapp_versions', LaunchConfiguration('simapp_versions'))
             ]
         ),
         
@@ -57,7 +66,8 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=[
                 'python3',
-                os.path.join(pkg_dir, '..', '..', '..', 'lib', 'deepracer_simulation_environment', 'virtual_event_video_editor.py')
+                os.path.join(pkg_dir, '..', '..', 'lib', 'deepracer_simulation_environment', 'virtual_event_video_editor.py'),
+                PythonExpression(["'2' if '", LaunchConfiguration('multicar'), "'.lower() == 'true' else '1'"])
             ],
             name='virtual_event_video_editor',
             output='screen'

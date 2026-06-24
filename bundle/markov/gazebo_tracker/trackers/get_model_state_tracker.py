@@ -67,7 +67,6 @@ class GetModelStateTracker(AbstractTracker):
             
             if model_name not in self.model_names:
                 self.model_names.append(model_name)
-            if relative_entity_name not in self.relative_entity_names:
                 self.relative_entity_names.append(relative_entity_name)
                 
             if blocking or cache_key not in self.model_map:
@@ -75,10 +74,16 @@ class GetModelStateTracker(AbstractTracker):
                 if blocking:
                     self._blocking_in_progress = True
                     
-                # Create a request with the model names and relative entity names
+                # Create a request with the model names and relative entity names.
+                # For blocking calls query only the specific model so the two lists
+                # are always the same length (C++ rejects mismatched lengths).
                 request = GetModelStates.Request()
-                request.model_names = self.model_names
-                request.relative_entity_names = self.relative_entity_names
+                if blocking:
+                    request.model_names = [model_name]
+                    request.relative_entity_names = [relative_entity_name]
+                else:
+                    request.model_names = self.model_names
+                    request.relative_entity_names = self.relative_entity_names
                 try:
                     # Call the service
                     response = self.get_model_states(request)

@@ -15,11 +15,12 @@ from threading import Thread, Condition
 from queue import Queue
 import cv2
 import rclpy
+import rclpy.callback_groups
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.exceptions import ROSInterruptException
+from rclpy.executors import MultiThreadedExecutor, ExternalShutdownException
 from std_srvs.srv import Empty
-from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
 from collections import OrderedDict
@@ -31,13 +32,10 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import (RaceType)
-from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
 from markov.virtual_event.constants import WAIT_DISPLAY_NAME
-from deepracer_simulation_environment.srv import (VideoMetricsSrvRequest,
-                                                  VideoMetricsSrv,
-                                                  VirtualEventVideoEditSrv,
-                                                  VirtualEventVideoEditSrvResponse)
+from deepracer_simulation_environment.msg import VideoMetrics
+from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from mp4_saving.constants import (RaceCarColorToRGB, CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
                                   KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME,
@@ -81,6 +79,7 @@ class VirtualEventVideoEditor(Node):
         racecar_dict['display_name'] = WAIT_DISPLAY_NAME
         self._racecars_info.append(racecar_dict)
 
+        self.declare_parameter('RACE_TYPE', RaceType.TIME_TRIAL.value)
         self.job_type_image_edit = self._get_image_editing_job_type()
 
         # Fetching main camera frames, start consumer thread and producer thread for main camera frame
@@ -103,7 +102,6 @@ class VirtualEventVideoEditor(Node):
 
         # Initialize save mp4 ROS service for the markov package to signal when to
         # start and stop collecting video frames
-        self.declare_parameter('RACE_TYPE', RaceType.TIME_TRIAL.value)
         race_type = self.get_parameter('RACE_TYPE').get_parameter_value().string_value
         is_f1_race_type = race_type == RaceType.F1.value
         camera_info = utils.get_cameratype_params(self.racecar_name, self.agent_name, is_f1_race_type)
@@ -113,15 +111,18 @@ class VirtualEventVideoEditor(Node):
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
                                          frame_size=Mp4Parameter.FRAME_SIZE.value)
+        self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         self.subscribe_service = self.create_service(
             VirtualEventVideoEditSrv,
             f'/{self.racecar_name}/save_mp4/subscribe_to_save_mp4',
-            self.subscribe_to_save_mp4
+            self.subscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
         self.unsubscribe_service = self.create_service(
             Empty,
             f'/{self.racecar_name}/save_mp4/unsubscribe_from_save_mp4',
-            self.unsubscribe_to_save_mp4
+            self.unsubscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
 
         # Publish to save mp4 topic
@@ -131,42 +132,51 @@ class VirtualEventVideoEditor(Node):
             1
         )
 
-        # ROS service to get video metrics
-        self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
-                                                         VideoMetricsSrv)
+        # Subscribe to the video metrics topic published by MarkovVideoMetrics on every sim step.
+        # This replaces the service-call polling approach used by the original virtual event editor.
+        self._metrics_sub = self.create_subscription(
+            VideoMetrics,
+            f'/{self.agent_name}/video_metrics',
+            self._on_video_metrics,
+            10
+        )
         self.is_save_mp4_enabled = False
 
         self.main_camera_subscription = self.create_subscription(
             ROSImg,
             main_camera_topic,
             self._producer_frame_thread,
-            QoSProfile(depth=10)
+            QoSProfile(depth=10),
+            callback_group=rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         )
         Thread(target=self._consumer_mp4_frame_thread).start()
         Thread(target=self._kvs_publisher).start()
         Thread(target=self._mp4_publisher).start()
 
-    def subscribe_to_save_mp4(self, req):
+    def subscribe_to_save_mp4(self, req, response):
         """ Ros service handler function used to subscribe to the Image topic.
         Arguments:
             req (req): Dummy req else the ros service throws exception
+            response (response): Response object
         Return:
-            [] - Empty list else ros service throws exception
+            VirtualEventVideoEditSrv.Response
         """
         self._virtual_event_video_metrics.reset()
         self.is_save_mp4_enabled = True
         self._racecars_info[self.racecar_index]['display_name'] = req.display_name
         self.job_type_image_edit = self._get_image_editing_job_type()
         self.save_to_mp4_obj.subscribe_to_save_mp4()
-        return VirtualEventVideoEditSrvResponse(success=True)
+        response.success = True
+        return response
 
-    def unsubscribe_to_save_mp4(self, req):
+    def unsubscribe_to_save_mp4(self, req, response):
         """ Ros service handler function used to unsubscribe from the Image topic.
         This will take care of cleaning and releasing the cv2 VideoWriter
         Arguments:
             req (req): Dummy req else the ros service throws exception
+            response (response): Response object
         Return:
-            [] - Empty list else ros service throws exception
+            Empty.Response
         """
         self.is_save_mp4_enabled = False
         # This is required because when unsubscribe call is made the frames in the queue will continue editing,
@@ -179,7 +189,7 @@ class VirtualEventVideoEditor(Node):
         while not (self._mp4_queue.empty() and self._mp4_edited_frame_queue.empty()):
             time.sleep(1)
         self.save_to_mp4_obj.unsubscribe_to_save_mp4(camera_topics_stop_post_empty_queue)
-        return []
+        return response
 
     def _get_image_editing_job_type(self):
         """ This determines what kinding of image editing should be done based on the race type
@@ -196,12 +206,13 @@ class VirtualEventVideoEditor(Node):
         else:
             raise Exception("[Virtual Event]: Unknown job type for image editing")
 
+    def _on_video_metrics(self, msg):
+        """Subscription callback: store the latest VideoMetrics message for the camera pipeline."""
+        self._agents_metrics[self.racecar_index].put(msg)
+
     def _update_racers_metrics(self):
-        """ Used to update the racers metric information
-        """
-        if rclpy.ok():
-            video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrvRequest())
-            self._agents_metrics[self.racecar_index].put(video_metrics)
+        """No-op stub — metrics are now pushed via the /{agent}/video_metrics topic."""
+        pass
 
     def _edit_camera_images(self, frame_data):
         """ Edit camera image by calling respective job type
@@ -352,34 +363,53 @@ def main():
     try:
         racer_num = int(sys.argv[1])
         racecar_names = get_racecar_names(racer_num)
+        nodes = []
         for racecar_name in racecar_names:
-            VirtualEventVideoEditor(
+            editor = VirtualEventVideoEditor(
                 racecar_name=racecar_name,
                 agent_name=racecar_name.replace("racecar", "agent"))
+            nodes.append(editor)
+        return nodes
     except Exception as e:
         log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(e),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
+        return []
 
 
 def ros2_main(args=None):
     rclpy.init(args=args)
-    
+    executor = None
+
     try:
-        # Create a dummy node for ROS 2 context
-        node = Node('virtual_event_video_editor_node')
-        
-        # Run the main logic
-        main()
-        
-        # Keep the node alive
-        rclpy.spin(node)
-        
+        video_editor_nodes = main()
+
+        # Create executor to spin all video editor nodes so their service callbacks are processed
+        executor = MultiThreadedExecutor()
+        for video_editor in video_editor_nodes:
+            executor.add_node(video_editor)
+            executor.add_node(video_editor.save_to_mp4_obj)
+
+        try:
+            executor.spin()
+        except (KeyboardInterrupt, ExternalShutdownException):
+            LOG.info("[Virtual Event]: virtual_event_video_editor shutdown requested")
+        except Exception as spin_error:
+            LOG.error("[Virtual Event]: Error in executor spin: %s", spin_error)
+            raise
+
+    except (KeyboardInterrupt, ExternalShutdownException):
+        LOG.info("[Virtual Event]: virtual_event_video_editor shutdown requested")
     except Exception as err_msg:
         log_and_exit("[Virtual Event]: Exception in Kinesis Video camera ros node: {}".format(err_msg),
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        if executor is not None:
+            try:
+                executor.shutdown(timeout_sec=2.0)
+            except Exception:
+                pass
         if rclpy.ok():
             rclpy.shutdown()
 

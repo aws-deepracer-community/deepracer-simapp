@@ -8,6 +8,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, EnvironmentVariable
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
+from markov.world_config import WorldConfig
 import os
 
 def generate_launch_description():
@@ -25,12 +26,15 @@ def generate_launch_description():
                                                           default_value=EnvironmentVariable('KINESIS_VIDEO_STREAM_NAME', default_value=''))
     kinesis_webrtc_signaling_channel_names_arg = DeclareLaunchArgument('kinesis_webrtc_signaling_channel_names')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
-    
+    # body_shell_types is a placeholder at launch time; the actual shell is set
+    # per-racer when the agent model spawns.
+    body_shell_types_arg = DeclareLaunchArgument('body_shell_types', default_value='deepracer')
+
     # Get package directory
     pkg_dir = get_package_share_directory('deepracer_simulation_environment')
     
     # Path to the shell script
-    script_path = os.path.join(pkg_dir, '..', '..', '..', 'lib', 'deepracer_simulation_environment', 'run_virtual_event_rl_agent.sh')
+    script_path = os.path.join(pkg_dir, '..', '..', 'lib', 'deepracer_simulation_environment', 'run_virtual_event_rl_agent.sh')
     
     return LaunchDescription([
         # Launch arguments
@@ -42,7 +46,9 @@ def generate_launch_description():
         kinesis_video_stream_names_arg,
         kinesis_webrtc_signaling_channel_names_arg,
         publish_to_kinesis_stream_arg,
-        
+        body_shell_types_arg,
+        WorldConfig.get_launch_parameter(),
+
         # Include virtual_event_racetrack_with_kvs launch
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -58,7 +64,9 @@ def generate_launch_description():
                 ('kinesis_video_stream_names', LaunchConfiguration('kinesis_video_stream_names')),
                 ('kinesis_video_stream_region', EnvironmentVariable('APP_REGION')),
                 ('kinesis_webrtc_signaling_channel_names', LaunchConfiguration('kinesis_webrtc_signaling_channel_names')),
-                ('multicar', LaunchConfiguration('multicar'))
+                ('multicar', LaunchConfiguration('multicar')),
+                ('body_shell_types', LaunchConfiguration('body_shell_types')),
+                ('simapp_versions', LaunchConfiguration('simapp_versions'))
             ]
         ),
         

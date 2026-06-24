@@ -109,6 +109,12 @@ def generate_launch_description():
         default_value='true',
         description='Make nodes required'
     )
+
+    enable_agent_video_editor_arg = DeclareLaunchArgument(
+        'enable_agent_video_editor',
+        default_value='true',
+        description='Launch the agents_video_editor node (set false for virtual events)'
+    )
     
     # Paths to launch files
     racecar_launch_path = os.path.join(pkg_share, 'launch', 'racecar.launch.py')
@@ -230,7 +236,8 @@ def generate_launch_description():
         executable='agents_video_editor.py',
         arguments=[PythonExpression(["'2' if '", LaunchConfiguration('multicar'), "'.lower() == 'true' else '1'"]),
                    LaunchConfiguration('publish_to_kinesis_stream')],
-        output='screen'
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('enable_agent_video_editor'))
     )
 
     # Dedicated KVS overlay editor for evaluation/race. Runs as its own process so the
@@ -277,6 +284,7 @@ def generate_launch_description():
         multicar_arg,
         publish_to_kinesis_stream_arg,
         make_required_arg,
+        enable_agent_video_editor_arg,
         
         # Launch includes
         single_car_launch,

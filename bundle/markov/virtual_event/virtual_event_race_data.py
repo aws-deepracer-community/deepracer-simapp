@@ -28,6 +28,9 @@ class VirtualEventRaceData():
         VirtualEventRaceData constructor
         """
         self._region = WorldConfig.get_param("AWS_REGION", "us-east-1")
+        # Optional S3 endpoint override for running against an S3-compatible service
+        # (e.g. MinIO). When unset the real AWS S3 endpoint is used.
+        self._s3_endpoint_url = WorldConfig.get_param("S3_ENDPOINT_URL", None)
         self._race_duration = int(WorldConfig.get_param("RACE_DURATION", DEFAULT_RACE_DURATION))
         self._number_of_trials = int(WorldConfig.get_param("NUMBER_OF_TRIALS", 3))
         self._number_of_resets = int(WorldConfig.get_param("NUMBER_OF_RESETS", 0))
@@ -46,6 +49,14 @@ class VirtualEventRaceData():
             str: aws region
         """
         return self._region
+
+    @property
+    def s3_endpoint_url(self):
+        """
+        Returns:
+            str: S3 endpoint url override, or None for the default AWS endpoint
+        """
+        return self._s3_endpoint_url
 
     @property
     def race_duration(self):

@@ -38,7 +38,7 @@ class SQSClient(DeepRacerBotoClient):
     def __init__(self, queue_url, region_name="us-east-1",
                  max_num_of_msg=1, wait_time_sec=5,
                  max_retry_attempts=3, backoff_time_sec=1.0,
-                 session=None):
+                 session=None, endpoint_url=None):
         """Initialize a sqs client with default exponital backoff retries.
 
         Args:
@@ -55,9 +55,13 @@ class SQSClient(DeepRacerBotoClient):
                                                 Defaults to 1.0.
             session (boto3.Session): An alternative session to use.
                                      Defaults to None.
+            endpoint_url (str, optional): Override the SQS endpoint URL (e.g. a local
+                                          SQS-compatible service such as ElasticMQ).
+                                          Defaults to None (use the real AWS SQS endpoint).
 
         """
         super(SQSClient, self).__init__(region_name=region_name,
+                                        s3_endpoint_url=endpoint_url,
                                         max_retry_attempts=max_retry_attempts,
                                         backoff_time_sec=backoff_time_sec,
                                         boto_client_name=self.name,

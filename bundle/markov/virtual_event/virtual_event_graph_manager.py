@@ -70,6 +70,15 @@ class VirtualEventGraphManager():
                                      MIN_START_POS_OFFSET)
         self._setup()
 
+    def teardown(self):
+        """Tear down per-racer trackers and subscriptions before this graph
+        manager is replaced by a new one."""
+        for agent in self._agent_list:
+            try:
+                agent.ctrl.teardown()
+            except Exception:
+                pass
+
     def evaluate(self):
         """
         Evaluate graph manager
@@ -123,9 +132,10 @@ class VirtualEventGraphManager():
         Setup graph manager
         """
         sm_hyperparams_dict = {}
+        self._agent_list = self._get_agent_list()
         self._current_graph_manager, _ = get_graph_manager(
             hp_dict=sm_hyperparams_dict,
-            agent_list=self._get_agent_list(),
+            agent_list=self._agent_list,
             run_phase_subject=self._run_phase_subject,
             enable_domain_randomization=self._race_data.enable_domain_randomization,
             done_condition=self._race_data.done_condition,
@@ -187,7 +197,9 @@ class VirtualEventGraphManager():
                                                                            self._start_pos_offset)[idx],
                     ConfigParams.DONE_CONDITION.value: self._race_data.done_condition,
                     ConfigParams.IS_VIRTUAL_EVENT.value: True,
-                    ConfigParams.RACE_DURATION.value: self._race_data.race_duration}}
+                    ConfigParams.RACE_DURATION.value: self._race_data.race_duration,
+                    ConfigParams.ROUND_ROBIN_ADVANCE_DIST.value: 0.0,
+                    ConfigParams.START_POSITION_OFFSET.value: 0.0}}
 
             agent_list.append(create_rollout_agent(agent_config,
                                                    self._eval_metrics[idx],

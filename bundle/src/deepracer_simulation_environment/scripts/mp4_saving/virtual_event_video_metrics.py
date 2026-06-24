@@ -7,6 +7,7 @@ from collections import OrderedDict
 from threading import RLock
 from mp4_saving.constants import PROGRESS_INTERVAL
 from markov.virtual_event.constants import DEFAULT_RACE_DURATION
+from markov.world_config import WorldConfig
 
 
 class VirtualEventVideoMetrics():
@@ -87,14 +88,7 @@ class VirtualEventVideoMetrics():
             self._racer_progresses = OrderedDict()
             self._lap = 0
             self._sim_time = 0.0
-            if self._node is not None:
-                # ROS 2 approach
-                self._node.declare_parameter('RACE_DURATION', DEFAULT_RACE_DURATION)
-                self._race_duration = int(self._node.get_parameter('RACE_DURATION').get_parameter_value().integer_value) * 1000
-            else:
-                # Fallback approach
-                import os
-                self._race_duration = int(os.environ.get('RACE_DURATION', DEFAULT_RACE_DURATION)) * 1000
+            self._race_duration = int(WorldConfig.get_param('RACE_DURATION', DEFAULT_RACE_DURATION)) * 1000
 
     def _calculate_sim_time(self):
         """

@@ -81,7 +81,37 @@ class SensorFactory:
 
 class SensorSubscriber:
     """Base class for ROS2 sensor subscribers that uses the existing markov_scripts_node"""
-    
+
+    # Class-level registry of all active sensor subscriptions.  Cleared and
+    # destroyed by cleanup_subscriptions() between virtual-event racers so that
+    # stale callbacks from previous racers do not pile up on the shared
+    # single-threaded executor and starve the current racer of camera frames.
+    _tracked_subscriptions = []
+
+    @classmethod
+    def cleanup_subscriptions(cls):
+        """Destroy every tracked sensor subscription and reset the registry.
+
+        Call this before creating a new VirtualEventGraphManager so that
+        callbacks from the previous racer's sensors are removed from the
+        shared executor node.
+        """
+        node = cls._node_manager.node \
+            if hasattr(cls, '_node_manager') and cls._node_manager else None
+        for sub in cls._tracked_subscriptions:
+            try:
+                if node:
+                    node.destroy_subscription(sub)
+            except Exception as ex:
+                LOGGER.warning("Failed to destroy subscription during cleanup: %s", ex)
+        cls._tracked_subscriptions = []
+        LOGGER.info("[SensorSubscriber] cleaned up all tracked subscriptions")
+
+    def _register_subscription(self, sub):
+        """Register *sub* for future cleanup and return it."""
+        SensorSubscriber._tracked_subscriptions.append(sub)
+        return sub
+
     def __init__(self):
         """Initialize the sensor subscriber - no separate node creation needed"""
         # Subscribe to /clock topic to ensure proper timing synchronization
@@ -142,11 +172,13 @@ class Camera(SensorInterface, SensorSubscriber):
         # Add debugging and error handling for subscription creation
         try:
             
-            self.subscription = self.getNode().create_subscription(
-                sensor_image, 
-                camera_topic, 
-                self._camera_cb_, 
-                SENSOR_QOS_PROFILE
+            self.subscription = self._register_subscription(
+                self.getNode().create_subscription(
+                    sensor_image,
+                    camera_topic,
+                    self._camera_cb_,
+                    SENSOR_QOS_PROFILE
+                )
             )
             
         except Exception as ex:
@@ -212,8 +244,9 @@ class Observation(SensorInterface, SensorSubscriber):
         """
         super(Observation, self).__init__()
         self.image_buffer = utils.DoubleBuffer()
-        self.getNode().create_subscription(sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_, 
-                                          SENSOR_QOS_PROFILE)
+        self._register_subscription(self.getNode().create_subscription(
+            sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_,
+            SENSOR_QOS_PROFILE))
         self.sensor_type = Input.OBSERVATION.value
         self.raw_data = None
         self.timeout = timeout
@@ -280,8 +313,9 @@ class LeftCamera(SensorInterface, SensorSubscriber):
         """
         super(LeftCamera, self).__init__()
         self.image_buffer = utils.DoubleBuffer()
-        self.getNode().create_subscription(sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_, 
-                                          SENSOR_QOS_PROFILE)
+        self._register_subscription(self.getNode().create_subscription(
+            sensor_image, f'/{racecar_name}/camera/zed/rgb/image_rect_color', self._camera_cb_,
+            SENSOR_QOS_PROFILE))
         self.sensor_type = Input.LEFT_CAMERA.value
         self.raw_data = None
         self.timeout = timeout
@@ -353,10 +387,10 @@ class DualCamera(SensorInterface, SensorSubscriber):
         left_topic = f'/{racecar_name}/camera/zed/rgb/image_rect_color'
         right_topic = f'/{racecar_name}/camera/zed_right/rgb/image_rect_color_right'
         
-        left_sub = self.getNode().create_subscription(sensor_image, left_topic, self._left_camera_cb_, 
-                                                     SENSOR_QOS_PROFILE)
-        right_sub = self.getNode().create_subscription(sensor_image, right_topic, self._right_camera_cb_, 
-                                                      SENSOR_QOS_PROFILE)
+        left_sub = self._register_subscription(self.getNode().create_subscription(
+            sensor_image, left_topic, self._left_camera_cb_, SENSOR_QOS_PROFILE))
+        right_sub = self._register_subscription(self.getNode().create_subscription(
+            sensor_image, right_topic, self._right_camera_cb_, SENSOR_QOS_PROFILE))
         
         self.sensor_type = Input.STEREO.value
         self.timeout = timeout
@@ -490,8 +524,8 @@ class Lidar(LidarInterface, SensorSubscriber):
         super(Lidar, self).__init__()
 
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
-                                          SENSOR_QOS_PROFILE)
+        self._register_subscription(self.getNode().create_subscription(
+            LaserScan, f'/{racecar_name}/scan', self._scan_cb, SENSOR_QOS_PROFILE))
         self.sensor_type = Input.LIDAR.value
         self.timeout = timeout
 
@@ -552,8 +586,8 @@ class SectorLidar(LidarInterface, SensorSubscriber):
         super(SectorLidar, self).__init__()
 
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
-                                          SENSOR_QOS_PROFILE)
+        self._register_subscription(self.getNode().create_subscription(
+            LaserScan, f'/{racecar_name}/scan', self._scan_cb, SENSOR_QOS_PROFILE))
 
         self.sensor_type = Input.SECTOR_LIDAR.value
         self.timeout = timeout
@@ -614,8 +648,8 @@ class DiscretizedSectorLidar(LidarInterface, SensorSubscriber):
         super(DiscretizedSectorLidar, self).__init__()
 
         self.data_buffer = utils.DoubleBuffer(clear_data_on_get=False)
-        self.getNode().create_subscription(LaserScan, f'/{racecar_name}/scan', self._scan_cb, 
-                                          SENSOR_QOS_PROFILE)
+        self._register_subscription(self.getNode().create_subscription(
+            LaserScan, f'/{racecar_name}/scan', self._scan_cb, SENSOR_QOS_PROFILE))
         self.sensor_type = Input.DISCRETIZED_SECTOR_LIDAR.value
         self.model_metadata = config["model_metadata"]
         self.timeout = timeout
