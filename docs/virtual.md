@@ -1,8 +1,8 @@
 # DeepRacer SimApp — Virtual Racing Capability
 
 A technical description of the Virtual Event (Virtual Racing) feature in `deepracer-simapp`:
-its architecture, AWS dependencies, message contracts, live car control, and
-timekeeping / per-sector "best" logic.
+its architecture, AWS dependencies, message contracts, live car control,
+timekeeping / per-sector "best" logic, and per-racer resource management.
 
 ---
 
@@ -51,8 +51,11 @@ sequenceDiagram
     loop until is_event_end
         V->>SQS: poll() — block for racer profile
         SQS-->>V: racer profile JSON (Body)
+        V->>V: setup() — SensorSubscriber.cleanup_subscriptions()
+        V->>V: setup() — VirtualEventGraphManager.teardown() (prev racer)
         V->>S3: setup() — download model_metadata + checkpoint
-        V->>G: spawn agent(s), start cameras, build graph manager
+        V->>G: reset car pose (teleport to hide, zero velocity)
+        V->>G: build new VirtualEventGraphManager + agents
         V->>G: start() — evaluate() race until RACE_DURATION
         V->>S3: finish() — upload status (200), simtrace, mp4
     end
@@ -64,6 +67,8 @@ Key files:
 - `bundle/markov/virtual_event/virtual_event.py` — `poll/setup/start/finish`.
 - `bundle/markov/virtual_event/virtual_event_agent_data.py` — SQS + S3 model download.
 - `bundle/markov/virtual_event/virtual_event_race_data.py` — race params from YAML.
+- `bundle/markov/virtual_event/virtual_event_agent_model.py` — Gazebo car model (spawn/reset/delete).
+- `bundle/markov/virtual_event/virtual_event_graph_manager.py` — wraps rl_coach graph manager; holds per-racer agent list.
 
 **Launch chain** (how the worker is started):
 
@@ -79,7 +84,63 @@ sagemaker_bootstrap.py (SIMULATION_LAUNCH_FILE=virtual_event.launch.py)
 
 ---
 
-## 3. AWS dependencies
+## 3. Per-racer resource management
+
+The worker is **long-lived**: all ROS 2 nodes and singletons persist for the
+entire event. Each racer reuses the same process, so resources created per
+racer must be explicitly cleaned up at the start of `setup()` before new ones
+are created.
+
+### 3.1 Gazebo car model — keep in place
+
+Rather than deleting and respawning the Gazebo model between racers (which
+takes ~3 s and triggers entity lifecycle overhead), `VirtualEventAgentModel.reset()`
+teleports the car to a hidden off-track position with zero velocity using
+`set_model_pose(is_blocking=True)` and refreshes the visual. The delete+respawn
+path is preserved but commented out in `virtual_event.py`.
+
+### 3.2 Sensor subscription accumulation (fixed)
+
+`SensorSubscriber` creates ROS 2 subscriptions for camera and lidar on a
+**shared single-threaded executor node** (`_node_manager`). Without cleanup,
+every racer adds N new callbacks to the same executor — after K racers the
+executor runs K×N callbacks per image, starving the current racer.
+
+**Fix:** `SensorSubscriber._tracked_subscriptions` is a class-level registry.
+Every `create_subscription` call registers the handle. At the start of `setup()`,
+`SensorSubscriber.cleanup_subscriptions()` destroys all tracked subscriptions
+and resets the registry.
+
+### 3.3 Tracker / observer accumulation (fixed)
+
+Three additional accumulators existed:
+
+| Resource | Accumulation mechanism | Fix |
+|----------|------------------------|-----|
+| `TrackerManager` | `AbstractTracker.__init__` auto-registers every `RolloutCtrl`, `BotCarsCtrl`, `ObstaclesCtrl`; they were never removed. After K racers the tracker update loop iterates K×N objects per clock tick. | `AbstractTracker.teardown()` calls `TrackerManager.get_instance().remove(self)`. |
+| `RunPhaseSubject` | `RolloutCtrl.__init__` calls `run_phase_sink.register(self)`. The subject is reused across racers, so dead observers pile up. | `RolloutCtrl.teardown()` calls `run_phase_sink.unregister(self)`. |
+| `RolloutCtrl._rollout_ctrl_node` | Virtual events create 2 WEBRTC subscriptions per racer on the class-level node. After K racers, K duplicate callbacks fire for every message. | Subscriptions stored on `self` (`_webrtc_speed_sub`, `_webrtc_status_sub`); `teardown()` destroys them. |
+
+**Teardown chain:**  
+`virtual_event.py setup()` → `VirtualEventGraphManager.teardown()` → iterates
+`self._agent_list` → calls `agent.ctrl.teardown()` on each agent's ctrl
+(`RolloutCtrl`, `BotCarsCtrl`, `ObstaclesCtrl`) → base `AbstractTracker.teardown()`.
+
+### 3.4 Camera flags
+
+`CAMERA_MAIN_ENABLE` and `CAMERA_SUB_ENABLE` (from `DR_CAMERA_MAIN_ENABLE` /
+`DR_CAMERA_SUB_ENABLE` in the environment) are now written into the virtual
+event YAML by `scripts/virtual/prepare-config.py` and read in
+`VirtualEvent.__init__`:
+
+- `CAMERA_MAIN_ENABLE=False` → skip spawning `VirtualEventAgentCameraModel` (follow cameras)
+- `CAMERA_SUB_ENABLE=False` → skip spawning `VirtualEventTopCameraModel` (overhead/sub camera)
+
+Defaults remain `True`.
+
+---
+
+## 4. AWS dependencies
 
 | Component | Used for | Required? |
 |-----------|----------|-----------|
@@ -95,7 +156,7 @@ sagemaker_bootstrap.py (SIMULATION_LAUNCH_FILE=virtual_event.launch.py)
 
 ---
 
-## 4. SQS message format
+## 5. SQS message format
 
 The worker reads the SQS message **Body** as a JSON string and validates it
 against a schema (`bundle/markov/virtual_event/virtual_event_json_schema.py`).
@@ -129,7 +190,7 @@ Schema rules:
 
 ---
 
-## 5. Live car control — the "+/- buttons"
+## 6. Live car control — the "+/- buttons"
 
 The +/- buttons are an **operator/spectator speed control** sent live from the
 browser over the KVS WebRTC **data channel**.
@@ -170,7 +231,7 @@ Tampering is handled gracefully: unknown speed/status values fall back to
 
 ---
 
-## 6. Timekeeping
+## 7. Timekeeping
 
 Timing is based on the **simulation clock**, not wall-clock.
 
@@ -193,7 +254,7 @@ flowchart TD
 
 ---
 
-## 7. Per-sector "best" logic
+## 8. Per-sector "best" logic
 
 The track is split into **N sectors** (`NUM_SECTORS`, default 3). Three tiers
 are tracked (`TrackSectorTime` in `bundle/markov/boto/s3/constants.py`):
@@ -236,7 +297,7 @@ The new session best is written back to S3 in the finish state
 
 ---
 
-## 8. Running on EC2 (summary)
+## 9. Running on EC2 (summary)
 
 **Provision:** FIFO SQS queue, S3 bucket(s) with the race YAML + model artifacts +
 output prefixes, optional KVS WebRTC channel, and an IAM role granting
@@ -252,7 +313,7 @@ output prefixes, optional KVS WebRTC channel, and an IAM role granting
 **YAML config** must include race params read via `WorldConfig.get_param`:
 `SQS_QUEUE_URL`, `AWS_REGION`, `RACE_TYPE`, `RACE_DURATION`, `NUMBER_OF_TRIALS`,
 `NUMBER_OF_RESETS`, penalties, `KINESIS_WEBRTC_SIGNALING_CHANNEL_NAME`,
-`NUM_SECTORS`, `START_POS_OFFSET`, …
+`NUM_SECTORS`, `START_POS_OFFSET`, `CAMERA_MAIN_ENABLE`, `CAMERA_SUB_ENABLE`, …
 
 **Operate:** start the container; the worker blocks on SQS until a racer profile
 is pushed. Set `publish_to_kinesis_stream=false` to skip KVS video.
@@ -263,7 +324,31 @@ use the standard `evaluation.launch.py` path (S3/MinIO only, no SQS/KVS).
 
 ---
 
-## 9. Key files reference
+## 10. Video editor
+
+The `virtual_event_video_editor` process is launched by
+`virtual_event_racetrack_with_kvs.launch.py` (one node per car). It is a
+**separate process** from the `agents_video_editor` (the latter is disabled
+for virtual events via `enable_agent_video_editor=false`).
+
+**Metrics delivery (subscription, not service call):**  
+Metrics were previously fetched by calling the `/{agent}/mp4_video_metrics`
+ROS 2 service on every camera frame — a blocking call that held up the camera
+pipeline under load. They are now delivered via a subscription to
+`/{agent}/video_metrics` (`VideoMetrics` msg), published by `MarkovVideoMetrics`
+(`s3_metrics.py`) on every sim step. The `_update_racers_metrics` method is
+now a no-op stub.
+
+**Callback group isolation:**  
+The `MultiThreadedExecutor` spins both `VirtualEventVideoEditor` and its
+`SaveToMp4` child node. Without callback group separation the high-frequency
+camera subscription starved the `subscribe_to_save_mp4` service callback.
+Fix: services use a shared `MutuallyExclusiveCallbackGroup`; the camera
+subscription uses its own `MutuallyExclusiveCallbackGroup`.
+
+---
+
+## 11. Key files reference
 
 | Concern | File |
 |---------|------|
@@ -272,12 +357,19 @@ use the standard `evaluation.launch.py` path (S3/MinIO only, no SQS/KVS).
 | SQS + model download | `bundle/markov/virtual_event/virtual_event_agent_data.py` |
 | Race params (YAML) | `bundle/markov/virtual_event/virtual_event_race_data.py` |
 | SQS schemas | `bundle/markov/virtual_event/virtual_event_json_schema.py` |
+| Gazebo car model | `bundle/markov/virtual_event/virtual_event_agent_model.py` |
+| Graph manager (per racer) | `bundle/markov/virtual_event/virtual_event_graph_manager.py` |
+| Sensor subscription cleanup | `bundle/markov/sensors/sensors_rollout.py` (`SensorSubscriber`) |
+| Tracker base + teardown | `bundle/markov/gazebo_tracker/abs_tracker.py` |
+| Per-racer ctrl teardown | `bundle/markov/agent_ctrl/rollout_agent_ctrl.py` |
 | Car-control constants | `bundle/markov/virtual_event/constants.py` |
 | Car-control bridge | `bundle/src/deepracer_simulation_environment/scripts/car_control_webrtc_msg_node.py` |
 | Speed/status handling | `bundle/markov/agent_ctrl/rollout_agent_ctrl.py` |
 | Race-time rule | `bundle/markov/reset/rules/race_time_rule.py` |
 | Best sector time (S3) | `bundle/markov/boto/s3/files/virtual_event_best_sector_time.py` |
 | Sector color logic | `bundle/src/deepracer_simulation_environment/scripts/mp4_saving/utils.py` |
+| Video editor | `bundle/src/deepracer_simulation_environment/scripts/mp4_saving/virtual_event_video_editor.py` |
 | Video overlay | `bundle/src/deepracer_simulation_environment/scripts/mp4_saving/virtual_event_single_agent_image_editing.py` |
+| Virtual event YAML builder | `scripts/virtual/prepare-config.py` |
 | Launch entry | `bundle/src/deepracer_simulation_environment/launch/virtual_event.launch.py` |
 | Bootstrap env | `docker/files/ml-code/sagemaker_bootstrap.py` |

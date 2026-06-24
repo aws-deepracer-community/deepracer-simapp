@@ -87,6 +87,9 @@ class VirtualEvent():
         camera_main_enable = utils.str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
         camera_sub_enable = utils.str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
 
+        # Wait for car spawn delay (racecar_control_kinematics.launch.py has 30s TimerAction before spawning controllers)
+        time.sleep(30)
+
         if camera_main_enable:
             self._virtual_event_agent_camera_models = \
                 [VirtualEventAgentCameraModel(
