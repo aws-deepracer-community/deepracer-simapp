@@ -15,12 +15,12 @@ from threading import Thread, Condition
 from queue import Queue
 import cv2
 import rclpy
+import rclpy.callback_groups
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from rclpy.exceptions import ROSInterruptException
 from rclpy.executors import MultiThreadedExecutor, ExternalShutdownException
 from std_srvs.srv import Empty
-from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image as ROSImg
 from collections import OrderedDict
@@ -32,11 +32,10 @@ from markov.log_handler.exception_handler import log_and_exit
 from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
                                           SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION)
 from markov.reset.constants import (RaceType)
-from markov.rclpy_wrappers import ServiceProxyWrapper
 from markov.utils import get_racecar_idx
 from markov.virtual_event.constants import WAIT_DISPLAY_NAME
-from deepracer_simulation_environment.srv import (VideoMetricsSrv,
-                                                  VirtualEventVideoEditSrv)
+from deepracer_simulation_environment.msg import VideoMetrics
+from deepracer_simulation_environment.srv import VirtualEventVideoEditSrv
 from mp4_saving.constants import (RaceCarColorToRGB, CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
                                   KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME,
@@ -112,15 +111,18 @@ class VirtualEventVideoEditor(Node):
                                          fourcc=Mp4Parameter.FOURCC.value,
                                          fps=Mp4Parameter.FPS.value,
                                          frame_size=Mp4Parameter.FRAME_SIZE.value)
+        self._service_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         self.subscribe_service = self.create_service(
             VirtualEventVideoEditSrv,
             f'/{self.racecar_name}/save_mp4/subscribe_to_save_mp4',
-            self.subscribe_to_save_mp4
+            self.subscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
         self.unsubscribe_service = self.create_service(
             Empty,
             f'/{self.racecar_name}/save_mp4/unsubscribe_from_save_mp4',
-            self.unsubscribe_to_save_mp4
+            self.unsubscribe_to_save_mp4,
+            callback_group=self._service_callback_group
         )
 
         # Publish to save mp4 topic
@@ -130,16 +132,22 @@ class VirtualEventVideoEditor(Node):
             1
         )
 
-        # ROS service to get video metrics
-        self.mp4_video_metrics_srv = ServiceProxyWrapper("/{}/{}".format(self.agent_name, "mp4_video_metrics"),
-                                                         VideoMetricsSrv)
+        # Subscribe to the video metrics topic published by MarkovVideoMetrics on every sim step.
+        # This replaces the service-call polling approach used by the original virtual event editor.
+        self._metrics_sub = self.create_subscription(
+            VideoMetrics,
+            f'/{self.agent_name}/video_metrics',
+            self._on_video_metrics,
+            10
+        )
         self.is_save_mp4_enabled = False
 
         self.main_camera_subscription = self.create_subscription(
             ROSImg,
             main_camera_topic,
             self._producer_frame_thread,
-            QoSProfile(depth=10)
+            QoSProfile(depth=10),
+            callback_group=rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         )
         Thread(target=self._consumer_mp4_frame_thread).start()
         Thread(target=self._kvs_publisher).start()
@@ -198,12 +206,13 @@ class VirtualEventVideoEditor(Node):
         else:
             raise Exception("[Virtual Event]: Unknown job type for image editing")
 
+    def _on_video_metrics(self, msg):
+        """Subscription callback: store the latest VideoMetrics message for the camera pipeline."""
+        self._agents_metrics[self.racecar_index].put(msg)
+
     def _update_racers_metrics(self):
-        """ Used to update the racers metric information
-        """
-        if rclpy.ok():
-            video_metrics = self.mp4_video_metrics_srv(VideoMetricsSrv.Request())
-            self._agents_metrics[self.racecar_index].put(video_metrics)
+        """No-op stub — metrics are now pushed via the /{agent}/video_metrics topic."""
+        pass
 
     def _edit_camera_images(self, frame_data):
         """ Edit camera image by calling respective job type

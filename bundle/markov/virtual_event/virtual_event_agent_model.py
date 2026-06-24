@@ -100,6 +100,23 @@ class VirtualEventAgentModel():
         self._agent_model.delete()
         self._track_data.remove_object(name=self._profile.racecar_name)
 
+    def reset(self):
+        """Reset agent between racers without deleting/respawning the Gazebo model.
+
+        Teleports the car to its hide position with zero velocity so that the
+        wheel and steering joint controllers flush their accumulated PID state
+        before the graph manager's reset_internal_state moves the car to the
+        start line.  Also updates the car's visual (body shell + color) for
+        the new racer profile.
+        """
+        hide_pose = Pose()
+        hide_pose.position.x = self._hide_position[0]
+        hide_pose.position.y = self._hide_position[1]
+        # set_model_pose zeros all linear/angular velocities for us
+        self._model_updater.set_model_pose(
+            self._profile.racecar_name, hide_pose, is_blocking=True)
+        self._update_visual()
+
     def _update_visual(self):
         """
         Update agent visual in gazebo

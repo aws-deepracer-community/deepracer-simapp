@@ -38,6 +38,7 @@ from markov.track_geom.utils import (get_hide_positions,
 from markov.track_geom.constants import START_POS_OFFSET, MIN_START_POS_OFFSET, MAX_START_POS_OFFSET
 from markov.gazebo_utils.model_updater import ModelUpdater
 from markov.virtual_event.virtual_event_agent_data import VirtualEventAgentData
+from markov.sensors.sensors_rollout import SensorSubscriber
 from markov.virtual_event.virtual_event_agent_model import VirtualEventAgentModel
 from markov.virtual_event.cameras.virtual_event_agent_camera_model import VirtualEventAgentCameraModel
 from markov.virtual_event.cameras.virtual_event_top_camera_model import VirtualEventTopCameraModel
@@ -83,20 +84,28 @@ class VirtualEvent():
         start_pos_offset = max(min(float(WorldConfig.get_param("START_POS_OFFSET", START_POS_OFFSET)), MAX_START_POS_OFFSET),
                                MIN_START_POS_OFFSET)
 
-        self._virtual_event_agent_camera_models = \
-            [VirtualEventAgentCameraModel(
-                camera_namespace=racecar_name,
-                start_pose=self._track_data.get_racecar_start_pose(
-                    racecar_idx=camera_idx,
-                    racer_num=self._virtual_event_agent_data.num_of_agents,
-                    start_position=get_start_positions(self._virtual_event_agent_data.num_of_agents,
-                                                       start_pos_offset)[camera_idx]))
-                for camera_idx, racecar_name in enumerate(self._virtual_event_agent_data.racecar_names)]
+        camera_main_enable = utils.str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
+        camera_sub_enable = utils.str2bool(WorldConfig.get_param("CAMERA_SUB_ENABLE", "True"))
 
-        [camera_model.spawn() for camera_model in self._virtual_event_agent_camera_models]
+        if camera_main_enable:
+            self._virtual_event_agent_camera_models = \
+                [VirtualEventAgentCameraModel(
+                    camera_namespace=racecar_name,
+                    start_pose=self._track_data.get_racecar_start_pose(
+                        racecar_idx=camera_idx,
+                        racer_num=self._virtual_event_agent_data.num_of_agents,
+                        start_position=get_start_positions(self._virtual_event_agent_data.num_of_agents,
+                                                           start_pos_offset)[camera_idx]))
+                    for camera_idx, racecar_name in enumerate(self._virtual_event_agent_data.racecar_names)]
+            [camera_model.spawn() for camera_model in self._virtual_event_agent_camera_models]
+        else:
+            self._virtual_event_agent_camera_models = []
 
-        self._virtual_event_top_camera_model = VirtualEventTopCameraModel()
-        self._virtual_event_top_camera_model.spawn()
+        if camera_sub_enable:
+            self._virtual_event_top_camera_model = VirtualEventTopCameraModel()
+            self._virtual_event_top_camera_model.spawn()
+        else:
+            self._virtual_event_top_camera_model = None
 
         self._persist_initial_sector_time()
 
@@ -132,10 +141,23 @@ class VirtualEvent():
             self._model_updater.unpause_physics()
             LOG.info("[VirtualEvent] unpause physics")
 
-            if self._virtual_event_agent_models:
-                [GetModelStateTracker.get_instance().remove(racecar_name)
-                    for racecar_name in self._virtual_event_agent_data.racecar_names]
-                [agent_model.delete() for agent_model in self._virtual_event_agent_models]
+            # EXPERIMENT: keep the Gazebo model in place between racers instead of
+            # deleting and respawning it on every setup() call.
+            # if self._virtual_event_agent_models:
+            #     [GetModelStateTracker.get_instance().remove(racecar_name)
+            #         for racecar_name in self._virtual_event_agent_data.racecar_names]
+            #     [agent_model.delete() for agent_model in self._virtual_event_agent_models]
+
+            # Destroy all sensor subscriptions from the previous racer so that
+            # stale callbacks don't accumulate on the shared executor and
+            # reduce the effective camera image rate for subsequent racers.
+            SensorSubscriber.cleanup_subscriptions()
+
+            # Tear down per-racer trackers and subscriptions from the previous
+            # graph manager (RolloutCtrl, BotCarsCtrl, ObstaclesCtrl all register
+            # with TrackerManager and RunPhaseSubject on construction).
+            if self._virtual_event_graph_manager is not None:
+                self._virtual_event_graph_manager.teardown()
 
             self._virtual_event_agent_data.download()
 
@@ -148,7 +170,10 @@ class VirtualEvent():
 
             [camera_model.reset_pose() for camera_model in self._virtual_event_agent_camera_models]
 
-            [agent_model.spawn() for agent_model in self._virtual_event_agent_models]
+            # EXPERIMENT: teleport to hide position + flush visual instead of respawn.
+            if self._virtual_event_agent_models:
+                [agent_model.reset() for agent_model in self._virtual_event_agent_models]
+            # [agent_model.spawn() for agent_model in self._virtual_event_agent_models]
 
             self._virtual_event_simtrace_videos = \
                 [VirtualEventSimtraceVideo(

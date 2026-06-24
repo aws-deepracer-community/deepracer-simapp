@@ -22,6 +22,7 @@ def generate_launch_description():
     kinesis_webrtc_signaling_channel_names_arg = DeclareLaunchArgument('kinesis_webrtc_signaling_channel_names')
     multicar_arg = DeclareLaunchArgument('multicar', default_value='true')
     publish_to_kinesis_stream_arg = DeclareLaunchArgument('publish_to_kinesis_stream', default_value='true')
+    enable_agent_video_editor_arg = DeclareLaunchArgument('enable_agent_video_editor', default_value='false')
     body_shell_types_arg = DeclareLaunchArgument('body_shell_types', default_value='deepracer')
     simapp_versions_arg = DeclareLaunchArgument('simapp_versions', default_value='6.0')
     
@@ -36,6 +37,7 @@ def generate_launch_description():
         kinesis_webrtc_signaling_channel_names_arg,
         multicar_arg,
         publish_to_kinesis_stream_arg,
+        enable_agent_video_editor_arg,
         body_shell_types_arg,
         simapp_versions_arg,
 
@@ -54,6 +56,7 @@ def generate_launch_description():
                 ('kinesis_video_stream_region', LaunchConfiguration('kinesis_video_stream_region')),
                 ('multicar', LaunchConfiguration('multicar')),
                 ('publish_to_kinesis_stream', LaunchConfiguration('publish_to_kinesis_stream')),
+                ('enable_agent_video_editor', LaunchConfiguration('enable_agent_video_editor')),
                 ('body_shell_types', LaunchConfiguration('body_shell_types')),
                 ('simapp_versions', LaunchConfiguration('simapp_versions'))
             ]

@@ -40,7 +40,7 @@ logger = Logger(__name__, logging.INFO).get_logger()
 class AgentModel(AbsModel):
     """agent model class to handle gazebo spawn and delete
     """
-    def __init__(self, max_retry_attempts: int = 10, backoff_time_sec: float = 1.0):
+    def __init__(self, max_retry_attempts: int = 30, backoff_time_sec: float = 1.0):
         """Constructor
 
         Args:
@@ -69,22 +69,25 @@ class AgentModel(AbsModel):
                                            **kwargs,
                                            racecar_name=self._model_name)
 
+        # Write pre-parsed URDF to a temp file so virtual_racecar.launch.py can pass
+        # it directly to robot_state_publisher without re-running xacro.
+        urdf_file = "/tmp/deepracer_{}_robot_description.xml".format(self._model_name)
+        with open(urdf_file, 'w') as f:
+            f.write(model_urdf)
+
         # load robot_description into ros parameter server
         WorldConfig.set_param("/{}/robot_description".format(self._model_name), model_urdf)
 
-        # ros2 launch controller_manager and robot_state_publisher — only if not already running
-        #control_nodes = [node.format(self._model_name) for node in self._control_nodes]
-        #if not all(self._is_ros_node_alive(node) for node in control_nodes):
-        #    Popen("ros2 launch deepracer_simulation_environment racecar_control_kinematics.launch.py \
-        #        racecar_name:={} make_required:={} __ns:={}".format(self._model_name,
-        #                                                            "false",
-        #                                                            self._model_name),
-        #          shell=True,
-        #          executable="/bin/bash")
-        #    self._wait_for_rosnode(alive_nodes=control_nodes)
-
-        # The physical racecar model is already present in Gazebo (spawned by
-        # racecar.launch.py at startup). No URDF spawn needed here.
+        # ros2 launch robot_state_publisher, Gazebo spawn, and controllers.
+        control_nodes = [node.format(self._model_name) for node in self._control_nodes]
+        if not all(self._is_ros_node_alive(node) for node in control_nodes):
+            Popen("ros2 launch deepracer_simulation_environment virtual_racecar.launch.py \
+                racecar_name:={} make_required:={} robot_description_file:={}".format(
+                    self._model_name, "false", urdf_file),
+                  shell=True,
+                  executable="/bin/bash")
+            self._wait_for_rosnode(alive_nodes=control_nodes)
+            self._wait_for_controllers()
 
     def _delete(self) -> None:
         """delete the agent model
@@ -100,13 +103,42 @@ class AgentModel(AbsModel):
         # kill agent controller manager and robot state publisher node.
         # In ROS2 there is no rosnode kill; send SIGTERM to all processes whose
         # ROS arguments contain the racecar namespace.
+        # delete agent model from gazebo.
+        # controller_manager dies automatically when the model is removed (gz_ros2_control)
+        # camera and other plugin nodes do NOT die automatically; kill all namespace
+        # processes so that a clean respawn has no duplicate publishers.
+        GazeboModel.get_instance().delete(model_name=self._model_name)
+
         Popen("pkill -TERM -f '__ns:=/{0}' || pkill -TERM -f 'racecar_name:={0}'".format(self._model_name),
               shell=True,
               executable="/bin/bash")
         self._wait_for_rosnode(dead_nodes=[node.format(self._model_name) for node in self._control_nodes])
 
-        # delete agent model from gazebo
-        GazeboModel.get_instance().delete(model_name=self._model_name)
+    def _wait_for_controllers(self) -> None:
+        """Wait until all required controllers are active in controller_manager."""
+        joint_states_topic = "/{}/joint_states".format(self._model_name)
+        try_count = 0
+        while True:
+            try:
+                result = subprocess.run(
+                    ['ros2', 'topic', 'info', joint_states_topic],
+                    capture_output=True, text=True, timeout=5.0)
+                for line in result.stdout.splitlines():
+                    if line.strip().startswith('Publisher count:'):
+                        count = int(line.split(':')[1].strip())
+                        if count > 0:
+                            logger.info("[AgentModel]: all controllers active for %s", self._model_name)
+                            return
+                        break
+            except Exception:
+                pass
+            try_count += 1
+            if try_count > self._max_retry_attempts:
+                log_and_exit("[AgentModel]: controllers failed to become active for {}".format(self._model_name),
+                             SIMAPP_SIMULATION_WORKER_EXCEPTION,
+                             SIMAPP_EVENT_ERROR_CODE_500)
+            logger.info("[AgentModel]: waiting for controllers to become active for %s", self._model_name)
+            time.sleep(self._backoff_time_sec)
 
     def _is_ros_node_alive(self, node_name: str) -> bool:
         """Return whether ros node is alive or not

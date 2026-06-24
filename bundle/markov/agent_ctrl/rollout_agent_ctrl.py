@@ -190,6 +190,7 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
         # True if the agent is in the training phase
         self._is_training_ = False
         # Register to the phase sink
+        self._run_phase_sink = run_phase_sink
         run_phase_sink.register(self)
         # Make sure velocity and angle are set to 0
         send_action(self._velocity_pub_dict_, self._steering_pub_dict_, 0.0, 0.0)
@@ -215,22 +216,45 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
 
         if self._is_virtual_event:
             # Subscriber to udpate car speed if it's virtual event
-            RolloutCtrl._rollout_ctrl_node.create_subscription(String, 
+            self._webrtc_speed_sub = RolloutCtrl._rollout_ctrl_node.create_subscription(
+                                                               String, 
                                                                WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
                                                                                              CarControlTopic.SPEED_CTRL.value),
                                                                self._get_speed_mode_value,
                                                                QoSProfile(depth=1))
 
             # Subscriber to udpate car status if it's virtual event
-            RolloutCtrl._rollout_ctrl_node.create_subscription(String, 
+            self._webrtc_status_sub = RolloutCtrl._rollout_ctrl_node.create_subscription(
+                                                               String, 
                                                                WEBRTC_CAR_CTRL_FORMAT.format(self._agent_name_,
                                                                                              CarControlTopic.STATUS_CTRL.value),
                                                                self._update_car_status,
                                                                QoSProfile(depth=1))
+        else:
+            self._webrtc_speed_sub = None
+            self._webrtc_status_sub = None
 
         AbstractTracker.__init__(self, TrackerPriority.HIGH)
         self.current_obstacle_pose = None
         self.current_obstacle_crash_count = 0
+
+    def teardown(self):
+        """Unregister from all sinks and remove from TrackerManager."""
+        try:
+            self._run_phase_sink.unregister(self)
+        except Exception:
+            pass
+        if self._webrtc_speed_sub and RolloutCtrl._rollout_ctrl_node:
+            try:
+                RolloutCtrl._rollout_ctrl_node.destroy_subscription(self._webrtc_speed_sub)
+            except Exception:
+                pass
+        if self._webrtc_status_sub and RolloutCtrl._rollout_ctrl_node:
+            try:
+                RolloutCtrl._rollout_ctrl_node.destroy_subscription(self._webrtc_status_sub)
+            except Exception:
+                pass
+        super().teardown()
 
     def update_tracker(self, delta_time, sim_time):
         """

@@ -130,4 +130,6 @@ class GazeboModel:
         Returns:
             DeleteModelResponse: response msg
         """
-        return self._delete_model(model_name)
+        req = DeleteModel.Request()
+        req.model_name = model_name
+        return self._delete_model(req)

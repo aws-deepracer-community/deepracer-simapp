@@ -27,6 +27,10 @@ class AbstractTracker(ABC):
         self._priority = priority
         TrackerManager.get_instance().add(self, priority)
 
+    def teardown(self):
+        """Remove this tracker from TrackerManager. Call between virtual racers."""
+        TrackerManager.get_instance().remove(self)
+
     @abc.abstractmethod
     def update_tracker(self, delta_time, sim_time):
         """
