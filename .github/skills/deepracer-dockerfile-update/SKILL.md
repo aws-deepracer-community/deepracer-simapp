@@ -111,6 +111,8 @@ docker build --no-cache --dry-run -f docker/Dockerfile.upstream . 2>&1 | head -2
 
 ## Reference: Known Version History
 
+> **Always add a row to this table when completing an update.** Record the version, built date, and a concise summary of every change found in the layer diff.
+
 | Image Version | Key Changes |
 |---------------|-------------|
 | v1.0.6 | Baseline for `Dockerfile.upstream-adjusted` |
@@ -124,3 +126,4 @@ docker build --no-cache --dry-run -f docker/Dockerfile.upstream . 2>&1 | head -2
 | v1.1.7 | Base layer rebuild only; no package changes (layer history identical to v1.1.4) |
 | v1.2.0 | Base layer rebuild only; no package changes (layer history identical to v1.1.7; base Ubuntu layer SHA unchanged) |
 | v1.2.1 | `cryptography==48.0.1` (was `46.0.7`); `nginx==1.31.2` (was `1.31.1`) |
+| v1.2.2 | Base layer rebuild only; no package changes (layer history identical to v1.2.1; built 2026-06-29) |
