@@ -12,7 +12,7 @@ dependencies:
   - zip
   - wget
   - pyqt=5
-  - curl==8.20.0
+  - curl==8.21.0
   - pip:
       - pygame==2.6.1
       - shapely==2.0.2
