@@ -46,5 +46,6 @@ rsync -a --delete ./ ~/deepracer-simapp/bundle/
 
 cd /tmp/bundle-src/ml/code
 rm -rf python3.12/
+rm -rf python3.10/
 rsync -a --delete ./ ~/deepracer-simapp/docker/files/ml-code/
 

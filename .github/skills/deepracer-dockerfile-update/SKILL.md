@@ -127,3 +127,4 @@ docker build --no-cache --dry-run -f docker/Dockerfile.upstream . 2>&1 | head -2
 | v1.2.0 | Base layer rebuild only; no package changes (layer history identical to v1.1.7; base Ubuntu layer SHA unchanged) |
 | v1.2.1 | `cryptography==48.0.1` (was `46.0.7`); `nginx==1.31.2` (was `1.31.1`) |
 | v1.2.2 | Base layer rebuild only; no package changes (layer history identical to v1.2.1; built 2026-06-29) |
+| v1.2.3 | `conda-forge::curl==8.21.0`, `conda-forge::libcurl==8.21.0` (was `8.20.0`); built 2026-07-13 |
