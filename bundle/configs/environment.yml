@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.12
   - pip
-  - nginx==1.31.2
+  - nginx==1.31.3
   - zip
   - wget
   - curl==8.21.0
@@ -12,7 +12,7 @@ dependencies:
       - pygame==2.6.1
       - shapely==2.0.2
       - annoy==1.17.3
-      - pillow==12.2.0
+      - pillow==12.3.0
       - matplotlib==3.10.6
       - numpy==1.26.4
       - pandas==2.3.1
