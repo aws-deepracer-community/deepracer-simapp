@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.3
-# Image ID: 2a92936c3298
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.4
+# Image ID: 70dffd787af5
 # Base: Ubuntu 24.04 (Noble)
-# Built: July 13, 2026
-# Optimized: July 14, 2026
+# Built: July 17, 2026
+# Optimized: July 18, 2026
 
 FROM ubuntu:24.04
 
@@ -184,7 +184,7 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     shapely==2.0.2 \
     pyparsing==3.2.5 \
     python-dateutil==2.8.2 \
-    pillow==12.2.0 \
+    pillow==12.3.0 \
     pyyaml==6.0.3 \
     requests==2.32.5 \
     urllib3==2.7.0 \
@@ -285,7 +285,7 @@ RUN /root/anaconda/bin/conda install -y \
     conda-forge::libcurl==8.21.0 \
     urllib3==2.7.0 \
     requests==2.32.5 \
-    nginx==1.31.2 \
+    nginx==1.31.3 \
     && /root/anaconda/bin/conda clean -afy \
     && rm -rf /root/anaconda/lib/python3.12/site-packages/cryptography-42.0.5.dist-info
 
