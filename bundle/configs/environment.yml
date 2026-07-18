@@ -8,7 +8,7 @@ dependencies:
   - numpy==1.26.4          # conda-managed so cv2/TF share one C-API instance
   - ffmpeg=8.0.1=gpl_*     # GPL variant includes x264 for AVC1/H.264 encoding
   - py-opencv              # headless cv2 bindings, uses the ffmpeg above
-  - nginx==1.31.2
+  - nginx==1.31.3
   - zip
   - wget
   - pyqt=5
@@ -17,7 +17,7 @@ dependencies:
       - pygame==2.6.1
       - shapely==2.0.2
       - annoy==1.17.3
-      - pillow==12.2.0
+      - pillow==12.3.0
       - matplotlib==3.10.6
       - pandas==2.3.1
       - PyOpenGL==3.1.9
