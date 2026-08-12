@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.7
-# Image ID: 66f3a7253365
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.9
+# Image ID: ff48178cb598
 # Base: Ubuntu 24.04 (Noble)
-# Built: August 4, 2026
-# Optimized: August 6, 2026
+# Built: August 12, 2026
+# Optimized: August 12, 2026
 
 FROM ubuntu:24.04
 
@@ -10,8 +10,8 @@ FROM ubuntu:24.04
 ENV ROS_DISTRO=jazzy
 ENV ROS_SNAPSHOT_DATE=2025-11-19
 
-# Set non-interactive frontend for apt
-RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+# Set debconf frontend for apt
+RUN echo 'debconf debconf/frontend select Dialog' | debconf-set-selections
 
 # Install base system packages
 RUN apt-get update && apt-get install -y \
@@ -191,7 +191,7 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     empy==4.2 \
     boto3==1.38.38 \
     bokeh==3.7.3 \
-    cryptography==48.0.1 \
+    cryptography==50.0.0 \
     docutils==0.21.2 \
     h5py==3.14.0 \
     jsonschema==4.24.0 \
