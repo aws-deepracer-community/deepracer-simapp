@@ -21,7 +21,7 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==48.0.1
+      - cryptography==50.0.0
       - kubernetes==33.1.0
       - opencv-python==4.9.0.80
       - bokeh==3.7.3
