@@ -130,3 +130,4 @@ docker buildx build --check -f docker/Dockerfile.upstream-adjusted .
 | v1.2.2 | Base layer rebuild only; no package changes (layer history identical to v1.2.1; built 2026-06-29) |
 | v1.2.3 | `conda-forge::curl==8.21.0`, `conda-forge::libcurl==8.21.0` (was `8.20.0`); built 2026-07-13 |
 | v1.2.4 | `pillow==12.3.0` (was `12.2.0`); `nginx==1.31.3` (was `1.31.2`); built 2026-07-17 |
+| v1.2.9 | `cryptography==50.0.0` (was `48.0.1`); debconf frontend switched to `Dialog`; built 2026-08-12 |

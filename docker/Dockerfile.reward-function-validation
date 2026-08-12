@@ -1,13 +1,33 @@
+# Fetch the base image from public ECR repository
 FROM public.ecr.aws/lambda/python:3.12
 
-RUN pip install --upgrade pip
+# Fix OS-level CVEs - AL2023 repos are version-locked, need --releasever=latest to get security patches
+RUN microdnf update -y --releasever=latest \
+    openssl-fips-provider-latest \
+    openssl-snapsafe-libs \
+    libnghttp2 \
+    glibc glibc-common \
+    libsolv \
+    libacl \
+    glib2 \
+    gawk \
+    rpm-libs \
+    rpm \
+    && microdnf clean all
 
-COPY docker/files/ml-code/reward_func_validator/ /var/task/
+# Set up the program in the image
 COPY bundle/routes/ /var/task/routes/
+COPY docker/files/ml-code/reward_func_validator/ /var/task/
 
+RUN pip install --upgrade pip
+# Here we get all python packages.
 RUN pip install --no-cache-dir -r /var/task/requirements.txt
-RUN pip install --no-cache-dir --upgrade pillow==12.1.1
 
+# Remove unused aws-lambda-rie to fix CVE-2025-61726
 RUN rm -f /usr/local/bin/aws-lambda-rie
 
-CMD ["lambda_function.lambda_handler"]
+# Upgrade packages to fix CVEs
+RUN pip install --no-cache-dir --upgrade pillow==12.3.0 urllib3==2.7.0
+
+# Pass the name of the function handler as an argument to the runtime
+CMD [ "lambda_function.lambda_handler" ]
