@@ -25,7 +25,7 @@ dependencies:
       - scikit-image==0.25.2
       - boto3==1.38.38
       - minio==7.2.15
-      - cryptography==48.0.1
+      - cryptography==50.0.0
       - kubernetes==33.1.0
       - bokeh==3.7.3
       - /opt/amazon/rl_coach  # Install rl_coach from local source directory
