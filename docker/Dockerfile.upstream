@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.9
-# Image ID: ff48178cb598
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.10
+# Image ID: bd3c99b39542
 # Base: Ubuntu 24.04 (Noble)
-# Built: August 12, 2026
-# Optimized: August 12, 2026
+# Built: September 8, 2026
+# Optimized: September 11, 2026
 
 FROM ubuntu:24.04
 
@@ -167,15 +167,16 @@ RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
     ldconfig && \
     cd ../.. && rm -rf aws-sdk-cpp
 
-# Build and install Redis 8.8.0
+# Build and install Redis 8.10.1
 RUN cd /tmp && \
-    wget https://download.redis.io/releases/redis-8.8.0.tar.gz && \
-    tar xvzf redis-8.8.0.tar.gz && \
-    cd redis-8.8.0 && \
+    wget https://download.redis.io/releases/redis-8.10.1.tar.gz && \
+    tar xvzf redis-8.10.1.tar.gz && \
+    cd redis-8.10.1 && \
+    rm -rf modules/redisbloom modules/redisearch modules/redisjson modules/redistimeseries && \
     make && \
     make install && \
     cd /tmp && \
-    rm -rf redis-8.8.0 redis-8.8.0.tar.gz
+    rm -rf redis-8.10.1 redis-8.10.1.tar.gz
 
 # Install Python dependencies
 RUN python3 -m pip install --no-cache-dir --ignore-installed \

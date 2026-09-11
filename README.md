@@ -40,7 +40,7 @@ Installed core technologies are:
  - Python 3.12
  - Tensorflow 2.20
  - CUDA 12.6 (GPU only)
- - Redis 8.8.0
+ - Redis 8.10.1
  - ROS 2 Jazzy
  - Gazebo Harmonic
 
