@@ -67,9 +67,10 @@ RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
 
 # Install Redis.
 RUN cd /tmp && \
-    wget https://download.redis.io/releases/redis-8.8.0.tar.gz && \
-    tar xvzf redis-8.8.0.tar.gz && \
-    cd redis-8.8.0 && \
+    wget https://download.redis.io/releases/redis-8.10.1.tar.gz && \
+    tar xvzf redis-8.10.1.tar.gz && \
+    cd redis-8.10.1 && \
+    rm -rf modules/redisbloom modules/redisearch modules/redisjson modules/redistimeseries && \
     make && \
     make install && \
     rm -rf /tmp/redis*
