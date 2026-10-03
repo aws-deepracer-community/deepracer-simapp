@@ -40,7 +40,7 @@ dependencies:
       - protobuf==6.33.5
       - pyparsing==3.2.5
       - requests==2.32.5
-      - urllib3==2.7.0
+      - urllib3==2.8.0
       - docutils==0.21.2
       - rospkg==1.6.0
       - tokenize-rt==6.2.0
