@@ -133,3 +133,4 @@ docker buildx build --check -f docker/Dockerfile.upstream-adjusted .
 | v1.2.9 | `cryptography==50.0.0` (was `48.0.1`); debconf frontend switched to `Dialog`; built 2026-08-12 |
 | v1.2.10 | Base Ubuntu layer refresh; Redis bumped to `8.10.1` (was `8.8.0`) with Redis module directories removed before build; built 2026-09-08 |
 | v1.2.11 | `conda-forge::curl==8.22.0` and `conda-forge::libcurl==8.22.0` (was `8.21.0`); built 2026-09-15 |
+| v1.3.1 | `urllib3==2.8.0` in pip and conda (was `2.7.0`); remove `opensslv.h` from both conda environments; built 2026-10-02 |
