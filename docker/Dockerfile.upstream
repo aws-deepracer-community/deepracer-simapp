@@ -1,8 +1,8 @@
-# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.2.11
-# Image ID: 5d0853b7dadc
+# Optimized Dockerfile for public.ecr.aws/aws-solutions/deepracer-on-aws-simapp:v1.3.1
+# Image ID: 7e2cebc431ef
 # Base: Ubuntu 24.04 (Noble)
-# Built: September 15, 2026
-# Optimized: September 26, 2026
+# Built: October 2, 2026
+# Optimized: October 3, 2026
 
 FROM ubuntu:24.04
 
@@ -188,7 +188,7 @@ RUN python3 -m pip install --no-cache-dir --ignore-installed \
     pillow==12.3.0 \
     pyyaml==6.0.3 \
     requests==2.32.5 \
-    urllib3==2.7.0 \
+    urllib3==2.8.0 \
     empy==4.2 \
     boto3==1.38.38 \
     bokeh==3.7.3 \
@@ -284,7 +284,7 @@ RUN /root/anaconda/bin/conda install -y \
     brotli-python==1.2.0 \
     conda-forge::curl==8.22.0 \
     conda-forge::libcurl==8.22.0 \
-    urllib3==2.7.0 \
+    urllib3==2.8.0 \
     requests==2.32.5 \
     nginx==1.31.3 \
     && /root/anaconda/bin/conda clean -afy \
@@ -305,6 +305,8 @@ RUN /bin/bash -c "source /root/anaconda/bin/activate && pip install --no-cache-d
     pip uninstall -y anaconda-anon-usage || true && \
     rm -rf /root/anaconda/envs/sagemaker_env/lib/python3.12/site-packages/tensorflow/include/external/curl && \
     rm -rf /usr/local/lib/python3.12/dist-packages/tensorflow/include/external/curl && \
+    rm -rf /root/anaconda/envs/sagemaker_env/include/openssl/opensslv.h && \
+    rm -rf /root/anaconda/include/openssl/opensslv.h && \
     rm -rf /root/anaconda/pkgs/setuptools-72.1.0-* && \
     rm -rf /root/anaconda/pkgs/anaconda-anon-usage-* && \
     rm -rf /usr/local/aws-cli/v2/*/dist/wheel* && \
