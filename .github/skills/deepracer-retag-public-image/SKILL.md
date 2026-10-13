@@ -15,6 +15,7 @@ argument-hint: '<alias>/<repo> <existing-tag> <new-tag>'
 - AWS CLI with `ecr-public:PutImage` permission on the target repository
 - `python3` and `curl` available in the shell
 - All `ecr-public` API calls must use `--region us-east-1` regardless of where the repo is
+- Ask the user which AWS profile to use for `put-image` (`--profile <PROFILE>`); verify it with `aws sts get-caller-identity --profile <PROFILE> --region us-east-1`
 
 ## Procedure
 
@@ -23,6 +24,7 @@ argument-hint: '<alias>/<repo> <existing-tag> <new-tag>'
 - `REPO` — repository name (e.g. `deepracer-on-aws-simapp`)
 - `EXISTING_TAG` — the tag whose manifest you want to copy
 - `NEW_TAG` — the new tag to create
+- `PROFILE` — AWS CLI profile with push rights; ask the user which one to use
 
 ### 2. Get an anonymous pull token
 
@@ -55,6 +57,7 @@ aws ecr-public put-image \
   --repository-name "${REPO}" \
   --image-tag "${NEW_TAG}" \
   --image-manifest "$MANIFEST" \
+  --profile "${PROFILE}" \
   --region us-east-1
 ```
 
@@ -62,15 +65,17 @@ A successful response includes the new `imageTag` in the returned `image.imageId
 
 ## DRoA Images
 
-For a DeepRacer-on-AWS (DRoA) release there are typically three images to retag:
+For a DeepRacer-on-AWS (DRoA) release there are typically five images to retag (alias `deepracer-community`):
 
 | Repository | Description |
 |------------|-------------|
 | `deepracer-on-aws-simapp` | Main simulation application |
 | `deepracer-on-aws-model-validation` | Model validation container |
 | `deepracer-on-aws-reward-function-validation` | Reward function validation container |
+| `deepracer-on-aws-car-log-video-processor` | Car log video processor container |
+| `deepracer-on-aws-model-optimizer` | Model optimizer container |
 
-Repeat the procedure above for each repository, keeping `ALIAS` and the tag values consistent across all three.
+Repeat the procedure above for each repository, keeping `ALIAS` and the tag values consistent across all five.
 
 ## Common Errors
 
