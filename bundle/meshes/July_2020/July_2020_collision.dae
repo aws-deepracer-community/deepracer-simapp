@@ -221,7 +221,7 @@
   </library_effects>
   <library_images>
     <image id="July_2020_Track_field_grass_T_01" name="July_2020_Track_field_grass_T_01">
-      <init_from>textures/July_2020_Track_field_grass_T_01.png</init_from>
+      <init_from>textures/July_2020_track_field_grass_T_01.png</init_from>
       <extra>
         <technique profile="OpenCOLLADAMaya">
           <originalMayaNodeId sid="originalMayaNodeId" type="string">July_2020_Track_field_grass_T_01</originalMayaNodeId>
