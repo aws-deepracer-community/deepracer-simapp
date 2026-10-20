@@ -77,7 +77,7 @@
     </light>
     <light name="Light 5" type="directional">
       <pose>4.415930 -0.164192 5.0 0 0 0</pose>
-      <diffuse>64 64 64 0</diffuse>
+      <diffuse>0.25 0.25 0.25 0</diffuse>
       <specular>0 0 0 0</specular>
       <attenuation>
         <constant>0.5</constant>
