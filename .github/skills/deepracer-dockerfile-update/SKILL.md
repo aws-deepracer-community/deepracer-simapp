@@ -135,3 +135,4 @@ docker buildx build --check -f docker/Dockerfile.upstream-adjusted .
 | v1.2.11 | `conda-forge::curl==8.22.0` and `conda-forge::libcurl==8.22.0` (was `8.21.0`); built 2026-09-15 |
 | v1.3.1 | `urllib3==2.8.0` in pip and conda (was `2.7.0`); remove `opensslv.h` from both conda environments; built 2026-10-02 |
 | v1.3.3 | Base Ubuntu layer refresh only; no package changes (all other layer history identical to v1.3.1); built 2026-10-12 |
+| v1.3.4 | `conda-forge::curl==8.23.0`, `conda-forge::libcurl==8.23.0` (was `8.22.0`); `nginx==1.31.7` (was `1.31.3`); base Ubuntu layer unchanged; built 2026-10-19 |
