@@ -7,7 +7,7 @@ dependencies:
   # the environment imports through PYTHONPATH.
   - python=3.14
   - pip
-  - numpy==1.26.4          # conda-managed so cv2/TF share one C-API instance
+  - numpy==2.5.3           # conda-managed so cv2/TF share one C-API instance (1.26.4 has no Python 3.14 build)
   - ffmpeg=8.0.1=gpl_*     # GPL variant includes x264 for AVC1/H.264 encoding
   - py-opencv              # headless cv2 bindings, uses the ffmpeg above
   - nginx==1.31.7
@@ -22,7 +22,6 @@ dependencies:
       - annoy==1.17.3
       - pillow==13.0.0
       - matplotlib==3.11.2
-      - numpy==2.5.3
       - pandas==3.0.6
       - PyOpenGL==3.1.10
       - scipy==1.18.1
@@ -31,7 +30,6 @@ dependencies:
       - minio==7.2.20
       - cryptography==50.0.2
       - kubernetes==37.0.0
-      - opencv-python==5.0.0.93
       - bokeh==3.10.0
       # rl_coach is installed by the Dockerfile in its own layer (pip install -e /opt/amazon/rl_coach).
       - retrying==1.4.2

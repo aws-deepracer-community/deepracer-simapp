@@ -17,8 +17,8 @@ version: 0.2
 #   PUBLIC_ECR_LOGIN_REGION       – region for public ECR auth token (default: us-east-1)
 #   BASE_IMAGE                    – Ubuntu base image for the CPU/core build. Set to a
 #                                  non-Docker Hub source to avoid Docker Hub rate limits,
-#                                  e.g. public.ecr.aws/ubuntu/ubuntu:24.04 or a pull-through
-#                                  cache repo. Defaults to ubuntu:24.04 (Docker Hub).
+#                                  e.g. public.ecr.aws/ubuntu/ubuntu:26.04 or a pull-through
+#                                  cache repo. Defaults to ubuntu:26.04 (Docker Hub).
 phases:
   pre_build:
     commands:

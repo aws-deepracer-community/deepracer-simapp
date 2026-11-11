@@ -1,59 +1,83 @@
 name: sagemaker_env
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.12
+  # Python must match the system Python of Ubuntu 26.04 (3.14), whose ROS 2 Lyrical packages
+  # the environment imports through PYTHONPATH.
+  - python=3.14
   - pip
-  - nginx
+  - numpy==2.5.3           # conda-managed so cv2/TF share one C-API instance (1.26.4 has no Python 3.14 build)
+  - ffmpeg=8.0.1=gpl_*     # GPL variant includes x264 for AVC1/H.264 encoding
+  - py-opencv              # headless cv2 bindings, uses the ffmpeg above
+  - nginx==1.31.7
   - zip
   - wget
-  - curl==8.18.0
   - pyqt=5
+  - curl==8.23.0
   - pip:
-      - pygame==2.6.1
-      - shapely==2.0.2
+      # pygame has no cp314 wheel and no release since 2024; pygame-ce provides the same module.
+      - pygame-ce==2.5.8
+      - shapely==2.2.0
       - annoy==1.17.3
-      - pillow==12.1.1
-      - matplotlib==3.10.6
-      - numpy==1.26.4
-      - pandas==2.3.1
-      - PyOpenGL==3.1.9
-      - scipy==1.13.1
-      - scikit-image==0.25.2
-      - boto3==1.38.38
-      - minio==7.2.15
-      - cryptography==46.0.5
-      - kubernetes==33.1.0
-      - opencv-python==4.9.0.80
-      - bokeh==3.7.3
-      - retrying==1.4.1
-      - eventlet==0.40.3
-      - flask==3.1.1
+      - pillow==13.0.0
+      - matplotlib==3.11.2
+      - pandas==3.0.6
+      - PyOpenGL==3.1.10
+      - scipy==1.18.1
+      - scikit-image==0.26.0
+      - boto3==1.43.109
+      - minio==7.2.20
+      - cryptography==50.0.2
+      - kubernetes==37.0.0
+      - bokeh==3.10.0
+      # rl_coach is installed by the Dockerfile in its own layer (pip install -e /opt/amazon/rl_coach).
+      - retrying==1.4.2
+      - eventlet==0.41.2
+      - flask==3.1.3
       - Flask-Testing==0.8.1
-      - gevent==23.9.1
-      - gunicorn==23.0.0
-      - h5py==3.14.0
-      - pytest==8.3.4
-      - pytest-cov==6.0.0
-      - tensorflow==2.20.0
+      - gevent==26.9.0
+      - gunicorn==26.2.0
+      - pytest==9.1.1
+      - pytest-cov==7.1.0
+      # h5py: the tensorflow 2.22.0rc0 cp314 wheel requires h5py~=3.15.1.
+      - h5py==3.15.1
+      # tensorflow 2.22.0rc0: first TensorFlow line with cp314 wheels; not shippable, swap for 2.22.0.
+      # tf_keras is installed by the Dockerfile with --no-deps (it pins tensorflow<2.22).
+      - tensorflow==2.22.0rc0
+      # keras-nightly: required by the tensorflow 2.22.0rc0 wheel; pinned to the build resolved on 2026-10-07.
+      - keras-nightly==3.16.0.dev2026100704
       - tensorflow-probability==0.25.0
-      - protobuf==6.33.5
-      - pyparsing==3.2.5
-      - requests==2.32.5
-      - urllib3==2.6.3
-      - docutils==0.21.2
-      - rospkg==1.6.0
+      - protobuf==7.36.2
+      - pyparsing==3.3.3
+      - requests==2.34.2
+      - urllib3==2.8.0
+      - docutils==0.23
+      - rospkg==1.6.3
       - tokenize-rt==6.2.0
       - pyyaml==6.0.3
-      - pytz==2025.2
-      - kiwisolver==1.4.9
+      - pytz==2026.5
+      - kiwisolver==1.5.1
       - pluggy==1.6.0
-      - empy==4.2
-      - jsonschema==4.24.0
-      - typeguard==4.4.4
-      - lark==1.2.2
-      - catkin_pkg==1.0.0
+      # Python dependencies of the ROS 2 Lyrical Python packages the environment imports through
+      # PYTHONPATH. Jazzy shipped some of them inside /opt/ros; Lyrical takes them from Debian
+      # python3-* packages in /usr/lib/python3/dist-packages, which this environment does not see.
+      # Versions match Ubuntu 26.04's packages.
+      # osrf_pycommon (python3-osrf-pycommon 2.1.7): imported by launch and launch_ros, so by
+      # markov.world_config and therefore every rollout, evaluation and virtual-event worker. PyPI
+      # stops at 2.0.2; 2.1.7 is installed from its release tag (commit pinned).
+      - osrf_pycommon @ git+https://github.com/osrf/osrf_pycommon.git@5fcd6fa0c71693a6b625ca973b3b2ff9fbd2c648
+      # argcomplete (python3-argcomplete 3.6.3): ros2cli / ament_index_python command-line tools.
+      - argcomplete==3.6.3
+      # filelock (python3-filelock 3.20.3): controller_manager's spawner module.
+      - filelock==3.20.3
+      # empy and lark: Lyrical's generated message modules import rosidl_pycommon, which needs them.
+      - empy==4.2.1
+      - jsonschema==4.26.0
+      - typeguard==4.6.0
+      - lark==1.3.1
+      - catkin_pkg==1.1.1
+      # setuptools provides the distutils module that tensorflow-probability 0.25 imports.
+      - setuptools==84.0.0
       - pytelegraf
       - sagemaker-training
-      - argcomplete
-      - setuptools==80.10.2
