@@ -122,9 +122,8 @@ public:
     if (AWS_ERR_OK != set_param(codec) || avcodec_open2(param_, codec, &opts) < 0 ) {
       AWS_LOG_ERROR(__func__, "Could not open codec");
       if (nullptr != param_) {
-	      avcodec_close(param_);
-	      av_free(param_);
-	      param_ = nullptr;
+	      // avcodec_close() was removed in FFmpeg 8; avcodec_free_context() closes, frees and nulls.
+	      avcodec_free_context(&param_);
       }
       return AWS_ERR_FAILURE;
     }
@@ -254,8 +253,8 @@ public:
     }
 
     if (nullptr != param_) {
-      avcodec_close(param_);
-      av_free(param_);
+      // avcodec_close() was removed in FFmpeg 8; avcodec_free_context() closes, frees and nulls.
+      avcodec_free_context(&param_);
     }
 
     if (nullptr != pic_in_) {

@@ -6,7 +6,7 @@
 set -e
 
 # Source ROS2 environment
-source /opt/ros/jazzy/setup.bash
+source /opt/ros/lyrical/setup.bash
 source /opt/amazon/install/setup.bash
 
 # Activate conda environment

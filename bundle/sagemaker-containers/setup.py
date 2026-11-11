@@ -47,9 +47,9 @@ setup(
         "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.14',
     ],
-    install_requires=['boto3', 'six', 'pip', 'flask', 'gunicorn', 'gevent', 'werkzeug', 'numpy==1.26.4'],
+    install_requires=['boto3', 'six', 'pip', 'flask', 'gunicorn', 'gevent', 'werkzeug', 'numpy==2.5.3'],
 
     extras_require={
         'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock', 'sagemaker']

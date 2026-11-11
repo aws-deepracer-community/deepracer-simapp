@@ -14,7 +14,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.10)
 project(KVSSDK)
 set(KVSSDK_VERSION 1.7.8)
 set(KVSSDK_MD5 9f3da8e64603198fe20d5c38e4a4cb08)

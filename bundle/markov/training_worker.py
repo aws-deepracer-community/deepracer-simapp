@@ -54,7 +54,8 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
                                       MODEL_METADATA_S3_POSTFIX,
                                       HYPERPARAMETER_S3_POSTFIX,
                                       FROZEN_HEAD_OUTPUT_GRAPH_FORMAT_MAPPING,
-                                      ModelMetadataKeys)
+                                      ModelMetadataKeys,
+                                      CHECKPOINT_SELECTION_BEST)
 from markov.boto.s3.s3_client import S3Client
 
 logger = Logger(__name__, logging.INFO).get_logger()
@@ -259,6 +260,10 @@ def main():
                         help='(string) S3 prefix for pre-trained model',
                         type=str,
                         default='sagemaker')
+    parser.add_argument('--pretrained_checkpoint',
+                        help='(string) Choose which checkpoint of the pre-trained model to use (best | last)',
+                        type=str,
+                        default=CHECKPOINT_SELECTION_BEST)
     parser.add_argument('--aws_region',
                         help='(string) AWS region',
                         type=str,
@@ -379,9 +384,10 @@ def main():
         # make coach checkpoint compatible
         if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
             checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
-        # get best model checkpoint string
-        model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
-        # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
+        # get the selected (best or last) model checkpoint string
+        model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_checkpoint(
+            args.pretrained_checkpoint)
+        # Select the checkpoint model by uploading rl coach .coach_checkpoint file
         checkpoint.rl_coach_checkpoint.update(
             model_checkpoint_name=model_checkpoint_name,
             s3_kms_extra_args=utils.get_s3_kms_extra_args())

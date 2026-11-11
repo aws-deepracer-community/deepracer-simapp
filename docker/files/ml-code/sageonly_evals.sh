@@ -22,8 +22,8 @@ set -e
 
 COACH_EXP_NAME=sagemaker_rl
 
-# ros jazzy
-export ROS_DISTRO=jazzy
+# ros lyrical
+export ROS_DISTRO=lyrical
 export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
 export TF_CPP_MIN_LOG_LEVEL=3
@@ -40,7 +40,7 @@ export ROS_IP=127.0.0.1
 
 export DEEPRACER_JOB_TYPE_ENV="SAGEONLY"
 
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
+export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.14/site-packages/:$PYTHONPATH
 
 export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 source /opt/ros/${ROS_DISTRO}/setup.bash

@@ -22,8 +22,8 @@ set -e
 
 COACH_EXP_NAME=sagemaker_rl
 
-# ros jazzy
-export ROS_DISTRO=jazzy
+# ros lyrical
+export ROS_DISTRO=lyrical
 export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
 export TF_CPP_MIN_LOG_LEVEL=3
@@ -40,13 +40,13 @@ export ROS_IP=127.0.0.1
 
 export DEEPRACER_JOB_TYPE_ENV="SAGEONLY"
 
-export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/:$PYTHONPATH
+export PYTHONPATH=/opt/amazon/install/sagemaker_rl_agent/lib/python3.14/site-packages/:$PYTHONPATH
 
 echo "Logging sagemaker and robomaker in seperate cloudwatch stream"
 export SIMULATION_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/SimulationJobs
 export TRAINING_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/TrainingJobs
-/usr/bin/python3.12 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
-/usr/bin/python3.12 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
+/usr/bin/python3.14 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
+/usr/bin/python3.14 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
 
 # Starting sagemaker instance inside conda environment
 export PATH="/root/anaconda/bin:/root/anaconda/condabin:/root/anaconda/bin:/opt/ml:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -61,7 +61,7 @@ echo "Running training job inside conda on single sagemaker instance..."
 echo "Input argument to training worker $@"
 # redirect stderr to stdout and have error messages sent to the same file as standard output
 export DR_MARKOV_WORLD_CONFIG_LOCAL_YAML_FILE=/opt/ml/code/custom_files/training_params.yaml
-python3.12 /opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
+python3.14 /opt/amazon/install/sagemaker_rl_agent/lib/python3.14/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
 conda deactivate
 
 export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

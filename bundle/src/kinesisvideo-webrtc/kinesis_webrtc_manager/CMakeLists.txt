@@ -6,7 +6,7 @@ project(kinesis_webrtc_manager)
 set(KINESIS_WEBRTC_MANAGER_VERSION 0.1.0)
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -31,12 +31,18 @@ ExternalProject_Add(WEBRTC_SDK_IMPORT
   GIT_TAG "v1.12.0"
   SOURCE_DIR ${EXTERNAL_INSTALL_LOCATION}/src
   BINARY_DIR ${EXTERNAL_INSTALL_LOCATION}/build
-  CMAKE_ARGS -DCMAKE_C_FLAGS="-Wno-enum-int-mismatch"
+  # GCC 15 (Ubuntu 26.04) defaults to C23 and makes implicit function declarations an error.
+  # The SDK and its dependencies (kvspic) are written for gnu17 and call GNU extensions such as
+  # pthread_getname_np without defining _GNU_SOURCE.
+  CMAKE_ARGS "-DCMAKE_C_FLAGS=-Wno-enum-int-mismatch -std=gnu17 -D_GNU_SOURCE"
   PATCH_COMMAND ${CMAKE_COMMAND} -E echo "Checking if patch needs to be applied" && 
               (git -C ${EXTERNAL_INSTALL_LOCATION}/src apply --check --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/webrtc-patches/webrtc-sdk-c.patch > /dev/null 2>&1 && 
                ${CMAKE_COMMAND} -E echo "Applying patch" && 
                git -C ${EXTERNAL_INSTALL_LOCATION}/src apply --ignore-space-change --ignore-whitespace ${CMAKE_CURRENT_SOURCE_DIR}/webrtc-patches/webrtc-sdk-c.patch || 
-               ${CMAKE_COMMAND} -E echo "Patch already applied, skipping")
+               ${CMAKE_COMMAND} -E echo "webrtc-sdk-c.patch does not apply to this SDK version (known; see prepare-webrtc-sdk), not applied")
+              # System OpenSSL instead of a source-built OpenSSL 1.1.1, and no libwebsockets
+              # minimal examples (rejected by CMake 4). See the script for details.
+              && ${CMAKE_CURRENT_SOURCE_DIR}/prepare-webrtc-sdk ${EXTERNAL_INSTALL_LOCATION}/src
   INSTALL_COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/install-webrtc ${EXTERNAL_INSTALL_LOCATION}
     && chmod +x ${EXTERNAL_INSTALL_LOCATION}/install-webrtc
     && ${EXTERNAL_INSTALL_LOCATION}/install-webrtc ${EXTERNAL_INSTALL_LOCATION}
@@ -96,7 +102,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_link_libraries(${PROJECT_NAME} 
   ${WEBRTCSDK_LIBS} 
-  aws_common
+  ${aws_common_LIBRARIES}
 )
 
 #############
@@ -129,25 +135,11 @@ install(
   DESTINATION lib/
 )
 
-configure_file(${PROJECT_NAME}Config.cmake.in
-  ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake @ONLY
-)
-configure_file(${PROJECT_NAME}ConfigVersion.cmake.in
-  ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake @ONLY
-)
 export(TARGETS ${PROJECT_NAME}
   FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake"
 )
 export(PACKAGE ${PROJECT_NAME})
 
-install(
-  FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-  DESTINATION share/${PROJECT_NAME}/cmake
-)
-install(
-  FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  DESTINATION share/${PROJECT_NAME}/cmake
-)
 install(
   EXPORT ${PROJECT_NAME}-targets
   DESTINATION share/${PROJECT_NAME}/cmake
@@ -175,7 +167,7 @@ if(BUILD_TESTING)
   target_link_libraries(test_kinesis_webrtc_manager
     ${PROJECT_NAME}
     ${WEBRTCSDK_LIBS}
-    aws_common
+    ${aws_common_LIBRARIES}
   )
 
   ament_add_gmock(test_kinesis_webrtc_utils
@@ -187,11 +179,13 @@ if(BUILD_TESTING)
   target_link_libraries(test_kinesis_webrtc_utils
     ${PROJECT_NAME}
     ${WEBRTCSDK_LIBS}
-    aws_common
+    ${aws_common_LIBRARIES}
   )
 
 
 endif()
 
-# Add ament_package() at the end to properly register the package with ROS 2
-ament_package()
+# ament_package() generates share/kinesis_webrtc_manager/cmake/kinesis_webrtc_managerConfig.cmake.
+# The package used to install a second file under that name, so which one was installed depended
+# on file timestamps; its content (the WebRTC SDK libraries) is now an extras file.
+ament_package(CONFIG_EXTRAS kinesis_webrtc_manager-extras.cmake.in)

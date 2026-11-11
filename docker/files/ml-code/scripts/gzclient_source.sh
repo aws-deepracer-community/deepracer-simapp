@@ -14,7 +14,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-ROS_DISTRO=jazzy
+ROS_DISTRO=lyrical
 
 if [ ! -z $GAZEBO_MASTER_URI ]; then
     tmp_GAZEBO_MASTER_URI=$GAZEBO_MASTER_URI

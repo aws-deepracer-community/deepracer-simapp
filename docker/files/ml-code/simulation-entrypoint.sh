@@ -16,7 +16,7 @@
 #   limitations under the License.                                              #
 #################################################################################
 
-ROS_DISTRO=jazzy
+ROS_DISTRO=lyrical
 # # aws_common ROS package used in kinesis is outdated and wants aws credentials
 # # in /home/robomaker//.aws/config location
 mkdir -p /root/.aws/

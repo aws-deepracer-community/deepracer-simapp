@@ -17,7 +17,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(aws_ros2_common)
 
-add_compile_options(-std=c++17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -37,7 +38,18 @@ add_library(${PROJECT_NAME} SHARED
     src/sdk_utils/ros2_node_parameter_reader.cpp
     src/sdk_utils/logging/aws_ros_logger.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${AWSSDK_INCLUDE_DIR})
-ament_target_dependencies(${PROJECT_NAME} aws_common rclcpp)
+# ament_target_dependencies was removed in ROS 2 Lyrical. Equivalent: link each dependency's
+# exported targets, or its libraries and include directories when it exports no targets.
+foreach(_target ${PROJECT_NAME})
+  foreach(_dep aws_common rclcpp)
+    if(DEFINED ${_dep}_TARGETS)
+      target_link_libraries(${_target} ${${_dep}_TARGETS})
+    else()
+      target_link_libraries(${_target} ${${_dep}_LIBRARIES})
+      target_include_directories(${_target} PUBLIC ${${_dep}_INCLUDE_DIRS})
+    endif()
+  endforeach()
+endforeach()
 
 
 #############

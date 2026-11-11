@@ -27,4 +27,4 @@ export PYTHONUNBUFFERED=1
 
 # Start the redis server and Coach training worker
 redis-server /etc/redis/redis.conf & (sleep 5 && \
-python3.12 markov/training_worker.py $@ 2>&1)
+python3.14 markov/training_worker.py $@ 2>&1)

@@ -19,10 +19,10 @@ project(aws_common)
 
 SET(AWS_COMMON_VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-std=c++17 -Wno-deprecated-declarations -Wno-array-parameter -Wno-array-bounds -Wno-stringop-overflow -Wno-stringop-overread -Wno-ignored-qualifiers)
+add_compile_options(-Wno-deprecated-declarations -Wno-array-parameter -Wno-array-bounds -Wno-stringop-overflow -Wno-stringop-overread -Wno-ignored-qualifiers)
 if (DEFINED ENV{ROS_DISTRO})
     add_definitions(-DCMAKE_ROS_DISTRO="$ENV{ROS_DISTRO}")
 else()
@@ -137,19 +137,19 @@ export(TARGETS ${PROJECT_NAME}
   FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake")
 export(PACKAGE ${PROJECT_NAME})
 
-CONFIGURE_FILE(${PROJECT_NAME}Config.cmake.in
-  ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake @ONLY)
-CONFIGURE_FILE(${PROJECT_NAME}ConfigVersion.cmake.in
-  ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake @ONLY)
 # Install AWS SDK config file for downstream packages
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/awssdk/AWSSDKConfig.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/cmake/DefineTestMacros.cmake DESTINATION share/${PROJECT_NAME}/cmake)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake DESTINATION share/${PROJECT_NAME}/cmake)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake DESTINATION share/${PROJECT_NAME}/cmake)
 INSTALL(EXPORT ${PROJECT_NAME}-targets DESTINATION share/${PROJECT_NAME}/cmake)
 
 # Add ament package export
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_targets(${PROJECT_NAME}-targets)
-ament_package()
+# ament_package() generates and installs share/aws_common/cmake/aws_commonConfig.cmake. This
+# package used to install its own file under the same name as well; which of the two ended up
+# installed depended on sub-second file timestamps, and with ament's file downstream packages
+# lost the AWS SDK from ${aws_common_LIBRARIES} (the intermittent link failures of
+# h264_video_encoder and kinesis_webrtc_manager). What the custom file added is now an extras
+# file that ament's config includes.
+ament_package(CONFIG_EXTRAS aws_common-extras.cmake.in)

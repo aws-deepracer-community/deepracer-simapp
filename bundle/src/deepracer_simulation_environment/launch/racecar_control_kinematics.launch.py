@@ -6,6 +6,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, TimerAction, LogInfo
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from launch.substitutions import PathJoinSubstitution
 
 def generate_launch_description():
     """
@@ -38,6 +40,9 @@ def generate_launch_description():
                     'left_steering_hinge_position_controller',
                     'right_steering_hinge_position_controller',
                     '--controller-manager', 'controller_manager',
+                    # Lyrical's controller_manager no longer applies the controllers' parameters from the
+                    # gz_ros2_control parameter file to the controllers it loads; pass the file explicitly.
+                    '--param-file', PathJoinSubstitution([FindPackageShare('deepracer_simulation_environment'), 'config', 'racecar_control_kinematics.yaml']),
                     '--controller-manager-timeout', '30',
                     '--activate-as-group',
                     '--switch-timeout', '20',

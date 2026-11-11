@@ -1,0 +1,14 @@
+# Included by the ament-generated kinesis_webrtc_managerConfig.cmake (ament_package CONFIG_EXTRAS).
+# Defines the WebRTC SDK libraries installed next to kinesis_webrtc_manager as imported targets and
+# adds them to ${kinesis_webrtc_manager_LIBRARIES}; the exported target links them by these names.
+get_filename_component(_kwm_prefix "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+foreach(_imported_library @WEBRTCSDK_LIBS@)
+  if(NOT TARGET ${_imported_library})
+    add_library(${_imported_library} UNKNOWN IMPORTED)
+    set_target_properties(${_imported_library} PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${_kwm_prefix}/include/kinesis_webrtc_manager"
+      IMPORTED_LOCATION "${_kwm_prefix}/lib/${_imported_library}"
+    )
+  endif()
+endforeach()
+list(APPEND kinesis_webrtc_manager_LIBRARIES @WEBRTCSDK_LIBS@)

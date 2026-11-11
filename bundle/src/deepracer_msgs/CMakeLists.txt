@@ -4,14 +4,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(deepracer_msgs)
 
-# Force Python 3.12 to match ROS 2 Jazzy
-# We can remove these 2 lines after updating base Docker image to python 3.12
-set(Python3_EXECUTABLE "/usr/bin/python3.12")
-find_package(Python3 3.12 EXACT REQUIRED COMPONENTS Interpreter Development)
 
-# Default to C++17
+# Default to C++20 (the floor for ROS 2 Lyrical)
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")

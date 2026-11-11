@@ -1,0 +1,10 @@
+# Included by the ament-generated aws_commonConfig.cmake (ament_package CONFIG_EXTRAS).
+# Consumers link ${aws_common_LIBRARIES} and expect the AWS SDK for C++ libraries that
+# aws_common is built against to be part of it.
+
+# Find the AWS SDK; this defines the aws-cpp-sdk-* imported targets named below.
+include("${CMAKE_CURRENT_LIST_DIR}/AWSSDKConfig.cmake")
+list(APPEND aws_common_LIBRARIES @aws_common_IMPORTED_LIBRARIES@)
+
+# Test macros (add_common_gtest) used by downstream packages
+include("${CMAKE_CURRENT_LIST_DIR}/DefineTestMacros.cmake")

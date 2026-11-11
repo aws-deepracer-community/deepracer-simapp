@@ -11,7 +11,7 @@ import copy
 from deepracer_msgs.msg import ModelState
 from deepracer_msgs.srv import SetModelStates
 from markov.track_geom.constants import SET_MODEL_STATES
-from markov.rclpy_wrappers import ServiceProxyWrapper, ROS2NodeManager
+from markov.rclpy_wrappers import ServiceProxyWrapper, SERVICE_CALL_TIMEOUT_SEC, ROS2NodeManager
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 import markov.gazebo_tracker.constants as consts
@@ -48,9 +48,13 @@ class SetModelStateTracker(AbstractTracker):
         # Equivalent of rospy.wait_for_service() - wait indefinitely
         while not client.wait_for_service(timeout_sec=1.0):
             pass  # Keep waiting like ROS1 did
+        # Destroy the waiting client: a live client receives every response the service sends
+        # to any client, and this process's executor would spend its time draining them.
+        node.destroy_client(client)
             
         # Now create simple ServiceProxyWrapper (should work immediately)
-        self.set_model_states = ServiceProxyWrapper(SET_MODEL_STATES, SetModelStates)
+        self.set_model_states = ServiceProxyWrapper(SET_MODEL_STATES, SetModelStates,
+            response_timeout_sec=SERVICE_CALL_TIMEOUT_SEC)
 
         SetModelStateTracker._instance_ = self
         super(SetModelStateTracker, self).__init__(priority=consts.TrackerPriority.LOW)

@@ -9,24 +9,25 @@
 
     # Wheel velocity controllers (for kinematic simulation)
     left_rear_wheel_velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
+      type: forward_command_controller/ForwardCommandController
     right_rear_wheel_velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
+      type: forward_command_controller/ForwardCommandController
     left_front_wheel_velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
+      type: forward_command_controller/ForwardCommandController
     right_front_wheel_velocity_controller:
-      type: velocity_controllers/JointGroupVelocityController
+      type: forward_command_controller/ForwardCommandController
 
     # Steering position controllers
     left_steering_hinge_position_controller:
-      type: position_controllers/JointGroupPositionController
+      type: forward_command_controller/ForwardCommandController
     right_steering_hinge_position_controller:
-      type: position_controllers/JointGroupPositionController
+      type: forward_command_controller/ForwardCommandController
 
 # Wheel velocity controllers with PID gains (kinematic)
 /**/left_rear_wheel_velocity_controller:
   ros__parameters:
     joints: [left_rear_wheel_joint]
+    interface_name: velocity
     pid:
       p: 1.0
       i: 0.0
@@ -37,6 +38,7 @@
 /**/right_rear_wheel_velocity_controller:
   ros__parameters:
     joints: [right_rear_wheel_joint]
+    interface_name: velocity
     pid:
       p: 1.0
       i: 0.0
@@ -47,6 +49,7 @@
 /**/left_front_wheel_velocity_controller:
   ros__parameters:
     joints: [left_front_wheel_joint]
+    interface_name: velocity
     pid:
       p: 0.5
       i: 0.0
@@ -57,6 +60,7 @@
 /**/right_front_wheel_velocity_controller:
   ros__parameters:
     joints: [right_front_wheel_joint]
+    interface_name: velocity
     pid:
       p: 0.5
       i: 0.0
@@ -68,6 +72,7 @@
 /**/left_steering_hinge_position_controller:
   ros__parameters:
     joints: [left_steering_hinge_joint]
+    interface_name: position
     pid:
       p: 1.0
       i: 0.0
@@ -78,6 +83,7 @@
 /**/right_steering_hinge_position_controller:
   ros__parameters:
     joints: [right_steering_hinge_joint]
+    interface_name: position
     pid:
       p: 1.0
       i: 0.0

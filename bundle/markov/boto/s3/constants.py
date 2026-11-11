@@ -281,6 +281,9 @@ IP_ADDRESS_LOCAL_PATH = os.path.join(CUSTOM_FILES_PATH,
 # best and last checkpoint
 BEST_CHECKPOINT = 'best_checkpoint'
 LAST_CHECKPOINT = 'last_checkpoint'
+# checkpoint selection values for EVAL_CHECKPOINT and --pretrained_checkpoint, as in the community SimApp
+CHECKPOINT_SELECTION_BEST = 'best'
+CHECKPOINT_SELECTION_LAST = 'last'
 
 
 # sync files

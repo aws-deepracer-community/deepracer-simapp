@@ -23,7 +23,7 @@ import copy
 
 from deepracer_msgs.srv import GetLinkStates
 from markov.track_geom.constants import GET_LINK_STATES
-from markov.rclpy_wrappers import ServiceProxyWrapper
+from markov.rclpy_wrappers import ServiceProxyWrapper, SERVICE_CALL_TIMEOUT_SEC
 from markov.gazebo_tracker.abs_tracker import AbstractTracker
 import markov.gazebo_tracker.constants as consts
 
@@ -59,7 +59,8 @@ class GetLinkStateTracker(AbstractTracker):
         self.link_names = []
         self.reference_frames = []
 
-        self._get_link_states = ServiceProxyWrapper(GET_LINK_STATES, GetLinkStates)
+        self._get_link_states = ServiceProxyWrapper(GET_LINK_STATES, GetLinkStates,
+            response_timeout_sec=SERVICE_CALL_TIMEOUT_SEC)
 
         GetLinkStateTracker._instance_ = self
         super(GetLinkStateTracker, self).__init__(priority=consts.TrackerPriority.HIGH)

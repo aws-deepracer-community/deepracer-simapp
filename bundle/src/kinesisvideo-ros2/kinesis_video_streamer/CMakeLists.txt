@@ -19,7 +19,7 @@ project(kinesis_video_streamer)
 
 # Add support for C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 find_package(kinesis_manager REQUIRED)
@@ -60,7 +60,8 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC include ${INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${LIB_DEPS} image_transport::image_transport)
 target_link_libraries(${PROJECT_NAME}_lib ${LIB_DEPS} image_transport::image_transport)
 
-ament_target_dependencies(${PROJECT_NAME} image_transport)
+# image_transport is linked through image_transport::image_transport above
+# (ament_target_dependencies was removed in ROS 2 Lyrical).
 
 #############
 ## Install ##

@@ -19,7 +19,7 @@ sleep 5
 echo "Starting markov evaluation worker..."
 
 # ESSENTIAL: Source ROS setup before activating conda to ensure ROS is available
-source /opt/ros/jazzy/setup.bash
+source /opt/ros/lyrical/setup.bash
 source /opt/amazon/install/setup.bash
 export PYTHONPATH=/opt/amazon:$PYTHONPATH
 source /root/anaconda/bin/activate sagemaker_env

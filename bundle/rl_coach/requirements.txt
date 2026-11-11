@@ -1,39 +1,43 @@
-# Python 3.12 Compatible Requirements for RL Coach
-# Explicit versions matching current environment (Python 3.12.11)
+# Python 3.14 Requirements for RL Coach
+# Newest releases with CPython 3.14 wheels on 2026-10-07 (DeepRacer SimApp migration to
+# Ubuntu 26.04, ROS 2 Lyrical, Python 3.14).
 
 # Core ML/RL Dependencies
-tensorflow==2.20.0
+# tensorflow 2.22.0rc0 is the first TensorFlow line with cp314 wheels (release candidate, swap for
+# 2.22.0 when released). It brings keras-nightly, so keras is not pinned here.
+# tf_keras (needed by tensorflow-probability) pins tensorflow<2.22, so the image installs
+# tf_keras==2.21.0 with --no-deps instead of listing it here.
+tensorflow==2.22.0rc0
 tensorflow-probability==0.25.0
-tf_keras==2.20.1
-protobuf==6.33.5
-keras==3.15.0
-numpy==1.26.4  # Allow system version compatibility
-scipy==1.13.1  # Allow system version compatibility
-scikit-learn==1.7.0
-scikit-image==0.25.2
+protobuf==7.36.2
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+scikit-image==0.26.0
 
 # Data Processing
-pandas==2.3.1
-matplotlib==3.10.6  # Allow system version compatibility
-pillow==13.0.0  # Allow system version compatibility
+pandas==3.0.6
+matplotlib==3.11.2
+pillow==13.0.0
 
 # RL Environment
-gymnasium==1.2.0
-gymnasium[atari]==1.2.0
-ale-py==0.11.1
-pygame==2.6.1
-PyOpenGL==3.1.9
+gymnasium==1.4.0
+gymnasium[atari]==1.4.0
+ale-py==0.12.1
+# pygame has no cp314 wheel and no release since 2024; pygame-ce provides the same pygame module.
+pygame-ce==2.5.8
+PyOpenGL==3.1.10
 
 # Utilities
 annoy==1.17.3
-bokeh==3.7.3
-redis==6.2.0
-psutil==6.1.0  # Match or allow newer than system version
+bokeh==3.10.0
+redis==8.1.0
+psutil==7.2.2
 
 # Cloud/Distributed Computing
-kubernetes==33.1.0
-minio==7.2.15
+kubernetes==37.0.0
+minio==7.2.20
 
 # Development/Testing
-pytest==8.3.4  # Allow system version compatibility
-pytest-cov==6.0.0  # Allow system version compatibility
+pytest==9.1.1
+pytest-cov==7.1.0
