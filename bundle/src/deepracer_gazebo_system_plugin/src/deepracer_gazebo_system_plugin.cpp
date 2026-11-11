@@ -1740,7 +1740,9 @@ void DeepRacerGazeboSystemPlugin::getModelStatesCallback(
             
             auto modelIt = model_states_cache_.find(model_name);
             if (modelIt == model_states_cache_.end()) {
-                RCLCPP_ERROR(node_->get_logger(), "GetModelStates: model [%s] does not exist", model_name.c_str());
+                // Callers poll models before they spawn, so log at most every 5 s.
+                RCLCPP_WARN_THROTTLE(node_->get_logger(), steady_clock_, 5000,
+                                     "GetModelStates: model [%s] does not exist", model_name.c_str());
                 response->model_states.push_back(model_state);
                 response->status.push_back(0);
                 response->messages.push_back("GetModelStates: model does not exist");

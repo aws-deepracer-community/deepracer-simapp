@@ -62,7 +62,7 @@ def generate_launch_description():
                 '..', '..', 'lib'
             ]),
             ':',
-            '/opt/ros/jazzy/lib',
+            PathJoinSubstitution(['/opt/ros', EnvironmentVariable('ROS_DISTRO'), 'lib']),
             ':',
             EnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH', default_value='')
         ]

@@ -115,36 +115,59 @@ def iterable_to_items(obj):
     return items
 
 
-def unfold_dict_or_list(obj: Union[Dict, List, OrderedDict]):
+def unfold_dict_or_list(obj: Union[Dict, List, OrderedDict], _active=None):
     """
     Recursively unfolds all the parameters in dictionaries and lists
     :param obj: a dictionary or list to unfold
     :return: the unfolded parameters dictionary
+
+    Objects already being unfolded higher up (reference cycles) and classes and modules are
+    represented by their repr instead of being unfolded again. Without that, a cycle recursed until
+    RecursionError, and the fallback then wrote '__class__' into whatever mapping the limit was hit
+    on; when that was a class's __dict__ (a read-only mappingproxy) it raised TypeError. Where the
+    limit is hit depends on the interpreter (Python 3.14 bounds recursion by C stack use) and on
+    the objects reachable from the parameters, so the same graph could document itself on one
+    host and crash on another.
     """
-    parameters = OrderedDict()
-    items = iterable_to_items(obj)
-    for k, v in items:
-        if isinstance(v, dict) or isinstance(v, list) or isinstance(v, OrderedDict):
-            if 'tensorflow.' not in str(v.__class__):
-                parameters[k] = unfold_dict_or_list(v)
-        elif 'tensorflow.' in str(v.__class__):
-            parameters[k] = v
-        elif hasattr(v, '__dict__'):
-            sub_params = v.__dict__
-            if '__objclass__' not in sub_params.keys():
-                try:
-                    parameters[k] = unfold_dict_or_list(sub_params)
-                except RecursionError:
+    if _active is None:
+        _active = set()
+    _active.add(id(obj))
+    try:
+        parameters = OrderedDict()
+        # Snapshot: unfolding can trigger lazy attributes that add keys to the mapping being read.
+        items = list(iterable_to_items(obj))
+        for k, v in items:
+            if id(v) in _active:
+                parameters[k] = '<cycle: {}>'.format(v.__class__.__name__)
+            elif isinstance(v, dict) or isinstance(v, list) or isinstance(v, OrderedDict):
+                if 'tensorflow.' not in str(v.__class__):
+                    parameters[k] = unfold_dict_or_list(v, _active)
+            elif 'tensorflow.' in str(v.__class__):
+                parameters[k] = v
+            elif isinstance(v, (type, types.ModuleType)):
+                parameters[k] = repr(v)
+            elif hasattr(v, '__dict__'):
+                sub_params = v.__dict__
+                if '__objclass__' not in sub_params.keys():
+                    _active.add(id(v))
+                    try:
+                        unfolded = unfold_dict_or_list(sub_params, _active)
+                    except RecursionError:
+                        unfolded = OrderedDict(sub_params)
+                    finally:
+                        _active.discard(id(v))
+                    unfolded['__class__'] = v.__class__.__name__
+                    parameters[k] = unfolded
+                else:
+                    # unfolding this type of object will result in infinite recursion
                     parameters[k] = sub_params
-                parameters[k]['__class__'] = v.__class__.__name__
             else:
-                # unfolding this type of object will result in infinite recursion
-                parameters[k] = sub_params
-        else:
-            parameters[k] = v
-    if not isinstance(obj, OrderedDict) and not isinstance(obj, list):
-        parameters = OrderedDict(sorted(parameters.items()))
-    return parameters
+                parameters[k] = v
+        if not isinstance(obj, OrderedDict) and not isinstance(obj, list):
+            parameters = OrderedDict(sorted(parameters.items()))
+        return parameters
+    finally:
+        _active.discard(id(obj))
 
 
 class Parameters(object):

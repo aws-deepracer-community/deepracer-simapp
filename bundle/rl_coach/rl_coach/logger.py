@@ -356,7 +356,7 @@ def create_mp4(images, fps=10, name="mp4"):
 
     p = Popen(command, stdin=PIPE, stderr=PIPE)
     for image in images:
-        p.stdin.write(image.tostring())
+        p.stdin.write(image.tobytes())  # ndarray.tostring() was removed in numpy 2.3
     p.stdin.close()
     p.wait()
 

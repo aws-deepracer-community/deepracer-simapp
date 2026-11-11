@@ -22,8 +22,8 @@ set -e
 
 COACH_EXP_NAME=sagemaker_rl
 
-# ros jazzy
-export ROS_DISTRO=jazzy
+# ros lyrical
+export ROS_DISTRO=lyrical
 export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
 export TF_CPP_MIN_LOG_LEVEL=3

@@ -22,6 +22,18 @@ from markov.rclpy_constants import DEFAULT_ROS2_NODE_NAME
 from std_srvs.srv import Empty
 
 
+# Per-attempt wait for a response, for callers that opt in with response_timeout_sec (see
+# ServiceProxyWrapper.__call__).
+SERVICE_CALL_TIMEOUT_SEC = 10.0
+# History depth of a service client's response reader. Every client of a service receives every
+# response the server sends, to any client, and discards the ones that are not its own when it
+# takes them (rmw_fastrtps; ros2/rclcpp#2397). With KEEP_LAST 10, a client whose executor takes
+# its response later than ten foreign responses arrive loses its own: the model state service
+# answers about 2,000 requests a second from the two /clock-rate trackers (car_node and the
+# rollout worker), so a take delayed by a few milliseconds (interpreter-lock contention, worst
+# during a reset) lost the rollout worker's reply and stalled the episode for the 10 s timeout.
+# 1,000 covers about half a second of delay at that rate.
+SERVICE_CLIENT_QOS_DEPTH = 1000
 ROS_SERVICE_ERROR_MSG_FORMAT = "ROS Service {0} call failed, Re-try count: {1}/{2}: {3}"
 
 logger = Logger(__name__, logging.INFO).get_logger()
@@ -51,10 +63,14 @@ class ROS2NodeManager:
             
             node_name_with_suffix = f"{node_name}_{suffix}"
             self.node = Node(node_name_with_suffix)
-            # Use MultiThreadedExecutor to allow service client callbacks to be processed
-            # while other callbacks are pending. SingleThreadedExecutor can cause deadlocks
-            # with MutuallyExclusiveCallbackGroup service clients.
-            self.executor = rclpy.executors.MultiThreadedExecutor(num_threads=4)
+            # At least four workers, whatever the CPU affinity: subscription callbacks on this
+            # node (for example TrackerManager's /clock callback) make blocking service calls
+            # through ServiceProxyWrapper, whose responses are delivered by another worker of
+            # this executor. With the affinity-derived default a single-CPU process would get
+            # one worker and deadlock. This holds only while fewer callbacks block on a service
+            # call at once than there are workers.
+            self.executor = rclpy.executors.MultiThreadedExecutor(
+                num_threads=max(4, len(os.sched_getaffinity(0))))
             self.executor.add_node(self.node)
             self.executor_thread = threading.Thread(target=self._spin_executor, daemon=True)
             self.executor_thread.start()
@@ -101,13 +117,17 @@ class ServiceProxyWrapper:
     """
     def __init__(self, service_name, object_type=Empty, *,
                  max_retry_attempts=5, timeout_sec=1.0,
-                 wait_for_service=False):
+                 wait_for_service=False, response_timeout_sec=None):
         """service_name (str): Name of the service to create a client for
            object_type (object): The object type for making a service request
            persistent (bool): flag to whether keep the connection open or not (not used in ROS2)
            max_retry_attempts (int): maximum number of retry
            timeout_sec (float): timeout in seconds for service call
            wait_for_service (bool): whether to attempt wait for the service to be available before returning
+           response_timeout_sec (float or None): per-attempt limit on waiting for the response. None
+               (the default) waits until the response arrives or ROS shuts down, as before. Set it
+               only for idempotent services whose callers must not block: on timeout the request is
+               dropped on the client side and re-sent, and the server may still run the first one.
         """
 
         self.node = ROS2NodeManager.get_instance(DEFAULT_ROS2_NODE_NAME).get_node()
@@ -136,12 +156,13 @@ class ServiceProxyWrapper:
         except Exception as e:
             logger.error(f"Error listing services: {e}")
         
-        # Create optimized QoS profile for service calls
-        # Based on: https://github.com/ros2/rclpy/issues/630
+        # QoS for the client's request writer and response reader. The depth bounds how many
+        # responses (most of them for other clients of the same service) the reader holds before
+        # the executor takes them; see SERVICE_CLIENT_QOS_DEPTH.
         service_qos = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
-            depth=10,  # Prevent service call queue overflow
+            depth=SERVICE_CLIENT_QOS_DEPTH,
             durability=DurabilityPolicy.VOLATILE
         )
         
@@ -152,6 +173,7 @@ class ServiceProxyWrapper:
         self._service_name = service_name
         self._max_retry_attempts = max_retry_attempts
         self._timeout_sec = timeout_sec
+        self._response_timeout_sec = response_timeout_sec
 
         retry_attempts = 0
         while wait_for_service and not target_found and retry_attempts < max_retry_attempts:
@@ -173,17 +195,28 @@ class ServiceProxyWrapper:
                         raise Exception(f"Service {self._service_name} not available")
                 
                 future = self.client.call_async(request)
-                
-                # Since the node is already being spun by the Executor in _spin_executor,
-                # we cannot call spin_once here (causes "Executor is already spinning" error).
-                # Instead, just wait for the future with a timeout loop.
-                # Based on: https://github.com/ros2/rclpy/issues/1223
-                timeout_start = time.time()
-                while not future.done() and rclpy.ok():
-                    # Check for overall timeout using configurable timeout_sec
-                    if time.time() - timeout_start > self._timeout_sec:
-                        raise Exception(f"Service call to {self._service_name} timed out after {self._timeout_sec}s")
-                    time.sleep(0.002)  # Wait for executor thread to process the response
+
+                # The node is spun by ROS2NodeManager's executor thread, which also delivers
+                # the response, so only wait for the future here. Spinning the node from the
+                # calling thread as well (rclpy.spin_once) moved it to the global executor and,
+                # with several calling threads, re-entered that executor: on Jazzy that failed
+                # with "generator already executing" and was hidden by the retries below; since
+                # ros2/rclpy#1510 (ROS 2 Lyrical) it fails with "Executor is already spinning".
+                response_ready = threading.Event()
+                future.add_done_callback(lambda _: response_ready.set())
+                # Optional bounded wait (response_timeout_sec): a request sent before the client
+                # has matched the server can be lost, and the future then never completes. The
+                # gazebo state trackers call idempotent read/write-state services while holding
+                # TrackerManager's lock, so for them an unbounded wait blocks the whole rollout
+                # worker; they opt in and the request is dropped and re-sent by the retry loop
+                # below. Other callers (spawning, video finalization) keep waiting.
+                limit = self._response_timeout_sec
+                deadline = None if limit is None else time.monotonic() + limit
+                while not future.done() and rclpy.ok() and (deadline is None or time.monotonic() < deadline):
+                    response_ready.wait(0.1)
+                if not future.done() and deadline is not None:
+                    self.client.remove_pending_request(future)
+                    raise TimeoutError(f"no response within {limit} s")
                 
                 # Check why the loop exited
                 if not rclpy.ok():

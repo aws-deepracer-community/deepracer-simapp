@@ -39,6 +39,8 @@ from deepracer_msgs.srv import (GetVisualNames,
                                 SetVisualTransparencies,
                                 SetVisualVisibles)
 from markov.gazebo_utils.model_updater import ModelUpdater
+from markov.gazebo_tracker.tracker_manager import TrackerManager
+from markov.gazebo_tracker.trackers.get_model_state_tracker import GetModelStateTracker
 
 logger = Logger(__name__, logging.INFO).get_logger()
 
@@ -84,15 +86,6 @@ class DeepRacerNode(Node):
         start_pos_offset = max(min(float(self.get_parameter('start_pos_offset').value), MAX_START_POS_OFFSET),
                                MIN_START_POS_OFFSET)
         
-        # Create service clients for Gazebo operations
-        self.model_state_client = self.create_client(SetModelStates, '/deepracer/set_model_states')
-        self.get_model_states_client = self.create_client(GetModelStates, '/deepracer/get_model_states')
-        self.get_visual_names_client = self.create_client(GetVisualNames, '/deepracer/get_visual_names')
-        self.get_visuals_client = self.create_client(GetVisuals, '/deepracer/get_visuals')
-        self.set_visual_colors_client = self.create_client(SetVisualColors, '/deepracer/set_visual_colors')
-        self.set_visual_transparencies_client = self.create_client(SetVisualTransparencies, '/deepracer/set_visual_transparencies')
-        self.set_visual_visibles_client = self.create_client(SetVisualVisibles, '/deepracer/set_visual_visibles')
-
         # Place the car at the starting point facing the forward direction
         # Instantiate cameras
         camera_main_enable = str2bool(WorldConfig.get_param("CAMERA_MAIN_ENABLE", "True"))
@@ -149,9 +142,19 @@ class DeepRacerNode(Node):
             # Spawn the top camera model
             sub_camera.spawn_model(None, sub_sdf_path)
         
+        # car_node needs model states only while it initializes (wait_for_model, camera spawn).
+        # Without this its GetModelStateTracker keeps calling get_model_states on every /clock
+        # message (about 1,000 a second) for the whole job, and every response is also delivered
+        # to every other client of the service, which must drain it: the rollout worker lost its
+        # own responses under that load (see SERVICE_CLIENT_QOS_DEPTH in markov.rclpy_wrappers).
+        # Blocking get_model_state calls still work; only the periodic update stops.
+        TrackerManager.get_instance().remove(GetModelStateTracker.get_instance())
+
         logger.info("DeepRacerNode initialization complete")
 
-    def wait_for_service(self, service_name, service_type, timeout_sec=10.0):
+    # 60 s: under load the plugin's services can take longer than 10 s to be discovered after
+    # Gazebo creates them (seen with ROS 2 Lyrical's Fast DDS), and car_node exits if they are not.
+    def wait_for_service(self, service_name, service_type, timeout_sec=60.0):
         """Wait for a service to become available"""
         client = self.create_client(service_type, service_name)
         if not client.wait_for_service(timeout_sec=timeout_sec):

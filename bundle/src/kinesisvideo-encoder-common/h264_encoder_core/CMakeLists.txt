@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(h264_encoder_core)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(aws_common REQUIRED)
 find_package(PkgConfig REQUIRED)

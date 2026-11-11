@@ -311,6 +311,7 @@ rl_coach/presets/__init__.py
 rl_coach/tests/__init__.py
 rl_coach/tests/conftest.py
 rl_coach/tests/pytest.ini
+rl_coach/tests/test_base_parameters_unfold.py
 rl_coach/tests/test_checkpoint.py
 rl_coach/tests/test_coach_args.py
 rl_coach/tests/test_core_types.py

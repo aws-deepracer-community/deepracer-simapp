@@ -30,7 +30,8 @@ from markov.boto.s3.s3_client import S3Client
 from markov.boto.s3.constants import (DEEPRACER_CHECKPOINT_KEY_POSTFIX,
                                       DEEPRACER_CHECKPOINT_LOCAL_PATH_FORMAT,
                                       BEST_CHECKPOINT,
-                                      LAST_CHECKPOINT)
+                                      LAST_CHECKPOINT,
+                                      CHECKPOINT_SELECTION_LAST)
 
 LOG = Logger(__name__, logging.INFO).get_logger()
 
@@ -129,6 +130,21 @@ class DeepracerCheckpointJson():
             str: last checkpoint name string
         '''
         return self._get_deepracer_checkpoint(LAST_CHECKPOINT)
+
+    def get_deepracer_checkpoint(self, checkpoint_selection):
+        '''get the deepracer checkpoint name for a job's checkpoint selection
+
+        Args:
+            checkpoint_selection (str): "last" for the last checkpoint. Anything else, including None,
+                selects the best checkpoint, which was the only choice before it could be selected.
+
+        Returns:
+            str: checkpoint name string, or None when that checkpoint is not recorded
+        '''
+        if str(checkpoint_selection).lower() == CHECKPOINT_SELECTION_LAST:
+            LOG.info("Selecting the last checkpoint")
+            return self.get_deepracer_last_checkpoint()
+        return self.get_deepracer_best_checkpoint()
 
     def get_deepracer_best_checkpoint_number(self):
         '''get the best deepracer checkpoint number. If there is no best checkpoint,

@@ -17,34 +17,30 @@ mkdir -p $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient
 if [ -d "$INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient" ]; then
   echo "Creating symbolic links for webrtc include paths"
   # Link the Include.h file
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Include.h
   # Link the NullableDefs.h file
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/NullableDefs.h
   # Link the Stats.h file
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/Stats.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/webrtcclient/Stats.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/webrtcclient/Stats.h
   
   # Create other necessary webrtc directories and links
   mkdir -p $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/client
   mkdir -p $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/common
   
   # Link client include
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/client/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/client/Include.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/client/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/client/Include.h
   
   # Link common include
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/common/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/common/Include.h
-  ln -sf $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/common/jsmn.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/common/jsmn.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/common/Include.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/common/Include.h
+  cp -f $INSTALL_PREFIX/include/com/amazonaws/kinesis/video/common/jsmn.h $INSTALL_PREFIX/include/webrtc/com/amazonaws/kinesis/video/common/jsmn.h
 fi
 
-# Copy libraries (handle missing files gracefully)
-if ls $INSTALL_PREFIX/src/open-source/lib/*.so 1> /dev/null 2>&1; then
-    cp $INSTALL_PREFIX/src/open-source/lib/*.so $INSTALL_PREFIX/lib
-fi
-if ls $INSTALL_PREFIX/src/open-source/lib/*.so.1 1> /dev/null 2>&1; then
-    cp $INSTALL_PREFIX/src/open-source/lib/*.so.1 $INSTALL_PREFIX/lib
-fi
-if ls $INSTALL_PREFIX/src/open-source/lib/*.so.15 1> /dev/null 2>&1; then
-    cp $INSTALL_PREFIX/src/open-source/lib/*.so.15 $INSTALL_PREFIX/lib
-fi
+# Copy the shared libraries with every version name (libfoo.so, libfoo.so.N, libfoo.so.N.M...),
+# keeping symlinks as symlinks. Copying only *.so, *.so.1 and *.so.15 missed libwebsockets.so.19
+# (the SONAME the SDK libraries load), which then resolved only through the build tree.
+for lib in $INSTALL_PREFIX/src/open-source/lib/*.so*; do
+    if [ -e "$lib" ]; then cp -P "$lib" $INSTALL_PREFIX/lib/; fi
+done
 if ls $INSTALL_PREFIX/src/open-source/lib/*.a 1> /dev/null 2>&1; then
     cp $INSTALL_PREFIX/src/open-source/lib/*.a $INSTALL_PREFIX/lib
 fi

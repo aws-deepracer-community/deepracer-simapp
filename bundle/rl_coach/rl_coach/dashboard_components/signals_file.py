@@ -71,8 +71,8 @@ class SignalsFile(SignalsFileBase):
         # only fill the missing values that the previous interploation did not deal with (usually the ones before the
         # first update to the signal was made). We do so again by interpolation (averaging the previous and the next
         # values)
-        new_csv = ((new_csv.fillna(method='bfill') + new_csv.fillna(method='ffill')) / 2).fillna(method='bfill').fillna(
-            method='ffill')
+        # (fillna(method=...) was removed in pandas 3; bfill()/ffill() are the equivalents.)
+        new_csv = ((new_csv.bfill() + new_csv.ffill()) / 2).bfill().ffill()
 
         self.csv = new_csv
 

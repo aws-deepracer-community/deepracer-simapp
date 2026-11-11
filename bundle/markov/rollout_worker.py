@@ -392,7 +392,7 @@ def main():
     
     # Source ROS environment to set up package paths
     try:
-        result = subprocess.run(['bash', '-c', 'source /opt/ros/jazzy/setup.bash && source /opt/amazon/install/setup.bash && env'], 
+        result = subprocess.run(['bash', '-c', 'source /opt/ros/lyrical/setup.bash && source /opt/amazon/install/setup.bash && env'], 
                               capture_output=True, text=True, check=True)
         for line in result.stdout.split('\n'):
             if '=' in line:

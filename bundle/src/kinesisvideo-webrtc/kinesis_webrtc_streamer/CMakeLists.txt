@@ -5,7 +5,7 @@ project(kinesis_webrtc_streamer)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -47,28 +47,22 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
 )
 
 ## Specify libraries to link a library or executable target against
-ament_target_dependencies(${PROJECT_NAME}
-  aws_common
-  aws_ros2_common
-  geometry_msgs
-  kinesis_video_msgs
-  kinesis_webrtc_manager
-  rclcpp
-  std_msgs
-)
+# ament_target_dependencies was removed in ROS 2 Lyrical. Equivalent: link each dependency's
+# exported targets, or its libraries and include directories when it exports no targets.
+foreach(_target ${PROJECT_NAME} ${PROJECT_NAME}_lib)
+  foreach(_dep aws_common aws_ros2_common geometry_msgs kinesis_video_msgs
+           kinesis_webrtc_manager rclcpp std_msgs)
+    if(DEFINED ${_dep}_TARGETS)
+      target_link_libraries(${_target} ${${_dep}_TARGETS})
+    else()
+      target_link_libraries(${_target} ${${_dep}_LIBRARIES})
+      target_include_directories(${_target} PUBLIC ${${_dep}_INCLUDE_DIRS})
+    endif()
+  endforeach()
+endforeach()
 
-ament_target_dependencies(${PROJECT_NAME}_lib
-  aws_common
-  aws_ros2_common
-  geometry_msgs
-  kinesis_video_msgs
-  kinesis_webrtc_manager
-  rclcpp
-  std_msgs
-)
-
-target_link_libraries(${PROJECT_NAME} kinesis_webrtc_manager)
-target_link_libraries(${PROJECT_NAME}_lib kinesis_webrtc_manager)
+# kinesis_webrtc_manager is linked through ${kinesis_webrtc_manager_LIBRARIES} in the loop above
+# (its library and the WebRTC SDK libraries); the bare name is not a target or a findable library.
 
 #############
 ## Install ##
@@ -117,7 +111,7 @@ if(BUILD_TESTING)
     PRIVATE include ${INCLUDE_DIRS})
   target_link_libraries(test_subscriber_callbacks
           ${PROJECT_NAME}_lib
-          kinesis_webrtc_manager)
+          ${kinesis_webrtc_manager_LIBRARIES})
   
   # Test for streamer parameters
   ament_add_gmock(test_streamer_params
@@ -127,7 +121,7 @@ if(BUILD_TESTING)
     PRIVATE include ${INCLUDE_DIRS})
   target_link_libraries(test_streamer_params
           ${PROJECT_NAME}_lib
-          kinesis_webrtc_manager)
+          ${kinesis_webrtc_manager_LIBRARIES})
 
   # Test for WebRTC node
   ament_add_gmock(test_webrtc_node
@@ -137,7 +131,7 @@ if(BUILD_TESTING)
     PRIVATE include ${INCLUDE_DIRS})
   target_link_libraries(test_webrtc_node
           ${PROJECT_NAME}_lib
-          kinesis_webrtc_manager)
+          ${kinesis_webrtc_manager_LIBRARIES})
 endif()
 # Export dependencies
 ament_export_include_directories(include)

@@ -60,7 +60,7 @@ def test_sample_goal(her, episode):
 def test_sample_goal_range(her, episode):
     unseen_goals = set(range(1, 9))
     for _ in range(500):
-        unseen_goals -= set([int(her._sample_goal(episode, 0))])
+        unseen_goals -= set([int(her._sample_goal(episode, 0)[0])])
         if not unseen_goals:
             return
 

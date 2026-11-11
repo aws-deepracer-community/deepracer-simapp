@@ -10,7 +10,7 @@ echo "Starting DeepRacer evaluation agent..."
 
 # Start node monitor in background
 echo "Starting DeepRacer node monitor..."
-python3 /opt/amazon/script/start_deepracer_node_monitor.py \
+python3.14 /opt/amazon/script/start_deepracer_node_monitor.py \
     --node_monitor_file_path /opt/amazon/script/config/deepracer_node_monitor_list.txt 2>&1 &
 
 echo "Waiting for system to stabilize..."
@@ -18,7 +18,7 @@ sleep 5
 
 echo "Starting markov evaluation worker..."
 # Run the evaluation worker
-python3 -m markov.evaluation_worker
+python3.14 -m markov.evaluation_worker
 
 echo "Markov evaluation worker completed successfully"
 echo "DeepRacer evaluation agent finished with exit code: $?"

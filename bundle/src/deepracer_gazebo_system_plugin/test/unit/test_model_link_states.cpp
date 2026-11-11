@@ -243,6 +243,38 @@ TEST_F(DeepRacerPluginModelLinkStatesTest, GetModelStatesArraySizeMismatch)
     EXPECT_TRUE(response->status_message.find("must be same size") != std::string::npos);
 }
 
+TEST_F(DeepRacerPluginModelLinkStatesTest, GetModelStatesNonexistentModel)
+{
+    // Create ROS 2 client
+    auto node = rclcpp::Node::make_shared("test_client");
+    auto client = node->create_client<deepracer_msgs::srv::GetModelStates>("/deepracer/get_model_states");
+    
+    // Wait for service to be available
+    ASSERT_TRUE(client->wait_for_service(std::chrono::seconds(5)));
+    
+    auto executor = rclcpp::executors::SingleThreadedExecutor();
+    executor.add_node(node);
+    
+    // The second call falls inside the log throttle window and must get the same response
+    for (int call = 0; call < 2; ++call) {
+        auto request = std::make_shared<deepracer_msgs::srv::GetModelStates::Request>();
+        request->model_names = {"nonexistent_model"};
+        request->relative_entity_names = {"world"};
+        
+        auto future = client->async_send_request(request);
+        auto status = executor.spin_until_future_complete(future, std::chrono::seconds(5));
+        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
+        
+        auto response = future.get();
+        ASSERT_EQ(response->model_states.size(), 1);
+        EXPECT_EQ(response->model_states[0].model_name, "nonexistent_model");
+        ASSERT_EQ(response->status.size(), 1);
+        EXPECT_EQ(response->status[0], 0);
+        ASSERT_EQ(response->messages.size(), 1);
+        EXPECT_TRUE(response->messages[0].find("does not exist") != std::string::npos);
+    }
+}
+
 TEST_F(DeepRacerPluginModelLinkStatesTest, SetModelStatesWorldFrame)
 {
     // Create a model

@@ -64,7 +64,8 @@ from markov.boto.s3.constants import (MODEL_METADATA_LOCAL_PATH_FORMAT,
                                       CAMERA_TOPVIEW_LOCAL_PATH_FORMAT, 
                                       SimtraceEpisodeNames,
                                       SimtraceVideoNames,
-                                      ModelMetadataKeys)
+                                      ModelMetadataKeys,
+                                      CHECKPOINT_SELECTION_BEST)
 from markov.boto.s3.files.model_metadata import ModelMetadata
 from markov.boto.s3.files.simtrace_episode import SimtraceEpisodeUpload
 from markov.boto.s3.files.simtrace_video import SimtraceVideo
@@ -256,7 +257,7 @@ def main():
     parser.add_argument('--eval_checkpoint',
                         help='(string) Choose which checkpoint to use (best | last)',
                         type=str,
-                        default=WorldConfig.get_param("EVAL_CHECKPOINT", "best"))
+                        default=WorldConfig.get_param("EVAL_CHECKPOINT", CHECKPOINT_SELECTION_BEST))
 
     args = parser.parse_args()
     arg_s3_bucket = args.s3_bucket
@@ -371,16 +372,9 @@ def main():
         # make coach checkpoint compatible
         if version < SIMAPP_VERSION_2 and not checkpoint.rl_coach_checkpoint.is_compatible():
             checkpoint.rl_coach_checkpoint.make_compatible(checkpoint.syncfile_ready)
-
-        # Get the correct checkpoint
-        if args.eval_checkpoint.lower() == "best":
-            # get best model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_best_checkpoint()
-        else:
-            # get the last model checkpoint string
-            model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_last_checkpoint()
-
-        # Select the best checkpoint model by uploading rl coach .coach_checkpoint file
+        # get the selected (best or last) model checkpoint string
+        model_checkpoint_name = checkpoint.deepracer_checkpoint_json.get_deepracer_checkpoint(args.eval_checkpoint)
+        # Select the checkpoint model by uploading rl coach .coach_checkpoint file
         checkpoint.rl_coach_checkpoint.update(
             model_checkpoint_name=model_checkpoint_name,
             s3_kms_extra_args=utils.get_s3_kms_extra_args())

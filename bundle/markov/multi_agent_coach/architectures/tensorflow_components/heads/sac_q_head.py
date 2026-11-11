@@ -53,9 +53,9 @@ class SACQHead(Head):
         self.actions_ph = tf.compat.v1.placeholder(tf.float32, [None, self.num_actions[0] + 1], name="action")
         self.actions = tf.slice(self.actions_ph,
                                 [0, 0],
-                                [-1, int(self.num_actions)]) + \
+                                [-1, int(self.num_actions[0])]) + \
             tf.slice(self.actions_ph,
-                     [0, int(self.num_actions)],
+                     [0, int(self.num_actions[0])],
                      [-1, 1]) * self.P_action
         self.target = tf.compat.v1.placeholder(tf.float32, [None, 1], name="q_targets")
         self.input = [self.actions]

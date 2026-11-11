@@ -22,8 +22,8 @@ set -e
 
 COACH_EXP_NAME=sagemaker_rl
 
-# ros jazzy
-export ROS_DISTRO=jazzy
+# ros lyrical
+export ROS_DISTRO=lyrical
 export PYTHONUNBUFFERED=1
 export XAUTHORITY=/root/.Xauthority
 export TF_CPP_MIN_LOG_LEVEL=3
@@ -52,8 +52,8 @@ source /root/anaconda/bin/activate sagemaker_env
 echo "Logging sagemaker and robomaker in seperate cloudwatch stream"
 export SIMULATION_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/SimulationJobs
 export TRAINING_LOG_GROUP=/aws/deepracer/${JOB_TYPE}/TrainingJobs
-python3 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
-python3 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
+/usr/bin/python3.14 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${SIMULATION_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/simapp.log &
+/usr/bin/python3.14 /opt/ml/code/scripts/cloudwatch_uploader.py --cw_log_group_name ${TRAINING_LOG_GROUP} --cw_log_stream_name ${JOB_NAME} --log_symlink_file_path /opt/ml/training.log &
 
 # Start the redis server and Coach training worker
 redis-server /etc/redis/redis.conf &
@@ -63,7 +63,8 @@ echo "Input argument to training worker $@"
 
 # redirect stderr to stdout and have error messages sent to the same file as standard output
 export DR_MARKOV_WORLD_CONFIG_LOCAL_YAML_FILE=/opt/ml/code/custom_files/training_params.yaml
-python3 /opt/amazon/install/sagemaker_rl_agent/lib/python3.12/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
+python3.14 /opt/amazon/install/sagemaker_rl_agent/lib/python3.14/site-packages/markov/training_worker.py $@ > /opt/ml/training.log 2>&1 &
+conda deactivate
 
 export DISPLAY=:0 # Select screen 0 by default.
 export GAZEBO_MODEL_PATH=./deepracer_simulation_environment/share/deepracer_simulation_environment

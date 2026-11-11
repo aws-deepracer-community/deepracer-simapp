@@ -472,6 +472,9 @@ namespace gz::sim::systems
             /// \brief ROS 2 node
             rclcpp::Node::SharedPtr node_;
 
+            /// \brief Wall clock for throttled logs; the node clock follows sim time
+            rclcpp::Clock steady_clock_{RCL_STEADY_TIME};
+
             /// \brief ROS 2 executor thread
             std::thread executor_thread_;
 
