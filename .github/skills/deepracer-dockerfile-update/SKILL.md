@@ -94,7 +94,6 @@ Use `multi_replace_string_in_file` to apply all edits in a single call across bo
 
 **Key divergences in `Dockerfile.upstream-adjusted`** — do NOT revert these intentional differences:
 - Uses `ros-$ROS_DISTRO-web-video-server` instead of `ros-$ROS_DISTRO-desktop`
-- Does NOT include the Gazebo stable apt repo (`gazebo-stable.list`)
 - Adds `COPY ./bundle/src/deepracer_node_monitor/config/*.txt /opt/amazon/script/config/`
 - Build/log cleanup after ROS packages build: `rm -rf /opt/amazon/log /opt/amazon/build`
 
@@ -137,3 +136,4 @@ docker buildx build --check -f docker/Dockerfile.upstream-adjusted .
 | v1.3.3 | Base Ubuntu layer refresh only; no package changes (all other layer history identical to v1.3.1); built 2026-10-12 |
 | v1.3.4 | `conda-forge::curl==8.23.0`, `conda-forge::libcurl==8.23.0` (was `8.22.0`); `nginx==1.31.7` (was `1.31.3`); base Ubuntu layer unchanged; built 2026-10-19 |
 | v1.3.7 | Base Ubuntu layer refresh; `pillow==13.0.0` (was `12.3.0`); conda `brotli-python==1.2.1` (was `1.2.0`); built 2026-11-06 |
+| v1.4.0 | Major rewrite: Ubuntu 26.04, ROS 2 Lyrical (snapshot 2026-10-05, was Jazzy), Python 3.14 (Miniconda py314 26.7.1-1, checksum-verified), Gazebo Jetty via ROS vendor packages (Gazebo apt repo, `gz-harmonic`, source-built CMake 3.20.6 and `apt --only-upgrade` step removed); `apt-get upgrade` + single base package layer; bsdtar as `tar` during build; added `ros2-controllers`, `ros-packages.txt` dump, `FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA`; AWS SDK C++ 1.11.907 (commit-pinned), Redis 8.10.2 (sha256-verified); all pip pins bumped (numpy 2.5.3, tensorflow 2.22.0rc0 + keras-nightly + tf_keras, pygame-ce, protobuf 7.36.2, setuptools 84.0.0, wheel 0.48.0 …); conda env/pinned conda install reworked (`environment.yml` copied before env creation, conda-forge strict channel); built 2026-11-10 |
