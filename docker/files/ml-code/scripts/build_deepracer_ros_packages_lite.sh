@@ -21,7 +21,7 @@ set -x
 
 echo "Building DeepRacer ROS packages"
 
-ROS_DISTRO=jazzy
+ROS_DISTRO=lyrical
 ROOT_DIR=/opt/amazon
 export ROS_VERSION=2
 
@@ -32,7 +32,7 @@ cd $ROOT_DIR
 . /opt/ros/$ROS_DISTRO/setup.bash
 
 echo "Installing ros dependencies"
-apt-get update && rosdep update --rosdistro=jazzy -q && rosdep install --rosdistro=jazzy --from-paths src --ignore-src -r -y
+apt-get update && rosdep update --rosdistro=$ROS_DISTRO -q && rosdep install --rosdistro=$ROS_DISTRO --from-paths src --ignore-src -r -y
 
 # Ensure AWS SDK libraries are in the library path
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
@@ -42,6 +42,7 @@ rm -rf build/ install/
 echo "Doing colcon build"
 
 # Build DeepRacer packages and all dependencies with retry logic
+export CMAKE_POLICY_VERSION_MINIMUM=3.5
 for i in {1..3}; do
     echo "Build attempt $i"
     if colcon build --packages-up-to deepracer_gazebo_system_plugin deepracer_simulation_environment sagemaker_rl_agent deepracer_node_monitor kinesis_video_streamer h264_video_encoder \

@@ -20,7 +20,7 @@ COPY bundle/urdf /opt/amazon/urdf
 # Rebuild the modified packages
 WORKDIR /opt/amazon
 SHELL ["/bin/bash", "-c"]
-RUN source /opt/ros/jazzy/setup.bash && \
+RUN source /opt/ros/lyrical/setup.bash && \
     source /opt/amazon/install/setup.bash && \
     colcon build \
         --packages-select deepracer_simulation_environment sagemaker_rl_agent \

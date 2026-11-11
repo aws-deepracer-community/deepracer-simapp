@@ -142,7 +142,7 @@ def check_sdf_version(filepath, label):
 
 
 def check_world_plugins(world_path, label):
-    """Check that required Gazebo Harmonic plugins are present."""
+    """Check that required Gazebo Sim plugins are present."""
     issues = []
     required_plugins = [
         'gz::sim::systems::Physics',

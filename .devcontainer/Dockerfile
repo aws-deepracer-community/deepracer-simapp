@@ -1,4 +1,4 @@
-FROM ros:jazzy-ros-base
+FROM ros:lyrical-ros-base
 
 ENV DEBIAN_FRONTEND="noninteractive" 
 ARG USERNAME=user-name-goes-here
@@ -60,21 +60,23 @@ RUN apt update && \
     python3-shapely \
     python3-vcstool \
     python3-boto3 \
-    ros-jazzy-controller-manager \
-    ros-jazzy-gz-ros2-control \
-    ros-jazzy-ros-base \
-    ros-jazzy-ros-core \
-    ros-jazzy-ros-gz \
-    ros-jazzy-ros2-controllers \
-    ros-jazzy-web-video-server \
-    ros-jazzy-xacro && \
+    ros-${ROS_DISTRO}-controller-manager \
+    ros-${ROS_DISTRO}-gz-ros2-control \
+    ros-${ROS_DISTRO}-ros-base \
+    ros-${ROS_DISTRO}-ros-core \
+    ros-${ROS_DISTRO}-ros-gz \
+    ros-${ROS_DISTRO}-ros2-controllers \
+    ros-${ROS_DISTRO}-web-video-server \
+    ros-${ROS_DISTRO}-xacro && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Build and install AWS SDK C++
-RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
-        cd aws-sdk-cpp && git checkout --recurse-submodules tags/1.11.664 && \
-        mkdir build && cd build && \
+# Build and install AWS SDK C++ (pinned to a verified commit)
+ARG AWS_SDK_CPP_TAG=1.11.907
+ARG AWS_SDK_CPP_COMMIT=a9f0ffcc276664b475230206fa554841ad5bc3de
+RUN git clone --depth 1 --branch "$AWS_SDK_CPP_TAG" --recurse-submodules --shallow-submodules https://github.com/aws/aws-sdk-cpp.git && \
+        test "$(git -C aws-sdk-cpp rev-parse HEAD)" = "$AWS_SDK_CPP_COMMIT" && \
+        cd aws-sdk-cpp && mkdir build && cd build && \
         cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DCPP_STANDARD=17 \
@@ -82,9 +84,10 @@ RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DBUILD_SHARED_LIBS=ON \
             -DENABLE_TESTING=OFF \
+            -DAUTORUN_UNIT_TESTS=OFF \
             -DBUILD_ONLY="core;logs;kinesis" \
             -DMINIMIZE_SIZE=ON && \
-        make -j2 && \
+        make -j"$(nproc)" && \
         make install && \
         ldconfig && \
         cd ../.. && rm -rf aws-sdk-cpp
@@ -117,14 +120,15 @@ USER $USERNAME
 ENV CONDA_DIR=/home/$USERNAME/miniconda
 
 # Install Miniconda as non-root
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-$(uname -m).sh -o /tmp/miniconda.sh && \
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py314_26.7.1-1-Linux-$(uname -m).sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p "$CONDA_DIR" && \
     rm /tmp/miniconda.sh 
 
 # Create sagemaker_env conda environment from environment.devcontainer.yml
 RUN ${CONDA_DIR}/bin/conda env create -f /opt/amazon/configs/environment.devcontainer.yml -n sagemaker_env --yes || \
     ${CONDA_DIR}/bin/conda env update -f /opt/amazon/configs/environment.devcontainer.yml -n sagemaker_env && \
+    ${CONDA_DIR}/bin/conda remove -n sagemaker_env --force -y libxml2-16 && \
     ${CONDA_DIR}/bin/conda clean -afy && \
     ${CONDA_DIR}/bin/conda config --set auto_activate_base false
 
-ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/jazzy/setup.bash && exec /bin/bash"]
+ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/${ROS_DISTRO}/setup.bash && exec /bin/bash"]

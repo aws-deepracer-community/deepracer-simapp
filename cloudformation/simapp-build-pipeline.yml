@@ -88,11 +88,11 @@ Parameters:
 
   BaseImage:
     Type: String
-    Default: public.ecr.aws/ubuntu/ubuntu:24.04
+    Default: public.ecr.aws/ubuntu/ubuntu:26.04
     Description: >-
       Ubuntu base image used for the CPU/core simapp build. Defaults to the public ECR
       mirror to avoid the Docker Hub anonymous pull rate limit (HTTP 429). Override to
-      pull from another source, e.g. ubuntu:24.04 on Docker Hub or an ECR pull-through
+      pull from another source, e.g. ubuntu:26.04 on Docker Hub or an ECR pull-through
       cache repository.
 
   BuildTimeoutMinutes:

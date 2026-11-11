@@ -37,12 +37,12 @@
                 "terminal.integrated.defaultProfile.linux": "bash (ROS)",
                 "cmake.configureOnOpen": false,
                 "python.autoComplete.extraPaths": [
-                    "/opt/ros/jazzy/lib/python3.12/site-packages/",
-                    "/workspaces/deepracer-simapp/bundle/install/deepracer_msgs/lib/python3.12/site-packages/deepracer_msgs"
+                    "/opt/ros/lyrical/lib/python3.14/site-packages/",
+                    "/workspaces/deepracer-simapp/bundle/install/deepracer_msgs/lib/python3.14/site-packages/deepracer_msgs"
                 ],
                 "python.analysis.extraPaths": [
-                    "/opt/ros/jazzy/lib/python3.12/site-packages/",
-                    "/workspaces/deepracer-simapp/bundle/install/deepracer_msgs/lib/python3.12/site-packages/deepracer_msgs"
+                    "/opt/ros/lyrical/lib/python3.14/site-packages/",
+                    "/workspaces/deepracer-simapp/bundle/install/deepracer_msgs/lib/python3.14/site-packages/deepracer_msgs"
                 ],
                 "files.associations": {
                     "condition_variable": "cpp",

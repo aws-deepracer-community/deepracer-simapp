@@ -14,6 +14,8 @@ elif [ -f /opt/ros/humble/setup.bash ]; then
     ROS_DISTRO="humble"
 elif [ -f /opt/ros/jazzy/setup.bash ]; then
     ROS_DISTRO="jazzy"
+elif [ -f /opt/ros/lyrical/setup.bash ]; then
+    ROS_DISTRO="lyrical"
 else
     echo "Unsupported ROS version"
     exit 1
