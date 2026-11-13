@@ -2,14 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 '''This module houses the constants for scripts package in simulation application'''
-import cv2
-
 from enum import Enum
 from markov.reset.constants import RaceType
-
+import cv2
 
 PROGRESS_INTERVAL = 1.0
-
+METRICS_POLL_PERIOD_SEC = 0.05
 
 class CameraTypeParams(Enum):
     """ This Enum contains the all the params for each camera topics

@@ -66,19 +66,25 @@ class LightRandomizer(AbstractRandomizer):
 
         # ROS Services
         self.set_light_prop = ServiceProxyWrapper(GazeboServiceName.SET_LIGHT_PROPERTIES.value, SetLightProperties)
+        
+        logger.info("LightRandomizer initialized for light: %s", self.light_name)
 
     def _randomize(self):
         req = SetLightProperties.Request()
         req.light_name = self.light_name
 
         color_range = self.range[RangeType.COLOR]
-        req.diffuse = ColorRGBA(*[np.random.uniform(color_range[Color.R.value][RANGE_MIN],
-                                                    color_range[Color.R.value][RANGE_MAX]),
-                                  np.random.uniform(color_range[Color.G.value][RANGE_MIN],
-                                                    color_range[Color.G.value][RANGE_MAX]),
-                                  np.random.uniform(color_range[Color.B.value][RANGE_MIN],
-                                                    color_range[Color.B.value][RANGE_MAX]),
-                                  1.0])
+        req.diffuse = ColorRGBA(r=np.random.uniform(color_range[Color.R.value][RANGE_MIN],
+                                                     color_range[Color.R.value][RANGE_MAX]),
+                                g=np.random.uniform(color_range[Color.G.value][RANGE_MIN],
+                                                     color_range[Color.G.value][RANGE_MAX]),
+                                b=np.random.uniform(color_range[Color.B.value][RANGE_MIN],
+                                                     color_range[Color.B.value][RANGE_MAX]),
+                                a=1.0)
+        
+        # Set specular to match diffuse for consistent lighting
+        req.specular = ColorRGBA(r=req.diffuse.r * 0.5, g=req.diffuse.g * 0.5,
+                                 b=req.diffuse.b * 0.5, a=1.0)
 
         attenuation_range = self.range[RangeType.ATTENUATION]
         req.attenuation_constant = np.random.uniform(attenuation_range[Attenuation.CONSTANT.value][RANGE_MIN],
@@ -87,4 +93,13 @@ class LightRandomizer(AbstractRandomizer):
                                                    attenuation_range[Attenuation.LINEAR.value][RANGE_MAX])
         req.attenuation_quadratic = np.random.uniform(attenuation_range[Attenuation.QUADRATIC.value][RANGE_MIN],
                                                       attenuation_range[Attenuation.QUADRATIC.value][RANGE_MAX])
+        
         res = self.set_light_prop(req)
+        
+        if res is None:
+            logger.warning("SetLightProperties for '%s' returned None", self.light_name)
+        elif not res.success:
+            logger.warning("SetLightProperties for '%s' failed: %s", self.light_name, res.status_message)
+        else:
+            logger.debug("Light '%s' randomized: diffuse=(%.2f,%.2f,%.2f)", 
+                        self.light_name, req.diffuse.r, req.diffuse.g, req.diffuse.b)
