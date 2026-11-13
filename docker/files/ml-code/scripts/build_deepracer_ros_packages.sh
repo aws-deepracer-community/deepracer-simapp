@@ -21,7 +21,7 @@ set -x
 
 echo "Building DeepRacer ROS packages"
 
-ROS_DISTRO=lyrical
+ROS_DISTRO=jazzy
 ROOT_DIR=/opt/amazon
 export ROS_VERSION=2
 
@@ -37,25 +37,24 @@ ldconfig
 
 rm -rf build/ install/
 echo "Doing colcon build"
-# One build of all packages. The earlier two-phase build with three retries probably hid an
-# intermittent link failure: aws_common and kinesis_webrtc_manager installed a second
-# <package>Config.cmake over the one from ament (fixed in AwsSilverstoneROSKvsStreamer), so a
-# failure here is a real failure.
-# Parallelism: COLCON_WORKERS packages at a time, each with MAKE_JOBS make jobs. Set both to
-# match the build host's cores and memory.
-export MAKEFLAGS="-j${MAKE_JOBS:-4}"
-# CMake 4 (Ubuntu 26.04) rejects cmake_minimum_required below 3.5. The KVS producer and WebRTC
-# SDKs that kinesis_manager and kinesis_webrtc_manager download and build at build time (and their
-# bundled open-source dependencies) still declare older minimums; this lets them configure with
-# the 3.5 policies. Our own CMakeLists.txt files declare 3.10 or newer.
-export CMAKE_POLICY_VERSION_MINIMUM=3.5
-colcon build --parallel-workers "${COLCON_WORKERS:-2}" --event-handlers console_cohesion+ \
-    --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" \
-    "-DPYTHON_INCLUDE_DIR=/usr/include/python3.14"
+# Build core packages first
+colcon build --packages-select aws_common aws_ros2_common --parallel-workers 1 --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"
 
-# The colcon build tree (about 1.5 GB, including the downloaded KVS SDK sources) is not needed at
-# run time; leaving it in the image layer only adds size. Set KEEP_COLCON_BUILD=1 to keep it, for
-# example to run `colcon test`.
-if [ "${KEEP_COLCON_BUILD:-0}" != 1 ]; then
-    rm -rf build/ log/
-fi
+# Build the rest with retry logic for intermittent failures
+for i in {1..3}; do
+    echo "Build attempt $i"
+    if colcon build --parallel-workers 1 --cmake-args "-DSETUPTOOLS_DEB_LAYOUT=OFF" "-DPYTHON_EXECUTABLE=/usr/bin/python3" "-DPYTHON_INCLUDE_DIR=/usr/include/python3.12"; then
+        echo "Build successful on attempt $i"
+        break
+    else
+        echo "Build failed on attempt $i"
+        if [ $i -eq 3 ]; then
+            echo "All build attempts failed"
+            exit 1
+        fi
+        echo "Retrying in 5 seconds..."
+        sleep 5
+        # Clean up partial build artifacts
+        rm -rf build/ install/
+    fi
+done

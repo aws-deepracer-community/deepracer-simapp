@@ -1,8 +1,7 @@
 ARG BUNDLE_PREFIX=awsdeepracercommunity
-ARG BUNDLE_TAG=latest
-ARG CORE_IMG=ubuntu:26.04
+ARG CORE_IMG=ubuntu:24.04
 
-FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:${BUNDLE_TAG} AS bundle
+FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:latest AS bundle
 FROM ${CORE_IMG}
 
 ARG NVCC_VER=""
@@ -59,9 +58,9 @@ RUN apt update && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set non-interactive frontend for apt
-RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-
+# Prevent docker build get stopped by requesting user interaction
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
 # Python won’t try to write .pyc or .pyo files on the import of source modules
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -69,22 +68,22 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=UTF-8
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
-ENV ROS_DISTRO=lyrical
-ENV ROS_SNAPSHOT_DATE=2026-10-05
+ENV ROS_DISTRO=jazzy
+ENV ROS_SNAPSHOT_DATE=2025-11-19
 
 # nvidia-container-runtime
 ENV NVIDIA_VISIBLE_DEVICES="all"
 ENV NVIDIA_DRIVER_CAPABILITIES="all"
-ENV MESA_DEBUG=silent
 
 COPY docker/files/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# Install ROS Lyrical (Gazebo Jetty is provided by the ROS vendor packages)
+# Install ROS jazzy and Gazebo
+# Install ros2-apt-source from GitHub releases
 
 # Add ROS 2 repository key
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA && \
-    gpg --export 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg
+    gpg --keyserver keyserver.ubuntu.com --recv-keys AD19BAB3CBF125EA && \
+    gpg --export AD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg
 
 # Add ROS 2 repository (using snapshots for reproducibility)
 RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://snapshots.ros.org/$ROS_DISTRO/$ROS_SNAPSHOT_DATE/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list'
@@ -99,42 +98,32 @@ RUN apt update -y && \
         python3-shapely \
         python3-vcstool \
         python3-boto3 \
-        ros-${ROS_DISTRO}-controller-manager \
-        ros-${ROS_DISTRO}-gz-ros2-control \
-        ros-${ROS_DISTRO}-ros-base \
-        ros-${ROS_DISTRO}-ros-core \
-        ros-${ROS_DISTRO}-ros-gz \
-        ros-${ROS_DISTRO}-ros2-controllers \
-        ros-${ROS_DISTRO}-web-video-server \
-        ros-${ROS_DISTRO}-xacro && \
+        ros-jazzy-controller-manager \
+        ros-jazzy-gz-ros2-control \
+        ros-jazzy-ros-base \
+        ros-jazzy-ros-core \
+        ros-jazzy-ros-gz \
+        ros-jazzy-ros2-controllers \
+        ros-jazzy-web-video-server \
+        ros-jazzy-xacro && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
+ENV ROS_DISTRO=jazzy
 
-# Install docker (apt-key is not available on Ubuntu 26.04)
-RUN install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
-    chmod a+r /etc/apt/keyrings/docker.asc && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+# Install docker
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+	 echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
 RUN apt update && apt install --no-install-recommends -y docker-ce-cli && apt clean && rm -rf /var/lib/apt/lists/*
-RUN curl -L "https://github.com/docker/compose/releases/download/v2.40.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+RUN curl -L "https://github.com/docker/compose/releases/download/v2.6.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
 
 # Create Python virtual environment and install SageMaker SDK
 RUN python3 -m venv /root/sagemaker-venv && \
     /root/sagemaker-venv/bin/pip install --no-cache-dir --upgrade pip && \
     /root/sagemaker-venv/bin/pip install --no-cache-dir "sagemaker<3"
 
-RUN python3 -m pip install --no-cache-dir --break-system-packages sagemaker-training 
-
-# Copy installed libraries (Redis + AWS CPP + AWS CLI + Conda)
+# Copy installed libraries (Redis + AWS CPP + Conda)
 COPY --from=bundle /usr/local/ /usr/local/
 COPY --from=bundle /root/anaconda/ /root/anaconda/
-
-# Use the system libxml2: cv_bridge pulls in the system libspatialite, which needs xmlNanoHTTPCleanup,
-# absent from conda-forge's libxml2. No-op if already removed in the core image.
-RUN /root/anaconda/bin/conda list -n sagemaker_env --json '^libxml2-16$' | grep -q libxml2-16 && \
-    /root/anaconda/bin/conda remove -n sagemaker_env --force -y libxml2-16 && \
-    /root/anaconda/bin/conda clean -afy || true
-
 # Copy compiled bundle
 COPY --from=bundle /opt/amazon/install /opt/amazon/install
 # Copy configurations and scripts
@@ -146,15 +135,16 @@ COPY --from=bundle /opt/amazon/src/deepracer_node_monitor/config/*.txt /opt/amaz
 WORKDIR /opt/ml/code
 
 # Install ROS dependencies
-RUN apt update -y && rosdep init && rosdep update --rosdistro=${ROS_DISTRO} -q && \
+RUN apt update -y && rosdep init && rosdep update --rosdistro=jazzy -q && \
     cd /opt/amazon/install && \
-    rosdep install --rosdistro=${ROS_DISTRO} --from-paths . --ignore-src -r -y && \
+    rosdep install --rosdistro=jazzy --from-paths . --ignore-src -r -y && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* && ldconfig
 
 # Copy Sagemaker and misc files
 COPY ./docker/files/ml-code /opt/ml/code
-ENV SAGEMAKER_PROGRAM="sagemaker_bootstrap.py"
+# ENV SAGEMAKER_TRAINING_MODULE="sagemaker_bootstrap:sageonly"
+ENV SAGEMAKER_PROGRAM="sage-train.sh"
 
 # Copy Robomaker scripts and configuration files
 COPY ./docker/files/robomaker/run.sh /opt/ml/code/run.sh
@@ -176,4 +166,4 @@ LABEL maintainer="AWS DeepRacer Community - deepracing.io"
 LABEL version="${IMG_VERSION}"
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["bash"]
+CMD ["./run.sh run distributed_training.launch.py"]

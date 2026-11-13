@@ -1,6 +1,5 @@
 ARG CORE_PREFIX=awsdeepracercommunity
-ARG CORE_TAG=latest
-FROM $CORE_PREFIX/deepracer-simapp-build-core:${CORE_TAG}
+FROM $CORE_PREFIX/deepracer-simapp-build-core:latest
 
 COPY bundle/ /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code
@@ -8,4 +7,5 @@ WORKDIR /opt/amazon
 
 RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages_lite.sh"
 
-ENTRYPOINT ["/bin/bash", "-c"]
+ENTRYPOINT ["/simulation-entrypoint.sh"]
+CMD ["bash"]

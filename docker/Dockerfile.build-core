@@ -1,58 +1,28 @@
-ARG BASE_IMAGE=ubuntu:26.04
-FROM ${BASE_IMAGE}
+FROM ros:jazzy-ros-base
 
 ENV DEBIAN_FRONTEND="noninteractive" 
 ENV PYTHONWARNINGS="ignore::DeprecationWarning,ignore:::setuptools.command.install"
-ENV ROS_DISTRO=lyrical
-ENV ROS_SNAPSHOT_DATE=2026-10-05
 
-# Bootstrap: install tools needed to add the ROS repo
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt update && apt install -y --no-install-recommends \
     sudo \
     curl \
-    dirmngr \
     wget \
     apt-utils \
-    git \
-    unzip \
-    gnupg2 \
-    lsb-release \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    git
 
-# Add ROS 2 repository key
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA && \
-    gpg --export 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA >> /usr/share/keyrings/ros-archive-keyring.gpg
-
-# Add ROS 2 repository (using snapshots for reproducibility)
-RUN sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://snapshots.ros.org/$ROS_DISTRO/$ROS_SNAPSHOT_DATE/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list'
-
-# Install ROS base and rosdep
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-$ROS_DISTRO-ros-base \
-    python3-rosdep \
-    && rosdep init \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
+RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
     libcurl4-openssl-dev \
     python3-pip \
     python3-colcon-common-extensions \
     x264 \
     libx264-dev \
     libgmock-dev \
-    ros-$ROS_DISTRO-ros-gz \
-    && rm -rf /var/lib/apt/lists/*
+    ros-jazzy-ros-gz 
 
-# Build and install AWS SDK C++ (pinned to a verified commit)
-ARG AWS_SDK_CPP_TAG=1.11.907
-ARG AWS_SDK_CPP_COMMIT=a9f0ffcc276664b475230206fa554841ad5bc3de
-RUN git clone --depth 1 --branch "$AWS_SDK_CPP_TAG" --recurse-submodules --shallow-submodules https://github.com/aws/aws-sdk-cpp.git && \
-    test "$(git -C aws-sdk-cpp rev-parse HEAD)" = "$AWS_SDK_CPP_COMMIT" && \
-    cd aws-sdk-cpp && mkdir build && cd build && \
+# Build and install AWS SDK C++
+RUN git clone --recurse-submodules https://github.com/aws/aws-sdk-cpp.git && \
+    cd aws-sdk-cpp && git checkout --recurse-submodules tags/1.11.664 && \
+    mkdir build && cd build && \
     cmake .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DCPP_STANDARD=17 \
@@ -60,72 +30,40 @@ RUN git clone --depth 1 --branch "$AWS_SDK_CPP_TAG" --recurse-submodules --shall
       -DCMAKE_INSTALL_PREFIX=/usr/local \
       -DBUILD_SHARED_LIBS=ON \
       -DENABLE_TESTING=OFF \
-      -DAUTORUN_UNIT_TESTS=OFF \
       -DBUILD_ONLY="core;logs;kinesis" \
       -DMINIMIZE_SIZE=ON && \
-    make -j"$(nproc)" && \
+    make -j2 && \
     make install && \
     ldconfig && \
     cd ../.. && rm -rf aws-sdk-cpp
 
 # Install Redis.
 RUN cd /tmp && \
-    wget -q https://download.redis.io/releases/redis-8.10.2.tar.gz && \
-    echo "b9ffee226b5eecdba98a679260dad764b2a4ebd90dce4ad5ac9e9f3eef9c02b3  redis-8.10.2.tar.gz" | sha256sum -c - && \
-    tar xzf redis-8.10.2.tar.gz && \
-    cd redis-8.10.2 && \
-    rm -rf modules/redisbloom modules/redisearch modules/redisjson modules/redistimeseries && \
-    make -j"$(nproc)" && \
+    wget https://download.redis.io/releases/redis-8.0.4.tar.gz && \
+    tar xvzf redis-8.0.4.tar.gz && \
+    cd redis-8.0.4 && \
+    make && \
     make install && \
     rm -rf /tmp/redis*
 
-# Install Miniconda (x86_64 checksum is verified; other architectures are not pinned)
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py314_26.7.1-1-Linux-$(uname -m).sh -o /tmp/miniconda.sh && \
-    if [ "$(uname -m)" = "x86_64" ]; then \
-        echo "e8b25b92b262499141c5bd57a98d3c008024185fa951494b9cd9b6d94e72338b  /tmp/miniconda.sh" | sha256sum -c -; \
-    fi && \
+# Install Miniconda
+RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-py312_24.7.1-0-Linux-$(uname -m).sh -o /tmp/miniconda.sh && \
     bash /tmp/miniconda.sh -b -p /root/anaconda && \
     rm /tmp/miniconda.sh && \
-    /root/anaconda/bin/conda config --system --remove-key channels 2>/dev/null || true && \
-    /root/anaconda/bin/conda config --system --add channels conda-forge && \
-    /root/anaconda/bin/conda config --system --set channel_priority strict && \
     /root/anaconda/bin/conda init bash
-
-# Install AWS CLI v2
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m).zip" -o "awscliv2.zip" \
-    && unzip awscliv2.zip \
-    && ./aws/install \
-    && rm -rf aws awscliv2.zip
 
 # Copy Bundle
 COPY bundle/ /opt/amazon
 WORKDIR /opt/amazon
 COPY docker/files/ml-code/ /opt/ml/code
 
-# Create sagemaker_env conda environment from environment.yml, then pin conda itself and
-# apply the security updates. rl_coach and tf_keras (which pins tensorflow<2.22) are
-# installed separately, after the environment exists.
-# libxml2-16 is removed from the environment so the system libxml2 is used: ROS's cv_bridge pulls in
-# the system libspatialite, which needs xmlNanoHTTPCleanup, absent from conda-forge's libxml2.
+# Create sagemaker_env conda environment from environment.yml
 RUN /root/anaconda/bin/conda env create -f /opt/amazon/configs/environment.yml -n sagemaker_env --yes && \
-    /root/anaconda/bin/conda config --set auto_activate_base false && \
-    /root/anaconda/bin/conda list --export '^(conda|py-rattler)$' | grep -v '^#' > /root/anaconda/conda-meta/pinned && \
-    test "$(wc -l < /root/anaconda/conda-meta/pinned)" -eq 2 && \
-    /root/anaconda/bin/conda install -y \
-        conda-forge::curl==8.23.0 \
-        conda-forge::libcurl==8.23.0 \
-        urllib3==2.8.0 \
-        pyjwt==2.15.0 \
-        certifi==2026.10.19 \
-        anyio==4.14.2 \
-        filelock==4.2.1 \
-        msgpack-python==1.2.3 && \
-    /root/anaconda/envs/sagemaker_env/bin/pip install --no-cache-dir /opt/amazon/rl_coach && \
-    /root/anaconda/envs/sagemaker_env/bin/pip install --no-cache-dir --no-deps tf_keras==2.21.0 && \
-    /root/anaconda/bin/conda remove -n sagemaker_env --force -y libxml2-16 && \
     /root/anaconda/bin/conda clean -afy && \
-    rm -rf /root/anaconda/envs/sagemaker_env/lib/python3.14/site-packages/tensorflow/include/external/curl
+    /root/anaconda/bin/conda config --set auto_activate_base false
 
 RUN apt-get update && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 
-ENTRYPOINT ["/bin/bash", "-c"]
+ADD docker/files/ml-code/simulation-entrypoint.sh /
+ENTRYPOINT ["/simulation-entrypoint.sh"]
+CMD ["bash"]

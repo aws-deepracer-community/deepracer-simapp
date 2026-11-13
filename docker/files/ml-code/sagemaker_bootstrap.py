@@ -194,8 +194,3 @@ def sageonly():
         base_cmd = "/opt/ml/code/sageonly_evals.sh"
     cmd = "%s %s" % (base_cmd, hyperparams)
     run_command(cmd, env_args)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    sageonly()
