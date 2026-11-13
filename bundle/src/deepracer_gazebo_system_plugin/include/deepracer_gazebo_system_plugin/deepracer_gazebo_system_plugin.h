@@ -28,6 +28,9 @@
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
 #include <gz/sim/components/Light.hh>
+#include <gz/sim/components/LightCmd.hh>
+#include <gz/sim/Conversions.hh>
+#include <gz/msgs/Utility.hh>
 #include <gz/sim/components/Physics.hh>
 #include <gz/sim/components/PhysicsCmd.hh>
 #include <gz/sim/components/World.hh>
@@ -54,6 +57,7 @@
 
 // ROS 2 includes
 #include <rclcpp/rclcpp.hpp>
+#include <rcutils/logging.h>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/vector3.hpp>

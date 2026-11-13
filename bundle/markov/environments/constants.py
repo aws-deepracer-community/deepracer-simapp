@@ -47,7 +47,7 @@ EFFORT_JOINTS = ['/racecar/left_rear_wheel_joint', '/racecar/right_rear_wheel_jo
                  '/racecar/left_steering_hinge_joint', '/racecar/right_steering_hinge_joint']
 
 # The number of steps to wait before checking if the car is stuck
-# This number should corespond to the camera FPS, since it is pacing the
+# This number should correspond to the camera FPS, since it is pacing the
 # step rate.
 NUM_STEPS_TO_CHECK_STUCK = 15
 
