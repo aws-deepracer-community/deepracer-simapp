@@ -5,9 +5,6 @@ ARG CORE_IMG=ubuntu:26.04
 FROM ${BUNDLE_PREFIX}/deepracer-simapp-build-bundle:${BUNDLE_TAG} AS bundle
 FROM ${CORE_IMG}
 
-ARG NVCC_VER=""
-ARG TF_VER=""
-
 ENV TZ="America/New_York" 
 ENV DEBIAN_FRONTEND="noninteractive" 
 RUN apt update && \ 
@@ -54,8 +51,7 @@ RUN apt update && \
     x264 \
     xmlstarlet \
     xvfb \
-    zlib1g-dev \
-    ${NVCC_VER} && \    
+    zlib1g-dev && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -128,6 +124,15 @@ RUN python3 -m pip install --no-cache-dir --break-system-packages sagemaker-trai
 # Copy installed libraries (Redis + AWS CPP + AWS CLI + Conda)
 COPY --from=bundle /usr/local/ /usr/local/
 COPY --from=bundle /root/anaconda/ /root/anaconda/
+
+# GPU variant only: the TensorFlow wheel is built against CUDA 12, which the CUDA 13 base image does not
+# provide. The and-cuda extra installs the matching nvidia-*-cu12 libraries next to TensorFlow.
+ARG TF_CUDA_EXTRA=""
+RUN if [ -n "${TF_CUDA_EXTRA}" ]; then \
+        PY=/root/anaconda/envs/sagemaker_env/bin/python && \
+        TF_INSTALLED=$($PY -m pip show tensorflow | sed -n 's/^Version: //p') && \
+        $PY -m pip install --no-cache-dir "tensorflow[and-cuda]==${TF_INSTALLED}"; \
+    fi
 
 # Use the system libxml2: cv_bridge pulls in the system libspatialite, which needs xmlNanoHTTPCleanup,
 # absent from conda-forge's libxml2. No-op if already removed in the core image.

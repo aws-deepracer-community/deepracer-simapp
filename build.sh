@@ -131,12 +131,13 @@ for variant in $VARIANTS; do
             echo "Skipping gpu build on ${PLATFORM}; only linux/amd64 is supported."
             continue
         fi
-        CORE_IMG="nvcr.io/nvidia/cuda:13.3.1-cudnn-runtime-ubuntu26.04"
-        NVCC_VER="cuda-nvcc-13-3"
+        # CORE_IMG="nvcr.io/nvidia/cuda:13.3.1-cudnn-runtime-ubuntu26.04"
+        CORE_IMG="${BASE_IMAGE}"
+        TF_CUDA_EXTRA="true"
         ;;
     cpu)
         CORE_IMG="${BASE_IMAGE}"
-        NVCC_VER=""
+        TF_CUDA_EXTRA=""
         ;;
     *)
         echo "Unknown variant ${variant}" >&2
@@ -154,7 +155,7 @@ for variant in $VARIANTS; do
         --build-arg BUNDLE_PREFIX="${PREFIX}" \
         --build-arg BUNDLE_TAG="${BUNDLE_TAG}" \
         --build-arg CORE_IMG="${CORE_IMG}" \
-        --build-arg NVCC_VER="${NVCC_VER}"
+        --build-arg TF_CUDA_EXTRA="${TF_CUDA_EXTRA}"
     set +x
 
     if [ -n "${OPT_PUSH:-}" ]; then
