@@ -92,6 +92,7 @@ def generate_launch_description():
     gazebo_client = ExecuteProcess(
         cmd=[
             'gz', 'sim', '-g',
+            '--render-engine', LaunchConfiguration('render_engine'),
             # Verbose flag (use -v instead of --verbose for compatibility)
             PythonExpression([
                 '"-v" if "', LaunchConfiguration('verbose'), '" == "true" else ""'
@@ -119,15 +120,15 @@ def generate_launch_description():
             f'config_file:={bridge_params}',
         ],
         parameters=[{
-            'qos_overrides./racecar/scan.publisher.reliability': 'best_effort',
+#            'qos_overrides./racecar/scan.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/scan.publisher.depth': 10,
-            'qos_overrides./racecar/camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
+#            'qos_overrides./racecar/camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/camera/zed/rgb/image_rect_color.publisher.depth': 10,
-            'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.reliability': 'best_effort',
+#            'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/camera/zed_right/rgb/image_rect_color_right.publisher.depth': 10,
-            'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
+#            'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./racecar/main_camera/zed/rgb/image_rect_color.publisher.depth': 10,
-            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
+#            'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.reliability': 'best_effort',
             'qos_overrides./sub_camera/zed/rgb/image_rect_color.publisher.depth': 10,
         }],
         output='screen'

@@ -1,0 +1,16 @@
+float32 lap_counter
+float32 completion_percentage
+int32 reset_counter
+int32 obstacle_reset_counter
+float32 speed
+float32 throttle
+float32 steering
+float32 best_lap_time
+float32 last_lap_time
+float32 total_evaluation_time
+bool done
+float32 x
+float32 y
+geometry_msgs/Point32[] object_locations
+string episode_status
+float32 pause_duration

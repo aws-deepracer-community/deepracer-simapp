@@ -8,6 +8,8 @@ import os
 import datetime
 import logging
 import cv2
+import numpy as np
+from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.utils import get_racecar_idx
@@ -225,20 +227,25 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
         self._sector_times = info_dict[VirtualEventMP4Params.SECTOR_TIMES.value]
         self._curr_lap_time = info_dict[VirtualEventMP4Params.CURR_LAP_TIME.value]
 
+        pil_major_cv_image = Image.fromarray(major_cv_image)
+        draw = ImageDraw.Draw(pil_major_cv_image)
+
         # lap count
         loc_x, loc_y = VirtualEventXYPixelLoc.LAP_COUNT_DIGIT.value
         lap_counter_text = "{}/{}".format(int(min(mp4_video_metrics_info[self.racecar_index].lap_counter + 1, self._total_laps)), self._total_laps)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=lap_counter_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer0 name
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER0_NAME.value
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=self.racecar_info[0]['display_name'],
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=self.racecar_info[0]['display_name'],
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_14px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer0 best lap time
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER0_BEST_LAP_TIME_DIGIT.value
@@ -248,25 +255,28 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
         best_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=best_lap_time)) \
             if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer0 Speed digit
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER0_SPEED_DIGIT.value
         speed_text = utils.get_speed_formatted_str(mp4_video_metrics_info[0].throttle)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer1 name
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER1_NAME.value
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=self.racecar_info[1]['display_name'],
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=self.racecar_info[1]['display_name'],
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_14px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer1 best lap time
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER1_BEST_LAP_TIME_DIGIT.value
@@ -276,18 +286,20 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
         best_lap_time = utils.milliseconds_to_timeformat(
             datetime.timedelta(milliseconds=best_lap_time)) \
             if best_lap_time != float("inf") and best_lap_time != 0 else "--:--.---"
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=best_lap_time,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=best_lap_time,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # racer1 Speed digit
         loc_x, loc_y = VirtualEventXYPixelLoc.RACER1_SPEED_DIGIT.value
         speed_text = utils.get_speed_formatted_str(mp4_video_metrics_info[1].throttle)
-        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
+        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_regular_28px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
+                               font_shadow_color=RaceCarColorToRGB.Black.value,
+                               draw_obj=draw)
 
         # rank board
         time_to_leader = virtual_event_info[VirtualEventData.TIME_TO_LEADER.value]
@@ -299,22 +311,24 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
             sim_time = utils.milliseconds_to_timeformat(
                 datetime.timedelta(milliseconds=sim_time)) \
                 if sim_time != float("inf") and sim_time != 0 else "--:--.---"
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text="{} {}".format(
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text="{} {}".format(
                                                        racer_rank[0][:5].upper(), sim_time),
                                                        loc=(loc_x, loc_y), font=self.amazon_ember_regular_14px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                       draw_obj=draw)
 
             # runner up name
             loc_x, loc_y = VirtualEventXYPixelLoc.RUNNER_UP_NAME_TEXT.value
             gap_time = time_to_leader[racer_rank[1]]
             gap_time = format(gap_time / 1000, "0.2f") \
                 if gap_time != float("inf") and gap_time != 0 else 0.00
-            major_cv_image = utils.write_text_on_image(image=major_cv_image, text="{} +{}".format(
+            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text="{} +{}".format(
                                                        racer_rank[1][:5].upper(), gap_time),
                                                        loc=(loc_x, loc_y), font=self.amazon_ember_regular_14px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
+                                                       draw_obj=draw)
 
             # leader square mark
             race_square_loc = []
@@ -325,8 +339,12 @@ class VirtualEventMultiAgentImageEditing(ImageEditingInterface):
                 race_square_loc = [VirtualEventXYPixelLoc.RUNNER_UP_RECTANGLE.value,
                                    VirtualEventXYPixelLoc.LEADER_RECTANGLE.value]
             for minor_cv_image, loc in zip(self._racers_png_images, race_square_loc):
+                major_cv_image = np.array(pil_major_cv_image)
                 utils.plot_rectangular_image_on_main_image(major_cv_image, minor_cv_image, loc)
+                pil_major_cv_image = Image.fromarray(major_cv_image)
+                draw = ImageDraw.Draw(pil_major_cv_image)
 
+        major_cv_image = np.array(pil_major_cv_image)
         major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2BGRA)
         return major_cv_image
 

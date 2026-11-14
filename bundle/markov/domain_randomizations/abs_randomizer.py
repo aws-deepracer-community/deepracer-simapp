@@ -16,11 +16,8 @@
 
 import abc
 
-# Python 2 and 3 compatible Abstract class
-ABC = abc.ABCMeta('ABC', (object,), {})
 
-
-class AbstractRandomizer(ABC):
+class AbstractRandomizer(abc.ABC):
     """
     Abstract Randomizer class
     """

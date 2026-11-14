@@ -28,6 +28,7 @@ class MetricsS3Keys(Enum):
     REGION = 'aws_region'
     METRICS_BUCKET = 'metrics_bucket'
     METRICS_KEY = 'metrics_key'
+    ENDPOINT_URL = 'endpoint_url'
 
 class FirehoseStreamKeys(Enum): 
     '''The keys for the Firehose configuration''' 
@@ -63,7 +64,8 @@ class StepMetrics(Enum):
     TIME = 'tstamp'
     EPISODE_STATUS = 'episode_status'
     PAUSE_DURATION = 'pause_duration'
-    OBSTACLE_CRASH_COUNTER = "obstacle_crash_counter"
+    OBSTACLE_CRASH_COUNTER = 'obstacle_crash_counter'
+    WALL_CLOCK = 'wall_clock'
 
     @classmethod
     def make_default_metric(cls):
@@ -135,7 +137,9 @@ class Mp4VideoMetrics(Enum):
     CRASH_COUNTER = 'crash_counter'
     THROTTLE = 'throttle'
     STEERING = 'steering'
+    SPEED = 'speed'
     BEST_LAP_TIME = 'best_lap_time'
+    LAST_LAP_TIME = 'last_lap_time'
     TOTAL_EVALUATION_TIME = 'total_evaluation_time'
     DONE = 'done'
     X = 'x'
@@ -160,3 +164,4 @@ class BestModelMetricType(Enum):
     """This enum is used to determine the metric to use when selecting best model"""
     PROGRESS = 'progress'
     REWARD = 'reward'
+    LAPTIME = 'laptime'

@@ -26,6 +26,7 @@ find_package(image_transport REQUIRED)
 # Generate interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AgentRewardData.msg"
+  "msg/VideoMetrics.msg"
   "srv/TopCamDataSrv.srv"
   "srv/VideoMetricsSrv.srv"
   "srv/VirtualEventVideoEditSrv.srv"

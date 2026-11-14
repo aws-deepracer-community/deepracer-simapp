@@ -17,7 +17,7 @@
 from markov.log_handler.deepracer_exceptions import GenericRolloutException
 
 
-class RandomizerManager(object):
+class RandomizerManager:
     """
     Randomizer Manager class that manages multiple randomizer
     """

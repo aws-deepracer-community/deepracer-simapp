@@ -196,6 +196,7 @@ class TrackData():
             self._is_bot_car_ = int(WorldConfig.get_param("NUMBER_OF_BOT_CARS", 0)) > 0
             self._bot_car_speed_ = float(WorldConfig.get_param("BOT_CAR_SPEED", 0.0))
             waypoints = np.load(waypoints_path)
+            waypoints = self._sanitize_waypoints(waypoints, waypoints_path)
 
             self.is_loop = np.all(waypoints[0, :] == waypoints[-1, :])
             poly_func = LinearRing if self.is_loop else LineString
@@ -238,6 +239,47 @@ class TrackData():
 
         except Exception as ex:
             raise GenericRolloutException('Failed to create track data: {}'.format(ex))
+
+    @staticmethod
+    def _sanitize_waypoints(waypoints, waypoints_path, eps=1e-9):
+        """Remove degenerate consecutive center-line points while keeping lane columns aligned."""
+        if waypoints.ndim != 2 or waypoints.shape[0] < 2 or waypoints.shape[1] < 6:
+            raise GenericRolloutException(
+                "Invalid route array shape {} for {}".format(waypoints.shape, waypoints_path)
+            )
+
+        core = waypoints[:, :6]
+        if not np.isfinite(core).all():
+            bad = np.argwhere(~np.isfinite(core))[0]
+            raise GenericRolloutException(
+                "Non-finite route value at row {}, col {} in {}".format(
+                    int(bad[0]), int(bad[1]), waypoints_path
+                )
+            )
+
+        is_loop = bool(np.all(waypoints[0, :] == waypoints[-1, :]))
+        center = waypoints[:, 0:2]
+
+        if is_loop and waypoints.shape[0] > 2:
+            # Keep the final closing row intact to preserve loop semantics.
+            center_core = center[:-1]
+            keep = np.ones(center_core.shape[0], dtype=bool)
+            if center_core.shape[0] > 1:
+                seg = np.linalg.norm(np.diff(center_core, axis=0), axis=1)
+                keep[1:] = seg > eps
+            sanitized = np.vstack((waypoints[:-1][keep], waypoints[-1:]))
+        else:
+            keep = np.ones(center.shape[0], dtype=bool)
+            if center.shape[0] > 1:
+                seg = np.linalg.norm(np.diff(center, axis=0), axis=1)
+                keep[1:] = seg > eps
+            sanitized = waypoints[keep]
+
+        if sanitized.shape[0] < 2:
+            raise GenericRolloutException(
+                "Route {} became degenerate after sanitization".format(waypoints_path)
+            )
+        return sanitized
 
     def initialize_object(self, name, initial_pose, object_dimensions):
         self.object_poses[name] = initial_pose
