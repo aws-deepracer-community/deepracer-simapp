@@ -45,7 +45,11 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libx264-dev \
     libgmock-dev \
     ros-$ROS_DISTRO-ros-gz \
+    libarchive-tools \
     && rm -rf /var/lib/apt/lists/*
+
+# Use bsdtar as tar during the build (removed again at the end of Dockerfile.build-bundle)
+RUN ln -s /usr/bin/bsdtar /usr/local/bin/tar
 
 # Build and install AWS SDK C++ (pinned to a verified commit)
 ARG AWS_SDK_CPP_TAG=1.11.907

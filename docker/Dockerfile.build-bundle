@@ -8,4 +8,7 @@ WORKDIR /opt/amazon
 
 RUN bash -c "/opt/ml/code/scripts/build_deepracer_ros_packages_lite.sh"
 
+# Remove the bsdtar override so it is not copied into the final image via /usr/local
+RUN rm /usr/local/bin/tar
+
 ENTRYPOINT ["/bin/bash", "-c"]
