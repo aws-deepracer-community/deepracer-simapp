@@ -79,7 +79,7 @@ class SaveToMp4(Node):
                         topic_name,
                         lambda msg, name=name: self._subscribe_to_image_topic(msg, name),
                         QoSProfile(
-                            reliability=ReliabilityPolicy.RELIABLE,
+                            reliability=ReliabilityPolicy.BEST_EFFORT,
                             history=HistoryPolicy.KEEP_LAST,
                             depth=10,
                         )
@@ -87,8 +87,7 @@ class SaveToMp4(Node):
                 if name not in self.mp4_subscription_lock_map:
                     self.mp4_subscription_lock_map[name] = threading.Lock()
                 else:
-                    if self.mp4_subscription_lock_map[name].locked():
-                        self.mp4_subscription_lock_map[name].release()
+                    self.mp4_subscription_lock_map[name].release()
         except Exception as err_msg:
             log_and_exit("Exception in the handler function to subscribe to save_mp4 download: {}".format(err_msg),
                          SIMAPP_SIMULATION_SAVE_TO_MP4_EXCEPTION,

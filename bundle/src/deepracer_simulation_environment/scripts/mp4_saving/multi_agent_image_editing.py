@@ -6,8 +6,6 @@
 import datetime
 import logging
 import cv2
-import numpy as np
-from PIL import Image, ImageDraw
 
 from markov.log_handler.logger import Logger
 from markov.reset.constants import RaceType
@@ -96,8 +94,6 @@ class MultiAgentImageEditing(ImageEditingInterface):
         # Applying gradient to whole major image and then writing text
         major_cv_image = utils.apply_gradient(major_cv_image, self.gradient_alpha_rgb_mul,
                                               self.one_minus_gradient_alpha)
-        pil_major_cv_image = Image.fromarray(major_cv_image)
-        draw = ImageDraw.Draw(pil_major_cv_image)
 
         # Adding display name to the image
         agents_speed = 0
@@ -108,50 +104,27 @@ class MultiAgentImageEditing(ImageEditingInterface):
                 # Display name (Racer name/Model name)
                 display_name = racecar_info['display_name']
                 display_name_txt = display_name if len(display_name) < 15 else "{}...".format(display_name[:15])
-                pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=display_name_txt,
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=display_name_txt,
                                                            loc=(loc_x, loc_y), font=self.amazon_ember_regular_20px,
                                                            font_color=RaceCarColorToRGB.White.value,
-                                                           font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                           draw_obj=draw)
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
                 # Lap Counter
                 loc_y += 30
                 current_lap = min(int(mp4_video_metrics_info[i].lap_counter) + 1, self._total_laps)
                 lap_counter_text = "{}/{}".format(current_lap, self._total_laps)
-                pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=lap_counter_text,
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=lap_counter_text,
                                                            loc=(loc_x, loc_y), font=self.amazon_ember_heavy_30px,
                                                            font_color=RaceCarColorToRGB.White.value,
-                                                           font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                           draw_obj=draw)
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
                 # Reset counter
                 loc_y += 45
                 reset_counter_text = "Reset | {}".format(mp4_video_metrics_info[i].reset_counter)
-                pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=reset_counter_text,
+                major_cv_image = utils.write_text_on_image(image=major_cv_image, text=reset_counter_text,
                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                            font_color=RaceCarColorToRGB.White.value,
-                                                           font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                           draw_obj=draw)
-                
-                if WorldConfig.get_param('ENABLE_EXTRA_KVS_OVERLAY', 'False').lower() in ('true'):
-                    # Steering Angle
-                    loc_y += 25
-                    steering_text = "Steering | {:.2f}".format(mp4_video_metrics_info[i].steering)
-                    pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
-                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
-                                                            font_color=RaceCarColorToRGB.White.value,
-                                                            font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                            draw_obj=draw)
-                    
-                    # Throttle
-                    loc_y += 25
-                    steering_text = "Throttle | {:.2f}".format(mp4_video_metrics_info[i].throttle)
-                    pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=steering_text,
-                                                            loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
-                                                            font_color=RaceCarColorToRGB.White.value,
-                                                            font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                            draw_obj=draw)
-                
+                                                           font_shadow_color=RaceCarColorToRGB.Black.value)
                 if self.racecar_name == racecar_info['name']:
-                    agents_speed = mp4_video_metrics_info[i].speed
+                    agents_speed = mp4_video_metrics_info[i].throttle
                 # The race is complete when total lap is same as current lap and done flag is set
                 agent_done = agent_done or (mp4_video_metrics_info[i].done and (current_lap == int(self._total_laps)))
 
@@ -160,19 +133,17 @@ class MultiAgentImageEditing(ImageEditingInterface):
         if self.is_league_leaderboard:
             loc_x, loc_y = XYPixelLoc.SPEED_LEADERBOARD_LOC.value
         speed_text = "{} m/s".format(utils.get_speed_formatted_str(agents_speed))
-        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=speed_text,
+        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=speed_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_20px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                   draw_obj=draw)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
         # Leaderboard name
         if self.is_league_leaderboard:
-            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=self.leaderboard_name,
+            major_cv_image = utils.write_text_on_image(image=major_cv_image, text=self.leaderboard_name,
                                                        loc=XYPixelLoc.LEADERBOARD_NAME_LOC.value,
                                                        font=self.amazon_ember_regular_16px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                       draw_obj=draw)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
 
         # Evaluation type
         loc_x, loc_y = XYPixelLoc.RACE_TYPE_EVAL_LOC.value
@@ -180,32 +151,27 @@ class MultiAgentImageEditing(ImageEditingInterface):
             loc_x, loc_y = XYPixelLoc.RACE_TYPE_RACE_LOC.value
         race_text = "race" if self.is_racing else "evaluation"
         evaluation_type_txt = "{} {}".format(RACE_TYPE_TO_VIDEO_TEXT_MAPPING[self.race_type], race_text)
-        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=evaluation_type_txt,
+        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=evaluation_type_txt,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_italic_20px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                   draw_obj=draw)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
         # total_evaluation_time (Race time)
         loc_x, loc_y = XYPixelLoc.MULTI_AGENT_EVAL_TIME.value
         total_eval_milli_seconds = mp4_video_metrics_info[0].total_evaluation_time
         time_delta = datetime.timedelta(milliseconds=total_eval_milli_seconds)
         total_eval_time_text = "Race | {}".format(utils.milliseconds_to_timeformat(time_delta))
-        pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image, text=total_eval_time_text,
+        major_cv_image = utils.write_text_on_image(image=major_cv_image, text=total_eval_time_text,
                                                    loc=(loc_x, loc_y), font=self.amazon_ember_light_18px,
                                                    font_color=RaceCarColorToRGB.White.value,
-                                                   font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                   draw_obj=draw)
+                                                   font_shadow_color=RaceCarColorToRGB.Black.value)
         # AWS Deepracer logo at the bottom for the community leaderboard
         if self.is_league_leaderboard:
-            pil_major_cv_image = utils.write_text_on_image(image=pil_major_cv_image,
+            major_cv_image = utils.write_text_on_image(image=major_cv_image,
                                                        text=AWS_DEEPRACER_WATER_MARK,
                                                        loc=XYPixelLoc.AWS_DEEPRACER_WATER_MARK_LOC.value,
                                                        font=self.amazon_ember_regular_16px,
                                                        font_color=RaceCarColorToRGB.White.value,
-                                                       font_shadow_color=RaceCarColorToRGB.Black.value,
-                                                       draw_obj=draw)
-
-        major_cv_image = np.array(pil_major_cv_image)
+                                                       font_shadow_color=RaceCarColorToRGB.Black.value)
 
         # Check if the done flag is set and set the banner appropriately
         if agent_done:

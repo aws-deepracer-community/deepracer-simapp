@@ -496,7 +496,7 @@ class TrainingMetrics(MetricsInterface, ObserverInterface, AbstractTracker):
             point.z = 0.0
             object_locations.append(point)
         self._video_metrics[Mp4VideoMetrics.OBJECT_LOCATIONS.value] = object_locations
-        self._training_metrics_node.publish_latest()
+        # self._training_metrics_node.publish_latest()
 
     def _handle_get_video_metrics(self, request, response):
         # Fill the response
@@ -813,7 +813,7 @@ class EvalMetrics(MetricsInterface, AbstractTracker):
             metrics[StepMetrics.EPISODE_STATUS.value]
         self._video_metrics[Mp4VideoMetrics.PAUSE_DURATION.value] = \
             metrics[StepMetrics.PAUSE_DURATION.value]
-        self._eval_metrics_node.publish_latest()
+        # self._eval_metrics_node.publish_latest()
 
     def upload_step_metrics(self, metrics):
         metrics[StepMetrics.EPISODE.value] = self._number_of_trials_
