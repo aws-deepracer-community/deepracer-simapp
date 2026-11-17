@@ -40,7 +40,7 @@ from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
 from markov.reset.constants import RaceType
 from markov.world_config import WorldConfig
 from deepracer_simulation_environment.msg import VideoMetrics
-from mp4_saving.constants import FrameQueueData, FrameTypes, KVS_PUBLISH_PERIOD, STATS_LOG_PERIOD
+from mp4_saving.constants import FrameQueueData, FrameTypes, KVS_PUBLISH_PERIOD
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -99,7 +99,7 @@ class KvsVideoEditor(Node):
                 self.create_subscription(
                     VideoMetrics,
                     f'/{agent_name}/video_metrics',
-                    lambda msg, a=agent_name: self._on_video_metrics(a, msg),
+                    lambda msg, a=agent_name: self._metrics_buffers[a].put(msg),
                     10
                 )
             )
@@ -107,15 +107,12 @@ class KvsVideoEditor(Node):
         self.kvs_pub = self.create_publisher(
             ROSImg, '/{}/deepracer/kvs_stream'.format(self.racecar_name), 1)
 
-        # Diagnostic counters, reported periodically so a silent pipeline stall is visible.
-        self._stats_lock = threading.Lock()
-        self._metrics_rx = {agent: 0 for agent in self._metrics_buffers}
+        # Frame counters for the end-of-run summary (plain ints; approximate across threads)
         self._camera_rx = 0
         self._skipped_no_metrics = 0
         self._edited = 0
         self._published = 0
         self._errors = 0
-        self.create_timer(STATS_LOG_PERIOD, self._log_stats)
 
         # Latest edited frame, published on a steady cadence (below). Editing happens in
         # the camera callback; publishing is decoupled so the live stream keeps a steady
@@ -138,18 +135,12 @@ class KvsVideoEditor(Node):
     def _training_phase_cb(self, phase):
         self._current_training_phase.put(phase.data)
 
-    def _on_video_metrics(self, agent_name, msg):
-        self._metrics_buffers[agent_name].put(msg)
-        with self._stats_lock:
-            self._metrics_rx[agent_name] += 1
-
-    def _log_stats(self):
-        """ Periodic diagnostics: messages received per input, and frames skipped/edited/published. """
-        with self._stats_lock:
-            LOG.info("kvs_video_editor[%s]: camera rx=%d | metrics rx=%s | skipped(no metrics)=%d "
-                     "edited=%d published=%d errors=%d",
-                     self.racecar_name, self._camera_rx, self._metrics_rx, self._skipped_no_metrics,
-                     self._edited, self._published, self._errors)
+    def log_summary(self):
+        """ End-of-run summary of how many camera frames were edited and published. """
+        LOG.info("kvs_video_editor[%s] summary: camera rx=%d skipped(no metrics)=%d edited=%d "
+                 "published=%d errors=%d",
+                 self.racecar_name, self._camera_rx, self._skipped_no_metrics,
+                 self._edited, self._published, self._errors)
 
     def _get_image_editing_job_type(self):
         """ Same editor selection as agents_video_editor so output is identical. """
@@ -168,8 +159,7 @@ class KvsVideoEditor(Node):
         """ Edit the freshest camera frame with the overlay and store it for publishing. """
         if not rclpy.ok():
             return
-        with self._stats_lock:
-            self._camera_rx += 1
+        self._camera_rx += 1
         try:
             # Collect metrics from each agent's buffer (non-blocking).
             # If any buffer has not yet received data, skip this frame to avoid a crash.
@@ -182,8 +172,7 @@ class KvsVideoEditor(Node):
                 except DoubleBuffer.Empty:
                     metric = None
                 if metric is None:
-                    with self._stats_lock:
-                        self._skipped_no_metrics += 1
+                    self._skipped_no_metrics += 1
                     return  # metrics not yet available; skip frame
                 agent_metric_info.append(metric)
             metric_info = {
@@ -195,15 +184,12 @@ class KvsVideoEditor(Node):
             major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
             major_cv_image = self.job_type_image_edit_kvs.edit_image(major_cv_image, metric_info)
             self._latest_edited.put(self.bridge.cv2_to_imgmsg(major_cv_image, "bgr8"))
-            with self._stats_lock:
-                self._edited += 1
+            self._edited += 1
         except CvBridgeError as ex:
-            with self._stats_lock:
-                self._errors += 1
+            self._errors += 1
             LOG.info("cv2 to ROS image message error: {}".format(ex))
         except Exception:
-            with self._stats_lock:
-                self._errors += 1
+            self._errors += 1
             LOG.exception("kvs_video_editor[%s]: frame editing failed", self.racecar_name)
             raise
 
@@ -217,8 +203,7 @@ class KvsVideoEditor(Node):
                 edited_frame = self._latest_edited.get()  # blocks until first frame, then latest
                 if rclpy.ok() and edited_frame is not None:
                     self.kvs_pub.publish(edited_frame)
-                    with self._stats_lock:
-                        self._published += 1
+                    self._published += 1
             except Exception as ex:
                 LOG.info("KVS publish loop error: {}".format(ex))
             finally:
@@ -233,6 +218,7 @@ class KvsVideoEditor(Node):
 def main(args=None):
     if not rclpy.ok():
         rclpy.init(args=args)
+    editors = []
     try:
         racer_num = int(sys.argv[1]) if len(sys.argv) > 1 else 1
         racecar_names = get_racecar_names(racer_num)
@@ -250,7 +236,9 @@ def main(args=None):
             executor.add_node(Node('kvs_video_editor_idle'))
         else:
             for racecar in racecars_info:
-                executor.add_node(KvsVideoEditor(racecar['name'], racecars_info))
+                editor = KvsVideoEditor(racecar['name'], racecars_info)
+                editors.append(editor)
+                executor.add_node(editor)
             LOG.info("KVS video editor started for %d racecar(s)", len(racecars_info))
         executor.spin()
     except KeyboardInterrupt:
@@ -260,6 +248,8 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        for editor in editors:
+            editor.log_summary()
         if rclpy.ok():
             rclpy.shutdown()
 

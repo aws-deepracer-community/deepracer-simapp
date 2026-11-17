@@ -31,7 +31,7 @@ from markov.world_config import WorldConfig
 from deepracer_simulation_environment.msg import VideoMetrics
 from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
-                                  KVS_PUBLISH_PERIOD, QUEUE_POLL_TIME, FrameTypes, STATS_LOG_PERIOD)
+                                  KVS_PUBLISH_PERIOD, QUEUE_POLL_TIME, FrameTypes)
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -207,14 +207,12 @@ class AgentsVideoEditor(Node):
             self._on_video_metrics,
             10
         )
-        # Diagnostic counters (plain ints; approximate under threads, fine for logging).
-        self._diag_metrics_rx = 0
+        # Frame counters for the end-of-run summary (plain ints; approximate across threads)
         self._diag_camera_rx = 0
         self._diag_skipped_no_metrics = 0
         self._diag_skipped_mp4_off = 0
         self._diag_queued = 0
         self._diag_edited = 0
-        self.create_timer(STATS_LOG_PERIOD, self._log_stats)
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited
@@ -273,15 +271,13 @@ class AgentsVideoEditor(Node):
     def _on_video_metrics(self, msg):
         """Subscription callback: store the latest VideoMetrics message for the camera pipeline."""
         self._agent_metrics_buffer.put(msg)
-        self._diag_metrics_rx += 1
 
-    def _log_stats(self):
-        """ Periodic diagnostics: messages received per input and frames skipped/queued/edited. """
-        LOG.info("agents_video_editor[%s]: metrics topic=/%s/video_metrics rx=%d | main camera rx=%d | "
-                 "mp4 enabled=%s | skipped(mp4 off)=%d skipped(no metrics)=%d queued=%d edited=%d queue size=%d",
-                 self.racecar_name, self.agent_name, self._diag_metrics_rx, self._diag_camera_rx,
-                 self.is_save_mp4_enabled, self._diag_skipped_mp4_off, self._diag_skipped_no_metrics, self._diag_queued,
-                 self._diag_edited, self._agent_frame_queue.qsize())
+    def log_summary(self):
+        """ End-of-run summary of how every received camera frame was handled. """
+        LOG.info("agents_video_editor[%s] summary: main camera rx=%d skipped(mp4 off)=%d "
+                 "skipped(no metrics)=%d queued=%d edited=%d",
+                 self.racecar_name, self._diag_camera_rx, self._diag_skipped_mp4_off,
+                 self._diag_skipped_no_metrics, self._diag_queued, self._diag_edited)
 
     def subscribe_to_save_mp4(self, req, response):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -631,6 +627,9 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        for video_editor in video_editor_nodes:
+            video_editor.log_summary()
+
         if executor is not None:
             try:
                 executor.shutdown(timeout_sec=2.0)
