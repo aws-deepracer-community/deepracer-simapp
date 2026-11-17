@@ -130,7 +130,14 @@ class KvsVideoEditor(Node):
                                  callback_group=self._camera_cb_group)
 
         # Steady-cadence publisher so the player does not rebuffer.
-        threading.Thread(target=self._kvs_publish_loop, daemon=True).start()
+        self._stop_event = threading.Event()
+        self._publish_thread = threading.Thread(target=self._kvs_publish_loop, daemon=True)
+        self._publish_thread.start()
+
+    def stop(self):
+        """ Stop the publish thread so nothing touches the publisher while ROS is torn down. """
+        self._stop_event.set()
+        self._publish_thread.join(timeout=1.0)
 
     def _training_phase_cb(self, phase):
         self._current_training_phase.put(phase.data)
@@ -198,10 +205,10 @@ class KvsVideoEditor(Node):
         regular (no player rebuffering), re-sending the latest frame if no newer one is
         ready. Editing is done in the camera callback, so this loop stays light. """
         next_tick = time.monotonic()
-        while rclpy.ok():
+        while rclpy.ok() and not self._stop_event.is_set():
             try:
                 edited_frame = self._latest_edited.get()  # blocks until first frame, then latest
-                if rclpy.ok() and edited_frame is not None:
+                if rclpy.ok() and not self._stop_event.is_set() and edited_frame is not None:
                     self.kvs_pub.publish(edited_frame)
                     self._published += 1
             except Exception as ex:
@@ -212,13 +219,14 @@ class KvsVideoEditor(Node):
                 next_tick += KVS_PUBLISH_PERIOD
                 sleep_time = next_tick - time.monotonic()
                 if sleep_time > 0:
-                    time.sleep(sleep_time)
+                    self._stop_event.wait(sleep_time)
 
 
 def main(args=None):
     if not rclpy.ok():
         rclpy.init(args=args)
     editors = []
+    executor = None
     try:
         racer_num = int(sys.argv[1]) if len(sys.argv) > 1 else 1
         racecar_names = get_racecar_names(racer_num)
@@ -248,8 +256,22 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        # Tear down in dependency order: stop the publish threads, stop the executor's worker
+        # threads, then destroy the nodes, and only then shut rclpy down. Shutting the context
+        # down first leaves threads using a dead publisher, which segfaults at interpreter exit.
         for editor in editors:
+            editor.stop()
             editor.log_summary()
+        if executor is not None:
+            try:
+                executor.shutdown(timeout_sec=2.0)
+            except Exception:
+                pass
+        for editor in editors:
+            try:
+                editor.destroy_node()
+            except Exception:
+                pass
         if rclpy.ok():
             rclpy.shutdown()
 
