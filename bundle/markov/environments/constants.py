@@ -28,8 +28,9 @@ NUMBER_OF_LIDAR_SECTORS = 8
 # Max clipping distance for sector lidar sensor
 SECTOR_LIDAR_CLIPPING_DIST = 0.5
 
-LINK_NAMES = ['left_rear_wheel', 'left_front_wheel',
-              'right_rear_wheel', 'right_front_wheel']
+# Model-scoped so that 'racecar' can be replaced with each car's name in multi-car runs
+LINK_NAMES = ['racecar::left_rear_wheel', 'racecar::left_front_wheel',
+              'racecar::right_rear_wheel', 'racecar::right_front_wheel']
 
 # List of required velocity topics, one topic per wheel
 VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/commands',

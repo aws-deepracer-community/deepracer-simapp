@@ -376,7 +376,11 @@ namespace gz::sim::systems
             /// \brief Visual state snapshot (for GET services)
             struct VisualStateSnapshot
             {
+                /// Model-scoped link name ("model::link"), or plain link name for alias entries
                 std::string link_name;
+                std::string visual_name;
+                /// True for plain-link-name lookup entries; skipped when listing visuals
+                bool alias = false;
                 std_msgs::msg::ColorRGBA ambient;
                 std_msgs::msg::ColorRGBA diffuse;
                 std_msgs::msg::ColorRGBA specular;
@@ -389,7 +393,8 @@ namespace gz::sim::systems
                 uint16_t geometry_type;
             };
 
-            /// \brief Visual cache: "link_name::visual_name" -> snapshot
+            /// \brief Visual cache: "model::link::visual" -> snapshot, plus alias entries
+            /// "link::visual" (first model wins) so plain link names keep working
             std::unordered_map<std::string, VisualStateSnapshot> visual_states_cache_;
 
             /// \brief Light names cache

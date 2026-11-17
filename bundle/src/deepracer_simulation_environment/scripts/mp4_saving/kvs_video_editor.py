@@ -40,7 +40,7 @@ from markov.log_handler.constants import (SIMAPP_EVENT_ERROR_CODE_500,
 from markov.reset.constants import RaceType
 from markov.world_config import WorldConfig
 from deepracer_simulation_environment.msg import VideoMetrics
-from mp4_saving.constants import FrameQueueData, FrameTypes, KVS_PUBLISH_PERIOD
+from mp4_saving.constants import FrameQueueData, FrameTypes, KVS_PUBLISH_PERIOD, STATS_LOG_PERIOD
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -99,13 +99,23 @@ class KvsVideoEditor(Node):
                 self.create_subscription(
                     VideoMetrics,
                     f'/{agent_name}/video_metrics',
-                    lambda msg, a=agent_name: self._metrics_buffers[a].put(msg),
+                    lambda msg, a=agent_name: self._on_video_metrics(a, msg),
                     10
                 )
             )
 
         self.kvs_pub = self.create_publisher(
             ROSImg, '/{}/deepracer/kvs_stream'.format(self.racecar_name), 1)
+
+        # Diagnostic counters, reported periodically so a silent pipeline stall is visible.
+        self._stats_lock = threading.Lock()
+        self._metrics_rx = {agent: 0 for agent in self._metrics_buffers}
+        self._camera_rx = 0
+        self._skipped_no_metrics = 0
+        self._edited = 0
+        self._published = 0
+        self._errors = 0
+        self.create_timer(STATS_LOG_PERIOD, self._log_stats)
 
         # Latest edited frame, published on a steady cadence (below). Editing happens in
         # the camera callback; publishing is decoupled so the live stream keeps a steady
@@ -128,6 +138,19 @@ class KvsVideoEditor(Node):
     def _training_phase_cb(self, phase):
         self._current_training_phase.put(phase.data)
 
+    def _on_video_metrics(self, agent_name, msg):
+        self._metrics_buffers[agent_name].put(msg)
+        with self._stats_lock:
+            self._metrics_rx[agent_name] += 1
+
+    def _log_stats(self):
+        """ Periodic diagnostics: messages received per input, and frames skipped/edited/published. """
+        with self._stats_lock:
+            LOG.info("kvs_video_editor[%s]: camera rx=%d | metrics rx=%s | skipped(no metrics)=%d "
+                     "edited=%d published=%d errors=%d",
+                     self.racecar_name, self._camera_rx, self._metrics_rx, self._skipped_no_metrics,
+                     self._edited, self._published, self._errors)
+
     def _get_image_editing_job_type(self):
         """ Same editor selection as agents_video_editor so output is identical. """
         if self.is_training:
@@ -145,6 +168,8 @@ class KvsVideoEditor(Node):
         """ Edit the freshest camera frame with the overlay and store it for publishing. """
         if not rclpy.ok():
             return
+        with self._stats_lock:
+            self._camera_rx += 1
         try:
             # Collect metrics from each agent's buffer (non-blocking).
             # If any buffer has not yet received data, skip this frame to avoid a crash.
@@ -152,8 +177,13 @@ class KvsVideoEditor(Node):
             for racecar in self.racecars_info:
                 agent_name = utils.racecar_name_to_agent_name(self.racecars_info, racecar['name'])
                 buf = self._metrics_buffers.get(agent_name)
-                metric = buf.get() if buf is not None else None
+                try:
+                    metric = buf.get(block=False) if buf is not None else None
+                except DoubleBuffer.Empty:
+                    metric = None
                 if metric is None:
+                    with self._stats_lock:
+                        self._skipped_no_metrics += 1
                     return  # metrics not yet available; skip frame
                 agent_metric_info.append(metric)
             metric_info = {
@@ -165,8 +195,17 @@ class KvsVideoEditor(Node):
             major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
             major_cv_image = self.job_type_image_edit_kvs.edit_image(major_cv_image, metric_info)
             self._latest_edited.put(self.bridge.cv2_to_imgmsg(major_cv_image, "bgr8"))
+            with self._stats_lock:
+                self._edited += 1
         except CvBridgeError as ex:
+            with self._stats_lock:
+                self._errors += 1
             LOG.info("cv2 to ROS image message error: {}".format(ex))
+        except Exception:
+            with self._stats_lock:
+                self._errors += 1
+            LOG.exception("kvs_video_editor[%s]: frame editing failed", self.racecar_name)
+            raise
 
     def _kvs_publish_loop(self):
         """ Publish the latest edited frame at a steady ~15 FPS so the stream cadence is
@@ -178,6 +217,8 @@ class KvsVideoEditor(Node):
                 edited_frame = self._latest_edited.get()  # blocks until first frame, then latest
                 if rclpy.ok() and edited_frame is not None:
                     self.kvs_pub.publish(edited_frame)
+                    with self._stats_lock:
+                        self._published += 1
             except Exception as ex:
                 LOG.info("KVS publish loop error: {}".format(ex))
             finally:

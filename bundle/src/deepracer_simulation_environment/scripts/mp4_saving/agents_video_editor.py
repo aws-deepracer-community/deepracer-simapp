@@ -31,7 +31,7 @@ from markov.world_config import WorldConfig
 from deepracer_simulation_environment.msg import VideoMetrics
 from mp4_saving.constants import (CameraTypeParams,
                                   Mp4Parameter, FrameQueueData, MAX_FRAMES_IN_QUEUE,
-                                  KVS_PUBLISH_PERIOD, QUEUE_WAIT_TIME, FrameTypes)
+                                  KVS_PUBLISH_PERIOD, QUEUE_POLL_TIME, FrameTypes, STATS_LOG_PERIOD)
 from mp4_saving.single_agent_image_editing import SingleAgentImageEditing
 from mp4_saving.multi_agent_image_editing import MultiAgentImageEditing
 from mp4_saving.training_image_editing import TrainingImageEditing
@@ -207,6 +207,14 @@ class AgentsVideoEditor(Node):
             self._on_video_metrics,
             10
         )
+        # Diagnostic counters (plain ints; approximate under threads, fine for logging).
+        self._diag_metrics_rx = 0
+        self._diag_camera_rx = 0
+        self._diag_skipped_no_metrics = 0
+        self._diag_skipped_mp4_off = 0
+        self._diag_queued = 0
+        self._diag_edited = 0
+        self.create_timer(STATS_LOG_PERIOD, self._log_stats)
         self.is_save_mp4_enabled = False
 
         # Only F1 race requires top camera frames edited
@@ -240,7 +248,8 @@ class AgentsVideoEditor(Node):
             # monopolized executor thread, preventing service callbacks from being processed
             callback_group=rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
         )
-        Thread(target=self._consumer_mp4_frame_thread).start()
+        # Daemon so a frame being edited or a destroyed node can never keep the process alive on shutdown
+        Thread(target=self._consumer_mp4_frame_thread, daemon=True).start()
 
         # KVS streaming: training keeps the in-process publisher here (its light overlay
         # never starved the camera intake). Evaluation/race KVS is produced by the
@@ -258,11 +267,21 @@ class AgentsVideoEditor(Node):
                 f'/{self.racecar_name}/deepracer/kvs_stream',
                 1
             )
-            Thread(target=self._kvs_publisher).start()
+            # Daemon: blocks on the frame buffer, which would otherwise keep the process alive
+            Thread(target=self._kvs_publisher, daemon=True).start()
 
     def _on_video_metrics(self, msg):
         """Subscription callback: store the latest VideoMetrics message for the camera pipeline."""
         self._agent_metrics_buffer.put(msg)
+        self._diag_metrics_rx += 1
+
+    def _log_stats(self):
+        """ Periodic diagnostics: messages received per input and frames skipped/queued/edited. """
+        LOG.info("agents_video_editor[%s]: metrics topic=/%s/video_metrics rx=%d | main camera rx=%d | "
+                 "mp4 enabled=%s | skipped(mp4 off)=%d skipped(no metrics)=%d queued=%d edited=%d queue size=%d",
+                 self.racecar_name, self.agent_name, self._diag_metrics_rx, self._diag_camera_rx,
+                 self.is_save_mp4_enabled, self._diag_skipped_mp4_off, self._diag_skipped_no_metrics, self._diag_queued,
+                 self._diag_edited, self._agent_frame_queue.qsize())
 
     def subscribe_to_save_mp4(self, req, response):
         """ Ros service handler function used to subscribe to the Image topic.
@@ -452,16 +471,18 @@ class AgentsVideoEditor(Node):
         """
         if rclpy.ok():
             self._main_camera_frame_buffer.put(frame)
-
+            self._diag_camera_rx += 1
             # Nothing to produce for: MP4 saving is off and KVS is either disabled or
             # handled by kvs_video_editor (evaluation). Skip metrics fetch entirely.
             if not self.is_save_mp4_enabled and not (self._is_publish_to_kvs_stream and self.is_training):
+                self._diag_skipped_mp4_off += 1
                 return
 
             # Get frame from main camera & agents metric information
             frame_metric_data = self.get_latest_frame_metric_data()
 
             if frame_metric_data is None:
+                self._diag_skipped_no_metrics += 1
                 return
 
             # Queue frames if MP4 saving is enabled, or KVS streaming for training
@@ -472,6 +493,7 @@ class AgentsVideoEditor(Node):
                     self._agent_frame_queue.get()
                 # Append to the queue for processing
                 self._agent_frame_queue.put(frame_metric_data)
+                self._diag_queued += 1
 
     def _consumer_mp4_frame_thread(self):
         """ Consumes the frame produced by the _producer_frame_thread and edits the image
@@ -481,11 +503,12 @@ class AgentsVideoEditor(Node):
             frame_data = None
             try:
                 # Pop from the queue and edit the image
-                frame_data = self._agent_frame_queue.get(timeout=QUEUE_WAIT_TIME)
+                frame_data = self._agent_frame_queue.get(timeout=QUEUE_POLL_TIME)
             except queue.Empty:
                 LOG.debug("AgentsVideoEditor._frame_queue['{}'] is empty. Retrying...".format(self.racecar_index))
             if frame_data:
                 edited_frames = self._edit_camera_images(frame_data)
+                self._diag_edited += 1
                 # Publish to MP4 topics only if MP4 saving is enabled
                 if self.is_save_mp4_enabled or self._agent_frame_queue_to_complete > 0:
                     if self._agent_frame_queue_to_complete > 0:

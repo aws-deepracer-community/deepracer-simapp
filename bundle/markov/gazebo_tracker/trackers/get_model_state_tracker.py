@@ -159,7 +159,8 @@ class GetModelStateTracker(AbstractTracker):
                     request.relative_entity_names = self.relative_entity_names
                     
                     response = self.get_model_states(request)
-                    if response.success:
+                    # None means the service call was aborted by ROS shutdown
+                    if response is not None and response.success:
                         for model_state, status in zip(response.model_states, response.status):
                             if status:
                                 model_name = model_state.model_name

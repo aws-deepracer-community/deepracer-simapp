@@ -12,6 +12,25 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from markov.world_config import WorldConfig
 
+
+def _list_item(arg_name, index, default):
+    """Substitution for the index-th entry of a comma-separated launch argument, or default if missing."""
+    arg = LaunchConfiguration(arg_name)
+    return PythonExpression([
+        '(("', arg, '".split(",") if "', arg, '" else []) + ["', default, '"] * 2)[', str(index), ']'
+    ])
+
+
+def _xacro_for_version(version):
+    """Substitution for the xacro directory matching a simapp version (same mapping as the single-car launch)."""
+    return PythonExpression([
+        '"mit" if "', version, '" == "1.0" else ',
+        '"confetti" if "', version, '" == "2.0" else ',
+        '"deepracer" if "', version, '" in ["3.0", "4.0"] else ',
+        '"deepracer_kinematics" if float("', version, '") >= 5.0 else "deepracer"'
+    ])
+
+
 def generate_launch_description():
     """
     Launch description for racetrack_with_racecar - complete simulation environment setup
@@ -159,11 +178,8 @@ def generate_launch_description():
         launch_arguments=[
             ('racecar_name', 'racecar_0'),
             ('racecar_bitmask', '0x01'),
-            ('simapp_version', PythonExpression([
-                '"', LaunchConfiguration('simapp_versions'), '".split(",")[0] if "',
-                LaunchConfiguration('simapp_versions'), '" else "3.0"'
-            ])),
-            ('racecar_xacro_file', 'deepracer'),
+            ('simapp_version', _list_item('simapp_versions', 0, '3.0')),
+            ('racecar_xacro_file', _xacro_for_version(_list_item('simapp_versions', 0, '3.0'))),
             ('kinesis_video_stream_name', PythonExpression([
                 '"', LaunchConfiguration('kinesis_video_stream_names'), '".split(",")[0] if "',
                 LaunchConfiguration('kinesis_video_stream_names'), '" else ""'
@@ -186,8 +202,8 @@ def generate_launch_description():
         launch_arguments=[
             ('racecar_name', 'racecar_1'),
             ('racecar_bitmask', '0x02'),
-            ('simapp_version', '2.0'),
-            ('racecar_xacro_file', 'deepracer'),
+            ('simapp_version', _list_item('simapp_versions', 1, '3.0')),
+            ('racecar_xacro_file', _xacro_for_version(_list_item('simapp_versions', 1, '3.0'))),
             ('kinesis_video_stream_name', ''),
             ('kinesis_video_stream_region', LaunchConfiguration('kinesis_video_stream_region')),
             ('include_second_camera', PythonExpression([
