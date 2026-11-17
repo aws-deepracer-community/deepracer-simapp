@@ -304,6 +304,7 @@ class FrameQueueData(Enum):
 MAX_FRAMES_IN_QUEUE = 1500
 KVS_PUBLISH_PERIOD = 1.0/15.0
 QUEUE_WAIT_TIME = 10 # In seconds
+QUEUE_POLL_TIME = 1.0 # In seconds; short enough for worker threads to notice a ROS shutdown
 
 # virtual event prepare digit font
 VIRTUAL_EVENT_PREPARE_DIGIT_FONT = 100

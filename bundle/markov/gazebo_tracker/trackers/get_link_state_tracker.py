@@ -134,7 +134,8 @@ class GetLinkStateTracker(AbstractTracker):
                 request.link_names = self.link_names
                 request.reference_frames = self.reference_frames
                 res = self._get_link_states(request)
-                if res.success:
+                # None means the service call was aborted by ROS shutdown
+                if res is not None and res.success:
                     for link_state, status in zip(res.link_states, res.status):
                         if status:
                             link_name = link_state.link_name

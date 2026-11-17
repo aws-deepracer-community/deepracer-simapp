@@ -4,8 +4,34 @@
 #include <deepracer_gazebo_system_plugin/deepracer_gazebo_system_plugin.h>
 #include <gz/plugin/Register.hh>
 
+#include <unordered_set>
+
 using namespace gz::sim;
 using namespace gz::sim::systems;
+
+namespace
+{
+/// Returns "model::link" for a link entity, or the plain name if it has no named parent.
+std::string scopedLinkName(const EntityComponentManager &_ecm, Entity _link, const std::string &_name)
+{
+    auto parent = _ecm.Component<components::ParentEntity>(_link);
+    if (!parent) return _name;
+    auto parentName = _ecm.Component<components::Name>(parent->Data());
+    if (!parentName) return _name;
+    return parentName->Data() + "::" + _name;
+}
+
+/// Registers a link under both its plain name (first one wins) and its model-scoped name,
+/// so that links with the same name in different models (multi-car) stay addressable.
+void addLinkEntity(const EntityComponentManager &_ecm,
+                   std::unordered_map<std::string, Entity> &_map,
+                   Entity _link, const std::string &_name)
+{
+    _map.emplace(_name, _link);
+    const std::string scoped = scopedLinkName(_ecm, _link, _name);
+    if (scoped != _name) _map[scoped] = _link;
+}
+}  // namespace
 
 //////////////////////////////////////////////////
 DeepRacerGazeboSystemPlugin::DeepRacerGazeboSystemPlugin()
@@ -333,7 +359,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
             std::unordered_map<std::string, Entity> linkEntityMap;
             _ecm.Each<components::Link, components::Name>(
                 [&](const Entity &e, const components::Link*, const components::Name *n) {
-                    linkEntityMap[n->Data()] = e;
+                    addLinkEntity(_ecm, linkEntityMap, e, n->Data());
                     return true;
                 });
             
@@ -418,7 +444,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
             std::unordered_map<std::string, Entity> linkEntityMap;
             _ecm.Each<components::Link, components::Name>(
                 [&](const Entity &e, const components::Link*, const components::Name *n) {
-                    linkEntityMap[n->Data()] = e;
+                    addLinkEntity(_ecm, linkEntityMap, e, n->Data());
                     return true;
                 });
             
@@ -490,7 +516,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
             std::unordered_map<std::string, Entity> linkEntityMap;
             _ecm.Each<components::Link, components::Name>(
                 [&](const Entity &e, const components::Link*, const components::Name *n) {
-                    linkEntityMap[n->Data()] = e;
+                    addLinkEntity(_ecm, linkEntityMap, e, n->Data());
                     return true;
                 });
             
@@ -531,7 +557,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
             std::unordered_map<std::string, Entity> linkEntityMap;
             _ecm.Each<components::Link, components::Name>(
                 [&](const Entity &e, const components::Link*, const components::Name *n) {
-                    linkEntityMap[n->Data()] = e;
+                    addLinkEntity(_ecm, linkEntityMap, e, n->Data());
                     return true;
                 });
             
@@ -578,7 +604,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
             std::unordered_map<std::string, Entity> linkEntityMap;
             _ecm.Each<components::Link, components::Name>(
                 [&](const Entity &e, const components::Link*, const components::Name *n) {
-                    linkEntityMap[n->Data()] = e;
+                    addLinkEntity(_ecm, linkEntityMap, e, n->Data());
                     return true;
                 });
             
@@ -847,7 +873,11 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
                 }
             }
             
-            link_states_cache_[n->Data()] = snapshot;
+            // Scoped "model::link" key keeps same-named links of different cars apart;
+            // the plain name is kept as a fallback (first model wins).
+            link_states_cache_.emplace(n->Data(), snapshot);
+            const std::string scopedName = scopedLinkName(_ecm, e, n->Data());
+            if (scopedName != n->Data()) link_states_cache_[scopedName] = snapshot;
             return true;
         });
 
@@ -859,10 +889,13 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
             auto linkNameIt = name_by_entity_.find(p->Data());
             if (linkNameIt == name_by_entity_.end()) return true;
             
-            std::string key = linkNameIt->second + "::" + n->Data();
+            const std::string plainLinkName = linkNameIt->second;
+            const std::string scopedName = scopedLinkName(_ecm, p->Data(), plainLinkName);
+            std::string key = scopedName + "::" + n->Data();
             
             VisualStateSnapshot snapshot;
-            snapshot.link_name = linkNameIt->second;
+            snapshot.link_name = scopedName;
+            snapshot.visual_name = n->Data();
             
             auto poseComp = _ecm.Component<components::Pose>(e);
             if (poseComp) {
@@ -920,6 +953,11 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
             snapshot.visible = (visibilityComp && visibilityComp->Data() != 0);
             
             visual_states_cache_[key] = snapshot;
+            if (scopedName != plainLinkName) {
+                snapshot.alias = true;
+                snapshot.link_name = plainLinkName;
+                visual_states_cache_.emplace(plainLinkName + "::" + n->Data(), snapshot);
+            }
             return true;
         });
 
@@ -1178,25 +1216,36 @@ void DeepRacerGazeboSystemPlugin::getVisualNamesCallback(
     
     try {
         bool get_all = request->link_names.empty();
+
+        // Requested names are normally "model::link". If a requested scoped name matches no
+        // model in the cache, fall back to matching on the plain link name.
+        std::unordered_set<std::string> known_scoped;
+        for (const auto &[key, snapshot] : visual_states_cache_) {
+            if (!snapshot.alias) known_scoped.insert(snapshot.link_name);
+        }
+        std::vector<std::string> wanted;
+        for (const auto &requested_link : request->link_names) {
+            size_t prefix_sep = requested_link.find("::");
+            if (prefix_sep != std::string::npos && known_scoped.count(requested_link) == 0) {
+                wanted.push_back(requested_link.substr(prefix_sep + 2));
+            } else {
+                wanted.push_back(requested_link);
+            }
+        }
         
         for (const auto &[key, snapshot] : visual_states_cache_) {
-            size_t separator = key.find("::");
-            if (separator == std::string::npos) continue;
+            if (snapshot.alias) continue;
             
-            std::string link_name = key.substr(0, separator);
-            std::string visual_name = key.substr(separator + 2);
+            const std::string &link_name = snapshot.link_name;
+            const std::string &visual_name = snapshot.visual_name;
+            size_t link_sep = link_name.rfind("::");
+            std::string plain_link_name =
+                link_sep == std::string::npos ? link_name : link_name.substr(link_sep + 2);
             
             if (!get_all) {
                 bool found = false;
-                for (const auto &requested_link : request->link_names) {
-                    // Fix: Strip model prefix (e.g., "racecar::base_link" -> "base_link")
-                    std::string requested_link_stripped = requested_link;
-                    size_t prefix_sep = requested_link.find("::");
-                    if (prefix_sep != std::string::npos) {
-                        requested_link_stripped = requested_link.substr(prefix_sep + 2);
-                    }
-                    
-                    if (requested_link_stripped == link_name) {
+                for (const auto &w : wanted) {
+                    if (w == link_name || w == plain_link_name) {
                         found = true;
                         break;
                     }

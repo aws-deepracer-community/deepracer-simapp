@@ -107,6 +107,13 @@ class KvsVideoEditor(Node):
         self.kvs_pub = self.create_publisher(
             ROSImg, '/{}/deepracer/kvs_stream'.format(self.racecar_name), 1)
 
+        # Frame counters for the end-of-run summary (plain ints; approximate across threads)
+        self._camera_rx = 0
+        self._skipped_no_metrics = 0
+        self._edited = 0
+        self._published = 0
+        self._errors = 0
+
         # Latest edited frame, published on a steady cadence (below). Editing happens in
         # the camera callback; publishing is decoupled so the live stream keeps a steady
         # ~15 FPS cadence (re-sending the latest frame when no newer one is ready). A
@@ -123,10 +130,24 @@ class KvsVideoEditor(Node):
                                  callback_group=self._camera_cb_group)
 
         # Steady-cadence publisher so the player does not rebuffer.
-        threading.Thread(target=self._kvs_publish_loop, daemon=True).start()
+        self._stop_event = threading.Event()
+        self._publish_thread = threading.Thread(target=self._kvs_publish_loop, daemon=True)
+        self._publish_thread.start()
+
+    def stop(self):
+        """ Stop the publish thread so nothing touches the publisher while ROS is torn down. """
+        self._stop_event.set()
+        self._publish_thread.join(timeout=1.0)
 
     def _training_phase_cb(self, phase):
         self._current_training_phase.put(phase.data)
+
+    def log_summary(self):
+        """ End-of-run summary of how many camera frames were edited and published. """
+        LOG.info("kvs_video_editor[%s] summary: camera rx=%d skipped(no metrics)=%d edited=%d "
+                 "published=%d errors=%d",
+                 self.racecar_name, self._camera_rx, self._skipped_no_metrics,
+                 self._edited, self._published, self._errors)
 
     def _get_image_editing_job_type(self):
         """ Same editor selection as agents_video_editor so output is identical. """
@@ -145,6 +166,7 @@ class KvsVideoEditor(Node):
         """ Edit the freshest camera frame with the overlay and store it for publishing. """
         if not rclpy.ok():
             return
+        self._camera_rx += 1
         try:
             # Collect metrics from each agent's buffer (non-blocking).
             # If any buffer has not yet received data, skip this frame to avoid a crash.
@@ -152,8 +174,12 @@ class KvsVideoEditor(Node):
             for racecar in self.racecars_info:
                 agent_name = utils.racecar_name_to_agent_name(self.racecars_info, racecar['name'])
                 buf = self._metrics_buffers.get(agent_name)
-                metric = buf.get() if buf is not None else None
+                try:
+                    metric = buf.get(block=False) if buf is not None else None
+                except DoubleBuffer.Empty:
+                    metric = None
                 if metric is None:
+                    self._skipped_no_metrics += 1
                     return  # metrics not yet available; skip frame
                 agent_metric_info.append(metric)
             metric_info = {
@@ -165,19 +191,26 @@ class KvsVideoEditor(Node):
             major_cv_image = cv2.cvtColor(major_cv_image, cv2.COLOR_RGB2RGBA)
             major_cv_image = self.job_type_image_edit_kvs.edit_image(major_cv_image, metric_info)
             self._latest_edited.put(self.bridge.cv2_to_imgmsg(major_cv_image, "bgr8"))
+            self._edited += 1
         except CvBridgeError as ex:
+            self._errors += 1
             LOG.info("cv2 to ROS image message error: {}".format(ex))
+        except Exception:
+            self._errors += 1
+            LOG.exception("kvs_video_editor[%s]: frame editing failed", self.racecar_name)
+            raise
 
     def _kvs_publish_loop(self):
         """ Publish the latest edited frame at a steady ~15 FPS so the stream cadence is
         regular (no player rebuffering), re-sending the latest frame if no newer one is
         ready. Editing is done in the camera callback, so this loop stays light. """
         next_tick = time.monotonic()
-        while rclpy.ok():
+        while rclpy.ok() and not self._stop_event.is_set():
             try:
                 edited_frame = self._latest_edited.get()  # blocks until first frame, then latest
-                if rclpy.ok() and edited_frame is not None:
+                if rclpy.ok() and not self._stop_event.is_set() and edited_frame is not None:
                     self.kvs_pub.publish(edited_frame)
+                    self._published += 1
             except Exception as ex:
                 LOG.info("KVS publish loop error: {}".format(ex))
             finally:
@@ -186,12 +219,14 @@ class KvsVideoEditor(Node):
                 next_tick += KVS_PUBLISH_PERIOD
                 sleep_time = next_tick - time.monotonic()
                 if sleep_time > 0:
-                    time.sleep(sleep_time)
+                    self._stop_event.wait(sleep_time)
 
 
 def main(args=None):
     if not rclpy.ok():
         rclpy.init(args=args)
+    editors = []
+    executor = None
     try:
         racer_num = int(sys.argv[1]) if len(sys.argv) > 1 else 1
         racecar_names = get_racecar_names(racer_num)
@@ -209,7 +244,9 @@ def main(args=None):
             executor.add_node(Node('kvs_video_editor_idle'))
         else:
             for racecar in racecars_info:
-                executor.add_node(KvsVideoEditor(racecar['name'], racecars_info))
+                editor = KvsVideoEditor(racecar['name'], racecars_info)
+                editors.append(editor)
+                executor.add_node(editor)
             LOG.info("KVS video editor started for %d racecar(s)", len(racecars_info))
         executor.spin()
     except KeyboardInterrupt:
@@ -219,6 +256,22 @@ def main(args=None):
                      SIMAPP_SIMULATION_KINESIS_VIDEO_CAMERA_EXCEPTION,
                      SIMAPP_EVENT_ERROR_CODE_500)
     finally:
+        # Tear down in dependency order: stop the publish threads, stop the executor's worker
+        # threads, then destroy the nodes, and only then shut rclpy down. Shutting the context
+        # down first leaves threads using a dead publisher, which segfaults at interpreter exit.
+        for editor in editors:
+            editor.stop()
+            editor.log_summary()
+        if executor is not None:
+            try:
+                executor.shutdown(timeout_sec=2.0)
+            except Exception:
+                pass
+        for editor in editors:
+            try:
+                editor.destroy_node()
+            except Exception:
+                pass
         if rclpy.ok():
             rclpy.shutdown()
 

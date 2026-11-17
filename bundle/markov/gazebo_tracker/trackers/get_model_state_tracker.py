@@ -70,7 +70,8 @@ class GetModelStateTracker(AbstractTracker):
             
             if model_name not in self.model_names:
                 self.model_names.append(model_name)
-            if relative_entity_name not in self.relative_entity_names:
+                # Always append a corresponding relative_entity_name together with model_name
+                # so both lists stay the same length (required by the service)
                 self.relative_entity_names.append(relative_entity_name)
                 
             if blocking or cache_key not in self.model_map:
@@ -81,7 +82,14 @@ class GetModelStateTracker(AbstractTracker):
                 try:
                     # Call the service
                     response = self.get_model_states(request)
-                    
+
+                    # Guard against None response (service timeout / not ready)
+                    if response is None:
+                        msg = GetModelStateResponse()
+                        msg.success = False
+                        msg.status_message = "Service call returned None"
+                        return msg
+
                     # Add detailed logging of the raw service response
                     from markov.log_handler.logger import Logger
                     logger = Logger(__name__, logging.ERROR).get_logger()
@@ -151,7 +159,8 @@ class GetModelStateTracker(AbstractTracker):
                     request.relative_entity_names = self.relative_entity_names
                     
                     response = self.get_model_states(request)
-                    if response.success:
+                    # None means the service call was aborted by ROS shutdown
+                    if response is not None and response.success:
                         for model_state, status in zip(response.model_states, response.status):
                             if status:
                                 model_name = model_state.model_name

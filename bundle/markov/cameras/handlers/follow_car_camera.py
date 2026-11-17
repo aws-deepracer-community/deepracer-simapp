@@ -44,7 +44,10 @@ class FollowCarCamera(AbstractCamera):
     def _get_sdf_string(self, camera_sdf_path):
         with open(camera_sdf_path, "r") as sdf_file:
             camera_sdf = sdf_file.read()
-        return camera_sdf
+        # The sdf hardcodes the single-car topics (/racecar/main_camera/...). With multiple cars
+        # every camera would publish there; give each its own /<racecar_N>/main_camera/... topics,
+        # which is what the multicar bridge and the video editors subscribe to.
+        return camera_sdf.replace("/racecar/main_camera/", "/{}/main_camera/".format(self._namespace))
 
     def _get_initial_camera_pose(self, car_pose):
         _, _, car_yaw = quaternion_to_euler(x=car_pose.orientation.x,

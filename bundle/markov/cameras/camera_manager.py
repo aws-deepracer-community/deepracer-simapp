@@ -125,6 +125,8 @@ class CameraManager(AbstractTracker):
             camera_name_space = copy.copy(self.camera_namespaces)
             for namespace in camera_name_space:
                 car_model_state = GetModelStateTracker.get_instance().get_model_state(namespace, "")
+                if car_model_state is None or car_model_state.pose is None:
+                    continue
                 self._update(car_pose=car_model_state.pose,
                              delta_time=delta_time,
                              namespace=namespace)
