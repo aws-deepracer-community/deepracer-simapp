@@ -37,6 +37,7 @@ RUN apt update && \
     libzmq3-dev \
     lsb-release \
     mesa-utils \
+    mesa-vulkan-drivers \
     net-tools \
     pkg-config \
     python3-dev \

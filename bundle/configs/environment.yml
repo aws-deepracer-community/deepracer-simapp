@@ -79,4 +79,7 @@ dependencies:
       - catkin_pkg==1.1.1
       # setuptools provides the distutils module that tensorflow-probability 0.25 imports.
       - setuptools==84.0.0
-      - pytelegraf
+      # PyQt6: required for GUI components in some ROS 2 tools.
+      - PyQt6==6.12.1
+      # pytelegraf: required for sending metrics to InfluxDB.
+      - pytelegraf==0.3.3
