@@ -26,6 +26,13 @@ if [ "$1" == "multi" ]; then
 	# Use Docker Swarm Replica .Task.Slot
 	if [ -n "$DOCKER_REPLICA_SLOT" ]; then
 		WORKER_NUM=$DOCKER_REPLICA_SLOT
+	# Use Docker Compose host name DNS lookup
+	elif [ -n "$STACK_NAME" ] && [ -n "$WORKERS" ]; then
+		MYIP=$(hostname -i | awk '{print $1}')
+		for i in $(seq 1 "$WORKERS"); do
+			[[ "$(getent hosts "${STACK_NAME}-robomaker-$i" | awk '{print $1}')" == "$MYIP" ]] && SLOT=$i
+		done
+		WORKER_NUM=$SLOT
 	# Create an 'election file' in local file system
 	else
 		COMMS_FILE=/mnt/comms/workers
